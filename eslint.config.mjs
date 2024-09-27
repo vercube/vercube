@@ -1,0 +1,86 @@
+import globals from 'globals';
+import pluginJs from '@eslint/js';
+import tseslint from 'typescript-eslint';
+
+
+export default [
+  { ignores: ['packages/**/dist/*'] },
+  { files: ['**/*.{js,mjs,cjs,ts}'] },
+  { languageOptions: { globals: globals.node } },
+  pluginJs.configs.recommended,
+  ...tseslint.configs.recommended,
+  {
+    rules: {
+      'prefer-regex-literals': 0,
+      'grouped-accessor-pairs': 0,
+      'no-unsafe-optional-chaining': 0,
+      'function-paren-newline': 0,
+      'function-call-argument-newline': 0,
+      'default-param-last': 0,
+      'no-promise-executor-return': 0,
+      'strict-boolean-expressions': 0,
+      'no-plusplus': 0,
+      'no-return-assign': 0,
+      'class-methods-use-this': 0,
+      'camelcase': 0,
+      'no-sequences': 2,
+      'no-template-curly-in-string': 2,
+      'no-return-await': 2,
+      'complexity': [2, { max: 15 }],
+      'no-use-before-define': 0,
+      'no-prototype-builtins': 0,
+      'no-shadow': 0,
+      'import/extensions': 0,
+      'no-else-return': 0,
+      'no-new-wrappers': 2,
+      'constructor-super': 2,
+      'no-duplicate-case': 2,
+      'no-redeclare': 2,
+      'no-invalid-this': 2,
+      'no-sparse-arrays': 2,
+      'no-fallthrough': 2,
+      'no-unsafe-finally': 2,
+      'no-unused-expressions': 0,
+      'no-unused-vars': 0,
+      'no-undef': 0,
+      'no-restricted-globals': [
+        2,
+        'event',
+      ],
+      'no-restricted-imports': [
+        'error', { paths: ['lodash', 'date-fns'] },
+      ],
+      'prefer-object-spread': 2,
+      'radix': 2,
+      'default-case': 2,
+      'use-isnan': 2,
+      'newline-per-chained-call': 0,
+      'new-parens': 2,
+      'no-trailing-spaces': 2,
+      'quote-props': [2, 'consistent-as-needed'],
+      'one-var': 2,
+      'quotes': [2, 'single'],
+      'max-len': [2, 130],
+      'comma-dangle': [2, 'always-multiline'],
+      'no-empty-function': 0,
+      'no-underscore-dangle': 0,
+      'consistent-return': 0,
+      'object-curly-newline': [2, {
+        ImportDeclaration: 'never',
+      }],
+      'padded-blocks': [
+        2,
+        {
+          classes: 'always',
+        },
+      ],
+      'space-before-function-paren': [
+        2,
+        {
+          named: 'never',
+          anonymous: 'never',
+        },
+      ],
+    },
+  },
+];

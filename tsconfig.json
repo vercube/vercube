@@ -1,0 +1,23 @@
+{
+    "compilerOptions": {
+      "esModuleInterop": false,
+      "allowSyntheticDefaultImports": true,
+      "skipLibCheck": true,
+      "target": "es2022",
+      "allowJs": true,
+      "resolveJsonModule": true,
+      "moduleDetection": "force",
+      "isolatedModules": true,
+      "verbatimModuleSyntax": true,
+      "strict": true,
+      "forceConsistentCasingInFileNames": true,
+      "noImplicitOverride": true,
+      "module": "preserve",
+      "jsx": "preserve",
+      "noEmit": true,
+      "lib": ["es2022", "DOM"],
+    },
+    "include": ["packages"],
+    "exclude": ["dist","playground"]
+  }
+  

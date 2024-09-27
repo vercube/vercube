@@ -1,0 +1,13 @@
+{
+  "name": "cube-monorepo-playground",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Playground for Cube framework",
+  "packageManager": "pnpm@9.10.0",
+  "scripts": {
+    "dev": "bun index.ts --watch"
+  },
+  "devDependencies": {
+    "@cube/core": "workspace:*"
+  }
+}

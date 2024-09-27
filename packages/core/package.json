@@ -1,0 +1,30 @@
+{
+    "name": "@cube/core",
+    "version": "0.0.0",
+    "description": "Core module for Cube framework",
+    "packageManager": "pnpm@9.10.0",
+    "repository": "@cube/core",
+    "license": "MIT",
+    "sideEffects": false,
+    "type": "module",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.mjs",
+        "require": "./dist/index.cjs"
+      }
+    },
+    "main": "./dist/index.cjs",
+    "module": "./dist/index.mjs",
+    "types": "./dist/index.d.ts",
+    "files": [
+      "dist"
+    ],
+    "scripts": {
+      "build": "unbuild",
+      "dev": "unbuild --watch",
+      "prepack": "pnpm build"
+    },
+    "devDependencies": {
+    }
+  }
