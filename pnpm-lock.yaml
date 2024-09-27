@@ -23,6 +23,9 @@ importers:
       globals:
         specifier: 15.9.0
         version: 15.9.0
+      husky:
+        specifier: ^9.1.6
+        version: 9.1.6
       turbo:
         specifier: 2.1.2
         version: 2.1.2
@@ -1221,6 +1224,11 @@ packages:
 
   hookable@5.5.3:
     resolution: {integrity: sha512-Yc+BQe8SvoXH1643Qez1zqLRmbA5rCL+sSmk6TVos0LWVfNIB7PGncdlId77WzLGSIB5KaWgTaNTs2lNVEI6VQ==}
+
+  husky@9.1.6:
+    resolution: {integrity: sha512-sqbjZKK7kf44hfdE94EoX8MZNk0n7HeW37O4YrVGCF4wzgQjp+akPAkfUK5LZ6KuR/6sqeAVuXHji+RzQgOn5A==}
+    engines: {node: '>=18'}
+    hasBin: true
 
   ignore@5.3.1:
     resolution: {integrity: sha512-5Fytz/IraMjqpwfd34ke28PTVMjZjJG2MPn5t7OE4eUCUNf8BAa7b5WUS9/Qvr6mwOQS7Mk6vdsMno5he+T8Xw==}
@@ -3134,6 +3142,8 @@ snapshots:
       function-bind: 1.1.2
 
   hookable@5.5.3: {}
+
+  husky@9.1.6: {}
 
   ignore@5.3.1: {}
 

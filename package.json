@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "description": "Next generation NodeJS framework on top of H3",
   "packageManager": "pnpm@9.10.0",
+  "type": "module",
   "private": true,
   "engines": {
     "node": ">=20"
@@ -10,7 +11,9 @@
   "scripts": {
     "turbo": "turbo",
     "build": "turbo build --filter=@cube/*",
-    "dev": "turbo dev --filter=@cube/*"
+    "dev": "turbo dev --filter=@cube/*",
+    "test": "turbo test --filter=@cube/*",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@commitlint/cli": "19.5.0",
@@ -18,9 +21,17 @@
     "@eslint/js": "9.11.1",
     "eslint": "9.11.1",
     "globals": "15.9.0",
+    "husky": "9.1.6",
     "turbo": "2.1.2",
     "typescript": "5.6.2",
     "typescript-eslint": "8.7.0",
     "unbuild": "3.0.0-rc.8"
+  },
+  "pnpm": {
+    "peerDependencyRules": {
+      "ignoreMissing": [
+        "unbuild"
+      ]
+    }
   }
 }

@@ -12,6 +12,10 @@
       "cache": false,
       "persistent": true,
       "inputs": ["$TURBO_DEFAULT$", ".env*", "!playground/**"]
+    },
+    "test": {
+      "dependsOn": ["^build, ^test"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*", "!playground/**"]
     }
   }
 }
