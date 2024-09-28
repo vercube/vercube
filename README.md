@@ -1,4 +1,6 @@
-[![Cube banner](./.github/assets/banner.png)](https://cube.dev)
+<p style="text-align: center" align="center">
+  <img src="./.github/assets/logo.png" width="200" alt="Cube code"/>
+</p>
 
 # Cube
 Cube is a free and open-source NodeJS framework on top of [h3](https://h3.unjs.io/)
