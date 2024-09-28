@@ -4,18 +4,14 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "inputs": ["$TURBO_DEFAULT$", ".env*", "!playground/**"],
-      "outputs": [".next/**", "!.next/cache/**"]
-
+      "outputs": ["dist"]
     },
     "dev": {
       "cache": false,
-      "persistent": true,
-      "inputs": ["$TURBO_DEFAULT$", ".env*", "!playground/**"]
+      "persistent": true
     },
     "test": {
-      "dependsOn": ["^build, ^test"],
-      "inputs": ["$TURBO_DEFAULT$", ".env*", "!playground/**"]
+      "dependsOn": ["^build, ^test"]
     }
   }
 }

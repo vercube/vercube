@@ -10,9 +10,9 @@
   },
   "scripts": {
     "turbo": "turbo",
-    "build": "turbo build --filter=@cube/*",
-    "dev": "turbo dev --filter=@cube/*",
-    "test": "turbo test --filter=@cube/*",
+    "build": "turbo build --filter=!playground",
+    "dev": "turbo dev --filter=!playground",
+    "test": "turbo test --filter=!playground",
     "prepare": "husky"
   },
   "devDependencies": {
