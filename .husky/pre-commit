@@ -1,1 +1,3 @@
+#!/usr/bin/env sh
+
 echo "nothing to check"
