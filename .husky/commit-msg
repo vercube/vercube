@@ -1,1 +1,1 @@
-pnpm commitlint
+pnpm dlx commitlint --edit $1

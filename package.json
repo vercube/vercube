@@ -13,8 +13,7 @@
     "build": "turbo build --filter=!playground",
     "dev": "turbo dev --filter=!playground",
     "test": "turbo test --filter=!playground",
-    "prepare": "husky",
-    "commitlint": "commitlint --edit"
+    "prepare": "husky"
   },
   "devDependencies": {
     "@commitlint/cli": "19.5.0",
