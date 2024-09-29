@@ -1,9 +1,11 @@
+import { type RouterMethod, type EventHandler } from 'h3';
+
 export namespace RouterTypes {
 
   export interface Route {
     path: string;
-    method: string;
-    handler: unknown;
+    method: RouterMethod;
+    handler: EventHandler;
   }
 
 }

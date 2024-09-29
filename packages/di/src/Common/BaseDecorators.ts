@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 /**
- * This is base class for all decorators used in Spark. Decorator class must extend this one.
+ * This is base class for all property decorators used in application. Decorator class must extend this one.
  * This class instance is created using IOC container so you can @Inject() things here.
  */
 export abstract class BaseDecorator<T> {
@@ -20,6 +20,9 @@ export abstract class BaseDecorator<T> {
 
   /** Holds property descriptor that was decorated */
   public descriptor!: PropertyDescriptor;
+
+  /** Holds property index if decorators if for Method Property */
+  public propertyIndex!: number;
 
   /**
    * This method is called when decorator is created and ready to be used.

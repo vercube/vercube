@@ -1,23 +1,21 @@
-import { createApp, createRouter, defineEventHandler, toNodeListener } from 'h3';
+import { createApp, toNodeListener } from 'h3';
 import { listen } from 'listhen';
 import { Get } from './Decorators/Http/Get';
 import { Container, initializeContainer } from '@cube/di';
 import { RouterRegistry } from './Services/Router/RouterRegistry';
 import { HooksService } from './Services/Hooks/HooksService';
-import { Listen } from './Decorators/Hooks/Listen';
-import { RouterBeforeInitHook } from './Hooks/Router/RouterBeforeInitHook';
+import { Controller } from './Decorators/Http/Controller';
+import { MetadataResolver } from './Services/Metadata/MetadataResolver';
+import { Param } from './Decorators/Http/Param';
 
+@Controller('/api/dupa')
 class X {
 
   @Get('/test')
-  public get() {
-    console.log('test');
+  public async get(
+    @Param('x') x: string,
+  ): Promise<unknown> {
     return { message: '⚡️ Tadaa!' };
-  }
-
-  @Listen(RouterBeforeInitHook)
-  public onBeforeInit() {
-    console.log('Before init');
   }
 
 }
@@ -30,26 +28,15 @@ const container = new Container({});
 container.bindInstance(Container, container);
 container.bind(RouterRegistry);
 container.bind(HooksService);
+container.bind(MetadataResolver);
 container.bind(X);
 
 initializeContainer(container);
 
-const router = createRouter()
-  .get(
-    '/',
-    defineEventHandler((event) => {
-      console.log('Request received:', event);
-      return { message: '⚡️ Tadaa!' };
-    }),
-  );
-
-app.use(router);
-
 async function init() {
 
-  console.log(container.get(X));
-
   container.get(RouterRegistry).init();
+  app.use(container.get(RouterRegistry).router);
 
   await listen(toNodeListener(app), { port: 3000 });
 }

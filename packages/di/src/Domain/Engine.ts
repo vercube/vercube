@@ -98,8 +98,6 @@ function injectDeps(container: Container, instance: IOC.Instance, method: IOC.In
     return;
   }
 
-  console.log(classMap);
-
   /**
    * Here we will traverse through prototype chain until we hit dead end (ROOT_PROTO). This is because we
    * must process inject for current class and also for every base class.

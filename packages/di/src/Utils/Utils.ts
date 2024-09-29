@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-function-type */
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { type BaseDecorator } from '../Common/BaseDecorators';
 import { type Container } from '../Domain/Container';
@@ -42,6 +42,7 @@ export interface IDecoratorEntry {
  */
 export interface IDecoratedPrototype {
   __decorators?: IDecoratorEntry[];
+  __metadata?: any;
 }
 
 export interface IDecoratedInstance {
@@ -129,6 +130,7 @@ export function initializeDecorators(target: IDecoratedInstance, container: Cont
       instance.prototype = prototype;
       instance.propertyName = entry.propertyName;
       instance.descriptor = entry.descriptor;
+      instance.propertyIndex = (typeof entry.descriptor === 'number') ? entry.descriptor : -1;
       instance.created();
     }
 
