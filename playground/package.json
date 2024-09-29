@@ -5,9 +5,10 @@
   "description": "Playground for Cube framework",
   "packageManager": "pnpm@9.10.0",
   "scripts": {
-    "dev": "bun index.ts --watch"
+    "dev": "tsx watch index.ts"
   },
   "devDependencies": {
-    "@cube/core": "workspace:*"
+    "@cube/core": "workspace:*",
+    "tsx": "4.19.1"
   }
 }

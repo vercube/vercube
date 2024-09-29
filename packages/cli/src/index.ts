@@ -1,7 +1,1 @@
-export default class CubeCLI {
-
-  constructor() {
-    console.log('CubeCLI1');
-  }
-
-}
+console.log('Cli is not implemented yet');

@@ -1,3 +1,3 @@
-import CubeCore from '@cube/core';
+import Cube from '../packages/core/src/index';
 
-console.log(new CubeCore());
+Cube.init();

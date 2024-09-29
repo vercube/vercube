@@ -5,6 +5,7 @@
       "skipLibCheck": true,
       "target": "es2022",
       "allowJs": true,
+      "importHelpers": true,
       "resolveJsonModule": true,
       "moduleDetection": "force",
       "isolatedModules": true,
@@ -16,6 +17,7 @@
       "jsx": "preserve",
       "noEmit": true,
       "lib": ["es2022", "DOM"],
+      "experimentalDecorators": true,
     },
     "include": ["packages"],
     "exclude": ["dist","playground"]

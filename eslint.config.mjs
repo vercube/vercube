@@ -11,6 +11,7 @@ export default [
   ...tseslint.configs.recommended,
   {
     rules: {
+      'one-var': 0,
       'prefer-regex-literals': 0,
       'grouped-accessor-pairs': 0,
       'no-unsafe-optional-chaining': 0,
@@ -58,7 +59,6 @@ export default [
       'new-parens': 2,
       'no-trailing-spaces': 2,
       'quote-props': [2, 'consistent-as-needed'],
-      'one-var': 2,
       'quotes': [2, 'single'],
       'max-len': [2, 130],
       'comma-dangle': [2, 'always-multiline'],
@@ -81,6 +81,8 @@ export default [
           anonymous: 'never',
         },
       ],
+      '@typescript-eslint/no-namespace': 0,
+      '@typescript-eslint/no-unsafe-function-type': 0,
     },
   },
 ];
