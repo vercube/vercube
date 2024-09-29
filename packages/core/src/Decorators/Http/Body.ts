@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
-import { BaseDecorator, createDecorator } from '@cube/di';
+import { BaseDecorator, createDecorator, Inject } from '@cube/di';
+import { MetadataResolver } from '../../Services/Metadata/MetadataResolver';
 
 /**
  * @class BodyDecorator
@@ -8,6 +9,9 @@ import { BaseDecorator, createDecorator } from '@cube/di';
  * A decorator class that handles the metadata for HTTP request bodies.
  */
 class BodyDecorator extends BaseDecorator<{}> {
+
+  @Inject(MetadataResolver)
+  private gMetadataResolver!: MetadataResolver;
 
   /**
    * @method created
@@ -18,9 +22,7 @@ class BodyDecorator extends BaseDecorator<{}> {
 
     // if metadata for property does not exist, create it
     if (!this.prototype.__metadata[this.propertyName]) {
-      this.prototype.__metadata[this.propertyName] = {
-        args: [],
-      };
+      this.prototype.__metadata[this.propertyName] = this.gMetadataResolver.create();
     }
 
     // add body to metadata
