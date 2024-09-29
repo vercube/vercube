@@ -6,15 +6,12 @@ import { RouterRegistry } from './Services/Router/RouterRegistry';
 import { HooksService } from './Services/Hooks/HooksService';
 import { Controller } from './Decorators/Http/Controller';
 import { MetadataResolver } from './Services/Metadata/MetadataResolver';
-import { Param } from './Decorators/Http/Param';
 
-@Controller('/api/dupa')
+@Controller('/api')
 class X {
 
   @Get('/test')
-  public async get(
-    @Param('x') x: string,
-  ): Promise<unknown> {
+  public async get(): Promise<unknown> {
     return { message: '⚡️ Tadaa!' };
   }
 
