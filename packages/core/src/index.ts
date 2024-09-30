@@ -20,6 +20,7 @@ export * from './Decorators/Http/Query';
 export * from './Decorators/Http/Request';
 export * from './Decorators/Http/Response';
 export * from './Decorators/Http/Trace';
+export * from './Decorators/Http/SetHeader';
 
 // hooks
 export * from './Decorators/Hooks/Init';
