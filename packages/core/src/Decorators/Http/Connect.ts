@@ -48,7 +48,12 @@ class ConnectDecorator extends BaseDecorator<ConnectDecoratorOptions> {
       method: 'connect',
       handler: defineEventHandler((event) => {
         const metadata = this.gMetadataResolver.resolve(event, this.prototype.__metadata[this.propertyName]);
-        return this.instance[this.propertyName].call(this.instance, ...metadata.args);
+
+        for (const action of metadata.actions) {
+          action.handler(event.node.req, event.node.res);
+        }
+
+        return this.instance[this.propertyName].call(this.instance, ...metadata.args ?? []);
       }),
     });
 

@@ -46,9 +46,15 @@ class TraceDecorator extends BaseDecorator<TraceDecoratorOptions> {
     this.gRouterRegistry.registerRoute({
       path: this.options.path,
       method: 'trace',
+      // TODO: move handler to separate file and import in every HTTP Method decorator
       handler: defineEventHandler((event) => {
         const metadata = this.gMetadataResolver.resolve(event, this.prototype.__metadata[this.propertyName]);
-        return this.instance[this.propertyName].call(this.instance, ...metadata.args);
+
+        for (const action of metadata.actions) {
+          action.handler(event.node.req, event.node.res);
+        }
+
+        return this.instance[this.propertyName].call(this.instance, ...metadata.args ?? []);
       }),
     });
 

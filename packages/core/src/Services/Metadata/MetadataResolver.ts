@@ -15,7 +15,10 @@ export class MetadataResolver {
    */
   public create(): MetadataTypes.Metadata {
     return {
+      req: null,
+      res: null,
       args: [],
+      actions: [],
     };
   }
 
@@ -28,7 +31,10 @@ export class MetadataResolver {
    */
   public resolve(event: H3Event, metadata: MetadataTypes.Metadata): MetadataTypes.ResolvedData {
     return {
+      req: event.node.req,
+      res: event.node.res,
       args: this.resolveArgs(metadata?.args ?? [], event),
+      actions: metadata?.actions ?? [],
     };
   }
 
