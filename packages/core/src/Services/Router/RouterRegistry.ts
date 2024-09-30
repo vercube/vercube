@@ -26,12 +26,6 @@ export class RouterRegistry {
   private fRouter!: Router;
 
   /**
-   * Indicates if the router is locked
-   * @type {boolean}
-   */
-  private fIsLocked: boolean = false;
-
-  /**
    * Get router instance
    *
    * @return {Router} The router instance.
@@ -47,10 +41,6 @@ export class RouterRegistry {
    * @throws {Error} If the router is locked.
    */
   public registerRoute(route: RouterTypes.Route): void {
-    if (this.fIsLocked) {
-      throw new Error('Cannot register route after initialization');
-    }
-
     this.fRoutes.add(route);
   }
 
@@ -70,9 +60,6 @@ export class RouterRegistry {
 
     // trigger after init hook
     this.gHooksService.trigger(RouterAfterInitHook);
-
-    // lock router
-    this.fIsLocked = true;
   }
 
   /**

@@ -20,6 +20,6 @@
       "experimentalDecorators": true,
     },
     "include": ["packages"],
-    "exclude": ["dist","playground"]
+    "exclude": ["dist", "./node_modules", "packages/*/dist", "packages/*/node_modules"]
   }
   

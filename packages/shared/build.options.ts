@@ -7,16 +7,13 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export const BaseBuildOptions: BuildConfig = {
   declaration: true,
-  clean: false,
+  clean: true,
   entries: [
     'src/index',
   ],
   rollup: {
     emitCJS: true,
     cjsBridge: true,
-    output: {
-      format: 'cjs',
-    },
   },
   failOnWarn: false,
   hooks: {

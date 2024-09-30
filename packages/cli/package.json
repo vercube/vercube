@@ -20,10 +20,17 @@
     "files": [
       "dist"
     ],
+    "bin": {
+      "cube": "./dist/index.cjs"
+    },
     "scripts": {
       "build": "unbuild",
       "dev": "unbuild --watch",
       "prepack": "pnpm build"
+    },
+    "dependencies": {
+      "@cube/devkit": "workspace:*",
+      "citty": "0.1.6"
     },
     "devDependencies": {
     }

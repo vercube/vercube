@@ -28,7 +28,7 @@ export class MetadataResolver {
    */
   public resolve(event: H3Event, metadata: MetadataTypes.Metadata): MetadataTypes.ResolvedData {
     return {
-      args: this.resolveArgs(metadata.args, event),
+      args: this.resolveArgs(metadata?.args ?? [], event),
     };
   }
 

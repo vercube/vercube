@@ -1,7 +1,7 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { type BaseDecorator } from '../Common/BaseDecorators';
-import { type Container } from '../Domain/Container';
+import { Container } from '../Domain/Container';
 import { IOC } from '../Types/IOCTypes';
 
 /**
@@ -57,7 +57,6 @@ export interface IDecoratedInstance {
  * @return ES6 decorator function
  */
 export function createDecorator<P, T extends BaseDecorator<P>>(decoratorClass: IClassType<T>, params: P): Function {
-
   // standaard ES6 decorator code...
   return function internalDecorator(target: IDecoratedPrototype, propertyName: string, descriptor: PropertyDescriptor): any {
 
@@ -113,7 +112,6 @@ function getContainerMetadata(container: Container): IContainerDecoratorMetadata
  * @param container IOC container for context
  */
 export function initializeDecorators(target: IDecoratedInstance, container: Container): void {
-
   // get target prototype where metadata is stored
   const prototype: IDecoratedPrototype = Object.getPrototypeOf(target);
 

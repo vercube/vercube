@@ -1,14 +1,22 @@
 {
   "name": "playground",
   "private": true,
+  "type": "module",
   "version": "0.0.0",
   "description": "Playground for Cube framework",
   "packageManager": "pnpm@9.10.0",
   "scripts": {
-    "dev": "tsx watch index.ts"
+    "dev": "cube dev"
   },
   "devDependencies": {
+    "@cube/cli": "workspace:*",
     "@cube/core": "workspace:*",
+    "@cube/di": "workspace:*",
+    "@types/node": "20",
     "tsx": "4.19.1"
+  },
+  "dependencies": {
+    "lodash": "4.17.21",
+    "tslib": "2.7.0"
   }
 }
