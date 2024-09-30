@@ -1,3 +1,4 @@
+/* eslint-disable no-restricted-imports */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -24,7 +25,7 @@
  *
  * Everything 100% typechecked.
  */
-import _remove from 'lodash/remove';
+import { remove } from 'lodash';
 import type { HooksTypes } from '../../Types/HooksTypes';
 
 /**
@@ -125,7 +126,7 @@ export class HooksService {
       throw new Error('Trying to unbind event that was not bound.');
     }
 
-    const removed: HooksTypes.HookHandler<any>[] = _remove(handlersOfType, (h) => h.id === eventId.__id);
+    const removed: HooksTypes.HookHandler<any>[] = remove(handlersOfType, (h) => h.id === eventId.__id);
 
     if (removed.length === 0) {
       throw new Error('Trying to unbind event that was not bound.');

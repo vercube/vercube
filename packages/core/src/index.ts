@@ -1,43 +1,29 @@
-import { createApp, toNodeListener } from 'h3';
-import { listen } from 'listhen';
-import { Get } from './Decorators/Http/Get';
-import { Container, initializeContainer } from '@cube/di';
-import { RouterRegistry } from './Services/Router/RouterRegistry';
-import { HooksService } from './Services/Hooks/HooksService';
-import { Controller } from './Decorators/Http/Controller';
-import { MetadataResolver } from './Services/Metadata/MetadataResolver';
+// Common modules
+export * from './Common/App';
+export * from './Common/CreateApp';
 
-@Controller('/api')
-class X {
+// Http decorators
+export * from './Decorators/Http/Body';
+export * from './Decorators/Http/Connect';
+export * from './Decorators/Http/Controller';
+export * from './Decorators/Http/Delete';
+export * from './Decorators/Http/Get';
+export * from './Decorators/Http/Head';
+export * from './Decorators/Http/Header';
+export * from './Decorators/Http/Headers';
+export * from './Decorators/Http/Options';
+export * from './Decorators/Http/Param';
+export * from './Decorators/Http/Patch';
+export * from './Decorators/Http/Post';
+export * from './Decorators/Http/Put';
+export * from './Decorators/Http/Query';
+export * from './Decorators/Http/Request';
+export * from './Decorators/Http/Response';
+export * from './Decorators/Http/Trace';
 
-  @Get('/test')
-  public async get(): Promise<unknown> {
-    return { message: '⚡️ Tadaa!' };
-  }
+// hooks
+export * from './Decorators/Hooks/Init';
+export * from './Decorators/Hooks/Listen';
+export * from './Services/Hooks/HooksService';
 
-}
-
-// Create an app instance
-const app = createApp();
-
-// define container
-const container = new Container({});
-container.bindInstance(Container, container);
-container.bind(RouterRegistry);
-container.bind(HooksService);
-container.bind(MetadataResolver);
-container.bind(X);
-
-initializeContainer(container);
-
-async function init() {
-
-  container.get(RouterRegistry).init();
-  app.use(container.get(RouterRegistry).router);
-
-  await listen(toNodeListener(app), { port: 3000 });
-}
-
-export default {
-  init,
-}
+export * from './Types/HooksTypes';

@@ -1,0 +1,45 @@
+{
+  "name": "@cube/devkit",
+  "version": "0.0.0",
+  "description": "Devkit module for Cube framework",
+  "packageManager": "pnpm@9.10.0",
+  "repository": "@cube/devkit",
+  "license": "MIT",
+  "sideEffects": false,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "unbuild",
+    "dev": "unbuild --watch",
+    "prepack": "pnpm build"
+  },
+  "dependencies": {
+    "@rollup/pluginutils": "5.1.2",
+    "@rollup/plugin-commonjs": "28.0.0",
+    "@rollup/plugin-node-resolve": "15.3.0",
+    "@rollup/plugin-alias": "5.1.1",
+    "@rollup/plugin-replace": "6.0.1",
+    "@rollup/plugin-typescript": "12.1.0",
+    "consola": "3.2.3",
+    "esbuild": "0.24.0",
+    "hookable": "5.5.3",
+    "magic-string": "0.30.11",
+    "mlly": "1.7.1",
+    "pathe": "1.1.2",
+    "rollup": "4.22.5"
+  },
+  "devDependencies": {
+  }
+}

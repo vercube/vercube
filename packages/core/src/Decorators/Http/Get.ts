@@ -48,7 +48,7 @@ class GetDecorator extends BaseDecorator<GetDecoratorOptions> {
       method: 'get',
       handler: defineEventHandler((event) => {
         const metadata = this.gMetadataResolver.resolve(event, this.prototype.__metadata[this.propertyName]);
-        return this.instance[this.propertyName].call(this.instance, ...metadata.args);
+        return this.instance[this.propertyName].call(this.instance, ...metadata.args ?? []);
       }),
     });
 
