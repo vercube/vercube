@@ -25,5 +25,7 @@ export * from './Decorators/Http/Trace';
 export * from './Decorators/Hooks/Init';
 export * from './Decorators/Hooks/Listen';
 export * from './Services/Hooks/HooksService';
-
 export * from './Types/HooksTypes';
+
+// plugins
+export * from './Services/Plugins/Plugin';

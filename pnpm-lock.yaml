@@ -102,18 +102,9 @@ importers:
       esbuild:
         specifier: 0.24.0
         version: 0.24.0
-      h3:
-        specifier: 1.12.0
-        version: 1.12.0
       hookable:
         specifier: 5.5.3
         version: 5.5.3
-      listhen:
-        specifier: 1.8.0
-        version: 1.8.0
-      lodash:
-        specifier: 4.17.21
-        version: 4.17.21
       magic-string:
         specifier: 0.30.11
         version: 0.30.11
@@ -126,10 +117,6 @@ importers:
       rollup:
         specifier: 4.22.5
         version: 4.22.5
-    devDependencies:
-      '@types/lodash':
-        specifier: 4.17.9
-        version: 4.17.9
 
   packages/di: {}
 
