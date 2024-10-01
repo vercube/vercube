@@ -38,3 +38,6 @@ yarn-error.log*
 *.pem
 packages/**/node_modules
 packages/**/dist
+
+# JetBrains IDEs
+.idea

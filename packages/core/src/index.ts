@@ -21,6 +21,7 @@ export * from './Decorators/Http/Request';
 export * from './Decorators/Http/Response';
 export * from './Decorators/Http/Trace';
 export * from './Decorators/Http/SetHeader';
+export * from './Decorators/Http/Status';
 
 // hooks
 export * from './Decorators/Hooks/Init';
