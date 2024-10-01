@@ -1,4 +1,4 @@
-import { Controller, Get, SetHeader } from '@cube/core';
+import { Controller, Get, SetHeader, Status } from '@cube/core';
 
 /**
  * Playground controller.
@@ -13,6 +13,7 @@ export default class PlaygroundController {
    */
   @Get('/')
   @SetHeader('X-Test-Response-Header', '1')
+  @Status(200)
   public async index(): Promise<{ message: string }> {
     return { message: 'Hello, world!' };
   }

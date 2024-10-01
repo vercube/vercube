@@ -21,10 +21,12 @@ export * from './Decorators/Http/Request';
 export * from './Decorators/Http/Response';
 export * from './Decorators/Http/Trace';
 export * from './Decorators/Http/SetHeader';
+export * from './Decorators/Http/Status';
 
-// hooks
+// Hooks
 export * from './Decorators/Hooks/Init';
 export * from './Decorators/Hooks/Listen';
 export * from './Services/Hooks/HooksService';
 
+// Types
 export * from './Types/HooksTypes';
