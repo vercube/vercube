@@ -13,17 +13,8 @@ export default class PlaygroundController {
    */
   @Get('/')
   @SetHeader('X-Test-Response-Header', '1')
+  @Status(200)
   public async index(): Promise<{ message: string }> {
-    return { message: 'Hello, world!' };
-  }
-
-  /**
-   * Handles GET requests to the /error endpoint.
-   * @returns {Promise<{ error: number }>} A promise that resolves to an object containing a greeting message.
-   */
-  @Get('/error')
-  @Status(500)
-  public async error(): Promise<{ message: string }> {
     return { message: 'Hello, world!' };
   }
 
