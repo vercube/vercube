@@ -2,6 +2,8 @@ import { Container } from '@cube/di';
 import { HooksService } from '../Services/Hooks/HooksService';
 import { MetadataResolver } from '../Services/Metadata/MetadataResolver';
 import { RouterRegistry } from '../Services/Router/RouterRegistry';
+import { PluginsRegistry } from '../Services/Plugins/PluginsRegistry';
+import { RequestHandler } from '../Services/Router/RequestHandler';
 
 /**
  * Creates and configures a new dependency injection container for the application.
@@ -17,6 +19,8 @@ export function createContainer(): Container {
   container.bind(HooksService);
   container.bind(MetadataResolver);
   container.bind(RouterRegistry);
+  container.bind(PluginsRegistry);
+  container.bind(RequestHandler);
 
   return container;
 }

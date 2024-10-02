@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable complexity */
 /* eslint-disable no-case-declarations */
 import { getHeader, getHeaders, getQuery, getRouterParam, H3Event, readBody } from 'h3';
@@ -20,6 +21,27 @@ export class MetadataResolver {
       args: [],
       actions: [],
     };
+  }
+
+  /**
+   * Resolves the URL for a given instance and path.
+   *
+   * @param {any} instance - The instance containing metadata.
+   * @param {string} path - The path to resolve.
+   * @return {string} The resolved URL.
+   */
+  public resolveUrl(instance: any, path: string): string {
+    let baseRotue = instance.__metadata.controller.path ?? '';
+
+    if (baseRotue.endsWith('/')) {
+      baseRotue = baseRotue.slice(0, -1);
+    }
+
+    if (path.startsWith('/')) {
+      path = path.slice(1);
+    }
+
+    return `${baseRotue}/${path}`;
   }
 
   /**
