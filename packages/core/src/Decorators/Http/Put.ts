@@ -1,7 +1,7 @@
-import { defineEventHandler } from 'h3';
 import { BaseDecorator, createDecorator, Inject } from '@cube/di';
 import { RouterRegistry } from '../../Services/Router/RouterRegistry';
 import { MetadataResolver } from '../../Services/Metadata/MetadataResolver';
+import { RequestHandler } from '../../Services/Router/RequestHandler';
 
 interface PutDecoratorOptions {
   path: string;
@@ -21,6 +21,9 @@ class PutDecorator extends BaseDecorator<PutDecoratorOptions> {
   @Inject(RouterRegistry)
   private gRouterRegistry!: RouterRegistry;
 
+  @Inject(RequestHandler)
+  private gRequestHandler!: RequestHandler;
+
   @Inject(MetadataResolver)
   private gMetadataResolver!: MetadataResolver;
 
@@ -31,31 +34,12 @@ class PutDecorator extends BaseDecorator<PutDecoratorOptions> {
    * with the RouterRegistry, and sets up the event handler for the PUT request.
    */
   public override created(): void {
-    let baseRotue = this.instance.__metadata.controller.path ?? '';
-
-    if (baseRotue.endsWith('/')) {
-      baseRotue = baseRotue.slice(0, -1);
-    }
-
-    if (this.options.path.startsWith('/')) {
-      this.options.path = this.options.path.slice(1);
-    }
-
-    this.options.path = `${baseRotue}/${this.options.path}`;
+    this.options.path = this.gMetadataResolver.resolveUrl(this.instance, this.options.path);
 
     this.gRouterRegistry.registerRoute({
       path: this.options.path,
       method: 'put',
-      // TODO: move handler to separate file and import in every HTTP Method decorator
-      handler: defineEventHandler((event) => {
-        const metadata = this.gMetadataResolver.resolve(event, this.prototype.__metadata[this.propertyName]);
-
-        for (const action of metadata.actions) {
-          action.handler(event.node.req, event.node.res);
-        }
-
-        return this.instance[this.propertyName].call(this.instance, ...metadata.args ?? []);
-      }),
+      handler: this.gRequestHandler.handleRequest({ instance: this.instance, propertyName: this.propertyName }),
     });
 
   }
