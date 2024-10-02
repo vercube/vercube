@@ -32,6 +32,7 @@ export default class PlaygroundController {
    * @returns {Promise<{ message: string }>} A promise that resolves to an object containing a greeting message.
    */
   @Get('/redirected')
+  @Status(HTTPStatus.OK)
   public async redirected(): Promise<{ message: string }> {
     return { message: 'Hello, im redirected!' };
   }

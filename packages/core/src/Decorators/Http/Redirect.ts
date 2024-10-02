@@ -1,17 +1,17 @@
 import { BaseDecorator, createDecorator, Inject } from '@cube/di';
 import { MetadataResolver } from '../../Services/Metadata/MetadataResolver';
 import type { MetadataTypes } from '../../Types/MetadataTypes';
-import { HTTPRedirection } from "../../Types/HttpTypes";
+import { HTTPStatus } from '../../Types/HttpTypes';
 
 /**
  * Options for the RedirectDecorator.
  * @typedef {Object} RedirectDecoratorOptions
- * @property {string} key - The header key.
- * @property {string} value - The header value.
+ * @property {string} location - The location header value.
+ * @property {string} code - The redirect status code.
  */
 interface RedirectDecoratorOptions {
     location: string;
-    code: HTTPRedirection;
+    code: HTTPStatus;
 }
 
 class RedirectDecorator extends BaseDecorator<RedirectDecoratorOptions> {
@@ -26,7 +26,7 @@ class RedirectDecorator extends BaseDecorator<RedirectDecoratorOptions> {
 
     /**
      * Called when the decorator is created.
-     * Adds a query parameter to the metadata.
+     * Sets the location header value and status code.
      * @override
      */
 
@@ -36,7 +36,7 @@ class RedirectDecorator extends BaseDecorator<RedirectDecoratorOptions> {
             this.prototype.__metadata[this.propertyName] = this.gMetadataResolver.create();
         }
 
-        // add query parameter to metadata
+        // Set status code and location header.
         this.prototype.__metadata[this.propertyName].actions.push({
             handler: (req: MetadataTypes.Request, res: MetadataTypes.Response) => {
                 res.statusCode = this.options.code;
@@ -49,10 +49,10 @@ class RedirectDecorator extends BaseDecorator<RedirectDecoratorOptions> {
 
 /**
  * Creates a Redirect decorator.
- * @param {string} location - The header key.
- * @param {number} code - The header value.
+ * @param {string} location - The location header value.
+ * @param {number} code - The redirect status code.
  * @returns {Function} The decorator function.
  */
-export function Redirect(location: string, code: HTTPRedirection = 302): Function {
+export function Redirect(location: string, code: HTTPStatus = 301): Function {
     return createDecorator(RedirectDecorator, { location, code });
 }

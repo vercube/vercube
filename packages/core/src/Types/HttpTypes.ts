@@ -1,10 +1,10 @@
-export enum HTTPInformational {
+export enum HTTPStatus {
+    // Informational 1xx
     CONTINUE = 100,
     SWITCHING_PROTOCOLS = 101,
     PROCESSING = 102,
-}
 
-export enum HTTPSuccess {
+    // Success 2xx
     OK = 200,
     CREATED = 201,
     ACCEPTED = 202,
@@ -15,9 +15,8 @@ export enum HTTPSuccess {
     MULTI_STATUS = 207,
     ALREADY_REPORTED = 208,
     IM_USED = 226,
-}
 
-export enum HTTPRedirection {
+    // Redirection 3xx
     MULTIPLE_CHOICES = 300,
     MOVED_PERMANENTLY = 301,
     FOUND = 302,
@@ -26,9 +25,8 @@ export enum HTTPRedirection {
     USE_PROXY = 305,
     TEMPORARY_REDIRECT = 307,
     PERMANENT_REDIRECT = 308,
-}
 
-export enum HTTPClientError {
+    // Client Errors 4xx
     BAD_REQUEST = 400,
     UNAUTHORIZED = 401,
     PAYMENT_REQUIRED = 402,
@@ -47,7 +45,7 @@ export enum HTTPClientError {
     UNSUPPORTED_MEDIA_TYPE = 415,
     RANGE_NOT_SATISFIABLE = 416,
     EXPECTATION_FAILED = 417,
-    I_AM_A_TEAPOT = 418,
+    I_AM_A_TEAPOT = 418, // Easter egg from RFC 2324
     MISDIRECTED_REQUEST = 421,
     UNPROCESSABLE_ENTITY = 422,
     LOCKED = 423,
@@ -58,9 +56,8 @@ export enum HTTPClientError {
     TOO_MANY_REQUESTS = 429,
     REQUEST_HEADER_FIELDS_TOO_LARGE = 431,
     UNAVAILABLE_FOR_LEGAL_REASONS = 451,
-}
 
-export enum HTTPServerError {
+    // Server Errors 5xx
     INTERNAL_SERVER_ERROR = 500,
     NOT_IMPLEMENTED = 501,
     BAD_GATEWAY = 502,
@@ -73,5 +70,3 @@ export enum HTTPServerError {
     NOT_EXTENDED = 510,
     NETWORK_AUTHENTICATION_REQUIRED = 511,
 }
-
-export type HTTPStatus = HTTPInformational | HTTPSuccess | HTTPRedirection | HTTPClientError | HTTPServerError;
