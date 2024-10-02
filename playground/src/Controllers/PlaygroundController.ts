@@ -8,7 +8,7 @@ import { Controller, Get, SetHeader, Status, Redirect, HTTPStatus } from '@cube/
 export default class PlaygroundController {
 
   /**
-   * Handles GET requests to the /test1 endpoint.
+   * Handles GET requests to the / endpoint.
    * @returns {Promise<{ message: string }>} A promise that resolves to an object containing a greeting message.
    */
   @Get('/')
@@ -17,12 +17,20 @@ export default class PlaygroundController {
     return { message: 'Hello, world!' };
   }
 
+  /**
+   * Handles GET requests to the /redirect endpoint.
+   * @returns {Promise<{ message: string }>} A promise that resolves to an object containing a greeting message.
+   */
   @Get('/redirect')
   @Redirect('/api/playground/redirected')
   public async redirect(): Promise<{ message: string }> {
     return { message: 'Hello, i perform redirection' };
   }
 
+  /**
+   * Handles GET requests to the /redirected endpoint.
+   * @returns {Promise<{ message: string }>} A promise that resolves to an object containing a greeting message.
+   */
   @Get('/redirected')
   public async redirected(): Promise<{ message: string }> {
     return { message: 'Hello, im redirected!' };
