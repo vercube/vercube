@@ -34,17 +34,11 @@ class OptionsDecorator extends BaseDecorator<OptionsDecoratorOptions> {
    * with the RouterRegistry, and sets up the event handler for the OPTIONS request.
    */
   public override created(): void {
-    let baseRotue = this.instance.__metadata.controller.path ?? '';
-
-    if (baseRotue.endsWith('/')) {
-      baseRotue = baseRotue.slice(0, -1);
-    }
-
-    if (this.options.path.startsWith('/')) {
-      this.options.path = this.options.path.slice(1);
-    }
-
-    this.options.path = `${baseRotue}/${this.options.path}`;
+    this.options.path = this.gMetadataResolver.resolveUrl({
+      instance: this.instance,
+      path: this.options.path,
+      propertyName: this.propertyName,
+    });
 
     this.gRouterRegistry.registerRoute({
       path: this.options.path,

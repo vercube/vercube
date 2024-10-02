@@ -3,7 +3,7 @@ import { createApp, toNodeListener, type App as H3App } from 'h3';
 import { listen } from 'listhen';
 import { RouterRegistry } from '../Services/Router/RouterRegistry';
 import { PluginsRegistry } from '../Services/Plugins/PluginsRegistry';
-import type { Plugin } from '../Services/Plugins/Plugin';
+import type { BasePlugin } from '../Services/Plugins/BasePlugin';
 
 /**
  * Represents the main application class.
@@ -58,7 +58,7 @@ export class App {
    * @param {typeof Plugin} plugin - The plugin to register.
    * @param {unknown} options - The options to pass to the plugin.
    */
-  public registerPlugin<T>(plugin: typeof Plugin<T>, options?: T): void {
+  public registerPlugin<T>(plugin: typeof BasePlugin<T>, options?: T): void {
     this.gPluginsRegistry.register(plugin, options);
   }
 

@@ -1,4 +1,4 @@
-import { App, Plugin } from '@cube/core';
+import { App, BasePlugin } from '@cube/core';
 
 export interface CustomPluginOptions {
   foo: string;
@@ -7,7 +7,7 @@ export interface CustomPluginOptions {
 /**
  * CustomPlugin class that extends the Plugin class.
  */
-export class CustomPlugin extends Plugin<CustomPluginOptions> {
+export class CustomPlugin extends BasePlugin<CustomPluginOptions> {
 
   /**
    * The name of the plugin.

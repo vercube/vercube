@@ -1,6 +1,6 @@
 import type { App } from '../../Common/App';
 import { Container, Inject } from '@cube/di';
-import { Plugin } from './Plugin';
+import { BasePlugin } from './BasePlugin';
 
 export class PluginsRegistry {
 
@@ -8,7 +8,7 @@ export class PluginsRegistry {
   private gContainer!: Container;
 
   /** Holds the list of plugins */
-  private fPlugins: Map<string, { instance: Plugin, options?: unknown }> = new Map();
+  private fPlugins: Map<string, { instance: BasePlugin, options?: unknown }> = new Map();
 
   /**
    * Registers a plugin.
@@ -16,7 +16,7 @@ export class PluginsRegistry {
    * @param {Plugin} plugin - The plugin to register.
    * @param {unknown} options - The options to pass to the plugin.
    */
-  public register<T = unknown>(plugin: typeof Plugin<T>, options?: T): void {
+  public register<T = unknown>(plugin: typeof BasePlugin<T>, options?: T): void {
     const instance = this.gContainer.resolve(plugin);
     this.fPlugins.set(instance.name, { instance, options });
   }
@@ -26,7 +26,7 @@ export class PluginsRegistry {
    *
    * @returns {Plugin[]} The list of registered plugins.
    */
-  public get plugins(): Plugin[] {
+  public get plugins(): BasePlugin[] {
     return [...this.fPlugins.values()].map((plugin) => plugin.instance);
   }
 
