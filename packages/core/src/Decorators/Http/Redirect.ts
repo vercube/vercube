@@ -39,7 +39,7 @@ class RedirectDecorator extends BaseDecorator<RedirectDecoratorOptions> {
         // add query parameter to metadata
         this.prototype.__metadata[this.propertyName].actions.push({
             handler: (req: MetadataTypes.Request, res: MetadataTypes.Response) => {
-                res.statusCode = this.options.code ?? 302;
+                res.statusCode = this.options.code;
                 res.setHeader('Location', this.options.location);
             },
         });
@@ -53,6 +53,6 @@ class RedirectDecorator extends BaseDecorator<RedirectDecoratorOptions> {
  * @param {number} code - The header value.
  * @returns {Function} The decorator function.
  */
-export function Redirect(location: string, code: number = 302): Function {
+export function Redirect(location: string, code: HTTPRedirection = 302): Function {
     return createDecorator(RedirectDecorator, { location, code });
 }
