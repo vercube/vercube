@@ -9,6 +9,7 @@
       "resolveJsonModule": true,
       "moduleDetection": "force",
       "isolatedModules": true,
+      "emitDeclarationOnly": false,
       "verbatimModuleSyntax": true,
       "strict": true,
       "forceConsistentCasingInFileNames": true,

@@ -1,6 +1,6 @@
 import { BaseDecorator, createDecorator, Inject } from '@cube/di';
 import type { MetadataTypes } from "../../Types/MetadataTypes";
-import { HTTPStatus } from '../../Types/HttpTypes';
+import type { HTTPStatus } from '../../Types/HttpTypes';
 import { MetadataResolver } from "../../Services/Metadata/MetadataResolver";
 
 /**
@@ -9,7 +9,7 @@ import { MetadataResolver } from "../../Services/Metadata/MetadataResolver";
  * @property {HTTPStatus} code - The status value.
  */
 interface StatusDecoratorOptions {
-    code: HTTPStatus
+    code: HTTPStatus;
 }
 
 /**
