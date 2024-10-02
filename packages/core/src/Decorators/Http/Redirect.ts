@@ -25,6 +25,7 @@ class RedirectDecorator extends BaseDecorator<RedirectDecoratorOptions> {
     private gMetadataResolver!: MetadataResolver;
 
     /**
+     * Decorator responsible for redirecting to a specified URL.
      * Called when the decorator is created.
      * Sets the location header value and status code.
      * @override
