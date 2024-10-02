@@ -46,8 +46,14 @@ class GetDecorator extends BaseDecorator<GetDecoratorOptions> {
     this.gRouterRegistry.registerRoute({
       path: this.options.path,
       method: 'get',
+      // TODO: move handler to separate file and import in every HTTP Method decorator
       handler: defineEventHandler((event) => {
         const metadata = this.gMetadataResolver.resolve(event, this.prototype.__metadata[this.propertyName]);
+
+        for (const action of metadata.actions) {
+          action.handler(event.node.req, event.node.res);
+        }
+
         return this.instance[this.propertyName].call(this.instance, ...metadata.args ?? []);
       }),
     });

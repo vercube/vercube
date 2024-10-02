@@ -5,7 +5,6 @@ import RollupPluginCommonJS from '@rollup/plugin-commonjs';
 import RollupPluginNodeResolve from '@rollup/plugin-node-resolve';
 import { DEFAULT_EXTENSIONS } from '../Utils/Utils';
 import { RollupEsbuildPlugin } from '../Plugins/EsbuildPlugin';
-// import { RollupCJSPlugin } from '../Plugins/CJSPlugin';
 
 export interface RollupBuildOptions {
   input: string;
@@ -44,7 +43,6 @@ export function getRollupOptions(ctx: RollupBuildOptions): RollupOptions {
 
     // Define the plugins
     plugins: [
-      // RollupCJSPlugin(),
       RollupPluginCommonJS({
         extensions: DEFAULT_EXTENSIONS,
         ignoreTryCatch: true,
