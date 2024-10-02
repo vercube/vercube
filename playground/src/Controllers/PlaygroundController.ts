@@ -24,7 +24,7 @@ export default class PlaygroundController {
   @Get('/redirect')
   @Redirect('/api/playground/redirected')
   public async redirect(): Promise<{ message: string }> {
-    return { message: 'Hello, i perform redirection' };
+    return { message: 'Hello, i perform redirection!' };
   }
 
   /**
