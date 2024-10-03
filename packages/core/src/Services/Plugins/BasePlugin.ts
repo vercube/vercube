@@ -4,7 +4,7 @@ import type { App } from '../../Common/App';
 /**
  * Represents a Plugin.
  */
-export class Plugin<T = unknown> {
+export class BasePlugin<T = unknown> {
 
   /**
    * The name of the plugin.

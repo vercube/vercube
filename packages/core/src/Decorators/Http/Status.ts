@@ -1,7 +1,7 @@
 import { BaseDecorator, createDecorator, Inject } from '@cube/di';
-import type { MetadataTypes } from "../../Types/MetadataTypes";
+import type { MetadataTypes } from '../../Types/MetadataTypes';
 import { HTTPStatus } from '../../Types/HttpTypes';
-import { MetadataResolver } from "../../Services/Metadata/MetadataResolver";
+import { MetadataResolver } from '../../Services/Metadata/MetadataResolver';
 
 /**
  * Options for the StatusDecorator.
@@ -9,7 +9,7 @@ import { MetadataResolver } from "../../Services/Metadata/MetadataResolver";
  * @property {HTTPStatus} code - The status value.
  */
 interface StatusDecoratorOptions {
-    code: HTTPStatus;
+  code: HTTPStatus;
 }
 
 /**
@@ -18,26 +18,26 @@ interface StatusDecoratorOptions {
  */
 class StatusDecorator extends BaseDecorator<StatusDecoratorOptions> {
 
-    @Inject(MetadataResolver)
-    private gMetadataResolver!: MetadataResolver;
+  @Inject(MetadataResolver)
+  private gMetadataResolver!: MetadataResolver;
 
-    /**
-     * Called when the decorator is created.
-     * Sets a status on the response
-     * @override
-     */
-    public override created(): void {
-        // if metadata for property does not exist, create it
-        if (!this.prototype.__metadata[this.propertyName]) {
-            this.prototype.__metadata[this.propertyName] = this.gMetadataResolver.create();
-        }
-
-        this.prototype.__metadata[this.propertyName].actions.push({
-            handler: (req: MetadataTypes.Request, res: MetadataTypes.Response) => {
-                res.statusCode = this.options.code;
-            },
-        });
+  /**
+   * Called when the decorator is created.
+   * Sets a status on the response
+   * @override
+   */
+  public override created(): void {
+    // if metadata for property does not exist, create it
+    if (!this.prototype.__metadata[this.propertyName]) {
+      this.prototype.__metadata[this.propertyName] = this.gMetadataResolver.create();
     }
+
+    this.prototype.__metadata[this.propertyName].actions.push({
+      handler: (req: MetadataTypes.Request, res: MetadataTypes.Response) => {
+        res.statusCode = this.options.code;
+      },
+    });
+  }
 
 }
 
@@ -47,5 +47,5 @@ class StatusDecorator extends BaseDecorator<StatusDecoratorOptions> {
  * @returns {Function} The decorator function.
  */
 export function Status(code: HTTPStatus): Function {
-    return createDecorator(StatusDecorator, { code });
+  return createDecorator(StatusDecorator, { code });
 }

@@ -34,7 +34,11 @@ class TraceDecorator extends BaseDecorator<TraceDecoratorOptions> {
    * with the RouterRegistry, and sets up the event handler for the TRACE request.
    */
   public override created(): void {
-    this.options.path = this.gMetadataResolver.resolveUrl(this.instance, this.options.path);
+    this.options.path = this.gMetadataResolver.resolveUrl({
+      instance: this.instance,
+      path: this.options.path,
+      propertyName: this.propertyName,
+    });
 
     this.gRouterRegistry.registerRoute({
       path: this.options.path,

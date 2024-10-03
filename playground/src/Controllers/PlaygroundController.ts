@@ -1,4 +1,6 @@
-import { Controller, Get, SetHeader, Status, Redirect, HTTPStatus } from '@cube/core';
+import { Controller, Get, Middleware, SetHeader, Status, HTTPStatus } from '@cube/core';
+import { FirstMiddleware } from '../Middlewares/FirstMiddleware';
+import { SecondMiddleware } from '../Middlewares/SecondMiddleware';
 
 /**
  * Playground controller.
@@ -12,6 +14,8 @@ export default class PlaygroundController {
    * @returns {Promise<{ message: string }>} A promise that resolves to an object containing a greeting message.
    */
   @Get('/')
+  @Middleware(FirstMiddleware)
+  @Middleware(SecondMiddleware)
   @SetHeader('X-Test-Response-Header', '1')
   public async index(): Promise<{ message: string }> {
     return { message: 'Hello, world!' };

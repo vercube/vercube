@@ -23,6 +23,7 @@ export * from './Decorators/Http/Trace';
 export * from './Decorators/Http/SetHeader';
 export * from './Decorators/Http/Status';
 export * from './Decorators/Http/Redirect';
+export * from './Decorators/Http/Middleware';
 
 // Hooks
 export * from './Decorators/Hooks/Init';
@@ -30,8 +31,22 @@ export * from './Decorators/Hooks/Listen';
 export * from './Services/Hooks/HooksService';
 
 // Plugins
-export * from './Services/Plugins/Plugin';
+export * from './Services/Plugins/BasePlugin';
+
+// Middlewares
+export * from './Services/Middleware/BaseMiddleware';
+
+// Errors
+export * from './Errors/HttpError';
+export * from './Errors/Http/BadRequestError';
+export * from './Errors/Http/ForbiddenError';
+export * from './Errors/Http/InternalServerError';
+export * from './Errors/Http/MethodNotAllowedError';
+export * from './Errors/Http/NotAcceptableError';
+export * from './Errors/Http/NotFoundError';
+export * from './Errors/Http/UnauthorizedError';
 
 // Types
+export * from './Types/CommonTypes';
 export * from './Types/HooksTypes';
 export * from './Types/HttpTypes';
