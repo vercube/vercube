@@ -50,7 +50,7 @@ class RedirectDecorator extends BaseDecorator<RedirectDecoratorOptions> {
 /**
  * Creates a Redirect decorator.
  * @param {string} location - The location header value.
- * @param {number} code - The redirect status code.
+ * @param {number} [code=301] - The status code.
  * @returns {Function} The decorator function.
  */
 export function Redirect(location: string, code: HTTPStatus = 301): Function {

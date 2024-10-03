@@ -1,0 +1,38 @@
+{
+  "env": {
+    "browser": true,
+    "es2022": true
+  },
+  "plugins": ["@typescript-eslint"],
+  "extends": "oxc:recommended",
+  "rules": {
+    "no-unsafe-optional-chaining": 0,
+    "default-param-last": 0,
+    "no-plusplus": 0,
+    "no-template-curly-in-string": 2,
+    "no-empty": [2, { "allowEmptyCatch": false }],
+    "no-return-in-finally": 2,
+    "no-console": 1,
+    "no-useless-spread": 0,
+    "no-prototype-builtins": 0,
+    "no-new-wrappers": 2,
+    "constructor-super": 2,
+    "no-var ": 2,
+    "no-unexpected-multiline": 1,
+    "no-useless-concat": 2,
+    "no-duplicates": 2,
+    "no-duplicate-case": 2,
+    "no-redeclare": 2,
+    "no-sparse-arrays": 2,
+    "no-fallthrough": 2,
+    "no-unsafe-finally": 2,
+    "no-unused-vars": 0,
+    "no-undef": 0,
+    "no-restricted-globals": [2, "event"],
+    "prefer-object-spread": 2,
+    "radix": 2,
+    "default-case": 2,
+    "use-isnan": 2,
+    "no-empty-function": 0
+  }
+}
