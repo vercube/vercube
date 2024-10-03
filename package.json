@@ -23,7 +23,7 @@
     "@types/node": "20",
     "globals": "15.9.0",
     "husky": "9.1.6",
-    "oxlint": "^0.9.9",
+    "oxlint": "0.9.9",
     "tslib": "2.7.0",
     "turbo": "2.1.2",
     "typescript": "5.6.2",
