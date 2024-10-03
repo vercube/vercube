@@ -3,6 +3,7 @@
     "browser": true,
     "es2021": true
   },
+  "plugins": ["@typescript-eslint"],
   "rules": {
     "one-var": 0,
     "prefer-regex-literals": 0,
