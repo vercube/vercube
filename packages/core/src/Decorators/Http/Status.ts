@@ -9,7 +9,7 @@ import { MetadataResolver } from '../../Services/Metadata/MetadataResolver';
  * @property {HTTPStatus} code - The status value.
  */
 interface StatusDecoratorOptions {
-  code: HTTPStatus
+  code: HTTPStatus;
 }
 
 /**

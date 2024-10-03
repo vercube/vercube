@@ -22,6 +22,7 @@ export * from './Decorators/Http/Response';
 export * from './Decorators/Http/Trace';
 export * from './Decorators/Http/SetHeader';
 export * from './Decorators/Http/Status';
+export * from './Decorators/Http/Redirect';
 export * from './Decorators/Http/Middleware';
 
 // Hooks
@@ -48,4 +49,4 @@ export * from './Errors/Http/UnauthorizedError';
 // Types
 export * from './Types/CommonTypes';
 export * from './Types/HooksTypes';
-
+export * from './Types/HttpTypes';
