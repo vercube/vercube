@@ -13,8 +13,8 @@
     "build": "turbo build --filter=!playground",
     "dev": "turbo dev --filter=!playground",
     "test": "turbo test --filter=!playground",
-    "prepare": "husky",
-    "lint": "oxlint -c oxlintrc.json"
+    "lint": "oxlint -c oxlintrc.json",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@commitlint/cli": "19.5.0",
