@@ -13,7 +13,9 @@ export class BasePlugin<T = unknown> {
 
   /**
    * Uses the plugin with the given app.
+   *
    * @param {App} app - The application instance.
+   * @param {unknown} [options] - The plugin custom options.
    * @returns {void | Promise<void>} - A void or a promise that resolves to void.
    */
   public use(app: App, options?: T): void | Promise<void> {}

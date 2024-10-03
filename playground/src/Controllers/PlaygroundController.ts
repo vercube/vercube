@@ -1,4 +1,4 @@
-import { Controller, Get, Middleware, SetHeader, Status, HTTPStatus } from '@cube/core';
+import { Controller, Get, Middleware, SetHeader, Status, HTTPStatus, Redirect } from '@cube/core';
 import { FirstMiddleware } from '../Middlewares/FirstMiddleware';
 import { SecondMiddleware } from '../Middlewares/SecondMiddleware';
 

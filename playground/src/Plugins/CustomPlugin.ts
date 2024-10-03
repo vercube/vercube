@@ -17,12 +17,14 @@ export class CustomPlugin extends BasePlugin<CustomPluginOptions> {
 
   /**
    * Method to use the plugin with the given app.
+   *
    * @param {App} app - The application instance.
+   * @param {CustomPluginOptions} options - The plugin custom options.
    * @returns {void | Promise<void>}
    * @override
    */
   public override use(app: App, options: CustomPluginOptions): void | Promise<void> {
-    console.log('CustomPlugin is being used', options);
+    // console.log('CustomPlugin is being used', options);
   }
 
 }

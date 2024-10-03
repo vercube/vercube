@@ -1,4 +1,4 @@
-import { createApp } from '@cube/core';
+import { createApp, RedisPlugin } from '@cube/core';
 import { useContainer } from './Boot/Container';
 import { CustomPlugin } from './Plugins/CustomPlugin';
 
@@ -8,6 +8,7 @@ async function main() {
   app.container.expand(useContainer);
 
   app.registerPlugin(CustomPlugin, { foo: 'bar' });
+  app.registerPlugin(RedisPlugin, { foo: 'redis' });
 
   await app.listen({ port: 3001 });
 }
