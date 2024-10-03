@@ -30,7 +30,6 @@ class RedirectDecorator extends BaseDecorator<RedirectDecoratorOptions> {
      * Sets the location header value and status code.
      * @override
      */
-
     public override created(): void {
         // if metadata for property does not exist, create it
         if (!this.prototype.__metadata[this.propertyName]) {
