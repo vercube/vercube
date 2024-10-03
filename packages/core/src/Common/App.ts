@@ -49,7 +49,7 @@ export class App {
    * @returns {Promise<void>} A promise that resolves when the application is initialized.
    */
   public async init(): Promise<void> {
-    this.fH3App = createApp();
+    this.fH3App = createApp({ debug: true });
   }
 
   /**

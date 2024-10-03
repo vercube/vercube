@@ -2,6 +2,7 @@
 import { defineEventHandler, type EventHandler } from 'h3';
 import { Inject } from '@cube/di';
 import { MetadataResolver } from '../Metadata/MetadataResolver';
+import { HttpError } from '../../Errors/HttpError';
 
 /**
  * Options for the RequestHandler.
@@ -58,7 +59,20 @@ export class RequestHandler {
 
       // call before middlewares
       for (const middleware of beforeMiddlewares) {
-        await middleware.middleware.use(event);
+        // call the middleware
+        try {
+          await middleware.middleware.use(event);
+        } catch (err) {
+          // check if the error is known error type and return it.
+          if (err instanceof HttpError) {
+            event.node.res.statusCode = err.status;
+            return { ...err }
+          }
+
+          // if the middleware throws an error we stop the request and return the error
+          event.node.res.statusCode = 500;
+          return { status: 500, message: (err as Error)?.message ?? 'Internal server error' };
+        }
       }
 
       let response = instance[propertyName].call(instance, []);
