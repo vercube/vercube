@@ -1,0 +1,33 @@
+{
+  "name": "@cube/redis",
+  "version": "0.0.0",
+  "description": "Redis package for Cube framework",
+  "packageManager": "pnpm@9.10.0",
+  "repository": "@cube/redis",
+  "license": "MIT",
+  "sideEffects": false,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "unbuild",
+    "dev": "unbuild --watch",
+    "prepack": "pnpm build"
+  },
+  "dependencies": {
+    "ioredis": "5.4.1"
+  },
+  "devDependencies": {
+  }
+}

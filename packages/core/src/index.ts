@@ -32,7 +32,6 @@ export * from './Services/Hooks/HooksService';
 
 // Plugins
 export * from './Services/Plugins/BasePlugin';
-export * from './Services/Plugins/RedisPlugin';
 
 // Middlewares
 export * from './Services/Middleware/BaseMiddleware';

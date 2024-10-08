@@ -1,5 +1,5 @@
-import type { App } from '../../Common/App';
-import { BasePlugin } from './BasePlugin';
+import { BasePlugin } from '../../../core/src';
+import type { App } from '../../../core/src';
 import { Redis } from 'ioredis'
 
 export interface RedisPluginOptions {

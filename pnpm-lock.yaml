@@ -120,6 +120,12 @@ importers:
 
   packages/di: {}
 
+  packages/plugins/redis:
+    dependencies:
+      ioredis:
+        specifier: 5.4.1
+        version: 5.4.1
+
   playground:
     dependencies:
       lodash:
