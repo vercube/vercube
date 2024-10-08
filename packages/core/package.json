@@ -29,8 +29,7 @@
       "@cube/di": "workspace:*",
       "h3": "1.12.0",
       "listhen": "1.8.0",
-      "lodash": "4.17.21",
-      "ioredis": "^5.4.1"
+      "lodash": "4.17.21"
     },
     "devDependencies": {
       "@types/lodash": "4.17.9"

@@ -1,6 +1,6 @@
 import { BasePlugin } from '../../../core/src';
 import type { App } from '../../../core/src';
-import { Redis } from 'ioredis'
+import { Redis } from 'ioredis';
 
 export interface RedisPluginOptions {
   port: number, // Redis port
@@ -30,7 +30,7 @@ export class RedisPlugin extends BasePlugin<RedisPluginOptions> {
    * @override
    */
   public override use(app: App, options: RedisPluginOptions): void | Promise<void> {
-    // console.log('CustomPlugin is being used', options);
+    console.log('CustomPlugin is being used', options);
     const redis = new Redis(options);
   }
 

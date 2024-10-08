@@ -62,9 +62,6 @@ importers:
       h3:
         specifier: 1.12.0
         version: 1.12.0
-      ioredis:
-        specifier: ^5.4.1
-        version: 5.4.1
       listhen:
         specifier: 1.8.0
         version: 1.8.0
@@ -144,6 +141,9 @@ importers:
       '@cube/di':
         specifier: workspace:*
         version: link:../packages/di
+      '@cube/redis':
+        specifier: workspace:*
+        version: link:../packages/plugins/redis
       '@types/node':
         specifier: '20'
         version: 20.16.10
