@@ -21,8 +21,18 @@ export class RedisPlugin extends BasePlugin<RedisPluginOptions> {
    */
   public override name: string = 'Redis';
 
-  public redis: Redis | null = null;
+  /**
+   * @private
+   * @type {Redis | null}
+   * @description Redis connection object. It is initially set to `null` and created on the first connection request.
+   */
+  private redis: Redis | null = null;
 
+  /**
+   * @private
+   * @type {RedisPluginOptions | null}
+   * @description Redis options object.
+   */
   private options: RedisPluginOptions | null = null;
 
   /**
@@ -35,7 +45,7 @@ export class RedisPlugin extends BasePlugin<RedisPluginOptions> {
    */
   public override use(app: App, options: RedisPluginOptions): void | Promise<void> {
     console.log('CustomPlugin is being used', options);
-    this.options = options
+    this.options = options;
   }
 
   public getConnection(): Redis {
@@ -43,8 +53,8 @@ export class RedisPlugin extends BasePlugin<RedisPluginOptions> {
         this.redis = new Redis(this.options);
         console.log('Connecting to Redis at:', this.options.host);
     }
-    
+
     return this.redis;
-}
+  }
 
 }
