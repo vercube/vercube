@@ -19,7 +19,11 @@ export class RedisPlugin extends BasePlugin<RedisPluginOptions> {
    * The name of the plugin.
    * @override
    */
-  public override name: string = 'RedisPlugin';
+  public override name: string = 'Redis';
+
+  public redis: any = null;
+
+  private options: RedisPluginOptions | null = null;
 
   /**
    * Method to use the plugin with the given app.
@@ -31,7 +35,15 @@ export class RedisPlugin extends BasePlugin<RedisPluginOptions> {
    */
   public override use(app: App, options: RedisPluginOptions): void | Promise<void> {
     console.log('CustomPlugin is being used', options);
-    const redis = new Redis(options);
+    this.options = options
   }
+
+  public getConnection(): Redis {
+    if (!this.redis && this.options) {
+        this.redis = new Redis(this.options);
+        console.log('Connecting to Redis at:', this.options.host);
+    }
+    return this.redis;
+}
 
 }
