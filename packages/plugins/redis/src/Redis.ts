@@ -43,7 +43,8 @@ export class RedisPlugin extends BasePlugin<RedisPluginOptions> {
         this.redis = new Redis(this.options);
         console.log('Connecting to Redis at:', this.options.host);
     }
-    return this.redis!;
+    
+    return this.redis;
 }
 
 }
