@@ -1,6 +1,6 @@
 import { BasePlugin } from '../../../core/src';
 import type { App } from '../../../core/src';
-import { Redis } from 'ioredis';
+import Redis from 'ioredis';
 
 export interface RedisPluginOptions {
   port: number, // Redis port
@@ -23,14 +23,14 @@ export class RedisPlugin extends BasePlugin<RedisPluginOptions> {
 
   /**
    * @private
-   * @type {Redis | null}
+   * @type {Redis}
    * @description Redis connection object. It is initially set to `null` and created on the first connection request.
    */
   private redis!: Redis;
 
   /**
    * @private
-   * @type {RedisPluginOptions | null}
+   * @type {RedisPluginOptions}
    * @description Redis options object.
    */
   private options!: RedisPluginOptions;
@@ -48,18 +48,54 @@ export class RedisPlugin extends BasePlugin<RedisPluginOptions> {
     this.options = options;
   }
 
+  /**
+   * Returns the Redis connection instance. If the connection does not exist, it attempts to create one.
+   * 
+   * @returns {Redis} - The Redis connection instance.
+   * @throws {Error} - Logs an error if the connection cannot be established.
+   */
   public getConnection(): Redis {
     if (!this.redis) {
       try {
-
         this.redis = new Redis(this.options);
         console.log('Connecting to Redis at:', this.options.host);
       } catch (e) {
-        console.log('Cannot be connected to redis', e);
+        throw new Error(`Cannot be connected to redis ${e}`);
       }
     }
 
     return this.redis;
+  }
+
+  /**
+   * Sets a value in the Redis store, optionally with a time-to-live (TTL).
+   * 
+   * @param {string} key - The key to set in Redis.
+   * @param {any} value - The value to be stored, which will be serialized to JSON.
+   * @param {number} [ttl] - Optional time-to-live in seconds. If provided, the key will expire after this time.
+   * @returns {Promise<void>} - A promise that resolves once the value has been set in Redis.
+   * @async
+   */
+  public async set(key: string, value: any, ttl?: number): Promise<void> {
+    const val = JSON.stringify(value);
+
+    if (ttl) {
+      await this.redis.setex(key, ttl, val);
+      return;
+    }
+
+    await this.redis.set(key, val);
+  }
+
+  /**
+   * Deletes a key from the Redis store.
+   * 
+   * @param {string} key - The key to be deleted from Redis.
+   * @returns {Promise<void>} - A promise that resolves when the key has been deleted.
+   * @async
+   */
+  public async del(key: string): Promise<void> {
+    await this.redis.del(key);
   }
 
 }
