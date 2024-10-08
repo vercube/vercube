@@ -49,9 +49,14 @@ export class RedisPlugin extends BasePlugin<RedisPluginOptions> {
   }
 
   public getConnection(): Redis {
-    if (!this.redis && this.options) {
+    if (!this.redis) {
+      try {
+
         this.redis = new Redis(this.options);
         console.log('Connecting to Redis at:', this.options.host);
+      } catch (e) {
+        console.log('Cannot be connected to redis', e);
+      }
     }
 
     return this.redis;
