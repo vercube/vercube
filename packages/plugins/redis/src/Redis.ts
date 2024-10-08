@@ -26,14 +26,14 @@ export class RedisPlugin extends BasePlugin<RedisPluginOptions> {
    * @type {Redis | null}
    * @description Redis connection object. It is initially set to `null` and created on the first connection request.
    */
-  private redis: Redis | null = null;
+  private redis!: Redis;
 
   /**
    * @private
    * @type {RedisPluginOptions | null}
    * @description Redis options object.
    */
-  private options: RedisPluginOptions | null = null;
+  private options!: RedisPluginOptions;
 
   /**
    * Method to use the plugin with the given app.
@@ -44,7 +44,7 @@ export class RedisPlugin extends BasePlugin<RedisPluginOptions> {
    * @override
    */
   public override use(app: App, options: RedisPluginOptions): void | Promise<void> {
-    console.log('CustomPlugin is being used', options);
+    console.log('RefisPlugin is being used', options);
     this.options = options;
   }
 
