@@ -1,6 +1,7 @@
 import { BasePlugin } from '../../../core/src';
 import type { App } from '../../../core/src';
 import Redis from 'ioredis';
+import type StorageSerice from '../../../core/src/Services/StorageService';
 
 export interface RedisPluginOptions {
   port: number, // Redis port
@@ -13,7 +14,7 @@ export interface RedisPluginOptions {
 /**
  * CustomPlugin class that extends the Plugin class.
  */
-export class RedisPlugin extends BasePlugin<RedisPluginOptions> {
+export class RedisPlugin extends BasePlugin<RedisPluginOptions> implements StorageSerice {
 
   /**
    * The name of the plugin.
@@ -94,8 +95,28 @@ export class RedisPlugin extends BasePlugin<RedisPluginOptions> {
    * @returns {Promise<void>} - A promise that resolves when the key has been deleted.
    * @async
    */
-  public async del(key: string): Promise<void> {
+  public async delete(key: string): Promise<void> {
     await this.redis.del(key);
+  }
+
+  /**
+   * Retrieves and parses a value from Redis by the given key.
+   * 
+   * @template T The expected type of the returned value. Defaults to `any`.
+   * @param {string} key The Redis key to retrieve the value for.
+   * @returns {Promise<T | undefined>} A promise that resolves to the parsed value of type `T` if the key exists, 
+   * or `undefined` if the key is not found or the value is null/undefined.
+   * 
+   * @throws {SyntaxError} If the stored value is not valid JSON.
+   */
+  public async get<T = any>(key: string): Promise<T | undefined> {
+    const val = await this.redis.get(key);
+
+    if (val === undefined || val === null) {
+      return undefined;
+    }
+
+    return JSON.parse(val) as T;
   }
 
 }
