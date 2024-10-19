@@ -1,5 +1,4 @@
-import { BasePlugin } from '../../../core/src';
-import type { App } from '../../../core/src';
+import { App, BasePlugin } from '@cube/core';
 import Redis from 'ioredis';
 import type StorageSerice from '../../../core/src/Services/StorageService';
 
@@ -12,7 +11,7 @@ export interface RedisPluginOptions {
 }
 
 /**
- * CustomPlugin class that extends the Plugin class.
+ * RedisPlugin class that extends the Plugin class.
  */
 export class RedisPlugin extends BasePlugin<RedisPluginOptions> implements StorageSerice {
 
