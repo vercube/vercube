@@ -11,7 +11,7 @@ export default abstract class StorageSerice {
   /**
    * Get data from Storage.
    * @param key The key from which the data will be read.
-   * @returns {Promise<T | undefined>} A promise that resolves to the parsed value of type `T` if the key exists, 
+   * @returns {Promise<T | undefined>} A promise that resolves to the parsed value of type `T` if the key exists
    * or `undefined` if the key is not found or the value is null/undefined.
    */
   public abstract get<T = any>(key: string): Promise<T | undefined>;
