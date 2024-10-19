@@ -1,4 +1,4 @@
-import { Controller, Get, Middleware, SetHeader, Status, HTTPStatus, Redirect } from '@cube/core';
+import { Controller, Get, Middleware, SetHeader, Status, HTTPStatus, Redirect, Post } from '@cube/core';
 import { FirstMiddleware } from '../Middlewares/FirstMiddleware';
 import { SecondMiddleware } from '../Middlewares/SecondMiddleware';
 
@@ -39,6 +39,12 @@ export default class PlaygroundController {
   @Status(HTTPStatus.OK)
   public async redirected(): Promise<{ message: string }> {
     return { message: 'Hello, im redirected!' };
+  }
+
+  @Post('/storage')
+  @Status(HTTPStatus.OK)
+  public async storageSet(body: any): Promise<{ message: string, body: any }> {
+    return { message: 'Hello, im storage', body };
   }
 
 }

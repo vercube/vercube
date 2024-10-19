@@ -1,4 +1,5 @@
 export default abstract class StorageSerice {
+  
   /**
    * Saves data in Storage.
    * @param key The key under which the data will be saved.
@@ -10,15 +11,22 @@ export default abstract class StorageSerice {
   /**
    * Get data from Storage.
    * @param key The key from which the data will be read.
-   * @returns The data read from Storage (in string format).
+   * @returns {Promise<T | undefined>} A promise that resolves to the parsed value of type `T` if the key exists, 
+   * or `undefined` if the key is not found or the value is null/undefined.
    */
-  public abstract get(key: string): Promise<void>;
+  public abstract get<T = any>(key: string): Promise<T | undefined>;
 
-  
   /**
    * Delete data from Storage.
    * @param key The key from which the data will be read.
    * @returns The data read from Storage (in string format).
    */
   public abstract delete(key: string): Promise<void>;
+
+  /**
+   * Resets the Storage by flushing all keys.
+   * @returns {Promise<void>} A promise that resolves when the Storage has been flushed.
+   * This method clears all keys in the current Storage instance, effectively resetting the entire data store.
+   */
+  public abstract reset(): Promise<void>;
 }

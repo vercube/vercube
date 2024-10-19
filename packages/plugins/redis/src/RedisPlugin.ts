@@ -4,11 +4,11 @@ import Redis from 'ioredis';
 import type StorageSerice from '../../../core/src/Services/StorageService';
 
 export interface RedisPluginOptions {
-  port: number, // Redis port
-  host: string, // Redis host
-  username: string, // needs Redis >= 6
-  password: string,
-  db: number, // Defaults to 0
+  port: number; // Redis port
+  host: string; // Redis host
+  username: string; // needs Redis >= 6
+  password: string;
+  db: number; // Defaults to 0
 }
 
 /**
@@ -20,7 +20,7 @@ export class RedisPlugin extends BasePlugin<RedisPluginOptions> implements Stora
    * The name of the plugin.
    * @override
    */
-  public override name: string = 'Redis';
+  public override name: string = 'RedisPlugin';
 
   /**
    * @private
@@ -45,7 +45,6 @@ export class RedisPlugin extends BasePlugin<RedisPluginOptions> implements Stora
    * @override
    */
   public override use(app: App, options: RedisPluginOptions): void | Promise<void> {
-    console.log('RefisPlugin is being used', options);
     this.options = options;
   }
 
@@ -117,6 +116,15 @@ export class RedisPlugin extends BasePlugin<RedisPluginOptions> implements Stora
     }
 
     return JSON.parse(val) as T;
+  }
+
+  /**
+   * Resets the Redis database by flushing all keys.
+   * @returns {Promise<void>} A promise that resolves when the Redis database has been flushed.
+   * This method clears all keys in the current Redis instance, effectively resetting the entire data store.
+   */
+  public async reset(): Promise<void> {
+    await this.redis.flushall();
   }
 
 }

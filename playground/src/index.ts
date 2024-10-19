@@ -1,7 +1,7 @@
 import { createApp } from '@cube/core';
 import { useContainer } from './Boot/Container';
 import { CustomPlugin } from './Plugins/CustomPlugin';
-import { RedisPlugin } from '@cube/redis'
+import { RedisPlugin } from '@cube/redis';
 
 async function main() {
   const app = await createApp();
