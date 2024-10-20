@@ -4,27 +4,27 @@ export default abstract class StorageSerice {
    * Saves data in Storage.
    * 
    * @abstract
-   * @param key The key under which the data will be saved.
-   * @param data The data to be saved (in string format).
+   * @param {string} key The key under which the data will be saved.
+   * @param {T} data The data to be saved (in string format).
    * @param {number} [ttl] - Optional time-to-live in seconds. If provided, the key will expire after this time.
    */
-  public abstract set(key: string, data: string, ttl?: number): Promise<void>;
+  public abstract set<T = unknown>(key: string, data: T, ttl?: number): Promise<void>;
 
   /**
    * Get data from Storage.
    * 
    * @abstract
-   * @param key The key from which the data will be read.
+   * @param {string} key The key from which the data will be read.
    * @returns {Promise<T | undefined>} A promise that resolves to the parsed value of type `T` if the key exists
    * or `undefined` if the key is not found or the value is null/undefined.
    */
-  public abstract get<T = any>(key: string): Promise<T | undefined>;
+  public abstract get<T = unknown>(key: string): Promise<T | undefined>;
 
   /**
    * Delete data from Storage.
    * 
    * @abstract
-   * @param key The key from which the data will be read.
+   * @param {string} key The key from which the data will be read.
    * @returns The data read from Storage (in string format).
    */
   public abstract delete(key: string): Promise<void>;
