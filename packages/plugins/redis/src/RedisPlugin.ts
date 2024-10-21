@@ -26,14 +26,14 @@ export class RedisPlugin extends BasePlugin<RedisPluginOptions> implements Stora
    * @type {Redis}
    * @description Redis connection object. It is initially set to `null` and created on the first connection request.
    */
-  private redis!: Redis;
+  private fRedisClient!: Redis;
 
   /**
    * @private
    * @type {RedisPluginOptions}
    * @description Redis options object.
    */
-  private options!: RedisPluginOptions;
+  private fOptions!: RedisPluginOptions;
 
   /**
    * Method to use the plugin with the given app.
@@ -44,7 +44,7 @@ export class RedisPlugin extends BasePlugin<RedisPluginOptions> implements Stora
    * @override
    */
   public override use(app: App, options: RedisPluginOptions): void | Promise<void> {
-    this.options = options;
+    this.fOptions = options;
   }
 
   /**
@@ -54,52 +54,53 @@ export class RedisPlugin extends BasePlugin<RedisPluginOptions> implements Stora
    * @throws {Error} - Logs an error if the connection cannot be established.
    */
   public getConnection(): Redis {
-    if (!this.redis) {
+    if (!this.fRedisClient) {
       try {
-        this.redis = new Redis(this.options);
-        console.log('Connecting to Redis at:', this.options.host);
+        this.fRedisClient = new Redis(this.fOptions);
+        console.log('Connecting to Redis at:', this.fOptions.host);
       } catch (e) {
         throw new Error(`Cannot be connected to redis ${e}`);
       }
     }
 
-    return this.redis;
+    return this.fRedisClient;
   }
 
   /**
    * Sets a value in the Redis store, optionally with a time-to-live (TTL).
    * 
+   * @async
    * @param {string} key - The key to set in Redis.
    * @param {any} value - The value to be stored, which will be serialized to JSON.
    * @param {number} [ttl] - Optional time-to-live in seconds. If provided, the key will expire after this time.
    * @returns {Promise<void>} - A promise that resolves once the value has been set in Redis.
-   * @async
    */
   public async set(key: string, value: any, ttl?: number): Promise<void> {
     const val = JSON.stringify(value);
 
     if (ttl) {
-      await this.redis.setex(key, ttl, val);
+      await this.fRedisClient.setex(key, ttl, val);
       return;
     }
 
-    await this.redis.set(key, val);
+    await this.fRedisClient.set(key, val);
   }
 
   /**
    * Deletes a key from the Redis store.
    * 
+   * @async
    * @param {string} key - The key to be deleted from Redis.
    * @returns {Promise<void>} - A promise that resolves when the key has been deleted.
-   * @async
    */
   public async delete(key: string): Promise<void> {
-    await this.redis.del(key);
+    await this.fRedisClient.del(key);
   }
 
   /**
    * Retrieves and parses a value from Redis by the given key.
    * 
+   * @async
    * @template T The expected type of the returned value. Defaults to `any`.
    * @param {string} key The Redis key to retrieve the value for.
    * @returns {Promise<T | undefined>} A promise that resolves to the parsed value of type `T` if the key exists, 
@@ -108,7 +109,7 @@ export class RedisPlugin extends BasePlugin<RedisPluginOptions> implements Stora
    * @throws {SyntaxError} If the stored value is not valid JSON.
    */
   public async get<T = any>(key: string): Promise<T | undefined> {
-    const val = await this.redis.get(key);
+    const val = await this.fRedisClient.get(key);
 
     if (val === undefined || val === null) {
       return undefined;
@@ -119,11 +120,26 @@ export class RedisPlugin extends BasePlugin<RedisPluginOptions> implements Stora
 
   /**
    * Resets the Redis database by flushing all keys.
-   * @returns {Promise<void>} A promise that resolves when the Redis database has been flushed.
    * This method clears all keys in the current Redis instance, effectively resetting the entire data store.
+   * 
+   * @async
+   * @returns {Promise<void>} A promise that resolves when the Redis database has been flushed.
    */
   public async reset(): Promise<void> {
-    await this.redis.flushall();
+    await this.fRedisClient.flushall();
+  }
+
+  /**
+   * Checks if the storage contains a specific item identified by the given key in the Redis store.
+   * 
+   * @async
+   * @param {string} key - The key of the item to check in the Redis store.
+   * @returns {Promise<boolean>} A promise that resolves to `true` if the item exists, otherwise `false`.
+   */
+  public async has(key: string): Promise<boolean> {
+    const value = await this.get(key);
+
+    return Boolean(value);
   }
 
 }
