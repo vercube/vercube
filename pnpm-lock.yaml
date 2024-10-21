@@ -144,7 +144,7 @@ importers:
       '@cube/di':
         specifier: workspace:*
         version: link:../packages/di
-      '@cube/redis':
+      '@cube/plugin-redis':
         specifier: workspace:*
         version: link:../packages/plugins/redis
       '@types/node':

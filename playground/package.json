@@ -12,7 +12,7 @@
     "@cube/cli": "workspace:*",
     "@cube/core": "workspace:*",
     "@cube/di": "workspace:*",
-    "@cube/redis": "workspace:*",
+    "@cube/plugin-redis": "workspace:*",
     "@types/node": "20",
     "tsx": "4.19.1"
   },
