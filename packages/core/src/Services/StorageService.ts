@@ -25,7 +25,7 @@ export default abstract class StorageSerice {
    * 
    * @abstract
    * @param {string} key The key from which the data will be read.
-   * @returns The data read from Storage (in string format).
+   * @returns {Promise<void>} The data read from Storage (in string format).
    */
   public abstract delete(key: string): Promise<void>;
 
