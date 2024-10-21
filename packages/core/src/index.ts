@@ -36,6 +36,9 @@ export * from './Services/Plugins/BasePlugin';
 // Middlewares
 export * from './Services/Middleware/BaseMiddleware';
 
+// Services
+export * from './Services/StorageService';
+
 // Errors
 export * from './Errors/HttpError';
 export * from './Errors/Http/BadRequestError';

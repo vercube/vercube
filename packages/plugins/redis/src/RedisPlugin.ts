@@ -1,19 +1,18 @@
-import { App, BasePlugin } from '@cube/core';
+import { App, BasePlugin, StorageService } from '@cube/core';
 import Redis from 'ioredis';
-import type StorageSerice from '../../../core/src/Services/StorageService';
 
 export interface RedisPluginOptions {
   port: number; // Redis port
   host: string; // Redis host
-  username: string; // needs Redis >= 6
-  password: string;
-  db: number; // Defaults to 0
+  username?: string; // needs Redis >= 6
+  password?: string;
+  db?: number; // Defaults to 0
 }
 
 /**
  * RedisPlugin class that extends the Plugin class.
  */
-export class RedisPlugin extends BasePlugin<RedisPluginOptions> implements StorageSerice {
+export class RedisPlugin extends BasePlugin<RedisPluginOptions> implements StorageService {
 
   /**
    * The name of the plugin.

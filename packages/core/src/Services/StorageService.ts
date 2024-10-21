@@ -1,4 +1,4 @@
-export default abstract class StorageSerice {
+export abstract class StorageService {
   
   /**
    * Saves data in Storage.

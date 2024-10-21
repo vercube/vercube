@@ -9,7 +9,7 @@ async function main() {
   app.container.expand(useContainer);
 
   app.registerPlugin(CustomPlugin, { foo: 'bar' });
-  app.registerPlugin(RedisPlugin, { foo: 'redis' });
+  app.registerPlugin(RedisPlugin, { host: 'redis', port: 0 });
 
   await app.listen({ port: 3001 });
 }
