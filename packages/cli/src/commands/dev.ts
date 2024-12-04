@@ -1,6 +1,6 @@
 
 import { defineCommand } from 'citty';
-import { createDevServerApp, createDevServer, createRollupWatcher } from '@cube/devkit';
+import { createDevServerApp, createDevServer, createRollupWatcher } from '@vercube/devkit';
 
 export default defineCommand({
   meta: {

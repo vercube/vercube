@@ -1,4 +1,4 @@
-import { initializeContainer } from '@cube/di';
+import { initializeContainer } from '@vercube/di';
 import { App } from '../Common/App';
 import { createContainer } from '../Common/Container';
 /**

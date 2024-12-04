@@ -1,5 +1,5 @@
 {
-  "name": "cube-monorepo",
+  "name": "vercube-monorepo",
   "version": "0.0.0",
   "description": "Next generation NodeJS framework on top of H3",
   "packageManager": "pnpm@9.10.0",

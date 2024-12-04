@@ -1,5 +1,5 @@
 import { createRouter, type Router } from 'h3';
-import { Inject } from '@cube/di';
+import { Inject } from '@vercube/di';
 import type { RouterTypes } from '../../Types/RouterTypes';
 import { RouterBeforeInitHook } from '../../Hooks/Router/RouterBeforeInitHook';
 import { RouterAfterInitHook } from '../../Hooks/Router/RouterAfterInitHook';

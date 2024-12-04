@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
-import { BaseDecorator, createDecorator } from '@cube/di';
+import { BaseDecorator, createDecorator } from '@vercube/di';
 
 /**
  * This decorator fires the decorated function as soon as decorators are injected. You

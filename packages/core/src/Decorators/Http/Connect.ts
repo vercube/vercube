@@ -1,4 +1,4 @@
-import { BaseDecorator, createDecorator, Inject } from '@cube/di';
+import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
 import { RouterRegistry } from '../../Services/Router/RouterRegistry';
 import { MetadataResolver } from '../../Services/Metadata/MetadataResolver';
 import { RequestHandler } from '../../Services/Router/RequestHandler';

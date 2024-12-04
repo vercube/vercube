@@ -5,9 +5,9 @@ import dev from './commands/dev';
 
 const main = defineCommand({
   meta: {
-    name: 'cube',
+    name: 'Vercube',
     version,
-    description: 'Cube CLI',
+    description: 'Vercube CLI',
   },
   subCommands: {
     build,

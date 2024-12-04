@@ -1,4 +1,4 @@
-import { App, BasePlugin } from '@cube/core';
+import { App, BasePlugin } from '@vercube/core';
 
 export interface CustomPluginOptions {
   foo: string;

@@ -1,4 +1,4 @@
-import { Container } from '@cube/di';
+import { Container } from '@vercube/di';
 import { HooksService } from '../Services/Hooks/HooksService';
 import { MetadataResolver } from '../Services/Metadata/MetadataResolver';
 import { RouterRegistry } from '../Services/Router/RouterRegistry';

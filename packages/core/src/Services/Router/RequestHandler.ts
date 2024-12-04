@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { defineEventHandler, type EventHandler } from 'h3';
-import { Inject } from '@cube/di';
+import { Inject } from '@vercube/di';
 import { MetadataResolver } from '../Metadata/MetadataResolver';
 import { HttpError } from '../../Errors/HttpError';
 

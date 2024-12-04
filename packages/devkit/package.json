@@ -1,9 +1,9 @@
 {
-  "name": "@cube/devkit",
+  "name": "@vercube/devkit",
   "version": "0.0.0",
-  "description": "Devkit module for Cube framework",
+  "description": "Devkit  module for Vercube framework",
   "packageManager": "pnpm@9.10.0",
-  "repository": "@cube/devkit",
+  "repository": "@vercube/devkit",
   "license": "MIT",
   "sideEffects": false,
   "type": "module",

@@ -1,4 +1,4 @@
-import { BaseDecorator, createDecorator, Inject } from '@cube/di';
+import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
 import type { MetadataTypes } from '../../Types/MetadataTypes';
 import { HTTPStatus } from '../../Types/HttpTypes';
 import { MetadataResolver } from '../../Services/Metadata/MetadataResolver';

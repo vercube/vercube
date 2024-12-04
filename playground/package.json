@@ -3,15 +3,15 @@
   "private": true,
   "type": "module",
   "version": "0.0.0",
-  "description": "Playground for Cube framework",
+  "description": "Playground for Vercube framework",
   "packageManager": "pnpm@9.10.0",
   "scripts": {
-    "dev": "cube dev"
+    "dev": "vercube dev"
   },
   "devDependencies": {
-    "@cube/cli": "workspace:*",
-    "@cube/core": "workspace:*",
-    "@cube/di": "workspace:*",
+    "@vercube/cli": "workspace:*",
+    "@vercube/core": "workspace:*",
+    "@vercube/di": "workspace:*",
     "@types/node": "20",
     "tsx": "4.19.1"
   },

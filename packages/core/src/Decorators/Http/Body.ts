@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
-import { BaseDecorator, createDecorator, Inject } from '@cube/di';
+import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
 import { MetadataResolver } from '../../Services/Metadata/MetadataResolver';
 
 /**

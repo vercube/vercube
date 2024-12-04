@@ -1,9 +1,9 @@
 {
-  "name": "@cube/di",
+  "name": "@vercube/di",
   "version": "0.0.0",
-  "description": "Dependencie Injection module for Cube framework",
+  "description": "Dependencie Injection  module for Vercube framework",
   "packageManager": "pnpm@9.10.0",
-  "repository": "@cube/di",
+  "repository": "@vercube/di",
   "license": "MIT",
   "sideEffects": false,
   "type": "module",

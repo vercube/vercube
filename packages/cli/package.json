@@ -1,9 +1,9 @@
 {
-    "name": "@cube/cli",
+    "name": "@vercube/cli",
     "version": "0.0.0",
-    "description": "CLI module for Cube framework",
+    "description": "CLI module for Vercube framework",
     "packageManager": "pnpm@9.10.0",
-    "repository": "@cube/cli",
+    "repository": "@vercube/cli",
     "license": "MIT",
     "sideEffects": false,
     "type": "module",
@@ -21,7 +21,7 @@
       "dist"
     ],
     "bin": {
-      "cube": "./dist/index.cjs"
+      "vercube": "./dist/index.cjs"
     },
     "scripts": {
       "build": "unbuild",
@@ -29,7 +29,7 @@
       "prepack": "pnpm build"
     },
     "dependencies": {
-      "@cube/devkit": "workspace:*",
+      "@vercube/devkit": "workspace:*",
       "citty": "0.1.6"
     },
     "devDependencies": {

@@ -1,4 +1,4 @@
-import { createApp } from '@cube/core';
+import { createApp } from '@vercube/core';
 import { useContainer } from './Boot/Container';
 import { CustomPlugin } from './Plugins/CustomPlugin';
 
