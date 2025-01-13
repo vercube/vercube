@@ -11,21 +11,6 @@ import type { HttpEvent } from '../../Types/CommonTypes';
 export class MetadataResolver {
 
   /**
-   * Creates a new metadata object.
-   *
-   * @return {MetadataTypes.Metadata} The newly created metadata object.
-   */
-  public create(): MetadataTypes.Method {
-    return {
-      req: null,
-      res: null,
-      url: null,
-      args: [],
-      actions: [],
-    };
-  }
-
-  /**
    * Resolves the URL for a given instance and path.
    *
    * @param {MetadataTypes.ResolveUrlParams} params - The parameters for resolving the URL.
