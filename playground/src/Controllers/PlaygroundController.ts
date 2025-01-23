@@ -1,4 +1,4 @@
-import { Controller, Get, Middleware, SetHeader, Status, HTTPStatus } from '@vercube/core';
+import { Controller, Get, Middleware, SetHeader, Status, HTTPStatus, Redirect } from '@vercube/core';
 import { FirstMiddleware } from '../Middlewares/FirstMiddleware';
 import { SecondMiddleware } from '../Middlewares/SecondMiddleware';
 

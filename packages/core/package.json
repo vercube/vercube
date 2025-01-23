@@ -1,35 +1,35 @@
 {
-    "name": "@vercube/core",
-    "version": "0.0.0",
-    "description": "Core module for Vercube framework",
-    "packageManager": "pnpm@9.10.0",
-    "repository": "@vercube/core",
-    "license": "MIT",
-    "sideEffects": false,
-    "type": "module",
-    "exports": {
-      ".": {
-        "types": "./dist/index.d.ts",
-        "import": "./dist/index.mjs",
-        "require": "./dist/index.cjs"
-      }
-    },
-    "main": "./dist/index.cjs",
-    "module": "./dist/index.mjs",
-    "types": "./dist/index.d.ts",
-    "files": [
-      "dist"
-    ],
-    "scripts": {
-      "build": "unbuild"
-    },
-    "dependencies": {
-      "@vercube/di": "workspace:*",
-      "h3": "1.12.0",
-      "listhen": "1.8.0",
-      "lodash": "4.17.21"
-    },
-    "devDependencies": {
-      "@types/lodash": "4.17.9"
+  "name": "@vercube/core",
+  "version": "0.0.0",
+  "description": "Core module for Vercube framework",
+  "packageManager": "pnpm@9.10.0",
+  "repository": "@vercube/core",
+  "license": "MIT",
+  "sideEffects": false,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
     }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "unbuild"
+  },
+  "dependencies": {
+    "@vercube/di": "workspace:*",
+    "h3": "1.14.0",
+    "listhen": "1.9.0",
+    "lodash": "4.17.21"
+  },
+  "devDependencies": {
+    "@types/lodash": "4.17.14"
   }
+}
