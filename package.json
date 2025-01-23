@@ -12,6 +12,7 @@
     "build": "nx run-many -t build",
     "dev": "nx watch --all -- nx run \\$NX_PROJECT_NAME:build",
     "lint": "eslint --cache --fix .",
+    "test": "nx run-many -t test",
     "pre-commit": "lint-staged",
     "postinstall": "simple-git-hooks"
   },
