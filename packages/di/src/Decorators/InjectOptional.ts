@@ -1,4 +1,3 @@
-
 import type { IDecoratedPrototype } from '../Utils/Utils';
 import { IOCEngine } from '../Domain/Engine';
 import { IOC } from '../Types/IOCTypes';
