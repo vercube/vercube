@@ -39,7 +39,7 @@ importers:
         specifier: 15.14.0
         version: 15.14.0
       lint-staged:
-        specifier: ^15.4.2
+        specifier: 15.4.2
         version: 15.4.2
       nx:
         specifier: 20.3.2
