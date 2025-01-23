@@ -9,26 +9,43 @@
     "node": ">=20"
   },
   "scripts": {
-    "turbo": "turbo",
-    "build": "turbo build --filter=!playground",
-    "dev": "turbo dev --filter=!playground",
-    "test": "turbo test --filter=!playground",
-    "lint": "oxlint --config=oxlintrc.json --fix",
-    "prepare": "husky"
+    "build": "nx run-many -t build",
+    "dev": "nx watch --all -- nx run \\$NX_PROJECT_NAME:build",
+    "lint": "eslint --cache --fix . && prettier -w .",
+    "postinstall": "simple-git-hooks"
+  },
+  "lint-staged": {
+    "*.{js,mjs,json,cjs}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.ts?(x)": [
+      "eslint --fix",
+      "prettier --parser=typescript --write"
+    ]
   },
   "devDependencies": {
-    "@commitlint/cli": "19.5.0",
-    "@commitlint/config-conventional": "19.5.0",
-    "@rollup/plugin-typescript": "12.1.0",
-    "@types/node": "20",
-    "globals": "15.9.0",
-    "husky": "9.1.6",
-    "oxlint": "0.9.9",
-    "tslib": "2.7.0",
-    "turbo": "2.1.2",
-    "typescript": "5.6.2",
-    "typescript-eslint": "8.7.0",
-    "unbuild": "3.0.0-rc.8"
+    "@commitlint/cli": "19.6.1",
+    "@commitlint/config-conventional": "19.6.0",
+    "@nx/js": "20.3.2",
+    "@nx/rollup": "20.3.2",
+    "@rollup/plugin-typescript": "12.1.2",
+    "@types/lodash": "4.17.14",
+    "@types/node": "22.10.10",
+    "eslint": "9.18.0",
+    "eslint-config-unjs": "0.4.2",
+    "globals": "15.14.0",
+    "nx": "20.3.2",
+    "prettier": "^3.4.2",
+    "simple-git-hooks": "2.11.1",
+    "tslib": "2.8.1",
+    "typescript": "5.7.3",
+    "typescript-eslint": "8.21.0",
+    "unbuild": "3.3.1"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "pnpm lint-staged",
+    "commit-msg": "pnpm dlx commitlint --edit $1"
   },
   "pnpm": {
     "peerDependencyRules": {

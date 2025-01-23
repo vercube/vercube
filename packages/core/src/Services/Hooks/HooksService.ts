@@ -25,7 +25,7 @@
  *
  * Everything 100% typechecked.
  */
-import { remove } from 'lodash';
+import remove from 'lodash/remove';
 import type { HooksTypes } from '../../Types/HooksTypes';
 
 /**

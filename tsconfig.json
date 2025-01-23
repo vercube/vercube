@@ -1,25 +1,44 @@
 {
-    "compilerOptions": {
-      "esModuleInterop": false,
-      "allowSyntheticDefaultImports": true,
-      "skipLibCheck": true,
-      "target": "es2022",
-      "allowJs": true,
-      "importHelpers": true,
-      "resolveJsonModule": true,
-      "moduleDetection": "force",
-      "isolatedModules": true,
-      "verbatimModuleSyntax": true,
-      "strict": true,
-      "forceConsistentCasingInFileNames": true,
-      "noImplicitOverride": true,
-      "module": "preserve",
-      "jsx": "preserve",
-      "noEmit": true,
-      "lib": ["es2022", "DOM"],
-      "experimentalDecorators": true,
-    },
-    "include": ["packages"],
-    "exclude": ["dist", "./node_modules", "packages/*/dist", "packages/*/node_modules"]
-  }
-  
+  "compilerOptions": {
+    "rootDir": ".",
+    "baseUrl": ".",
+    "declaration": false,
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "noImplicitThis": true,
+    "strictNullChecks": true,
+    "esModuleInterop": true,
+    "sourceMap": false,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": false,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "noEmit": false,
+    "importHelpers": true,
+    "skipLibCheck": true,
+    "lib": [
+      "dom",
+      "es6",
+      "es2017",
+      "es2019",
+      "ESNext"
+    ],
+    "typeRoots": [
+      "node_modules/@types"
+    ],
+    "paths": {
+      "@vercube/*": [
+        "packages/*/src"
+      ]
+    }
+  },
+  "include": [
+    "packages/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}
