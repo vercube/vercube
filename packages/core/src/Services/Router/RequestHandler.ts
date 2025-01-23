@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import { defineEventHandler, type EventHandler } from 'h3';
 import { Inject } from '@vercube/di';
 import { MetadataResolver } from '../Metadata/MetadataResolver';
@@ -62,16 +62,16 @@ export class RequestHandler {
         // call the middleware
         try {
           await middleware.middleware.use(event);
-        } catch (err) {
+        } catch (error_) {
           // check if the error is known error type and return it.
-          if (err instanceof HttpError) {
-            event.node.res.statusCode = err.status;
-            return { ...err }
+          if (error_ instanceof HttpError) {
+            event.node.res.statusCode = error_.status;
+            return { ...error_ };
           }
 
           // if the middleware throws an error we stop the request and return the error
           event.node.res.statusCode = 500;
-          return { status: 500, message: (err as Error)?.message ?? 'Internal server error' };
+          return { status: 500, message: (error_ as Error)?.message ?? 'Internal server error' };
         }
       }
 

@@ -1,5 +1,7 @@
+/* eslint-disable unicorn/prefer-native-coercion-functions */
+/* eslint-disable unicorn/no-array-for-each */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import { type BaseDecorator } from '../Common/BaseDecorators';
 import { Container } from '../Domain/Container';
 import { IOC } from '../Types/IOCTypes';
@@ -116,7 +118,7 @@ export function initializeDecorators(target: IDecoratedInstance, container: Cont
   const prototype: IDecoratedPrototype = Object.getPrototypeOf(target);
 
   // iterate over __decorators magic field for class
-  prototype.__decorators?.forEach((entry) => {
+  if (prototype.__decorators) for (const entry of prototype.__decorators) {
 
     // create decorator class instance using container so all @Injects will work
     const instance: BaseDecorator<unknown> = container.resolve(entry.classType);
@@ -140,7 +142,7 @@ export function initializeDecorators(target: IDecoratedInstance, container: Cont
     instanceList.push(instance);
     decoratedInstances.set(target, instanceList); // save it to instance list
 
-  });
+  }
 
 }
 
@@ -158,7 +160,7 @@ export function destroyDecorators(target: IDecoratedInstance, container: Contain
 
   // iterate over registered decorators in particular class
   const instanceList = decoratedInstances.get(target);
-  instanceList?.forEach((instance) => instance.destroyed());
+  if (instanceList) for (const instance of instanceList) instance.destroyed();
 
   // cleanup entry in instance map
   decoratedInstances.delete(target);

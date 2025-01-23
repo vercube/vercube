@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
+ 
 import type { Plugin } from 'rollup';
 import { findStaticImports } from 'mlly';
 import MagicString from 'magic-string';

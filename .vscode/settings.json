@@ -7,12 +7,10 @@
   "editor.tabSize": 2,
   "typescript.enablePromptUseWorkspaceTsdk": true,
   "search.exclude": {
-    "**/node_modules": true,
-    "**/bower_components": true,
+    "**/node_modules": true
   },
   "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": "explicit",
-    "source.fixAll.stylelint": "explicit"
+    "source.fixAll.eslint": "explicit"
   },
   "typescript.tsdk": "node_modules/typescript/lib"
 }

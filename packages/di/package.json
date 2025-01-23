@@ -21,9 +21,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "unbuild",
-    "dev": "unbuild --watch",
-    "prepack": "pnpm build"
+    "build": "unbuild"
   },
   "dependencies": {
   },

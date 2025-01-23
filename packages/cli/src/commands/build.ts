@@ -8,4 +8,4 @@ export default defineCommand({
   run: async () => {
     throw new Error('Build command not implemented yet');
   },
-})
+});

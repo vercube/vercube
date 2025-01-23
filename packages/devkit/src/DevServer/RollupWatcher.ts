@@ -1,4 +1,3 @@
-/* eslint-disable default-case */
 import consola from 'consola';
 import { watch as RollupWatch } from 'rollup';
 import { getRollupOptions } from '../Builder/Rollup/Config/RollupConfig';

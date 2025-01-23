@@ -41,3 +41,4 @@ packages/**/dist
 
 # JetBrains IDEs
 .idea
+.nx/

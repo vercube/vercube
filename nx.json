@@ -1,0 +1,38 @@
+{
+  "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "release": {
+    "projects": [
+      "*"
+    ],
+    "releaseTagPattern": "v{version}",
+    "version": {
+      "generatorOptions": {
+        "skipLockFileUpdate": true,
+        "fallbackCurrentVersionResolver": "git-tag",
+        "currentVersionResolver": "registry"
+      }
+    },
+    "changelog": {
+      "automaticFromRef": true,
+      "workspaceChangelog": {
+        "renderOptions": {
+          "authors": false
+        }
+      }
+    }
+  },
+  "targetDefaults": {
+    "build": {
+      "dependsOn": [
+        "^build"
+      ],
+      "cache": true
+    },
+    "test": {
+      "dependsOn": [
+        "^build"
+      ],
+      "cache": true
+    }
+  }
+}

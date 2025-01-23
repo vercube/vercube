@@ -1,6 +1,6 @@
-/* eslint-disable no-restricted-imports */
+ 
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 
 /**
  * This module is responsible for managing type-safe hooks observer pattern.
@@ -25,7 +25,7 @@
  *
  * Everything 100% typechecked.
  */
-import { remove } from 'lodash';
+import remove from 'lodash/remove';
 import type { HooksTypes } from '../../Types/HooksTypes';
 
 /**
@@ -156,11 +156,7 @@ export class HooksService {
     const promises: Promise<void>[] = toProcessHandlers.map((handler) => {
       const instance: T = this.objectToClass(type, data!);
       const result: void | Promise<void> = handler.callback(instance);
-      if (result instanceof Promise) {
-        return result;
-      } else {
-        return Promise.resolve();
-      }
+      return result instanceof Promise ? result : Promise.resolve();
     });
 
     await Promise.all(promises);
@@ -182,17 +178,17 @@ export class HooksService {
 
     // rewrite data keys to instance
     if (data) {
-      Object.keys(data).forEach((key) => {
+      for (const key of Object.keys(data)) {
 
         // copy all properties to convert it to class instance
 
-        /* eslint-disable @typescript-eslint/no-explicit-any */
+         
         const rawInstance: any = instance;
         const rawData: any = data;
         rawInstance[key] = rawData[key];
-        /* eslint-enable @typescript-eslint/no-explicit-any */
+         
 
-      });
+      }
     }
 
     return instance;

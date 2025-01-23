@@ -12,4 +12,4 @@ async function main() {
   await app.listen({ port: 3001 });
 }
 
-main();
+await main();
