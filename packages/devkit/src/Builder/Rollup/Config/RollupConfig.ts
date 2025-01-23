@@ -59,6 +59,6 @@ export function getRollupOptions(ctx: RollupBuildOptions): RollupOptions {
       }),
     ],
 
-  }
+  };
 
 }

@@ -130,18 +130,21 @@ function injectDeps(container: Container, instance: IOC.Instance, method: IOC.In
 
         // depending on inject method, either put the stuff statically or create dynamic getter for that
         switch (method) {
-          case IOC.InjectMethod.LAZY:
+          case IOC.InjectMethod.LAZY: {
             Object.defineProperty(instance, propertyName, {
               get: () => container.get(dependency),
             });
             break;
+          }
 
-          case IOC.InjectMethod.STATIC:
+          case IOC.InjectMethod.STATIC: {
             instance[propertyName] = container.get(dependency);
             break;
+          }
 
-          default:
+          default: {
             throw new Error(`IOCEngine.injectDeps() - invalid inject method ${method}`);
+          }
         }
 
       }

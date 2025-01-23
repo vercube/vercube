@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 // Based on https://github.com/egoist/rollup-plugin-esbuild and nitropack fork (MIT)
 import type { Plugin, PluginContext } from 'rollup';
 import type { FilterPattern } from '@rollup/pluginutils';

@@ -36,7 +36,7 @@ export class PluginsRegistry {
    * @param {App} app - The application instance.
    */
   public async init(app: App): Promise<void> {
-    for (const { instance, options } of [...this.fPlugins.values()]) {
+    for (const { instance, options } of this.fPlugins.values()) {
       await instance.use(app, options);
     }
   }

@@ -40,7 +40,7 @@ export class App {
    * @param {Container} container - The dependency injection container.
    */
   public set container(container: Container) {
-    this.fInternalContainer = container
+    this.fInternalContainer = container;
   }
 
   /**

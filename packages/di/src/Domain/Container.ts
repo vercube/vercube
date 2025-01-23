@@ -1,4 +1,4 @@
-/* eslint-disable no-case-declarations */
+ 
 import { IOC } from '../Types/IOCTypes';
 import { ContainerEvents } from './ContainerEvents';
 import { destroyDecorators, initializeDecorators, type IDecoratedInstance } from '../Utils/Utils';
@@ -53,7 +53,7 @@ export class Container {
    * @returns {Array} array of service keys
    */
   public get servicesKeys(): IOC.ServiceKey[] {
-    return Array.from(this.fServices.keys());
+    return [...this.fServices.keys()];
   }
 
   /**
@@ -216,7 +216,7 @@ export class Container {
       }
 
       // call internal container event
-      const newKeys = Array.from(this.fNewQueue.keys())
+      const newKeys = [...this.fNewQueue.keys()]
         .filter((k) => !this.fSingletonInstances.has(k));
 
       this.fContainerEvents.callOnExpanded(newKeys);
@@ -280,7 +280,7 @@ export class Container {
     }
 
     // auto-initialize all singletons to make sure @Listen() decorator will work on those types
-    const values = Array.from(this.fNewQueue.values());
+    const values = [...this.fNewQueue.values()];
     for (const def of values) {
       if (def.type !== IOC.ServiceFactoryType.CLASS_SINGLETON) {
         continue;
@@ -334,10 +334,11 @@ export class Container {
 
     // depending on inject type, make proper actions
     switch (serviceDef.type) {
-      case IOC.ServiceFactoryType.INSTANCE:
+      case IOC.ServiceFactoryType.INSTANCE: {
         return serviceDef.serviceValue;
+      }
 
-      case IOC.ServiceFactoryType.CLASS_SINGLETON:
+      case IOC.ServiceFactoryType.CLASS_SINGLETON: {
         if (!this.fSingletonInstances.has(serviceDef.serviceKey)) {
           const constructor = (serviceDef.serviceValue as IOC.Newable<unknown>);
           const instance = new constructor();
@@ -347,15 +348,18 @@ export class Container {
         }
 
         return this.fSingletonInstances.get(serviceDef.serviceKey);
+      }
 
-      case IOC.ServiceFactoryType.CLASS:
+      case IOC.ServiceFactoryType.CLASS: {
         const constructor = (serviceDef.serviceValue as IOC.Newable<unknown>);
         const instance = new constructor();
         this.internalProcessInjects(instance, this.fInjectMethod);
         return instance;
+      }
 
-      default:
+      default: {
         throw new Error(`Container - invalid factory type: ${serviceDef.type}`);
+      }
 
     }
 
@@ -398,7 +402,7 @@ export class Container {
     toProcessElements.push(instance);
 
     // process queue until there is nothing left to process
-    while (processQueue.length) {
+    while (processQueue.length > 0) {
 
       // get last element from queue, we are getting last element to prevent array reallocation (its faster)
       const element = processQueue.pop();
@@ -448,24 +452,28 @@ export class Container {
 
     switch (def.type) {
 
-      case IOC.ServiceFactoryType.INSTANCE:
+      case IOC.ServiceFactoryType.INSTANCE: {
         destroyDecorators(def.serviceValue as IDecoratedInstance, this);
         break;
+      }
 
-      case IOC.ServiceFactoryType.CLASS_SINGLETON:
+      case IOC.ServiceFactoryType.CLASS_SINGLETON: {
         const existingInstance = this.fSingletonInstances.get(def.serviceKey);
         // it might not exist yet because container is in initializing phase..
         if (existingInstance) {
           destroyDecorators(existingInstance, this);
         }
         break;
+      }
 
-      case IOC.ServiceFactoryType.CLASS:
+      case IOC.ServiceFactoryType.CLASS: {
         // its not easily possible to drop raw instance
         break;
+      }
 
-      default:
+      default: {
         throw new Error(`Container::internalDispose() - invalid def type: ${def.type}`);
+      }
 
     }
   }

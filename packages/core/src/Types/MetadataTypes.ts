@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import type { NodeEventContext } from 'h3';
 import type { BaseMiddleware } from '../Services/Middleware/BaseMiddleware';
 export namespace MetadataTypes {

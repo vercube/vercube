@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-namespace */
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
+ 
 import { Container } from '../Domain/Container';
 
 /**

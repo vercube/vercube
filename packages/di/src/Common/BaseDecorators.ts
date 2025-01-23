@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 
 /**
  * This is base class for all property decorators used in application. Decorator class must extend this one.

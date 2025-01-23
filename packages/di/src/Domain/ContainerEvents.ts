@@ -22,7 +22,7 @@ export class ContainerEvents {
    * @param serviceKeys key of service we have installed
    */
   public callOnExpanded(serviceKeys: IOC.ServiceKey[]): void {
-    this.fOnExpanded.forEach((handler) => handler(serviceKeys));
+    for (const handler of this.fOnExpanded) handler(serviceKeys);
   }
 
 }

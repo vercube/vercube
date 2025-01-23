@@ -1,6 +1,6 @@
 
-/* eslint-disable complexity */
-/* eslint-disable no-case-declarations */
+ 
+ 
 import { getHeader, getHeaders, getQuery, getRouterParam, readBody } from 'h3';
 import type { MetadataTypes } from '../../Types/MetadataTypes';
 import type { HttpEvent } from '../../Types/CommonTypes';
@@ -91,27 +91,35 @@ export class MetadataResolver {
     // resolve arguments
     return args.map((arg) => {
       switch (arg.type) {
-        case 'param':
+        case 'param': {
           return getRouterParam(
             event,
             arg?.data?.name,
             { decode: arg?.data?.decode ?? false },
           ) ?? null;
-        case 'body':
+        }
+        case 'body': {
           return readBody(event);
-        case 'query':
+        }
+        case 'query': {
           const query = getQuery(event);
           return query[arg?.data?.name] ?? null;
-        case 'header':
+        }
+        case 'header': {
           return getHeader(event, arg?.data?.name) ?? null;
-        case 'headers':
+        }
+        case 'headers': {
           return getHeaders(event);
-        case 'request':
+        }
+        case 'request': {
           return event.node.req;
-        case 'response':
+        }
+        case 'response': {
           return event.node.res;
-        default:
+        }
+        default: {
           throw new Error(`Unknown argument type: ${arg.type}`);
+        }
       }
     });
   }

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { BadRequestError, BaseMiddleware, type HttpEvent } from '@vercube/core'
+import { BadRequestError, BaseMiddleware, type HttpEvent } from '@vercube/core';
 
 /**
  * FirstMiddleware class that implements the BaseMiddleware interface.
