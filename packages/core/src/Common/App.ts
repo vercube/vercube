@@ -1,4 +1,4 @@
-import { Container, initializeContainer, Inject } from '@vercube/di';
+import { type Container, initializeContainer, Inject } from '@vercube/di';
 import { createApp, toNodeListener, type App as H3App } from 'h3';
 import { listen } from 'listhen';
 import { RouterRegistry } from '../Services/Router/RouterRegistry';
