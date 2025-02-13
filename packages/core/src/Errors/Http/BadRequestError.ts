@@ -16,12 +16,16 @@ export class BadRequestError extends HttpError {
    * Creates an instance of BadRequestError.
    * @param {string} [message] - The error message.
    */
-  constructor(message?: string) {
+  constructor(message?: string, errors?: any) {
     super(400);
     Object.setPrototypeOf(this, BadRequestError.prototype);
 
     if (message) {
       this.message = message;
+    }
+
+    if (errors) {
+      (this as any).errors = errors;
     }
 
   }

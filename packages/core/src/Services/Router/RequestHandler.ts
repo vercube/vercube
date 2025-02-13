@@ -49,7 +49,7 @@ export class RequestHandler {
       const prototype = Object.getPrototypeOf(instance);
 
       // resolve metadata for the route
-      const { actions, middlewares } = this.gMetadataResolver.resolve(event, prototype, propertyName);
+      const { args, actions, middlewares } = await this.gMetadataResolver.resolve(event, prototype, propertyName);
 
       // resolve middlewares
       const resolvedMiddlewares = middlewares.map((m) => ({
@@ -75,7 +75,7 @@ export class RequestHandler {
       for (const middleware of beforeMiddlewares) {
         // call the middleware
         try {
-          await middleware.middleware.use(event);
+          await middleware.middleware.use(event, middleware.args);
         } catch (error_) {
           // check if the error is known error type and return it.
           if (error_ instanceof HttpError) {
@@ -89,7 +89,7 @@ export class RequestHandler {
         }
       }
 
-      let response = instance[propertyName].call(instance, []);
+      let response = instance[propertyName].call(instance, args);
 
       if (response instanceof Promise) {
         response = await response;

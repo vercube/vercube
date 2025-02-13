@@ -68,14 +68,15 @@ export class MetadataResolver {
    * @param {string} propertyName - The name of the property.
    * @return {Object} The resolved metadata.
    */
-  public resolve(event: HttpEvent, ctx: MetadataTypes.Metadata, propertyName: string): MetadataTypes.ResolvedData {
+  public async resolve(event: HttpEvent, ctx: MetadataTypes.Metadata, propertyName: string): Promise<MetadataTypes.ResolvedData> {
     const metadata = ctx.__metadata.__methods[propertyName];
+    const args = await this.resolveArgs(metadata?.args ?? [], event);
 
     return {
       req: event.node.req,
       res: event.node.res,
       url: metadata?.url ?? null,
-      args: this.resolveArgs(metadata?.args ?? [], event),
+      args,
       actions: metadata?.actions ?? [],
       middlewares: this.resolveMiddlewares(ctx, propertyName),
     };
@@ -89,12 +90,12 @@ export class MetadataResolver {
    * @return {unknown[]} The resolved arguments.
    * @private
    */
-  private resolveArgs(args: MetadataTypes.Arg[], event: HttpEvent): unknown[] {
+  private async resolveArgs(args: MetadataTypes.Arg[], event: HttpEvent): Promise<unknown[]> {
     // sort arguments by index
     args.sort((a, b) => a.idx - b.idx);
 
     // resolve arguments
-    return args.map((arg) => {
+    return await Promise.all(args.map((arg) => {
       switch (arg.type) {
         case 'param': {
           return getRouterParam(
@@ -126,7 +127,7 @@ export class MetadataResolver {
           throw new Error(`Unknown argument type: ${arg.type}`);
         }
       }
-    });
+    }));
   }
 
   /**

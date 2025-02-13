@@ -1,6 +1,13 @@
-import { Controller, Get, Middleware, SetHeader, Status, HTTPStatus, Redirect } from '@vercube/core';
+import { Controller, Get, Middleware, SetHeader, Status, HTTPStatus, Redirect, Post, Body } from '@vercube/core';
 import { FirstMiddleware } from '../Middlewares/FirstMiddleware';
 import { SecondMiddleware } from '../Middlewares/SecondMiddleware';
+import { z } from 'zod';
+
+const schema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  email: z.string().email('Invalid email format'),
+  age: z.number().int().min(0, 'Age must be a non-negative integer'),
+});
 
 /**
  * Playground controller.
@@ -19,6 +26,17 @@ export default class PlaygroundController {
   @SetHeader('X-Test-Response-Header', '1')
   public async index(): Promise<{ message: string }> {
     return { message: 'Hello, world!' };
+  }
+
+  /**
+   * Handles POST requests to the / endpoint.
+   * @returns {Promise<{ message: string }>} A promise that resolves to an object containing a greeting message.
+   */
+  @Post('/')
+  public async post(@Body({ validationSchema: schema }) body: unknown): Promise<{ message: string }> {
+    console.log(body);
+
+    return { message: JSON.stringify(body) };
   }
 
   /**

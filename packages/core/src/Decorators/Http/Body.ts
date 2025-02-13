@@ -1,7 +1,13 @@
-/* eslint-disable @typescript-eslint/no-empty-object-type */
+ 
 import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
 import { MetadataResolver } from '../../Services/Metadata/MetadataResolver';
 import { MetadataTypes } from '../../Types/MetadataTypes';
+import { ValidationMiddleware } from '../../Middleware/ValidationMiddleware';
+import { ValidationTypes } from '../../Types/ValidationTypes';
+
+interface BodyDecoratorOptions {
+  validationSchema?: ValidationTypes.Schema;
+}
 
 /**
  * @class BodyDecorator
@@ -9,7 +15,7 @@ import { MetadataTypes } from '../../Types/MetadataTypes';
  *
  * A decorator class that handles the metadata for HTTP request bodies.
  */
-class BodyDecorator extends BaseDecorator<{}, MetadataTypes.Metadata> {
+class BodyDecorator extends BaseDecorator<BodyDecoratorOptions, MetadataTypes.Metadata> {
 
   @Inject(MetadataResolver)
   private gMetadataResolver!: MetadataResolver;
@@ -35,6 +41,15 @@ class BodyDecorator extends BaseDecorator<{}, MetadataTypes.Metadata> {
       type: 'body',
     });
 
+    // add query parameter to metadata
+    this.prototype.__metadata.__middlewares.unshift({
+      target: this.propertyName,
+      type: 'before',
+      priority: -1,
+      args: { schema: this.options?.validationSchema },
+      middleware: ValidationMiddleware,
+    });
+
   }
 
 }
@@ -48,6 +63,6 @@ class BodyDecorator extends BaseDecorator<{}, MetadataTypes.Metadata> {
  * body of an HTTP request. The decorator uses the BodyDecorator class to
  * handle the metadata associated with the parameter.
  */
-export function Body(): Function {
-  return createDecorator(BodyDecorator, {});
+export function Body(options?: BodyDecoratorOptions): Function {
+  return createDecorator(BodyDecorator, options);
 }

@@ -80,9 +80,15 @@ importers:
 
   packages/core:
     dependencies:
+      '@standard-schema/spec':
+        specifier: 1.0.0
+        version: 1.0.0
       '@vercube/di':
         specifier: workspace:*
         version: link:../di
+      '@vercube/validation':
+        specifier: workspace:*
+        version: link:../validation
       h3:
         specifier: 1.14.0
         version: 1.14.0
@@ -141,6 +147,21 @@ importers:
 
   packages/di: {}
 
+  packages/validation:
+    dependencies:
+      '@standard-schema/spec':
+        specifier: 1.0.0
+        version: 1.0.0
+      '@vercube/di':
+        specifier: workspace:*
+        version: link:../di
+      h3:
+        specifier: 1.14.0
+        version: 1.14.0
+      zod:
+        specifier: 3.24.2
+        version: 3.24.2
+
   playground:
     dependencies:
       lodash:
@@ -149,6 +170,9 @@ importers:
       tslib:
         specifier: 2.7.0
         version: 2.7.0
+      zod:
+        specifier: 3.24.2
+        version: 3.24.2
     devDependencies:
       '@types/node':
         specifier: '22'
@@ -165,6 +189,9 @@ importers:
       '@vercube/di':
         specifier: workspace:*
         version: link:../packages/di
+      '@vercube/validation':
+        specifier: workspace:*
+        version: link:../packages/validation
       tsx:
         specifier: 4.19.1
         version: 4.19.1
@@ -1815,6 +1842,9 @@ packages:
 
   '@sinclair/typebox@0.27.8':
     resolution: {integrity: sha512-+Fj43pSMwJs4KRrH/938Uf+uAELIgVBmQzg/q1YG10djyfA3TnrU8N8XzqCh/okZdszqBQTZf96idMfE5lnwTA==}
+
+  '@standard-schema/spec@1.0.0':
+    resolution: {integrity: sha512-m2bOd0f2RT9k8QJx1JN85cZYyH1RqFBdlwtkSlf4tBDYLCiiZnv1fIIwacK6cqwXavOydf0NPToMQgpKq+dVlA==}
 
   '@trysound/sax@0.2.0':
     resolution: {integrity: sha512-L7z9BgrNEcYyUYtF+HaEfiS5ebkh9jXqbszz7pC0hRBPaatV0XjSD3+eHrpqFemQfgwiFF0QPIarnIihIDn7OA==}
@@ -4435,6 +4465,9 @@ packages:
     resolution: {integrity: sha512-b4JR1PFR10y1mKjhHY9LaGo6tmrgjit7hxVIeAmyMw3jegXR4dhYqLaQF5zMXZxY7tLpMyJeLjr1C4rLmkVe8g==}
     engines: {node: '>=12.20'}
 
+  zod@3.24.2:
+    resolution: {integrity: sha512-lY7CDW43ECgW9u1TcT3IoXHflywfVqDYze4waEz812jR/bZ8FHDsl7pFQoSZTz5N+2NqRXs8GBwnAwo3ZNxqhQ==}
+
 snapshots:
 
   '@ampproject/remapping@2.3.0':
@@ -6051,6 +6084,8 @@ snapshots:
     optional: true
 
   '@sinclair/typebox@0.27.8': {}
+
+  '@standard-schema/spec@1.0.0': {}
 
   '@trysound/sax@0.2.0': {}
 
@@ -8849,3 +8884,5 @@ snapshots:
   yocto-queue@0.1.0: {}
 
   yocto-queue@1.1.1: {}
+
+  zod@3.24.2: {}

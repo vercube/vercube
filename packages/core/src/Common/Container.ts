@@ -4,6 +4,8 @@ import { MetadataResolver } from '../Services/Metadata/MetadataResolver';
 import { RouterRegistry } from '../Services/Router/RouterRegistry';
 import { PluginsRegistry } from '../Services/Plugins/PluginsRegistry';
 import { RequestHandler } from '../Services/Router/RequestHandler';
+import { ValidationProvider } from '../Services/Validation/ValidationProvider';
+import { StandardSchemaValidationProvider } from '../Services/Validation/StandardSchemaValidationProvider';
 
 /**
  * Creates and configures a new dependency injection container for the application.
@@ -21,6 +23,10 @@ export function createContainer(): Container {
   container.bind(RouterRegistry);
   container.bind(PluginsRegistry);
   container.bind(RequestHandler);
+
+  // bind validation providers
+  // use StandardSchema as default
+  container.bind(ValidationProvider, StandardSchemaValidationProvider);
 
   return container;
 }
