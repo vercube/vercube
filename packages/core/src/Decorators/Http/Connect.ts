@@ -2,6 +2,7 @@ import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
 import { RouterRegistry } from '../../Services/Router/RouterRegistry';
 import { MetadataResolver } from '../../Services/Metadata/MetadataResolver';
 import { RequestHandler } from '../../Services/Router/RequestHandler';
+import { MetadataTypes } from '../../Types/MetadataTypes';
 
 interface ConnectDecoratorOptions {
   path: string;
@@ -16,7 +17,7 @@ interface ConnectDecoratorOptions {
  *
  * @extends {BaseDecorator<ConnectDecoratorOptions>}
  */
-class ConnectDecorator extends BaseDecorator<ConnectDecoratorOptions> {
+class ConnectDecorator extends BaseDecorator<ConnectDecoratorOptions, MetadataTypes.Metadata> {
 
   @Inject(RouterRegistry)
   private gRouterRegistry!: RouterRegistry;

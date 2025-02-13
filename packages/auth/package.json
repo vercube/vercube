@@ -1,0 +1,32 @@
+{
+  "name": "@vercube/auth",
+  "version": "0.0.0",
+  "description": "Auth module for Vercube framework",
+  "packageManager": "pnpm@9.10.0",
+  "repository": "@vercube/auth",
+  "license": "MIT",
+  "sideEffects": false,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "unbuild"
+  },
+  "dependencies": {
+    "@vercube/core": "workspace:*",
+    "@vercube/di": "workspace:*"
+  },
+  "devDependencies": {
+  }
+}

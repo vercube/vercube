@@ -15,14 +15,13 @@ export class MetadataResolver {
    *
    * @return {MetadataTypes.Metadata} The newly created metadata object.
    */
-  public create(): MetadataTypes.Metadata {
+  public create(): MetadataTypes.Method {
     return {
       req: null,
       res: null,
       url: null,
       args: [],
       actions: [],
-      middlewares: [],
     };
   }
 
@@ -36,8 +35,10 @@ export class MetadataResolver {
     const { instance, propertyName } = params;
     let { path }  = params;
 
+    const metadata = instance.__metadata as MetadataTypes.Ctx;
+
     // get base route from controller metadata
-    let baseRotue = instance.__metadata.controller.path ?? '';
+    let baseRotue = metadata?.__controller.path ?? '';
 
     // remove trailing slash
     if (baseRotue.endsWith('/')) {
@@ -53,7 +54,7 @@ export class MetadataResolver {
     const url = `${baseRotue}/${path}`;
 
     // save url to metadata
-    instance.__metadata[propertyName].url = url;
+    metadata.__methods[propertyName].url = url;
 
     // return resolved url
     return url;
@@ -63,17 +64,20 @@ export class MetadataResolver {
    * Resolves metadata for a given event.
    *
    * @param {HttpEvent} event - The event to resolve metadata for.
-   * @param {MetadataTypes.Metadata} metadata - The metadata to resolve.
+   * @param {MetadataTypes.Ctx} ctx - The metadata context.
+   * @param {string} propertyName - The name of the property.
    * @return {Object} The resolved metadata.
    */
-  public resolve(event: HttpEvent, metadata: MetadataTypes.Metadata): MetadataTypes.ResolvedData {
+  public resolve(event: HttpEvent, ctx: MetadataTypes.Metadata, propertyName: string): MetadataTypes.ResolvedData {
+    const metadata = ctx.__metadata.__methods[propertyName];
+
     return {
       req: event.node.req,
       res: event.node.res,
       url: metadata?.url ?? null,
       args: this.resolveArgs(metadata?.args ?? [], event),
       actions: metadata?.actions ?? [],
-      middlewares: metadata?.middlewares ?? [],
+      middlewares: this.resolveMiddlewares(ctx, propertyName),
     };
   }
 
@@ -83,8 +87,9 @@ export class MetadataResolver {
    * @param {MetadataTypes.Arg[]} args - The arguments to resolve.
    * @param {HttpEvent} event - The event to resolve arguments for.
    * @return {unknown[]} The resolved arguments.
+   * @private
    */
-  public resolveArgs(args: MetadataTypes.Arg[], event: HttpEvent): unknown[] {
+  private resolveArgs(args: MetadataTypes.Arg[], event: HttpEvent): unknown[] {
     // sort arguments by index
     args.sort((a, b) => a.idx - b.idx);
 
@@ -122,6 +127,21 @@ export class MetadataResolver {
         }
       }
     });
+  }
+
+  /**
+   * Resolves middleware functions for a given context and property name.
+   * 
+   * @param {MetadataTypes.Ctx} ctx - The metadata context object
+   * @param {string} propertyName - The name of the property to resolve middlewares for
+   * @returns {MetadataTypes.Middleware[]} Array of middleware functions that apply globally or to the specific property
+   * @private
+   */
+  private resolveMiddlewares(ctx: MetadataTypes.Metadata, propertyName: string): MetadataTypes.Middleware[] {
+    const middlewares = ctx?.__metadata?.__middlewares?.filter((m) => m.target === '__global__' || m.target === propertyName) ?? [];
+
+    // return middlewares sorted by global first
+    return middlewares.sort((a) => (a.target === '__global__' ? -1 : 1));
   }
 
 }

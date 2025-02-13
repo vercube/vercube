@@ -1,5 +1,6 @@
 import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
 import { MetadataResolver } from '../../Services/Metadata/MetadataResolver';
+import { MetadataTypes } from '../../Types/MetadataTypes';
 
 interface ParamDecoratorOptions {
   // name of the route parameter
@@ -19,7 +20,7 @@ interface ParamDecoratorOptions {
  *
  * @extends {BaseDecorator<ParamDecoratorOptions>}
  */
-class ParamDecorator extends BaseDecorator<ParamDecoratorOptions> {
+class ParamDecorator extends BaseDecorator<ParamDecoratorOptions, MetadataTypes.Metadata> {
 
   @Inject(MetadataResolver)
   private gMetadataResolver!: MetadataResolver;
@@ -31,14 +32,17 @@ class ParamDecorator extends BaseDecorator<ParamDecoratorOptions> {
    * and then adds the parameter information to the metadata.
    */
   public override created(): void {
+    if (!this.prototype.__metadata?.__methods) {
+      this.prototype.__metadata.__methods = {};
+    }
 
     // if metadata for property does not exist, create it
-    if (!this.prototype.__metadata[this.propertyName]) {
-      this.prototype.__metadata[this.propertyName] = this.gMetadataResolver.create();
+    if (!this.prototype.__metadata?.__methods?.[this.propertyName]) {
+      this.prototype.__metadata.__methods[this.propertyName] = this.gMetadataResolver.create();
     }
 
     // add parameter to metadata
-    this.prototype.__metadata[this.propertyName].args.push({
+    this.prototype.__metadata.__methods[this.propertyName].args.push({
       idx: this.propertyIndex,
       type: 'param',
       data: {

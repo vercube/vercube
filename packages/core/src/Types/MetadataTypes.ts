@@ -8,12 +8,23 @@ export namespace MetadataTypes {
   export type Response = NodeEventContext['res'];
 
   export interface Metadata {
+    __metadata: Ctx;
+  }
+
+  export interface Ctx {
+    __controller: {
+      path: string;
+    };
+    __middlewares: Middleware[];
+    __methods: Record<string, Method>;
+  }
+
+  export interface Method {
     req: Request | null;
     res: Response | null;
     url: string | null;
     args: Arg[];
     actions: Action[];
-    middlewares: Middleware[];
   }
 
   export interface ResolvedData {
@@ -36,9 +47,11 @@ export namespace MetadataTypes {
   }
 
   export interface Middleware {
+    target: string;
     type?: 'before' | 'after';
     priority?: number;
-    middleware: BaseMiddleware;
+    middleware: typeof BaseMiddleware;
+    args?: unknown;
   }
 
   export interface ResolveUrlParams {

@@ -17,7 +17,7 @@ interface SetHeaderDecoratorOptions {
  * A decorator that sets a header on the response.
  * @extends {BaseDecorator<SetHeaderDecoratorOptions>}
  */
-class SetHeaderDecorator extends BaseDecorator<SetHeaderDecoratorOptions> {
+class SetHeaderDecorator extends BaseDecorator<SetHeaderDecoratorOptions, MetadataTypes.Metadata> {
 
   /**
    * Injected MetadataResolver instance.
@@ -33,13 +33,17 @@ class SetHeaderDecorator extends BaseDecorator<SetHeaderDecoratorOptions> {
    * @override
    */
   public override created(): void {
+    if (!this.prototype.__metadata?.__methods) {
+      this.prototype.__metadata.__methods = {};
+    }
+
     // if metadata for property does not exist, create it
-    if (!this.prototype.__metadata[this.propertyName]) {
-      this.prototype.__metadata[this.propertyName] = this.gMetadataResolver.create();
+    if (!this.prototype.__metadata?.__methods?.[this.propertyName]) {
+      this.prototype.__metadata.__methods[this.propertyName] = this.gMetadataResolver.create();
     }
 
     // add query parameter to metadata
-    this.prototype.__metadata[this.propertyName].actions.push({
+    this.prototype.__metadata.__methods[this.propertyName].actions.push({
       handler: (req: MetadataTypes.Request, res: MetadataTypes.Response) => {
         res.setHeader(this.options.key, this.options.value);
       },

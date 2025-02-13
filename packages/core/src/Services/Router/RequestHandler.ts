@@ -1,6 +1,6 @@
  
 import { defineEventHandler, type EventHandler } from 'h3';
-import { Inject } from '@vercube/di';
+import { Container, Inject } from '@vercube/di';
 import { MetadataResolver } from '../Metadata/MetadataResolver';
 import { HttpError } from '../../Errors/HttpError';
 
@@ -28,6 +28,14 @@ export class RequestHandler {
   private gMetadataResolver!: MetadataResolver;
 
   /**
+   * Container for dependency injection.
+   * @type {Container}
+   * @private
+   */
+  @Inject(Container)
+  private gContainer!: Container;
+
+  /**
    * Handles an incoming request.
    * @param {RequestHandlerOptions} params - The options for handling the request.
    * @returns {EventHandler} The event handler for the request.
@@ -41,11 +49,17 @@ export class RequestHandler {
       const prototype = Object.getPrototypeOf(instance);
 
       // resolve metadata for the route
-      const { actions, middlewares } = this.gMetadataResolver.resolve(event, prototype.__metadata[propertyName]);
+      const { actions, middlewares } = this.gMetadataResolver.resolve(event, prototype, propertyName);
+
+      // resolve middlewares
+      const resolvedMiddlewares = middlewares.map((m) => ({
+        ...m,
+        middleware: this.gContainer.resolve(m.middleware),
+      }));
 
       // get middlewares
-      const beforeMiddlewares = middlewares.filter((m) => m.type === 'before');
-      const afterMiddlewares = middlewares.filter((m) => m.type === 'after');
+      const beforeMiddlewares = resolvedMiddlewares.filter((m) => m.type === 'before');
+      const afterMiddlewares = resolvedMiddlewares.filter((m) => m.type === 'after');
 
       // sort middlewares by priority
       beforeMiddlewares.sort((a, b) => (a?.priority ?? 999) - (b?.priority ?? 999));

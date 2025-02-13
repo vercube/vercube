@@ -10,40 +10,44 @@ import { HTTPStatus } from '../../Types/HttpTypes';
  * @property {string} code - The redirect status code.
  */
 interface RedirectDecoratorOptions {
-    location: string;
-    code: HTTPStatus;
+  location: string;
+  code: HTTPStatus;
 }
 
-class RedirectDecorator extends BaseDecorator<RedirectDecoratorOptions> {
+class RedirectDecorator extends BaseDecorator<RedirectDecoratorOptions, MetadataTypes.Metadata> {
 
-    /**
-     * Injected MetadataResolver instance.
-     * @type {MetadataResolver}
-     * @private
-     */
-    @Inject(MetadataResolver)
-    private gMetadataResolver!: MetadataResolver;
+  /**
+   * Injected MetadataResolver instance.
+   * @type {MetadataResolver}
+   * @private
+   */
+  @Inject(MetadataResolver)
+  private gMetadataResolver!: MetadataResolver;
 
-    /**
-     * Decorator responsible for redirecting to a specified URL.
-     * Called when the decorator is created.
-     * Sets the location header value and status code.
-     * @override
-     */
-    public override created(): void {
-        // if metadata for property does not exist, create it
-        if (!this.prototype.__metadata[this.propertyName]) {
-            this.prototype.__metadata[this.propertyName] = this.gMetadataResolver.create();
-        }
-
-        // Set status code and location header.
-        this.prototype.__metadata[this.propertyName].actions.push({
-            handler: (req: MetadataTypes.Request, res: MetadataTypes.Response) => {
-                res.statusCode = this.options.code;
-                res.setHeader('Location', this.options.location);
-            },
-        });
+  /**
+   * Decorator responsible for redirecting to a specified URL.
+   * Called when the decorator is created.
+   * Sets the location header value and status code.
+   * @override
+   */
+  public override created(): void {
+    if (!this.prototype.__metadata?.__methods) {
+      this.prototype.__metadata.__methods = {};
     }
+
+    // if metadata for property does not exist, create it
+    if (!this.prototype.__metadata?.__methods[this.propertyName]) {
+      this.prototype.__metadata.__methods[this.propertyName] = this.gMetadataResolver.create();
+    }
+
+    // Set status code and location header.
+    this.prototype.__metadata.__methods[this.propertyName].actions.push({
+      handler: (req: MetadataTypes.Request, res: MetadataTypes.Response) => {
+        res.statusCode = this.options.code;
+        res.setHeader('Location', this.options.location);
+      },
+    });
+  }
 
 }
 
@@ -54,5 +58,5 @@ class RedirectDecorator extends BaseDecorator<RedirectDecoratorOptions> {
  * @returns {Function} The decorator function.
  */
 export function Redirect(location: string, code: HTTPStatus = 301): Function {
-    return createDecorator(RedirectDecorator, { location, code });
+  return createDecorator(RedirectDecorator, { location, code });
 }

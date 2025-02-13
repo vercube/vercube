@@ -7,6 +7,7 @@ import { SecondMiddleware } from '../Middlewares/SecondMiddleware';
  * This is a sample controller that demonstrates how to create a controller using the @vercube/core package.
  */
 @Controller('/api/playground')
+@Middleware(FirstMiddleware)
 export default class PlaygroundController {
 
   /**
@@ -14,7 +15,6 @@ export default class PlaygroundController {
    * @returns {Promise<{ message: string }>} A promise that resolves to an object containing a greeting message.
    */
   @Get('/')
-  @Middleware(FirstMiddleware)
   @Middleware(SecondMiddleware)
   @SetHeader('X-Test-Response-Header', '1')
   public async index(): Promise<{ message: string }> {

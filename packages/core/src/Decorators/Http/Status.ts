@@ -16,7 +16,7 @@ interface StatusDecoratorOptions {
  * A decorator that sets a status on the response.
  * @extends {BaseDecorator<StatusDecoratorOptions>}
  */
-class StatusDecorator extends BaseDecorator<StatusDecoratorOptions> {
+class StatusDecorator extends BaseDecorator<StatusDecoratorOptions, MetadataTypes.Metadata> {
 
   @Inject(MetadataResolver)
   private gMetadataResolver!: MetadataResolver;
@@ -27,12 +27,16 @@ class StatusDecorator extends BaseDecorator<StatusDecoratorOptions> {
    * @override
    */
   public override created(): void {
-    // if metadata for property does not exist, create it
-    if (!this.prototype.__metadata[this.propertyName]) {
-      this.prototype.__metadata[this.propertyName] = this.gMetadataResolver.create();
+    if (!this.prototype.__metadata?.__methods) {
+      this.prototype.__metadata.__methods = {};
     }
 
-    this.prototype.__metadata[this.propertyName].actions.push({
+    // if metadata for property does not exist, create it
+    if (!this.prototype.__metadata?.__methods[this.propertyName]) {
+      this.prototype.__metadata.__methods[this.propertyName] = this.gMetadataResolver.create();
+    }
+
+    this.prototype.__metadata.__methods[this.propertyName].actions.push({
       handler: (req: MetadataTypes.Request, res: MetadataTypes.Response) => {
         res.statusCode = this.options.code;
       },

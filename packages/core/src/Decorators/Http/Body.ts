@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
 import { MetadataResolver } from '../../Services/Metadata/MetadataResolver';
+import { MetadataTypes } from '../../Types/MetadataTypes';
 
 /**
  * @class BodyDecorator
@@ -8,7 +9,7 @@ import { MetadataResolver } from '../../Services/Metadata/MetadataResolver';
  *
  * A decorator class that handles the metadata for HTTP request bodies.
  */
-class BodyDecorator extends BaseDecorator<{}> {
+class BodyDecorator extends BaseDecorator<{}, MetadataTypes.Metadata> {
 
   @Inject(MetadataResolver)
   private gMetadataResolver!: MetadataResolver;
@@ -19,14 +20,17 @@ class BodyDecorator extends BaseDecorator<{}> {
    * for the property exists and adds the body argument to the metadata.
    */
   public override created(): void {
+    if (!this.prototype.__metadata?.__methods) {
+      this.prototype.__metadata.__methods = {};
+    }
 
     // if metadata for property does not exist, create it
-    if (!this.prototype.__metadata[this.propertyName]) {
-      this.prototype.__metadata[this.propertyName] = this.gMetadataResolver.create();
+    if (!this.prototype.__metadata.__methods[this.propertyName]) {
+      this.prototype.__metadata.__methods[this.propertyName] = this.gMetadataResolver.create();
     }
 
     // add body to metadata
-    this.prototype.__metadata[this.propertyName].args.push({
+    this.prototype.__metadata.__methods[this.propertyName].args.push({
       idx: this.propertyIndex,
       type: 'body',
     });

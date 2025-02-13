@@ -1,7 +1,5 @@
 /* eslint-disable unicorn/prefer-native-coercion-functions */
 /* eslint-disable unicorn/no-array-for-each */
-
- 
 import { type BaseDecorator } from '../Common/BaseDecorators';
 import { Container } from '../Domain/Container';
 import { IOC } from '../Types/IOCTypes';

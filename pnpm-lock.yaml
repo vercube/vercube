@@ -60,6 +60,15 @@ importers:
         specifier: 3.3.1
         version: 3.3.1(typescript@5.7.3)
 
+  packages/auth:
+    dependencies:
+      '@vercube/core':
+        specifier: workspace:*
+        version: link:../core
+      '@vercube/di':
+        specifier: workspace:*
+        version: link:../di
+
   packages/cli:
     dependencies:
       '@vercube/devkit':
@@ -144,6 +153,9 @@ importers:
       '@types/node':
         specifier: '22'
         version: 22.10.10
+      '@vercube/auth':
+        specifier: workspace:*
+        version: link:../packages/auth
       '@vercube/cli':
         specifier: workspace:*
         version: link:../packages/cli

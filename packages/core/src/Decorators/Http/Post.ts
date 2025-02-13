@@ -1,7 +1,7 @@
-import { defineEventHandler } from 'h3';
 import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
 import { RouterRegistry } from '../../Services/Router/RouterRegistry';
 import { MetadataResolver } from '../../Services/Metadata/MetadataResolver';
+import { RequestHandler } from '../../Services/Router/RequestHandler';
 
 interface PostDecoratorOptions {
   path: string;
@@ -24,6 +24,9 @@ class PostDecorator extends BaseDecorator<PostDecoratorOptions> {
   @Inject(MetadataResolver)
   private gMetadataResolver!: MetadataResolver;
 
+  @Inject(RequestHandler)
+  private gRequestHandler!: RequestHandler;
+
   /**
    * Called when the decorator is created.
    *
@@ -40,16 +43,7 @@ class PostDecorator extends BaseDecorator<PostDecoratorOptions> {
     this.gRouterRegistry.registerRoute({
       path: this.options.path,
       method: 'post',
-      // TODO: move handler to separate file and import in every HTTP Method decorator
-      handler: defineEventHandler((event) => {
-        const metadata = this.gMetadataResolver.resolve(event, this.prototype.__metadata[this.propertyName]);
-
-        for (const action of metadata.actions) {
-          action.handler(event.node.req, event.node.res);
-        }
-
-        return this.instance[this.propertyName].call(this.instance, ...metadata.args ?? []);
-      }),
+      handler: this.gRequestHandler.handleRequest({ instance: this.instance, propertyName: this.propertyName }),
     });
 
   }

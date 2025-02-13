@@ -9,6 +9,7 @@
     "dev": "vercube dev"
   },
   "devDependencies": {
+    "@vercube/auth": "workspace:*",
     "@vercube/cli": "workspace:*",
     "@vercube/core": "workspace:*",
     "@vercube/di": "workspace:*",

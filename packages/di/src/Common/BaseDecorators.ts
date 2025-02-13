@@ -4,7 +4,7 @@
  * This is base class for all property decorators used in application. Decorator class must extend this one.
  * This class instance is created using IOC container so you can @Inject() things here.
  */
-export abstract class BaseDecorator<T> {
+export abstract class BaseDecorator<T, P = any> {
 
   /** Holds options object that is passed as 2nd argument in createDecorator() factory */
   public options!: T;
@@ -13,7 +13,7 @@ export abstract class BaseDecorator<T> {
   public instance: any;
 
   /** Holds class prototype that is decorated */
-  public prototype: any;
+  public prototype: P;
 
   /** Holds property name that was decorated */
   public propertyName!: string;
