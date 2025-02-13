@@ -55,7 +55,9 @@ export class RequestHandler {
       const resolvedMiddlewares = middlewares.map((m) => ({
         ...m,
         middleware: this.gContainer.resolve(m.middleware),
-      }));
+      }))
+      // get unique middlewares
+      .filter((m, index, self) => self.findIndex((t) => t.middleware === m.middleware) === index);
 
       // get middlewares
       const beforeMiddlewares = resolvedMiddlewares.filter((m) => m.type === 'before');
@@ -75,7 +77,7 @@ export class RequestHandler {
       for (const middleware of beforeMiddlewares) {
         // call the middleware
         try {
-          await middleware.middleware.use(event, middleware.args);
+          await middleware.middleware.use(event, { middlewareArgs: middleware.args, methodArgs: args });
         } catch (error_) {
           // check if the error is known error type and return it.
           if (error_ instanceof HttpError) {
@@ -89,7 +91,7 @@ export class RequestHandler {
         }
       }
 
-      let response = instance[propertyName].call(instance, args);
+      let response = instance[propertyName].call(instance, ...args?.map((a) => a.resolved) ?? []);
 
       if (response instanceof Promise) {
         response = await response;

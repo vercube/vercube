@@ -12,7 +12,7 @@ export function Auth(roles?: string[]): Function {
         {
           target: propertyName ?? '__global__',
           type: 'before',
-          priority: -1,
+          priority: -999,
           middleware: AuthMiddleware,
           args: { roles },
         },

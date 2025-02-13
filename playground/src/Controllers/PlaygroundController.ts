@@ -1,4 +1,4 @@
-import { Controller, Get, Middleware, SetHeader, Status, HTTPStatus, Redirect, Post, Body } from '@vercube/core';
+import { Controller, Get, Middleware, SetHeader, Status, HTTPStatus, Redirect, Post, Body, QueryParams } from '@vercube/core';
 import { FirstMiddleware } from '../Middlewares/FirstMiddleware';
 import { SecondMiddleware } from '../Middlewares/SecondMiddleware';
 import { z } from 'zod';
@@ -7,6 +7,11 @@ const schema = z.object({
   name: z.string().min(1, 'Name is required'),
   email: z.string().email('Invalid email format'),
   age: z.number().int().min(0, 'Age must be a non-negative integer'),
+});
+
+const schemaQueryParams  = z.object({
+  foo: z.string().min(1, 'Foo is required'),
+  bar: z.string().min(1, 'Bar is required'),
 });
 
 /**
@@ -33,8 +38,12 @@ export default class PlaygroundController {
    * @returns {Promise<{ message: string }>} A promise that resolves to an object containing a greeting message.
    */
   @Post('/')
-  public async post(@Body({ validationSchema: schema }) body: unknown): Promise<{ message: string }> {
-    console.log(body);
+  public async post(
+    @Body({ validationSchema: schema }) body: unknown,
+    @QueryParams({ validationSchema: schemaQueryParams }) query: string,
+  ): Promise<{ message: string }> {
+    console.log('Body =>', body);
+    console.log('Query =>', query);
 
     return { message: JSON.stringify(body) };
   }

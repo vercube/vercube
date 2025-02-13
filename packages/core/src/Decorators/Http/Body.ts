@@ -39,6 +39,8 @@ class BodyDecorator extends BaseDecorator<BodyDecoratorOptions, MetadataTypes.Me
     this.prototype.__metadata.__methods[this.propertyName].args.push({
       idx: this.propertyIndex,
       type: 'body',
+      validate: this.options?.validationSchema ? true : false,
+      validationSchema: this.options?.validationSchema,
     });
 
     // add query parameter to metadata
@@ -46,7 +48,7 @@ class BodyDecorator extends BaseDecorator<BodyDecoratorOptions, MetadataTypes.Me
       target: this.propertyName,
       type: 'before',
       priority: -1,
-      args: { schema: this.options?.validationSchema },
+      args: {},
       middleware: ValidationMiddleware,
     });
 

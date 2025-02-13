@@ -1,9 +1,12 @@
 import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
 import { MetadataResolver } from '../../Services/Metadata/MetadataResolver';
-import { MetadataTypes } from '../../Types/MetadataTypes';
+import type { MetadataTypes } from '../../Types/MetadataTypes';
+import type { ValidationTypes } from '../../Types/ValidationTypes';
+import { ValidationMiddleware } from '../../Middleware/ValidationMiddleware';
 
-interface QueryDecoratorOptions {
+interface QueryParamDecoratorOptions {
   name: string;
+  validationSchema?: ValidationTypes.Schema;
 }
 
 /**
@@ -15,7 +18,7 @@ interface QueryDecoratorOptions {
  *
  * @extends {BaseDecorator<QueryDecoratorOptions>}
  */
-class QueryDecorator extends BaseDecorator<QueryDecoratorOptions, MetadataTypes.Metadata> {
+class QueryParamDecorator extends BaseDecorator<QueryParamDecoratorOptions, MetadataTypes.Metadata> {
 
   @Inject(MetadataResolver)
   private gMetadataResolver!: MetadataResolver;
@@ -36,13 +39,24 @@ class QueryDecorator extends BaseDecorator<QueryDecoratorOptions, MetadataTypes.
       this.prototype.__metadata.__methods[this.propertyName] = this.gMetadataResolver.create();
     }
 
-    // add query parameter to metadata
+    // add body to metadata
     this.prototype.__metadata.__methods[this.propertyName].args.push({
       idx: this.propertyIndex,
-      type: 'query',
+      type: 'query-param',
       data: {
         name: this.options.name,
       },
+      validate: this.options?.validationSchema ? true : false,
+      validationSchema: this.options?.validationSchema,
+    });
+
+    // add query parameter to metadata
+    this.prototype.__metadata.__middlewares.unshift({
+      target: this.propertyName,
+      type: 'before',
+      priority: -1,
+      args: {},
+      middleware: ValidationMiddleware,
     });
 
   }
@@ -55,9 +69,9 @@ class QueryDecorator extends BaseDecorator<QueryDecoratorOptions, MetadataTypes.
  * This function returns a decorator function that can be used to annotate
  * a method parameter with query parameter information.
  *
- * @param {string} name - The name of the query parameter.
+ * @param {QueryParamDecoratorOptions} options - The options for the decorator.
  * @return {Function} The decorator function.
  */
-export function Query(name: string): Function {
-  return createDecorator(QueryDecorator, { name });
+export function QueryParam(options: QueryParamDecoratorOptions): Function {
+  return createDecorator(QueryParamDecorator, options);
 }

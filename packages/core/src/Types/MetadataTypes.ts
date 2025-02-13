@@ -1,6 +1,7 @@
  
 import type { NodeEventContext } from 'h3';
 import type { BaseMiddleware } from '../Services/Middleware/BaseMiddleware';
+import { ValidationTypes } from './ValidationTypes';
 export namespace MetadataTypes {
 
   export type Request = NodeEventContext['req'];
@@ -31,7 +32,7 @@ export namespace MetadataTypes {
     req: Request | null;
     res: Response | null;
     url: string | null;
-    args: unknown[];
+    args: Arg[];
     actions: Action[];
     middlewares: Middleware[];
   }
@@ -40,6 +41,9 @@ export namespace MetadataTypes {
     idx: number;
     type: string;
     data?: Record<string, any>;
+    resolved?: unknown;
+    validate?: boolean;
+    validationSchema?: ValidationTypes.Schema;
   }
 
   export interface Action {

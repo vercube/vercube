@@ -90,44 +90,63 @@ export class MetadataResolver {
    * @return {unknown[]} The resolved arguments.
    * @private
    */
-  private async resolveArgs(args: MetadataTypes.Arg[], event: HttpEvent): Promise<unknown[]> {
+  private async resolveArgs(args: MetadataTypes.Arg[], event: HttpEvent): Promise<MetadataTypes.Arg[]> {
     // sort arguments by index
     args.sort((a, b) => a.idx - b.idx);
 
-    // resolve arguments
-    return await Promise.all(args.map((arg) => {
-      switch (arg.type) {
-        case 'param': {
-          return getRouterParam(
-            event,
-            arg?.data?.name,
-            { decode: arg?.data?.decode ?? false },
-          ) ?? null;
-        }
-        case 'body': {
-          return readBody(event);
-        }
-        case 'query': {
-          const query = getQuery(event);
-          return query[arg?.data?.name] ?? null;
-        }
-        case 'header': {
-          return getHeader(event, arg?.data?.name) ?? null;
-        }
-        case 'headers': {
-          return getHeaders(event);
-        }
-        case 'request': {
-          return event.node.req;
-        }
-        case 'response': {
-          return event.node.res;
-        }
-        default: {
-          throw new Error(`Unknown argument type: ${arg.type}`);
-        }
-      }
+    // resolve arguments data from event
+    const resolvedArgs = args.map(async (arg) => ({
+      ...arg,
+      resolved: await this.resolveArg(arg, event),
     }));
+
+    // return resolved arguments
+    return await Promise.all(resolvedArgs);
+  }
+
+  /**
+   * Resolves an argument for a given event.
+   *
+   * @param {MetadataTypes.Arg} arg - The argument to resolve.
+   * @param {HttpEvent} event - The event to resolve the argument for.
+   * @return {unknown} The resolved argument.
+   * @private
+   */
+  private resolveArg(arg: MetadataTypes.Arg, event: HttpEvent): unknown {
+    switch (arg.type) {
+      case 'param': {
+        return getRouterParam(
+          event,
+          arg?.data?.name,
+          { decode: arg?.data?.decode ?? false },
+        ) ?? null;
+      }
+      case 'body': {
+        return readBody(event);
+      }
+      case 'query-param': {
+        const query = getQuery(event);
+        return query[arg?.data?.name] ?? null;
+      }
+      case 'query-params': {
+        return getQuery(event);
+      }
+      case 'header': {
+        return getHeader(event, arg?.data?.name) ?? null;
+      }
+      case 'headers': {
+        return getHeaders(event);
+      }
+      case 'request': {
+        return event.node.req;
+      }
+      case 'response': {
+        return event.node.res;
+      }
+      default: {
+        throw new Error(`Unknown argument type: ${arg.type}`);
+      }
+    }
   }
 
   /**

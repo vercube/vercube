@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import type { HttpEvent } from '../../Types/CommonTypes';
+import type { HttpEvent, MiddlewareOptions } from '../../Types/CommonTypes';
 
 /**
  * BaseMiddleware class that serves as a base for all middleware implementations.
@@ -16,6 +16,6 @@ export class BaseMiddleware<T = unknown> {
    * @param {T[]} args - Additional arguments for the middleware.
    * @returns {void | Promise<void>} - A void or a promise that resolves when the processing is complete.
    */
-  public use(event: HttpEvent, args?: T): void | Promise<void> {}
+  public use(event: HttpEvent, args?: MiddlewareOptions): void | Promise<void> {}
 
 }

@@ -1,15 +1,9 @@
  
-import { readBody } from 'h3';
 import { InjectOptional } from '@vercube/di';
 import { BaseMiddleware } from '../Services/Middleware/BaseMiddleware';
-import { HttpEvent } from '../Types/CommonTypes';
+import { HttpEvent, MiddlewareOptions } from '../Types/CommonTypes';
 import { BadRequestError } from '../Errors/Http/BadRequestError';
-import { ValidationTypes } from '../Types/ValidationTypes';
 import { ValidationProvider } from '../Services/Validation/ValidationProvider';
-
-interface MiddlewareOptions {
-  schema?: ValidationTypes.Schema;
-}
 
 /**
  * Middleware for validating request data against a schema
@@ -32,23 +26,22 @@ export class ValidationMiddleware implements BaseMiddleware {
    * @returns {Promise<void>} - A promise that resolves when the processing is complete
    * @throws {BadRequestError} - If validation fails
    */
-  public async use(event: HttpEvent, args: unknown): Promise<void> {
+  public async use(event: HttpEvent, args: MiddlewareOptions): Promise<void> {
     if (!this.gValidationProvider) {
       console.warn('ValidationMiddleware::ValidationProvider is not registered');
       return;
     }
 
-    const body = await readBody(event);
-    const schema = (args as MiddlewareOptions)?.schema;
+    // get all data to validate
+    const validators = args.methodArgs?.filter((arg) => arg.validate && arg.validationSchema) ?? [];
 
-    if (!schema) {
-      return;
-    }
+    // validate data
+    for (const validator of validators) {
+      const result = await this.gValidationProvider.validate(validator.validationSchema!, validator.resolved);
 
-    const result = await this.gValidationProvider.validate(schema, body);
-
-    if (result.issues?.length) {
-      throw new BadRequestError('Validation error', result.issues);
+      if (result.issues?.length) {
+        throw new BadRequestError(`Validation error - ${validator.type}`, result.issues);
+      }
     }
   }
 
