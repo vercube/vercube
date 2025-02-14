@@ -1,3 +1,5 @@
+import { initializeMetadata } from '../../Utils/Utils';
+
 /**
  * A factory function for creating a Controller decorator.
  *
@@ -17,12 +19,11 @@ export function Controller(path: string): Function {
    * @param {Function} ctx - The class constructor.
    */
   return function internalDecorator(ctx: Function) {
-    ctx.prototype.__metadata = {
-      ...ctx?.prototype?.__metadata,
-      __controller: {
-        ...ctx?.prototype?.__metadata?.__controller,
-        path,
-      },
+    const meta = initializeMetadata(ctx);
+
+    meta.__controller = {
+      ...ctx?.prototype?.__metadata?.__controller,
+      path,
     };
   };
 }
