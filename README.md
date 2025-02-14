@@ -14,3 +14,8 @@ Vercube is a free and open-source NodeJS framework on top of [h3](https://h3.unj
 - Enable [Corepack](https://github.com/nodejs/corepack) using `corepack enable`
 - Install dependencies using `pnpm install`
 - Run using `pnpm dev`
+
+### Playground
+```bash
+$ cd playground && pnpm dev
+```
