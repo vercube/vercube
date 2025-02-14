@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 
-import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
-import { MetadataResolver } from '../../Services/Metadata/MetadataResolver';
+import { BaseDecorator, createDecorator } from '@vercube/di';
 import { MetadataTypes } from '../../Types/MetadataTypes';
+import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
 
 /**
  * This class is responsible for managing request decorators.
@@ -15,9 +15,6 @@ import { MetadataTypes } from '../../Types/MetadataTypes';
  */
 class RequestDecorator extends BaseDecorator<{}, MetadataTypes.Metadata> {
 
-  @Inject(MetadataResolver)
-  private gMetadataResolver!: MetadataResolver;
-
   /**
    * Called when the decorator is created.
    *
@@ -25,17 +22,10 @@ class RequestDecorator extends BaseDecorator<{}, MetadataTypes.Metadata> {
    * and then adds the request information to the metadata.
    */
   public override created(): void {
-    if (!this.prototype.__metadata?.__methods) {
-      this.prototype.__metadata.__methods = {};
-    }
+    initializeMetadata(this.prototype);
+    const method = initializeMetadataMethod(this.prototype, this.propertyName);
 
-    // if metadata for property does not exist, create it
-    if (!this.prototype.__metadata?.__methods[this.propertyName]) {
-      this.prototype.__metadata.__methods[this.propertyName] = this.gMetadataResolver.create();
-    }
-
-    // add request to metadata
-    this.prototype.__metadata.__methods[this.propertyName].args.push({
+    method.args.push({
       idx: this.propertyIndex,
       type: 'request',
     });

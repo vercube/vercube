@@ -32,31 +32,13 @@ export class MetadataResolver {
    * @return {string} The resolved URL.
    */
   public resolveUrl(params: MetadataTypes.ResolveUrlParams): string {
-    const { instance, propertyName } = params;
-    let { path }  = params;
-
+    const { instance, propertyName, path: rawPath } = params;
     const metadata = instance.__metadata as MetadataTypes.Ctx;
+    const basePath = (metadata?.__controller.path ?? '').replace(/\/$/, '');
+    const cleanPath = rawPath.replace(/^\//, '');
+    const url = `${basePath}/${cleanPath}`;
 
-    // get base route from controller metadata
-    let baseRotue = metadata?.__controller.path ?? '';
-
-    // remove trailing slash
-    if (baseRotue.endsWith('/')) {
-      baseRotue = baseRotue.slice(0, -1);
-    }
-
-    // remove leading slash
-    if (path.startsWith('/')) {
-      path = path.slice(1);
-    }
-
-    // construct full url
-    const url = `${baseRotue}/${path}`;
-
-    // save url to metadata
     metadata.__methods[propertyName].url = url;
-
-    // return resolved url
     return url;
   }
 

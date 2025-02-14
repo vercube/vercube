@@ -1,7 +1,7 @@
-import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
+import { BaseDecorator, createDecorator } from '@vercube/di';
 import type { MetadataTypes } from '../../Types/MetadataTypes';
 import { HTTPStatus } from '../../Types/HttpTypes';
-import { MetadataResolver } from '../../Services/Metadata/MetadataResolver';
+import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
 
 /**
  * Options for the StatusDecorator.
@@ -18,25 +18,16 @@ interface StatusDecoratorOptions {
  */
 class StatusDecorator extends BaseDecorator<StatusDecoratorOptions, MetadataTypes.Metadata> {
 
-  @Inject(MetadataResolver)
-  private gMetadataResolver!: MetadataResolver;
-
   /**
    * Called when the decorator is created.
    * Sets a status on the response
    * @override
    */
   public override created(): void {
-    if (!this.prototype.__metadata?.__methods) {
-      this.prototype.__metadata.__methods = {};
-    }
+    initializeMetadata(this.prototype);
+    const method = initializeMetadataMethod(this.prototype, this.propertyName);
 
-    // if metadata for property does not exist, create it
-    if (!this.prototype.__metadata?.__methods[this.propertyName]) {
-      this.prototype.__metadata.__methods[this.propertyName] = this.gMetadataResolver.create();
-    }
-
-    this.prototype.__metadata.__methods[this.propertyName].actions.push({
+    method.actions.push({
       handler: (req: MetadataTypes.Request, res: MetadataTypes.Response) => {
         res.statusCode = this.options.code;
       },

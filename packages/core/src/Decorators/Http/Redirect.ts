@@ -1,7 +1,7 @@
-import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
-import { MetadataResolver } from '../../Services/Metadata/MetadataResolver';
+import { BaseDecorator, createDecorator } from '@vercube/di';
 import type { MetadataTypes } from '../../Types/MetadataTypes';
 import { HTTPStatus } from '../../Types/HttpTypes';
+import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
 
 /**
  * Options for the RedirectDecorator.
@@ -17,31 +17,16 @@ interface RedirectDecoratorOptions {
 class RedirectDecorator extends BaseDecorator<RedirectDecoratorOptions, MetadataTypes.Metadata> {
 
   /**
-   * Injected MetadataResolver instance.
-   * @type {MetadataResolver}
-   * @private
-   */
-  @Inject(MetadataResolver)
-  private gMetadataResolver!: MetadataResolver;
-
-  /**
    * Decorator responsible for redirecting to a specified URL.
    * Called when the decorator is created.
    * Sets the location header value and status code.
    * @override
    */
   public override created(): void {
-    if (!this.prototype.__metadata?.__methods) {
-      this.prototype.__metadata.__methods = {};
-    }
+    initializeMetadata(this.prototype);
+    const method = initializeMetadataMethod(this.prototype, this.propertyName);
 
-    // if metadata for property does not exist, create it
-    if (!this.prototype.__metadata?.__methods[this.propertyName]) {
-      this.prototype.__metadata.__methods[this.propertyName] = this.gMetadataResolver.create();
-    }
-
-    // Set status code and location header.
-    this.prototype.__metadata.__methods[this.propertyName].actions.push({
+    method.actions.push({
       handler: (req: MetadataTypes.Request, res: MetadataTypes.Response) => {
         res.statusCode = this.options.code;
         res.setHeader('Location', this.options.location);

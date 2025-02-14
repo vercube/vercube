@@ -19,11 +19,9 @@ class InitDecorator extends BaseDecorator<{}> {
 }
 
 /**
- * This decorator informs HMR that it should make some sort of initialization stuff. Its called
- * when all decorators are ready to go.
- *
- * @param eventType event to listen for
- * @return decorator function
+ * Decorator that automatically executes the decorated method when dependencies are injected.
+ * Use this decorator to run initialization logic for runtime-loaded container dependencies.
+ * @returns {Function} Decorator function that creates an InitDecorator instance
  */
 export function Init(): Function {
   return createDecorator(InitDecorator, {});

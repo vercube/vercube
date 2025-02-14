@@ -1,8 +1,8 @@
-import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
-import { MetadataResolver } from '../../Services/Metadata/MetadataResolver';
+import { BaseDecorator, createDecorator } from '@vercube/di';
 import type { MetadataTypes } from '../../Types/MetadataTypes';
 import type { ValidationTypes } from '../../Types/ValidationTypes';
 import { ValidationMiddleware } from '../../Middleware/ValidationMiddleware';
+import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
 
 interface QueryParamDecoratorOptions {
   name: string;
@@ -20,9 +20,6 @@ interface QueryParamDecoratorOptions {
  */
 class QueryParamDecorator extends BaseDecorator<QueryParamDecoratorOptions, MetadataTypes.Metadata> {
 
-  @Inject(MetadataResolver)
-  private gMetadataResolver!: MetadataResolver;
-
   /**
    * Called when the decorator is created.
    *
@@ -30,17 +27,10 @@ class QueryParamDecorator extends BaseDecorator<QueryParamDecoratorOptions, Meta
    * and then adds the query parameter information to the metadata.
    */
   public override created(): void {
-    if (!this.prototype.__metadata?.__methods) {
-      this.prototype.__metadata.__methods = {};
-    }
+    const meta = initializeMetadata(this.prototype);
+    const method = initializeMetadataMethod(this.prototype, this.propertyName);
 
-    // if metadata for property does not exist, create it
-    if (!this.prototype.__metadata?.__methods[this.propertyName]) {
-      this.prototype.__metadata.__methods[this.propertyName] = this.gMetadataResolver.create();
-    }
-
-    // add body to metadata
-    this.prototype.__metadata.__methods[this.propertyName].args.push({
+    method.args.push({
       idx: this.propertyIndex,
       type: 'query-param',
       data: {
@@ -50,8 +40,7 @@ class QueryParamDecorator extends BaseDecorator<QueryParamDecoratorOptions, Meta
       validationSchema: this.options?.validationSchema,
     });
 
-    // add query parameter to metadata
-    this.prototype.__metadata.__middlewares.unshift({
+    meta.__middlewares.unshift({
       target: this.propertyName,
       type: 'before',
       priority: -1,

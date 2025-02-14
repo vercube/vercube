@@ -1,6 +1,7 @@
 import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
 import { MetadataResolver } from '../../Services/Metadata/MetadataResolver';
 import { MetadataTypes } from '../../Types/MetadataTypes';
+import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
 
 interface ParamDecoratorOptions {
   // name of the route parameter
@@ -32,17 +33,11 @@ class ParamDecorator extends BaseDecorator<ParamDecoratorOptions, MetadataTypes.
    * and then adds the parameter information to the metadata.
    */
   public override created(): void {
-    if (!this.prototype.__metadata?.__methods) {
-      this.prototype.__metadata.__methods = {};
-    }
-
-    // if metadata for property does not exist, create it
-    if (!this.prototype.__metadata?.__methods?.[this.propertyName]) {
-      this.prototype.__metadata.__methods[this.propertyName] = this.gMetadataResolver.create();
-    }
+    initializeMetadata(this.prototype);
+    const method = initializeMetadataMethod(this.prototype, this.propertyName);
 
     // add parameter to metadata
-    this.prototype.__metadata.__methods[this.propertyName].args.push({
+    method.args.push({
       idx: this.propertyIndex,
       type: 'param',
       data: {

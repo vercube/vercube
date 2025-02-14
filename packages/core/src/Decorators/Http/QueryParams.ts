@@ -1,8 +1,8 @@
-import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
-import { MetadataResolver } from '../../Services/Metadata/MetadataResolver';
+import { BaseDecorator, createDecorator } from '@vercube/di';
 import type { MetadataTypes } from '../../Types/MetadataTypes';
 import type { ValidationTypes } from '../../Types/ValidationTypes';
 import { ValidationMiddleware } from '../../Middleware/ValidationMiddleware';
+import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
 
 interface QueryParamsDecoratorOptions {
   validationSchema?: ValidationTypes.Schema;
@@ -19,9 +19,6 @@ interface QueryParamsDecoratorOptions {
  */
 class QueryParamsDecorator extends BaseDecorator<QueryParamsDecoratorOptions, MetadataTypes.Metadata> {
 
-  @Inject(MetadataResolver)
-  private gMetadataResolver!: MetadataResolver;
-
   /**
    * Called when the decorator is created.
    *
@@ -29,17 +26,11 @@ class QueryParamsDecorator extends BaseDecorator<QueryParamsDecoratorOptions, Me
    * and then adds the query parameters information to the metadata.
    */
   public override created(): void {
-    if (!this.prototype.__metadata?.__methods) {
-      this.prototype.__metadata.__methods = {};
-    }
-
-    // if metadata for property does not exist, create it
-    if (!this.prototype.__metadata?.__methods[this.propertyName]) {
-      this.prototype.__metadata.__methods[this.propertyName] = this.gMetadataResolver.create();
-    }
+    const meta = initializeMetadata(this.prototype);
+    const method = initializeMetadataMethod(this.prototype, this.propertyName);
 
     // add body to metadata
-    this.prototype.__metadata.__methods[this.propertyName].args.push({
+    method.args.push({
       idx: this.propertyIndex,
       type: 'query-params',
       data: {},
@@ -48,7 +39,7 @@ class QueryParamsDecorator extends BaseDecorator<QueryParamsDecoratorOptions, Me
     });
 
     // add query parameter to metadata
-    this.prototype.__metadata.__middlewares.unshift({
+    meta.__middlewares.unshift({
       target: this.propertyName,
       type: 'before',
       priority: -1,

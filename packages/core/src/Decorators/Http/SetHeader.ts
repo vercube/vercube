@@ -1,6 +1,6 @@
-import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
-import { MetadataResolver } from '../../Services/Metadata/MetadataResolver';
+import { BaseDecorator, createDecorator } from '@vercube/di';
 import type { MetadataTypes } from '../../Types/MetadataTypes';
+import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
 
 /**
  * Options for the SetHeaderDecorator.
@@ -20,30 +20,15 @@ interface SetHeaderDecoratorOptions {
 class SetHeaderDecorator extends BaseDecorator<SetHeaderDecoratorOptions, MetadataTypes.Metadata> {
 
   /**
-   * Injected MetadataResolver instance.
-   * @type {MetadataResolver}
-   * @private
-   */
-  @Inject(MetadataResolver)
-  private gMetadataResolver!: MetadataResolver;
-
-  /**
    * Called when the decorator is created.
    * Adds a query parameter to the metadata.
    * @override
    */
   public override created(): void {
-    if (!this.prototype.__metadata?.__methods) {
-      this.prototype.__metadata.__methods = {};
-    }
+    initializeMetadata(this.prototype);
+    const method = initializeMetadataMethod(this.prototype, this.propertyName);
 
-    // if metadata for property does not exist, create it
-    if (!this.prototype.__metadata?.__methods?.[this.propertyName]) {
-      this.prototype.__metadata.__methods[this.propertyName] = this.gMetadataResolver.create();
-    }
-
-    // add query parameter to metadata
-    this.prototype.__metadata.__methods[this.propertyName].actions.push({
+    method.actions.push({
       handler: (req: MetadataTypes.Request, res: MetadataTypes.Response) => {
         res.setHeader(this.options.key, this.options.value);
       },
