@@ -60,7 +60,3 @@ export function initializeMetadata(target: any): MetadataTypes.Ctx {
 
   return target.__metadata;
 }
-
-export function addArg(target: any, propertyName: string, arg: MetadataTypes.Arg): void {
-  target.prototype.__metadata.__methods[propertyName].args.push(arg);
-}
