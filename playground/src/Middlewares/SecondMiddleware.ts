@@ -13,6 +13,7 @@ export class SecondMiddleware implements BaseMiddleware {
    * @returns {Promise<void>} - A promise that resolves when the processing is complete.
    */
   public async use(event: HttpEvent): Promise<void> {
+    console.log('SecondMiddleware');
     throw new BadRequestError('Unauthorized');
   }
 

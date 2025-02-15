@@ -16,7 +16,7 @@ export class MetadataResolver {
   public resolveUrl(params: MetadataTypes.ResolveUrlParams): string {
     const { instance, propertyName, path: rawPath } = params;
     const metadata = instance.__metadata as MetadataTypes.Ctx;
-    const basePath = (metadata?.__controller.path ?? '').replace(/\/$/, '');
+    const basePath = (metadata?.__controller?.path ?? '').replace(/\/$/, '');
     const cleanPath = rawPath.replace(/^\//, '');
     const url = `${basePath}/${cleanPath}`;
 

@@ -10,19 +10,11 @@ import { initializeMetadata } from '../../Utils/Utils';
  * @return {Function} The decorator function.
  */
 export function Controller(path: string): Function {
-  /**
-   * The internal decorator function.
-   *
-   * This function sets the controller metadata on the class prototype,
-   * including the base path for the controller.
-   *
-   * @param {Function} ctx - The class constructor.
-   */
-  return function internalDecorator(ctx: Function) {
-    const meta = initializeMetadata(ctx);
+  return function internalDecorator(target: any) {
+    const meta = initializeMetadata(target.prototype);
 
     meta.__controller = {
-      ...ctx?.prototype?.__metadata?.__controller,
+      ...meta?.__controller,
       path,
     };
   };

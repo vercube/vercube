@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 import { BaseMiddleware } from '../../Services/Middleware/BaseMiddleware';
 import { MetadataTypes } from '../../Types/MetadataTypes';
+import { initializeMetadata } from '../../Utils/Utils';
 
 interface MiddlewareDecoratorParams extends Omit<MetadataTypes.Middleware, 'middleware'> {
 }
@@ -30,18 +31,13 @@ interface MiddlewareDecoratorParams extends Omit<MetadataTypes.Middleware, 'midd
 export function Middleware(middleware: typeof BaseMiddleware, opts?: MiddlewareDecoratorParams): Function {
   return function internalDecorator(target: Function, propertyName?: string) {
     const ctx = ((propertyName) ? target : target.prototype) as MetadataTypes.Metadata;
+    const meta = initializeMetadata(ctx);
 
-    ctx.__metadata = {
-      ...ctx?.__metadata,
-      __middlewares: [
-        ...(ctx?.__metadata?.__middlewares ?? []),
-        {
-          target: propertyName ?? '__global__',
-          type: opts?.type ?? 'before',
-          priority: opts?.priority ?? 999, // default priority is 999 to ensure it runs last
-          middleware,
-        },
-      ],
-    };
+    meta.__middlewares.push({
+      target: propertyName ?? '__global__',
+      type: opts?.type ?? 'before',
+      priority: opts?.priority ?? 999, // default priority is 999 to ensure it runs last
+      middleware,
+    });
   };
 }

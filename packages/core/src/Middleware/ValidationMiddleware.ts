@@ -22,7 +22,7 @@ export class ValidationMiddleware implements BaseMiddleware {
   /**
    * Middleware function that processes the HTTP event
    * @param {HttpEvent} event - The HTTP event to be processed
-   * @param {T[]} args - Additional arguments for the middleware
+   * @param {MiddlewareOptions} args - Additional arguments for the middleware
    * @returns {Promise<void>} - A promise that resolves when the processing is complete
    * @throws {BadRequestError} - If validation fails
    */

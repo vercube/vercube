@@ -1,4 +1,5 @@
 import { Controller, Get, Middleware, SetHeader, Status, HTTPStatus, Redirect, Post, Body, QueryParams } from '@vercube/core';
+import { Auth } from '@vercube/auth';
 import { FirstMiddleware } from '../Middlewares/FirstMiddleware';
 import { SecondMiddleware } from '../Middlewares/SecondMiddleware';
 import { z } from 'zod';
@@ -20,6 +21,7 @@ const schemaQueryParams  = z.object({
  */
 @Controller('/api/playground')
 @Middleware(FirstMiddleware)
+@Auth()
 export default class PlaygroundController {
 
   /**
