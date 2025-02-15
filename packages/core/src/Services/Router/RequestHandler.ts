@@ -1,4 +1,3 @@
- 
 import { defineEventHandler, type EventHandler } from 'h3';
 import { Container, Inject } from '@vercube/di';
 import { MetadataResolver } from '../Metadata/MetadataResolver';

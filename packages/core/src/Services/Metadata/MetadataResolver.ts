@@ -1,6 +1,3 @@
-
- 
- 
 import { getHeader, getHeaders, getQuery, getRouterParam, readBody } from 'h3';
 import type { MetadataTypes } from '../../Types/MetadataTypes';
 import type { HttpEvent } from '../../Types/CommonTypes';

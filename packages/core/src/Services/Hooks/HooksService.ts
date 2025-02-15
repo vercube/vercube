@@ -1,7 +1,3 @@
- 
-
- 
-
 /**
  * This module is responsible for managing type-safe hooks observer pattern.
  *
