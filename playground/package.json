@@ -13,6 +13,7 @@
     "@vercube/cli": "workspace:*",
     "@vercube/core": "workspace:*",
     "@vercube/di": "workspace:*",
+    "@vercube/storage": "workspace:*",
     "@types/node": "22",
     "tsx": "4.19.1"
   },

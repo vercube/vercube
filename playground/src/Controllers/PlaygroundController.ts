@@ -3,6 +3,8 @@ import { Auth } from '@vercube/auth';
 import { FirstMiddleware } from '../Middlewares/FirstMiddleware';
 import { SecondMiddleware } from '../Middlewares/SecondMiddleware';
 import { z } from 'zod';
+import { Inject } from '@vercube/di';
+import { StorageManager } from '@vercube/storage';
 
 const schema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -24,6 +26,9 @@ const schemaQueryParams  = z.object({
 @Auth()
 export default class PlaygroundController {
 
+  @Inject(StorageManager)
+  private gStorageManager: StorageManager;
+
   /**
    * Handles GET requests to the / endpoint.
    * @returns {Promise<{ message: string }>} A promise that resolves to an object containing a greeting message.
@@ -35,9 +40,34 @@ export default class PlaygroundController {
     return { message: 'Hello, world!' };
   }
 
+  /**
+   * Handles GET requests to the /asd endpoint.
+   * @returns {Promise<{ message: string }>} A promise that resolves to an object containing a greeting message.
+   */
   @Get('/asd')
-  public asd() {
+  public async asd(): Promise<{ message: string }> {
     return { message: 'Hello, world!' };
+  }
+
+  /**
+   * Handles GET requests to the /storage endpoint.
+   * @returns {Promise<{ message: string }>} A promise that resolves to an object containing a greeting message.
+   */
+  @Get('/storage')
+  public async storageGet(): Promise<{ message: string | null }> {
+    const value = await this.gStorageManager.getItem<string>({ key: 'key' });
+
+    return { message: value };
+  }
+
+  /**
+   * Handles POST requests to the /storage endpoint.
+   * @returns {Promise<{ message: string }>} A promise that resolves to an object containing a greeting message.
+   */
+  @Post('/storage')
+  public async storageSet(): Promise<{ message: string }> {
+    await this.gStorageManager.setItem({ key: 'key', value: 'value' });
+    return { message: 'Storage value successfully set.' };
   }
 
   /**

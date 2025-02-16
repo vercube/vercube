@@ -177,6 +177,9 @@ importers:
       '@vercube/di':
         specifier: workspace:*
         version: link:../packages/di
+      '@vercube/storage':
+        specifier: workspace:*
+        version: link:../packages/storage
       tsx:
         specifier: 4.19.1
         version: 4.19.1
