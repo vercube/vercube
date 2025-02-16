@@ -1,8 +1,9 @@
 import { Controller, Get, Middleware, SetHeader, Status, HTTPStatus, Redirect, Post, Body, QueryParams } from '@vercube/core';
-import { Auth } from '@vercube/auth';
+import { Authenticate } from '@vercube/auth';
 import { FirstMiddleware } from '../Middlewares/FirstMiddleware';
 import { SecondMiddleware } from '../Middlewares/SecondMiddleware';
 import { z } from 'zod';
+import { BasicAuthenticationProvider } from '../Services/BasicAuthenticationProvider';
 
 const schema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -21,7 +22,6 @@ const schemaQueryParams  = z.object({
  */
 @Controller('/api/playground')
 @Middleware(FirstMiddleware)
-@Auth()
 export default class PlaygroundController {
 
   /**
@@ -35,8 +35,23 @@ export default class PlaygroundController {
     return { message: 'Hello, world!' };
   }
 
-  @Get('/asd')
-  public asd() {
+  /**
+   * Handles GET requests to the /authenticate endpoint.
+   * @returns {Promise<{ message: string }>} A promise that resolves to an object containing a greeting message.
+   */
+  @Get('/authenticate')
+  @Authenticate()
+  public async authenticate(): Promise<{ message: string }> {
+    return { message: 'Hello, world!' };
+  }
+
+  /**
+   * Handles GET requests to the /basic-authentication.
+   * @returns {Promise<{ message: string }>} A promise that resolves to an object containing a greeting message.
+   */
+  @Get('/basic-authentication')
+  @Authenticate({provider: BasicAuthenticationProvider})
+  public async basicAuthentication(): Promise<{ message: string }> {
     return { message: 'Hello, world!' };
   }
 
