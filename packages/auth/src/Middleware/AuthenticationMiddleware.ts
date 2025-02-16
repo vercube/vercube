@@ -4,7 +4,13 @@ import { AuthenticationProvider } from '../Services/AuthenticationProvider';
 import { AuthenticationTypes } from '../Types/AuthenticationTypes';
 
 /**
- * FirstMiddleware class that implements the BaseMiddleware interface.
+ * Middleware for authentication
+ * @class AuthenticationMiddleware
+ * @implements {BaseMiddleware}
+ * @description Authenticates incoming request
+ * @example
+ * const middleware = new AuthenticationMiddleware();
+ * await middleware.use(event);
  */
 export class AuthenticationMiddleware implements BaseMiddleware {
 
@@ -25,7 +31,7 @@ export class AuthenticationMiddleware implements BaseMiddleware {
     let provider = this.gAuthenticationProvider;
 
     if (args?.middlewareArgs?.provider) {
-      provider = this.gContainer.get(args.middlewareArgs.provider);
+      provider = this.gContainer.getOptional(args.middlewareArgs.provider);
     }
 
     if (!provider) {
@@ -39,5 +45,5 @@ export class AuthenticationMiddleware implements BaseMiddleware {
       throw new UnauthorizedError(authenticationError);
     }
   }
-  
+
 }
