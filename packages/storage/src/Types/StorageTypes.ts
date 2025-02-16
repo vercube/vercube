@@ -11,6 +11,12 @@ export namespace StorageTypes {
   export interface Mount {
     name?: string;
     storage: IOC.Newable<Storage>;
+    initOptions?: unknown;
+  }
+
+  export interface Storages {
+    storage: Storage;
+    initOptions?: unknown;
   }
 
   export interface GetItem extends BaseOptions {

@@ -15,7 +15,7 @@ export class StorageManager {
   /**
    * Map of registered storage instances indexed by their names
    */
-  private fStorages: Map<string, Storage> = new Map();
+  private fStorages: Map<string, StorageTypes.Storages> = new Map();
 
   /**
    * Mounts a new storage instance with the specified name
@@ -24,8 +24,11 @@ export class StorageManager {
    * @param {IOC.Newable<Storage>} params.storage - Storage implementation to mount
    * @returns {Promise<void>} A promise that resolves when mounting is complete
    */
-  public async mount(params: StorageTypes.Mount): Promise<void> {
-    this.fStorages.set(params.name ?? 'default', this.gContainer.resolve(params.storage));
+  public async mount({ name, storage, initOptions }: StorageTypes.Mount): Promise<void> {
+    this.fStorages.set(name ?? 'default', {
+      storage: this.gContainer.resolve(storage),
+      initOptions,
+    });
   }
 
   /**
@@ -34,7 +37,7 @@ export class StorageManager {
    * @returns {Storage | undefined} The storage instance if found, undefined otherwise
    */
   public getStorage(name: string = 'default'): Storage | undefined {
-    return this.fStorages.get(name);
+    return this.fStorages.get(name)?.storage ?? undefined;
   }
 
   /**
@@ -128,9 +131,9 @@ export class StorageManager {
    */
   @Init()
   private async init(): Promise<void> {
-    for (const storage of this.fStorages.values()) {
+    for (const { storage, initOptions } of this.fStorages.values()) {
       try {
-        await storage?.initialize();
+        await storage?.initialize(initOptions);
       } catch (error) {
         console.error('Cannot initialize storage', error);
       }

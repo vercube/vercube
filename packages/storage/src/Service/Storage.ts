@@ -14,9 +14,10 @@ export abstract class Storage {
   /**
    * Initializes the storage implementation
    * Must be called before using any other storage operations
+   * @param {unknown} [options] - Optional initialization parameters
    * @returns {Promise<void>} A promise that resolves when initialization is complete
    */
-  public abstract initialize(): void | Promise<void>;
+  public abstract initialize(options?: unknown): void | Promise<void>;
 
   /**
    * Retrieves a value from storage by its key
