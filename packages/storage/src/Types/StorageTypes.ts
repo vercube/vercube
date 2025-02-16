@@ -11,31 +11,22 @@ export namespace StorageTypes {
   export interface Mount {
     name?: string;
     storage: IOC.Newable<Storage>;
-<<<<<<< HEAD
     initOptions?: unknown;
   }
 
   export interface Storages<T = unknown> {
     storage: Storage;
     initOptions?: T;
-=======
->>>>>>> 71da31e (feat(storage): fix storage build)
   }
 
   export interface GetItem extends BaseOptions {
     key: string;
   }
 
-<<<<<<< HEAD
   export interface SetItem<T = unknown, U = unknown> extends BaseOptions {
     key: string;
     value: T;
     options?: U;
-=======
-  export interface SetItem<T = unknown> extends BaseOptions {
-    key: string;
-    value: T;
->>>>>>> 71da31e (feat(storage): fix storage build)
   }
 
   export interface DeleteItem extends BaseOptions {

@@ -15,11 +15,7 @@ export class StorageManager {
   /**
    * Map of registered storage instances indexed by their names
    */
-<<<<<<< HEAD
   private fStorages: Map<string, StorageTypes.Storages> = new Map();
-=======
-  private fStorages: Map<string, Storage> = new Map();
->>>>>>> 71da31e (feat(storage): fix storage build)
 
   /**
    * Mounts a new storage instance with the specified name
@@ -28,16 +24,11 @@ export class StorageManager {
    * @param {IOC.Newable<Storage>} params.storage - Storage implementation to mount
    * @returns {Promise<void>} A promise that resolves when mounting is complete
    */
-<<<<<<< HEAD
   public async mount({ name, storage, initOptions }: StorageTypes.Mount): Promise<void> {
     this.fStorages.set(name ?? 'default', {
       storage: this.gContainer.resolve(storage),
       initOptions,
     });
-=======
-  public async mount(params: StorageTypes.Mount): Promise<void> {
-    this.fStorages.set(params.name ?? 'default', this.gContainer.resolve(params.storage));
->>>>>>> 71da31e (feat(storage): fix storage build)
   }
 
   /**
@@ -46,11 +37,7 @@ export class StorageManager {
    * @returns {Storage | undefined} The storage instance if found, undefined otherwise
    */
   public getStorage(name: string = 'default'): Storage | undefined {
-<<<<<<< HEAD
     return this.fStorages.get(name)?.storage ?? undefined;
-=======
-    return this.fStorages.get(name);
->>>>>>> 71da31e (feat(storage): fix storage build)
   }
 
   /**
@@ -61,15 +48,9 @@ export class StorageManager {
    * @param {string} params.key - Key of the item to retrieve
    * @returns {Promise<T | null>} A promise that resolves with the stored value or null if not found
    */
-<<<<<<< HEAD
   public async getItem<T = unknown>({ storage, key }: StorageTypes.GetItem): Promise<T | null> {
     const storageInstance = this.getStorage(storage);
     return storageInstance?.getItem<T>(key) ?? null;
-=======
-  public async getItem<T = unknown>(params: StorageTypes.GetItem): Promise<T | null> {
-    const storageInstance = this.getStorage(params.storage);
-    return storageInstance?.getItem<T>(params.key) ?? null;
->>>>>>> 71da31e (feat(storage): fix storage build)
   }
 
   /**
@@ -81,15 +62,9 @@ export class StorageManager {
    * @param {T} params.value - Value to store
    * @returns {Promise<void>} A promise that resolves when the value is stored
    */
-<<<<<<< HEAD
   public async setItem<T = unknown, U = unknown>({ storage, key, value, options }: StorageTypes.SetItem<T, U>): Promise<void> {
     const storageInstance = this.getStorage(storage);
     storageInstance?.setItem<T, U>(key, value, options);
-=======
-  public async setItem<T = unknown>(params: StorageTypes.SetItem<T>): Promise<void> {
-    const storageInstance = this.getStorage(params.storage);
-    storageInstance?.setItem<T>(params.key, params.value);
->>>>>>> 71da31e (feat(storage): fix storage build)
   }
 
   /**
