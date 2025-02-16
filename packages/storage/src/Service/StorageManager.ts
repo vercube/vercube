@@ -116,7 +116,7 @@ export class StorageManager {
    * @returns {Promise<void>} A promise that resolves when all storages are initialized
    */
   @Init()
-  public async init(): Promise<void> {
+  private async init(): Promise<void> {
     for (const storage of this.fStorages.values()) {
       try {
         await storage?.initialize();
