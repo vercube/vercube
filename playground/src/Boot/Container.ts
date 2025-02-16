@@ -6,7 +6,7 @@ import { BasicAuthenticationProvider } from '../Services/BasicAuthenticationProv
 export function useContainer(container: Container): void {
   container.bind(BasicAuthenticationProvider);
   container.bind(PlaygroundController);
-  container.bind(StorageManager);
 
+  container.bind(StorageManager);
   container.get(StorageManager).mount({ storage: MemoryStorage });
-};
+}
