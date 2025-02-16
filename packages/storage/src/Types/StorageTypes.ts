@@ -14,9 +14,9 @@ export namespace StorageTypes {
     initOptions?: unknown;
   }
 
-  export interface Storages {
+  export interface Storages<T = unknown> {
     storage: Storage;
-    initOptions?: unknown;
+    initOptions?: T;
   }
 
   export interface GetItem extends BaseOptions {
@@ -26,6 +26,7 @@ export namespace StorageTypes {
   export interface SetItem<T = unknown> extends BaseOptions {
     key: string;
     value: T;
+    ttl?: number;
   }
 
   export interface DeleteItem extends BaseOptions {
