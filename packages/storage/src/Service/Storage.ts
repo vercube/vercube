@@ -30,11 +30,12 @@ export abstract class Storage {
   /**
    * Stores a value in storage with the specified key
    * @template T - The type of the value to store
+   * @template U - The type of the optional options object
    * @param {string} key - The key under which to store the value
    * @param {T} value - The value to store
    * @returns {Promise<void>} A promise that resolves when the value is stored
    */
-  public abstract setItem<T = unknown>(key: string, value: T): void | Promise<void>;
+  public abstract setItem<T = unknown, U = unknown>(key: string, value: T, options?: U): void | Promise<void>;
 
   /**
    * Removes a value from storage by its key

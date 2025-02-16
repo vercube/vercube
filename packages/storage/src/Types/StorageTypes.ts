@@ -23,10 +23,10 @@ export namespace StorageTypes {
     key: string;
   }
 
-  export interface SetItem<T = unknown> extends BaseOptions {
+  export interface SetItem<T = unknown, U = unknown> extends BaseOptions {
     key: string;
     value: T;
-    ttl?: number;
+    options?: U;
   }
 
   export interface DeleteItem extends BaseOptions {

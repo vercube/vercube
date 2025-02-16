@@ -48,9 +48,9 @@ export class StorageManager {
    * @param {string} params.key - Key of the item to retrieve
    * @returns {Promise<T | null>} A promise that resolves with the stored value or null if not found
    */
-  public async getItem<T = unknown>(params: StorageTypes.GetItem): Promise<T | null> {
-    const storageInstance = this.getStorage(params.storage);
-    return storageInstance?.getItem<T>(params.key) ?? null;
+  public async getItem<T = unknown>({ storage, key }: StorageTypes.GetItem): Promise<T | null> {
+    const storageInstance = this.getStorage(storage);
+    return storageInstance?.getItem<T>(key) ?? null;
   }
 
   /**
@@ -62,9 +62,9 @@ export class StorageManager {
    * @param {T} params.value - Value to store
    * @returns {Promise<void>} A promise that resolves when the value is stored
    */
-  public async setItem<T = unknown>(params: StorageTypes.SetItem<T>): Promise<void> {
-    const storageInstance = this.getStorage(params.storage);
-    storageInstance?.setItem<T>(params.key, params.value);
+  public async setItem<T = unknown, U = unknown>({ storage, key, value, options }: StorageTypes.SetItem<T, U>): Promise<void> {
+    const storageInstance = this.getStorage(storage);
+    storageInstance?.setItem<T, U>(key, value, options);
   }
 
   /**

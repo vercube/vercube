@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Storage } from '../Service/Storage';
 
 /**
@@ -33,10 +34,11 @@ export class MemoryStorage implements Storage {
   /**
    * Stores a value in memory storage with the specified key
    * @template T - Type of the value to store
+   * @template U - Type of the options object
    * @param {string} key - The key under which to store the value
    * @param {T} value - The value to store
    */
-  public setItem<T = unknown>(key: string, value: T): void {
+  public setItem<T = unknown, U = unknown>(key: string, value: T, options?: U): void {
     this.storage.set(key, value);
   }
 
