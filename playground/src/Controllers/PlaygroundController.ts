@@ -35,6 +35,11 @@ export default class PlaygroundController {
     return { message: 'Hello, world!' };
   }
 
+  @Get('/asd')
+  public asd() {
+    return { message: 'Hello, world!' };
+  }
+
   /**
    * Handles POST requests to the / endpoint.
    * @returns {Promise<{ message: string }>} A promise that resolves to an object containing a greeting message.
