@@ -3,6 +3,7 @@ import { RouterRegistry } from '../../Services/Router/RouterRegistry';
 import { MetadataResolver } from '../../Services/Metadata/MetadataResolver';
 import { RequestHandler } from '../../Services/Router/RequestHandler';
 import { MetadataTypes } from '../../Types/MetadataTypes';
+import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
 
 interface DeleteDecoratorOptions {
   path: string;
@@ -35,6 +36,9 @@ class DeleteDecorator extends BaseDecorator<DeleteDecoratorOptions, MetadataType
    * with the RouterRegistry, and sets up the event handler for the DELETE request.
    */
   public override created(): void {
+    initializeMetadata(this.prototype);
+    initializeMetadataMethod(this.prototype, this.propertyName);
+
     this.options.path = this.gMetadataResolver.resolveUrl({
       instance: this.instance,
       path: this.options.path,

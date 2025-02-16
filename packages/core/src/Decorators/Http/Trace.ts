@@ -2,6 +2,7 @@ import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
 import { RouterRegistry } from '../../Services/Router/RouterRegistry';
 import { MetadataResolver } from '../../Services/Metadata/MetadataResolver';
 import { RequestHandler } from '../../Services/Router/RequestHandler';
+import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
 
 interface TraceDecoratorOptions {
   path: string;
@@ -34,6 +35,9 @@ class TraceDecorator extends BaseDecorator<TraceDecoratorOptions> {
    * with the RouterRegistry, and sets up the event handler for the TRACE request.
    */
   public override created(): void {
+    initializeMetadata(this.prototype);
+    initializeMetadataMethod(this.prototype, this.propertyName);
+
     this.options.path = this.gMetadataResolver.resolveUrl({
       instance: this.instance,
       path: this.options.path,
