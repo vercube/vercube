@@ -1,1 +1,3 @@
-console.log('storage package');
+// Common
+export * from './Service/StorageManager';
+export * from './Service/Storage';
