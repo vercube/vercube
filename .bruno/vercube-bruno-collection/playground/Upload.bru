@@ -1,0 +1,15 @@
+meta {
+  name: Upload
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{url}}/api/playground/upload
+  body: multipartForm
+  auth: none
+}
+
+body:multipart-form {
+  logo: @file(/Users/olebuda/projects/vercube/.github/assets/logo.png)
+}

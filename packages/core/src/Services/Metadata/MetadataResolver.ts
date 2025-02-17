@@ -1,4 +1,4 @@
-import { getHeader, getHeaders, getQuery, getRouterParam, readBody } from 'h3';
+import { getHeader, getHeaders, getQuery, getRouterParam, readBody, readMultipartFormData } from 'h3';
 import type { MetadataTypes } from '../../Types/MetadataTypes';
 import type { HttpEvent } from '../../Types/CommonTypes';
 
@@ -87,6 +87,9 @@ export class MetadataResolver {
       }
       case 'body': {
         return readBody(event);
+      }
+      case 'multipart-form-data': {
+        return readMultipartFormData(event);
       }
       case 'query-param': {
         const query = getQuery(event);

@@ -149,4 +149,16 @@ export default class PlaygroundController {
     return { message: 'Hello, im redirected!' };
   }
 
+  /**
+   * Handles GET requests to the /upload endpoint.
+   * @returns {Promise<{ message: string }>} A promise that resolves to an object containing a greeting message.
+   */
+  @Post('/upload')
+  public async upload(@MultipartFormData() form: MultiPartData[]): Promise<{ message: string }> {
+
+    console.log(form);
+
+    return { message: 'Hello, world!' };
+  }
+
 }
