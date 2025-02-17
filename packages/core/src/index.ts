@@ -25,6 +25,7 @@ export * from './Decorators/Http/SetHeader';
 export * from './Decorators/Http/Status';
 export * from './Decorators/Http/Redirect';
 export * from './Decorators/Http/Middleware';
+export * from './Decorators/Http/MultipartFormData';
 
 // Hooks
 export * from './Decorators/Hooks/Listen';
