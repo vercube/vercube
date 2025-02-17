@@ -1,4 +1,4 @@
-import { Controller, Get, Middleware, SetHeader, Status, HTTPStatus, Redirect, Post, Body, QueryParams } from '@vercube/core';
+import { Controller, Get, Middleware, SetHeader, Status, HTTPStatus, Redirect, Post, Body, QueryParams, MultipartFormData, MultiPartData } from '@vercube/core';
 import { Authenticate } from '@vercube/auth';
 import { FirstMiddleware } from '../Middlewares/FirstMiddleware';
 import { SecondMiddleware } from '../Middlewares/SecondMiddleware';
@@ -114,6 +114,18 @@ export default class PlaygroundController {
   @Status(HTTPStatus.OK)
   public async redirected(): Promise<{ message: string }> {
     return { message: 'Hello, im redirected!' };
+  }
+
+  /**
+   * Handles GET requests to the /upload endpoint.
+   * @returns {Promise<{ message: string }>} A promise that resolves to an object containing a greeting message.
+   */
+  @Post('/upload')
+  public async upload(@MultipartFormData() form: MultiPartData[]): Promise<{ message: string }> {
+
+    console.log(form);
+
+    return { message: 'Hello, world!' };
   }
 
 }
