@@ -1,8 +1,9 @@
 import { AuthorizationProvider } from '@vercube/auth';
 import { HttpEvent } from '@vercube/core';
+import { AuthorizationParameters } from '../Types/AuthorizationParameters';
 
-export class DummyAuthorizationProvider extends AuthorizationProvider<{ role: 'admin' | 'user' }> {
-  authorize(params: { role: 'admin' | 'user' }, event: HttpEvent): string | null {
+export class DummyAuthorizationProvider extends AuthorizationProvider<AuthorizationParameters> {
+  authorize(params: AuthorizationParameters, event: HttpEvent): string | null {
     if (params.role === 'admin') {
       return 'Only available to admins';
     }
