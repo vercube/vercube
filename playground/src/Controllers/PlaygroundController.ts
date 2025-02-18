@@ -9,6 +9,8 @@ import {
   Post,
   Body,
   QueryParams,
+  MultipartFormData,
+  MultiPartData,
 } from '@vercube/core';
 import { Authenticate, Authorize } from '@vercube/auth';
 import { FirstMiddleware } from '../Middlewares/FirstMiddleware';

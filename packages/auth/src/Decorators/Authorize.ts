@@ -8,7 +8,7 @@ import { AuthorizationMiddleware } from '../Middleware/AuthorizationMiddleware';
  * @param options Optional options for the authorization middleware
  * @returns A decorator function that adds authorization middleware to the target
  */
-export function Authorize<T>(params: T, options?: AuthorizationTypes.MiddlewareOptions): Function {
+export function Authorize<T>(params: T, options?: AuthorizationTypes.MiddlewareOptions<T>): Function {
   return function internalDecorator(target: Function, propertyName?: string) {
     const meta = initializeMetadata((propertyName) ? target : target.prototype);
 
