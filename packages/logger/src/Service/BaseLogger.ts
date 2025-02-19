@@ -27,8 +27,6 @@ export class BaseLogger implements Logger {
   public configure(options: LoggerTypes.Options): void {
     this.fLogLevel = options?.logLevel ?? 'debug';
 
-
-
     if (!options?.appenders?.length) {
       return;
     }
