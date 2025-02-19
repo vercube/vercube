@@ -5,7 +5,7 @@ import { LOG_LEVEL_COLORS } from '../Utils/Utils';
 /**
  * ConsoleAppender class for logging messages to the console.
  */
-export class ConsoleAppender extends Appender<{ format: string }> {
+export class ConsoleAppender extends Appender {
 
   /**
    * Initializes the appender with the provided options.
