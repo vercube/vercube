@@ -36,7 +36,7 @@
     "magic-string": "0.30.11",
     "mlly": "1.7.1",
     "pathe": "1.1.2",
-    "rollup": "4.22.5"
+    "rollup": "4.34.8"
   },
   "devDependencies": {
   }
