@@ -27,11 +27,11 @@
     "@standard-schema/spec": "1.0.0",
     "@vercube/di": "workspace:*",
     "@vercube/logger": "workspace:*",
-    "h3": "1.14.0",
+    "h3": "1.15.0",
     "listhen": "1.9.0",
     "lodash": "4.17.21"
   },
   "devDependencies": {
-    "@types/lodash": "4.17.14"
+    "@types/lodash": "4.17.15"
   }
 }
