@@ -1,0 +1,19 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directories:
+      - "/"
+      - "/packages/*"
+    schedule:
+      interval: daily
+      time: '00:00'
+    open-pull-requests-limit: 10
+    rebase-strategy: 'auto'
+    reviewers:
+      - OskarLebuda
+    assignees:
+      - OskarLebuda
+    commit-message:
+      prefix: fix
+      prefix-development: chore
+      include: scope
