@@ -31,7 +31,7 @@
     "@rollup/plugin-replace": "6.0.1",
     "@rollup/plugin-typescript": "12.1.0",
     "consola": "3.4.0",
-    "esbuild": "0.24.0",
+    "esbuild": "0.25.0",
     "hookable": "5.5.3",
     "magic-string": "0.30.11",
     "mlly": "1.7.1",
