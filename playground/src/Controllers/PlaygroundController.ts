@@ -1,10 +1,10 @@
-import { Controller, Get, Middleware, SetHeader, Status, HTTPStatus, Redirect, Post, Body, QueryParams } from '@vercube/core';
-import { Inject } from '@vercube/di';
+import { Controller, Get, Middleware, SetHeader, Status, HTTPStatus, Redirect, Post, Body, QueryParams, MultipartFormData, type MultiPartData } from '@vercube/core';
 import { Authenticate } from '@vercube/auth';
-import { StorageManager } from '@vercube/storage';
-import { Logger } from '@vercube/logger';
 import { FirstMiddleware } from '../Middlewares/FirstMiddleware';
 import { z } from 'zod';
+import { Inject } from '@vercube/di';
+import { StorageManager } from '@vercube/storage';
+import { Logger } from '@vercube/logger';
 import { BasicAuthenticationProvider } from '../Services/BasicAuthenticationProvider';
 
 const schema = z.object({
@@ -120,6 +120,18 @@ export default class PlaygroundController {
   @Status(HTTPStatus.OK)
   public async redirected(): Promise<{ message: string }> {
     return { message: 'Hello, im redirected!' };
+  }
+
+  /**
+   * Handles GET requests to the /upload endpoint.
+   * @returns {Promise<{ message: string }>} A promise that resolves to an object containing a greeting message.
+   */
+  @Post('/upload')
+  public async upload(@MultipartFormData() form: MultiPartData[]): Promise<{ message: string }> {
+
+    console.log(form);
+
+    return { message: 'Hello, world!' };
   }
 
 }
