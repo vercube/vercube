@@ -33,7 +33,7 @@
     "consola": "3.4.0",
     "esbuild": "0.24.0",
     "hookable": "5.5.3",
-    "magic-string": "0.30.11",
+    "magic-string": "0.30.17",
     "mlly": "1.7.1",
     "pathe": "1.1.2",
     "rollup": "4.22.5"

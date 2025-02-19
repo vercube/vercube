@@ -130,8 +130,8 @@ importers:
         specifier: 5.5.3
         version: 5.5.3
       magic-string:
-        specifier: 0.30.11
-        version: 0.30.11
+        specifier: 0.30.17
+        version: 0.30.17
       mlly:
         specifier: 1.7.1
         version: 1.7.1
@@ -3326,9 +3326,6 @@ packages:
   lru-cache@5.1.1:
     resolution: {integrity: sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==}
 
-  magic-string@0.30.11:
-    resolution: {integrity: sha512-+Wri9p0QHMy+545hKww7YAu5NyzF8iomPL/RQazugQ9+Ez4Ic3mERMd8ZTX5rfK944j+560ZJi8iAwgak1Ac7A==}
-
   magic-string@0.30.17:
     resolution: {integrity: sha512-sNPKHvyjVf7gyjwS4xGTaW/mCnF8wnjtifKBEhxfZ7E/S8tQ0rssrwGNn6q8JH/ohItJfSQp9mBtQYuTlH5QnA==}
 
@@ -6192,7 +6189,7 @@ snapshots:
       estree-walker: 2.0.2
       glob: 8.1.0
       is-reference: 1.2.1
-      magic-string: 0.30.11
+      magic-string: 0.30.17
     optionalDependencies:
       rollup: 4.22.5
 
@@ -6203,7 +6200,7 @@ snapshots:
       estree-walker: 2.0.2
       fdir: 6.4.3(picomatch@2.3.1)
       is-reference: 1.2.1
-      magic-string: 0.30.11
+      magic-string: 0.30.17
       picomatch: 2.3.1
     optionalDependencies:
       rollup: 4.22.5
@@ -6215,7 +6212,7 @@ snapshots:
       estree-walker: 2.0.2
       fdir: 6.4.3(picomatch@4.0.2)
       is-reference: 1.2.1
-      magic-string: 0.30.11
+      magic-string: 0.30.17
       picomatch: 4.0.2
     optionalDependencies:
       rollup: 4.34.7
@@ -6262,14 +6259,14 @@ snapshots:
   '@rollup/plugin-replace@6.0.1(rollup@4.22.5)':
     dependencies:
       '@rollup/pluginutils': 5.1.2(rollup@4.22.5)
-      magic-string: 0.30.11
+      magic-string: 0.30.17
     optionalDependencies:
       rollup: 4.22.5
 
   '@rollup/plugin-replace@6.0.2(rollup@4.34.7)':
     dependencies:
       '@rollup/pluginutils': 5.1.2(rollup@4.34.7)
-      magic-string: 0.30.11
+      magic-string: 0.30.17
     optionalDependencies:
       rollup: 4.34.7
 
@@ -7965,10 +7962,6 @@ snapshots:
     dependencies:
       yallist: 3.1.1
 
-  magic-string@0.30.11:
-    dependencies:
-      '@jridgewell/sourcemap-codec': 1.5.0
-
   magic-string@0.30.17:
     dependencies:
       '@jridgewell/sourcemap-codec': 1.5.0
@@ -8856,7 +8849,7 @@ snapshots:
 
   rollup-plugin-dts@6.1.1(rollup@4.34.7)(typescript@5.7.3):
     dependencies:
-      magic-string: 0.30.11
+      magic-string: 0.30.17
       rollup: 4.34.7
       typescript: 5.7.3
     optionalDependencies:
