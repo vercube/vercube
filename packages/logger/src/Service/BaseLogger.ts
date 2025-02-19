@@ -27,9 +27,15 @@ export class BaseLogger implements Logger {
   public configure(options: LoggerTypes.Options): void {
     this.fLogLevel = options?.logLevel ?? 'debug';
 
+
+
+    if (!options?.appenders?.length) {
+      return;
+    }
+    
     // reset registerd appenders
     this.fAppenders.clear();
-    
+
     // register appenders from options
     for (const appender of options?.appenders ?? []) {
       this.fAppenders.set(appender.name, this.gContainer.resolve(appender.provider));
