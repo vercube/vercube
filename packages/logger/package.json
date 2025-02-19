@@ -9,9 +9,14 @@
   "type": "module",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
+      "types": "./dist/index.d.mts",
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs"
+    },
+    "./appenders": {
+      "types": "./dist/Appenders/index.d.mts",
+      "import": "./dist/Appenders/index.mjs",
+      "require": "./dist/Appenders/index.cjs"
     }
   },
   "main": "./dist/index.cjs",
@@ -24,7 +29,7 @@
     "build": "unbuild"
   },
   "dependencies": {
-    "@vercube/di": "workspaces:*"
+    "@vercube/di": "workspace:*"
   },
   "devDependencies": {
   }

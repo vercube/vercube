@@ -86,6 +86,9 @@ importers:
       '@vercube/di':
         specifier: workspace:*
         version: link:../di
+      '@vercube/logger':
+        specifier: workspace:*
+        version: link:../logger
       h3:
         specifier: 1.14.0
         version: 1.14.0
@@ -144,11 +147,20 @@ importers:
 
   packages/di: {}
 
+  packages/logger:
+    dependencies:
+      '@vercube/di':
+        specifier: workspace:*
+        version: link:../di
+
   packages/storage:
     dependencies:
       '@vercube/di':
         specifier: workspace:*
         version: link:../di
+      '@vercube/logger':
+        specifier: workspace:*
+        version: link:../logger
 
   playground:
     dependencies:
@@ -177,6 +189,9 @@ importers:
       '@vercube/di':
         specifier: workspace:*
         version: link:../packages/di
+      '@vercube/logger':
+        specifier: workspace:*
+        version: link:../packages/logger
       '@vercube/storage':
         specifier: workspace:*
         version: link:../packages/storage

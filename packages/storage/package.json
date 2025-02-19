@@ -24,7 +24,8 @@
     "build": "unbuild"
   },
   "dependencies": {
-    "@vercube/di": "workspace:*"
+    "@vercube/di": "workspace:*",
+    "@vercube/logger": "workspace:*"
   },
   "devDependencies": {
   }

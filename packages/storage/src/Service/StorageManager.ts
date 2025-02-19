@@ -1,6 +1,7 @@
-import { Container, Init, Inject, type IOC } from '@vercube/di';
+import { Container, Init, Inject, InjectOptional } from '@vercube/di';
 import { Storage } from './Storage';
 import { StorageTypes } from '../Types/StorageTypes';
+import { Logger } from '@vercube/logger';
 
 /**
  * Manages multiple storage instances and provides a unified interface for storage operations.
@@ -11,6 +12,9 @@ export class StorageManager {
 
   @Inject(Container)
   private gContainer: Container;
+
+  @InjectOptional(Logger)
+  private gLogger: Logger | null;
 
   /**
    * Map of registered storage instances indexed by their names
@@ -135,7 +139,7 @@ export class StorageManager {
       try {
         await storage?.initialize(initOptions);
       } catch (error) {
-        console.error('Cannot initialize storage', error);
+        this.gLogger?.error('Vercube/StorageManager::init', error);
       }
     }
   }
