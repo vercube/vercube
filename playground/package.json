@@ -16,7 +16,7 @@
     "@vercube/logger": "workspace:*",
     "@vercube/storage": "workspace:*",
     "@types/node": "22",
-    "tsx": "4.19.1"
+    "tsx": "4.19.3"
   },
   "dependencies": {
     "lodash": "4.17.21",
