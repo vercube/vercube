@@ -24,7 +24,7 @@
   "devDependencies": {
     "@commitlint/cli": "19.7.1",
     "@commitlint/config-conventional": "19.7.1",
-    "@nx/js": "20.4.4",
+    "@nx/js": "20.4.6",
     "@nx/rollup": "20.4.6",
     "@rollup/plugin-typescript": "12.1.2",
     "@types/lodash": "4.17.15",
@@ -33,7 +33,7 @@
     "eslint-config-unjs": "0.4.2",
     "globals": "16.0.0",
     "lint-staged": "15.4.3",
-    "nx": "20.4.4",
+    "nx": "20.4.6",
     "simple-git-hooks": "2.11.1",
     "tslib": "2.8.1",
     "typescript": "5.7.3",
