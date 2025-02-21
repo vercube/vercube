@@ -24,7 +24,7 @@
   "devDependencies": {
     "@commitlint/cli": "19.7.1",
     "@commitlint/config-conventional": "19.7.1",
-    "@nx/js": "20.4.4",
+    "@nx/js": "20.4.6",
     "@nx/rollup": "20.4.6",
     "@rollup/plugin-typescript": "12.1.2",
     "@types/lodash": "4.17.15",
