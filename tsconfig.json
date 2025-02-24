@@ -5,7 +5,7 @@
     "declaration": false,
     "target": "ESNext",
     "module": "ESNext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "noImplicitAny": true,
     "noImplicitReturns": true,
     "noImplicitThis": true,
@@ -32,6 +32,9 @@
     "paths": {
       "@vercube/*": [
         "packages/*/src"
+      ],
+      "@vercube/logger/providers/*": [
+        "packages/logger/src/Providers/*"
       ]
     }
   },

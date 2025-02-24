@@ -14,10 +14,10 @@ import {
 } from '@vercube/core';
 import { Authenticate, Authorize } from '@vercube/auth';
 import { FirstMiddleware } from '../Middlewares/FirstMiddleware';
-import { SecondMiddleware } from '../Middlewares/SecondMiddleware';
 import { z } from 'zod';
 import { Inject } from '@vercube/di';
 import { StorageManager } from '@vercube/storage';
+import { Logger } from '@vercube/logger';
 import { BasicAuthenticationProvider } from '../Services/BasicAuthenticationProvider';
 import { AuthorizationParameters } from '../Types/AuthorizationParameters';
 import { DummyAuthorizationProvider } from '../Services/DummyAuthorizationProvider';
@@ -44,14 +44,20 @@ export default class PlaygroundController {
   @Inject(StorageManager)
   private gStorageManager: StorageManager;
 
+  @Inject(Logger)
+  private gLogger: Logger;
+
   /**
    * Handles GET requests to the / endpoint.
    * @returns {Promise<{ message: string }>} A promise that resolves to an object containing a greeting message.
    */
   @Get('/')
-  @Middleware(SecondMiddleware)
   @SetHeader('X-Test-Response-Header', '1')
   public async index(): Promise<{ message: string }> {
+    this.gLogger.debug('PlaygroundController::index', 'Debug method');
+    this.gLogger.info('PlaygroundController::index', 'Info method');
+    this.gLogger.warn('PlaygroundController::index', 'Warn method');
+    this.gLogger.error('PlaygroundController::index', 'Error method');
     return { message: 'Hello, world!' };
   }
 
