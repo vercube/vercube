@@ -61,42 +61,38 @@ export class BaseLogger implements Logger {
 
   /**
    * Logs an informational message.
-   * @param tag - The tag to categorize the log message
    * @param args - Additional parameters to be logged
    * @returns A value determined by the implementing class
    */
-  public debug(tag: string, ...args: LoggerTypes.Arg[]): void {
-    this.printMessage({ level: 'debug', tag, args });
+  public debug(...args: LoggerTypes.Arg[]): void {
+    this.printMessage({ level: 'debug', args });
   }
 
   /**
    * Logs an informational message.
-   * @param tag - The tag to categorize the log message
    * @param args - Additional parameters to be logged
    * @returns A value determined by the implementing class
    */
-  public info(tag: string,...args: LoggerTypes.Arg[]): void {
-    this.printMessage({ level: 'info', tag, args });
+  public info(...args: LoggerTypes.Arg[]): void {
+    this.printMessage({ level: 'info', args });
   }
 
   /**
    * Logs a warning message.
-   * @param tag - The tag to categorize the log message
    * @param args - Additional parameters to be logged
    * @returns A value determined by the implementing class
    */
-  public warn(tag: string,...args: LoggerTypes.Arg[]): void {
-    this.printMessage({ level: 'warn', tag, args });
+  public warn(...args: LoggerTypes.Arg[]): void {
+    this.printMessage({ level: 'warn', args });
   }
 
   /**
    * Logs an error message.
-   * @param tag - The tag to categorize the log message
    * @param args - Additional parameters to be logged
    * @returns A value determined by the implementing class
    */
-  public error(tag: string,...args: LoggerTypes.Arg[]): void {
-    this.printMessage({ level: 'error', tag, args });
+  public error(...args: LoggerTypes.Arg[]): void {
+    this.printMessage({ level: 'error', args });
   }
 
   /**

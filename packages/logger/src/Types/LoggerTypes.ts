@@ -9,8 +9,8 @@ export namespace LoggerTypes {
 
   export interface Message {
     level: Level;
-    tag: string;
     args: Arg[];
+    tag?: string;
     pid?: number;
     type?: 'access_log' | 'application_log';
     timestamp?: number;
