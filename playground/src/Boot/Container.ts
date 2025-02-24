@@ -14,7 +14,7 @@ export function useContainer(container: Container): void {
 
   container.get(Logger).configure({
     providers: [
-      { name: 'console', provider: ConsoleProvider },
+      { name: 'console', provider: ConsoleProvider, logLevel: 'error' },
     ],
   });
 }

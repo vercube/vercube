@@ -21,6 +21,11 @@ export class BaseLogger implements Logger {
   private fProviders: Map<string, LoggerProvider<any>> = new Map();
 
   /**
+   * Hold providers level
+   */
+  private fProvidersLevel: Map<string, LoggerTypes.Level> = new Map();
+
+  /**
    * Configure logger
    * @param options 
    */
@@ -37,11 +42,17 @@ export class BaseLogger implements Logger {
     // register providers from options
     for (const logger of options?.providers ?? []) {
       try {
+        // Resolve provider instance
         const provider = this.gContainer.resolve<LoggerProvider>(logger.provider);
-        
+
+        // Initialize provider
         provider.initialize(logger.options);
 
+        // Save provider instance
         this.fProviders.set(logger.name, provider);
+
+        // Set log level for provider. If not set, use global log level
+        this.fProvidersLevel.set(logger.name, logger.logLevel?? this.fLogLevel);
       } catch (error) {
         console.error(`Failed to initialize logger provider: ${logger.provider.name}`, error);
       }
@@ -96,13 +107,15 @@ export class BaseLogger implements Logger {
    * @protected
    */
   protected printMessage(message: LoggerTypes.Message): void {
-    if (!isLogLevelEnabled(message.level, this.fLogLevel)) {
-      return;
-    }
+    // check if message level is enabled for any provider
+    const providersToProcess = [...this.fProviders.entries()].filter(([name]) => {
+      return isLogLevelEnabled(message.level, this.fProvidersLevel.get(name) ?? this.fLogLevel);
+    });
 
     // process message through appenders
-    for (const appender of this.fProviders.values()) {
-      appender.processMessage(message);
+    for (const [, provider] of providersToProcess) {
+      
+      provider.processMessage(message);
     }
   }
 
