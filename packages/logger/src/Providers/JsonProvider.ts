@@ -4,7 +4,7 @@ import { LoggerTypes } from '../Types/LoggerTypes';
 /**
  * A logger implementation that formats log messages as JSON.
  */
-export class JsonAppender extends LoggerProvider {
+export class JSONProvider extends LoggerProvider {
 
   /**
    * Initializes the appender with the provided options.

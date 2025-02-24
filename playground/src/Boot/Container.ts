@@ -3,7 +3,7 @@ import { StorageManager, MemoryStorage } from '@vercube/storage';
 import PlaygroundController from '../Controllers/PlaygroundController';
 import { BasicAuthenticationProvider } from '../Services/BasicAuthenticationProvider';
 import { Logger } from '@vercube/logger';
-import { ConsoleAppender } from '@vercube/logger/appenders';
+import { ConsoleProvider } from '@vercube/logger/providers';
 
 export function useContainer(container: Container): void {
   container.bind(BasicAuthenticationProvider);
@@ -13,8 +13,8 @@ export function useContainer(container: Container): void {
   container.get(StorageManager).mount({ storage: MemoryStorage });
 
   container.get(Logger).configure({
-    appenders: [
-      { name: 'console', provider: ConsoleAppender },
+    providers: [
+      { name: 'console', provider: ConsoleProvider },
     ],
   });
 }
