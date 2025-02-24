@@ -27,7 +27,7 @@
     "@standard-schema/spec": "1.0.0",
     "@vercube/di": "workspace:*",
     "@vercube/logger": "workspace:*",
-    "h3": "1.15.0",
+    "h3": "1.15.1",
     "listhen": "1.9.0",
     "lodash": "4.17.21"
   },
