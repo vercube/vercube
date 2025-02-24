@@ -10,16 +10,16 @@ importers:
     devDependencies:
       '@commitlint/cli':
         specifier: 19.7.1
-        version: 19.7.1(@types/node@22.13.4)(typescript@5.7.3)
+        version: 19.7.1(@types/node@22.13.5)(typescript@5.7.3)
       '@commitlint/config-conventional':
         specifier: 19.7.1
         version: 19.7.1
       '@nx/js':
         specifier: 20.4.6
-        version: 20.4.6(@babel/traverse@7.26.9)(@types/node@22.13.4)(nx@20.4.6)(typescript@5.7.3)
+        version: 20.4.6(@babel/traverse@7.26.9)(@types/node@22.13.5)(nx@20.4.6)(typescript@5.7.3)
       '@nx/rollup':
         specifier: 20.4.6
-        version: 20.4.6(@babel/core@7.26.0)(@babel/traverse@7.26.9)(@types/node@22.13.4)(nx@20.4.6)(ts-node@10.9.1(@types/node@22.13.4)(typescript@5.7.3))(typescript@5.7.3)
+        version: 20.4.6(@babel/core@7.26.0)(@babel/traverse@7.26.9)(@types/node@22.13.5)(nx@20.4.6)(ts-node@10.9.1(@types/node@22.13.5)(typescript@5.7.3))(typescript@5.7.3)
       '@rollup/plugin-typescript':
         specifier: 12.1.2
         version: 12.1.2(rollup@4.34.8)(tslib@2.8.1)(typescript@5.7.3)
@@ -27,8 +27,8 @@ importers:
         specifier: 4.17.15
         version: 4.17.15
       '@types/node':
-        specifier: 22.13.4
-        version: 22.13.4
+        specifier: 22.13.5
+        version: 22.13.5
       eslint:
         specifier: 9.20.1
         version: 9.20.1(jiti@2.4.2)
@@ -157,14 +157,14 @@ importers:
         version: 4.17.21
       tslib:
         specifier: 2.7.0
-        version: 2.8.1
+        version: 2.7.0
       zod:
         specifier: 3.24.2
         version: 3.24.2
     devDependencies:
       '@types/node':
         specifier: '22'
-        version: 22.13.4
+        version: 22.13.5
       '@vercube/auth':
         specifier: workspace:*
         version: link:../packages/auth
@@ -1656,8 +1656,8 @@ packages:
   '@types/minimatch@5.1.2':
     resolution: {integrity: sha512-K0VQKziLUWkVKiRVrx4a40iPaxTUefQmjtkQofBkYRcoaaL/8rhwDWww9qWbrgicNOgnpIsMxyNIUM4+n6dUIA==}
 
-  '@types/node@22.13.4':
-    resolution: {integrity: sha512-ywP2X0DYtX3y08eFVx5fNIw7/uIv8hYUKgXoK8oayJlLnKcRfEYCxWMVE1XagUdVtCJlZT1AU4LXEABW+L1Peg==}
+  '@types/node@22.13.5':
+    resolution: {integrity: sha512-+lTU0PxZXn0Dr1NBtC7Y8cR21AJr87dLLU953CWA6pMxxv/UDc7jYAY90upcrie1nRcD6XNG5HOYEDtgW5TxAg==}
 
   '@types/normalize-package-data@2.4.4':
     resolution: {integrity: sha512-37i+OaWTh9qeK4LSHPsyRC7NahnGotNuZvjLSgcPzblpHB3rrCJxAOgI5gCdKm7coonsaX1Of0ILiTcnZjbfxA==}
@@ -4089,6 +4089,9 @@ packages:
     resolution: {integrity: sha512-NoZ4roiN7LnbKn9QqE1amc9DJfzvZXxF4xDavcOWt1BPkdx+m+0gJuPM+S0vCe7zTJMYUP0R8pO2XMr+Y8oLIg==}
     engines: {node: '>=6'}
 
+  tslib@2.7.0:
+    resolution: {integrity: sha512-gLXCKdN1/j47AiHiOkJN69hJmcbGTHI0ImLmbYLHykhgeN0jVGola9yVjFgzCUklsZQMW55o+dW7IXv3RCXDzA==}
+
   tslib@2.8.1:
     resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==}
 
@@ -5040,11 +5043,11 @@ snapshots:
       '@babel/helper-string-parser': 7.25.9
       '@babel/helper-validator-identifier': 7.25.9
 
-  '@commitlint/cli@19.7.1(@types/node@22.13.4)(typescript@5.7.3)':
+  '@commitlint/cli@19.7.1(@types/node@22.13.5)(typescript@5.7.3)':
     dependencies:
       '@commitlint/format': 19.5.0
       '@commitlint/lint': 19.7.1
-      '@commitlint/load': 19.6.1(@types/node@22.13.4)(typescript@5.7.3)
+      '@commitlint/load': 19.6.1(@types/node@22.13.5)(typescript@5.7.3)
       '@commitlint/read': 19.5.0
       '@commitlint/types': 19.5.0
       tinyexec: 0.3.2
@@ -5091,7 +5094,7 @@ snapshots:
       '@commitlint/rules': 19.6.0
       '@commitlint/types': 19.5.0
 
-  '@commitlint/load@19.6.1(@types/node@22.13.4)(typescript@5.7.3)':
+  '@commitlint/load@19.6.1(@types/node@22.13.5)(typescript@5.7.3)':
     dependencies:
       '@commitlint/config-validator': 19.5.0
       '@commitlint/execute-rule': 19.5.0
@@ -5099,7 +5102,7 @@ snapshots:
       '@commitlint/types': 19.5.0
       chalk: 5.4.1
       cosmiconfig: 9.0.0(typescript@5.7.3)
-      cosmiconfig-typescript-loader: 6.1.0(@types/node@22.13.4)(cosmiconfig@9.0.0(typescript@5.7.3))(typescript@5.7.3)
+      cosmiconfig-typescript-loader: 6.1.0(@types/node@22.13.5)(cosmiconfig@9.0.0(typescript@5.7.3))(typescript@5.7.3)
       lodash.isplainobject: 4.0.6
       lodash.merge: 4.6.2
       lodash.uniq: 4.5.0
@@ -5434,7 +5437,7 @@ snapshots:
       tslib: 2.8.1
       yargs-parser: 21.1.1
 
-  '@nx/js@20.4.6(@babel/traverse@7.26.9)(@types/node@22.13.4)(nx@20.4.6)(typescript@5.7.3)':
+  '@nx/js@20.4.6(@babel/traverse@7.26.9)(@types/node@22.13.5)(nx@20.4.6)(typescript@5.7.3)':
     dependencies:
       '@babel/core': 7.26.9
       '@babel/plugin-proposal-decorators': 7.25.9(@babel/core@7.26.9)
@@ -5463,7 +5466,7 @@ snapshots:
       semver: 7.7.1
       source-map-support: 0.5.19
       tinyglobby: 0.2.12
-      ts-node: 10.9.1(@types/node@22.13.4)(typescript@5.7.3)
+      ts-node: 10.9.1(@types/node@22.13.5)(typescript@5.7.3)
       tsconfig-paths: 4.2.0
       tslib: 2.8.1
     transitivePeerDependencies:
@@ -5507,10 +5510,10 @@ snapshots:
   '@nx/nx-win32-x64-msvc@20.4.6':
     optional: true
 
-  '@nx/rollup@20.4.6(@babel/core@7.26.0)(@babel/traverse@7.26.9)(@types/node@22.13.4)(nx@20.4.6)(ts-node@10.9.1(@types/node@22.13.4)(typescript@5.7.3))(typescript@5.7.3)':
+  '@nx/rollup@20.4.6(@babel/core@7.26.0)(@babel/traverse@7.26.9)(@types/node@22.13.5)(nx@20.4.6)(ts-node@10.9.1(@types/node@22.13.5)(typescript@5.7.3))(typescript@5.7.3)':
     dependencies:
       '@nx/devkit': 20.4.6(nx@20.4.6)
-      '@nx/js': 20.4.6(@babel/traverse@7.26.9)(@types/node@22.13.4)(nx@20.4.6)(typescript@5.7.3)
+      '@nx/js': 20.4.6(@babel/traverse@7.26.9)(@types/node@22.13.5)(nx@20.4.6)(typescript@5.7.3)
       '@rollup/plugin-babel': 6.0.4(@babel/core@7.26.0)(rollup@4.34.8)
       '@rollup/plugin-commonjs': 25.0.8(rollup@4.34.8)
       '@rollup/plugin-image': 3.0.3(rollup@4.34.8)
@@ -5523,7 +5526,7 @@ snapshots:
       postcss: 8.5.3
       rollup: 4.34.8
       rollup-plugin-copy: 3.5.0
-      rollup-plugin-postcss: 4.0.2(postcss@8.5.3)(ts-node@10.9.1(@types/node@22.13.4)(typescript@5.7.3))
+      rollup-plugin-postcss: 4.0.2(postcss@8.5.3)(ts-node@10.9.1(@types/node@22.13.5)(typescript@5.7.3))
       rollup-plugin-typescript2: 0.36.0(rollup@4.34.8)(typescript@5.7.3)
       tslib: 2.8.1
     transitivePeerDependencies:
@@ -5795,18 +5798,18 @@ snapshots:
 
   '@types/conventional-commits-parser@5.0.1':
     dependencies:
-      '@types/node': 22.13.4
+      '@types/node': 22.13.5
 
   '@types/estree@1.0.6': {}
 
   '@types/fs-extra@8.1.5':
     dependencies:
-      '@types/node': 22.13.4
+      '@types/node': 22.13.5
 
   '@types/glob@7.2.0':
     dependencies:
       '@types/minimatch': 5.1.2
-      '@types/node': 22.13.4
+      '@types/node': 22.13.5
 
   '@types/json-schema@7.0.15': {}
 
@@ -5818,7 +5821,7 @@ snapshots:
 
   '@types/minimatch@5.1.2': {}
 
-  '@types/node@22.13.4':
+  '@types/node@22.13.5':
     dependencies:
       undici-types: 6.20.0
 
@@ -6231,9 +6234,9 @@ snapshots:
     dependencies:
       browserslist: 4.24.4
 
-  cosmiconfig-typescript-loader@6.1.0(@types/node@22.13.4)(cosmiconfig@9.0.0(typescript@5.7.3))(typescript@5.7.3):
+  cosmiconfig-typescript-loader@6.1.0(@types/node@22.13.5)(cosmiconfig@9.0.0(typescript@5.7.3))(typescript@5.7.3):
     dependencies:
-      '@types/node': 22.13.4
+      '@types/node': 22.13.5
       cosmiconfig: 9.0.0(typescript@5.7.3)
       jiti: 2.4.2
       typescript: 5.7.3
@@ -7695,13 +7698,13 @@ snapshots:
     dependencies:
       postcss: 8.5.3
 
-  postcss-load-config@3.1.4(postcss@8.5.3)(ts-node@10.9.1(@types/node@22.13.4)(typescript@5.7.3)):
+  postcss-load-config@3.1.4(postcss@8.5.3)(ts-node@10.9.1(@types/node@22.13.5)(typescript@5.7.3)):
     dependencies:
       lilconfig: 2.1.0
       yaml: 1.10.2
     optionalDependencies:
       postcss: 8.5.3
-      ts-node: 10.9.1(@types/node@22.13.4)(typescript@5.7.3)
+      ts-node: 10.9.1(@types/node@22.13.5)(typescript@5.7.3)
 
   postcss-merge-longhand@5.1.7(postcss@8.5.3):
     dependencies:
@@ -8112,7 +8115,7 @@ snapshots:
     optionalDependencies:
       '@babel/code-frame': 7.26.2
 
-  rollup-plugin-postcss@4.0.2(postcss@8.5.3)(ts-node@10.9.1(@types/node@22.13.4)(typescript@5.7.3)):
+  rollup-plugin-postcss@4.0.2(postcss@8.5.3)(ts-node@10.9.1(@types/node@22.13.5)(typescript@5.7.3)):
     dependencies:
       chalk: 4.1.2
       concat-with-sourcemaps: 1.1.0
@@ -8121,7 +8124,7 @@ snapshots:
       p-queue: 6.6.2
       pify: 5.0.0
       postcss: 8.5.3
-      postcss-load-config: 3.1.4(postcss@8.5.3)(ts-node@10.9.1(@types/node@22.13.4)(typescript@5.7.3))
+      postcss-load-config: 3.1.4(postcss@8.5.3)(ts-node@10.9.1(@types/node@22.13.5)(typescript@5.7.3))
       postcss-modules: 4.3.1(postcss@8.5.3)
       promise.series: 0.2.0
       resolve: 1.22.10
@@ -8357,14 +8360,14 @@ snapshots:
     dependencies:
       typescript: 5.7.3
 
-  ts-node@10.9.1(@types/node@22.13.4)(typescript@5.7.3):
+  ts-node@10.9.1(@types/node@22.13.5)(typescript@5.7.3):
     dependencies:
       '@cspotcode/source-map-support': 0.8.1
       '@tsconfig/node10': 1.0.11
       '@tsconfig/node12': 1.0.11
       '@tsconfig/node14': 1.0.3
       '@tsconfig/node16': 1.0.4
-      '@types/node': 22.13.4
+      '@types/node': 22.13.5
       acorn: 8.14.0
       acorn-walk: 8.3.4
       arg: 4.1.3
@@ -8380,6 +8383,8 @@ snapshots:
       json5: 2.2.3
       minimist: 1.2.8
       strip-bom: 3.0.0
+
+  tslib@2.7.0: {}
 
   tslib@2.8.1: {}
 
