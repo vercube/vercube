@@ -4,9 +4,11 @@ import PlaygroundController from '../Controllers/PlaygroundController';
 import { BasicAuthenticationProvider } from '../Services/BasicAuthenticationProvider';
 import { Logger } from '@vercube/logger';
 import { ConsoleProvider } from '@vercube/logger/providers';
+import { DummyAuthorizationProvider } from '../Services/DummyAuthorizationProvider';
 
 export function useContainer(container: Container): void {
   container.bind(BasicAuthenticationProvider);
+  container.bind(DummyAuthorizationProvider);
   container.bind(PlaygroundController);
 
   container.bind(StorageManager);

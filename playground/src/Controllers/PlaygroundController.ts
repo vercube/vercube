@@ -1,11 +1,26 @@
-import { Controller, Get, Middleware, SetHeader, Status, HTTPStatus, Redirect, Post, Body, QueryParams, MultipartFormData, type MultiPartData } from '@vercube/core';
-import { Authenticate } from '@vercube/auth';
+import {
+  Controller,
+  Get,
+  Middleware,
+  SetHeader,
+  Status,
+  HTTPStatus,
+  Redirect,
+  Post,
+  Body,
+  QueryParams,
+  MultipartFormData,
+  MultiPartData,
+} from '@vercube/core';
+import { Authenticate, Authorize } from '@vercube/auth';
 import { FirstMiddleware } from '../Middlewares/FirstMiddleware';
 import { z } from 'zod';
 import { Inject } from '@vercube/di';
 import { StorageManager } from '@vercube/storage';
 import { Logger } from '@vercube/logger';
 import { BasicAuthenticationProvider } from '../Services/BasicAuthenticationProvider';
+import { AuthorizationParameters } from '../Types/AuthorizationParameters';
+import { DummyAuthorizationProvider } from '../Services/DummyAuthorizationProvider';
 
 const schema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -13,7 +28,7 @@ const schema = z.object({
   age: z.number().int().min(0, 'Age must be a non-negative integer'),
 });
 
-const schemaQueryParams  = z.object({
+const schemaQueryParams = z.object({
   foo: z.string().min(1, 'Foo is required'),
   bar: z.string().min(1, 'Bar is required'),
 });
@@ -61,8 +76,28 @@ export default class PlaygroundController {
    * @returns {Promise<{ message: string }>} A promise that resolves to an object containing a greeting message.
    */
   @Get('/basic-authentication')
-  @Authenticate({provider: BasicAuthenticationProvider})
+  @Authenticate({ provider: BasicAuthenticationProvider })
   public async basicAuthentication(): Promise<{ message: string }> {
+    return { message: 'Hello, world!' };
+  }
+
+  /**
+   * Handles GET requests to the /authorize endpoint.
+   * @returns {Promise<{ message: string }>} A promise that resolves to an object containing a greeting message.
+   */
+  @Get('/authorize')
+  @Authorize<AuthorizationParameters>({ role: 'admin' })
+  public async authorize(): Promise<{ message: string }> {
+    return { message: 'Hello, world!' };
+  }
+
+  /**
+   * Handles GET requests to the /dummy-authorization.
+   * @returns {Promise<{ message: string }>} A promise that resolves to an object containing a greeting message.
+   */
+  @Get('/dummy-authorization')
+  @Authorize<AuthorizationParameters>({ role: 'admin' }, { provider: DummyAuthorizationProvider })
+  public async dummyAuthorization(): Promise<{ message: string }> {
     return { message: 'Hello, world!' };
   }
 
