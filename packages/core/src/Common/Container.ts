@@ -1,6 +1,6 @@
 import { Container } from '@vercube/di';
 import { BaseLogger, Logger } from '@vercube/logger';
-import { ConsoleAppender } from '@vercube/logger/appenders';
+import { ConsoleProvider } from '@vercube/logger/providers';
 import { HooksService } from '../Services/Hooks/HooksService';
 import { MetadataResolver } from '../Services/Metadata/MetadataResolver';
 import { RouterRegistry } from '../Services/Router/RouterRegistry';
@@ -22,8 +22,8 @@ export function createContainer(): Container {
   // bind logger and default appender
   container.bind(Logger, BaseLogger);
   container.get(Logger).configure({
-    appenders: [
-      { name: 'console', provider: ConsoleAppender },
+    providers: [
+      { name: 'console', provider: ConsoleProvider },
     ],
   });
 

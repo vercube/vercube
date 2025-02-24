@@ -7,7 +7,7 @@ export default defineBuildConfig({
     // common
     { input: 'src/index' },
 
-    // appenders
-    { input:'src/Appenders/index', outDir:'dist/appenders' },
+    // providers
+    { input:'src/Providers/index', outDir:'dist/providers' },
   ],
 });

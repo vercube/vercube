@@ -1,11 +1,11 @@
-import { Appender } from '../Common/Appender';
+import { LoggerProvider } from '../Common/LoggerProvider';
 import { LoggerTypes } from '../Types/LoggerTypes';
 import { LOG_LEVEL_COLORS } from '../Utils/Utils';
  
 /**
- * ConsoleAppender class for logging messages to the console.
+ * ConsoleProvider class for logging messages to the console.
  */
-export class ConsoleAppender extends Appender {
+export class ConsoleProvider extends LoggerProvider {
 
   /**
    * Initializes the appender with the provided options.

@@ -1,7 +1,7 @@
 import { Container, Inject } from '@vercube/di';
 import type { LoggerTypes } from '../Types/LoggerTypes';
 import { isLogLevelEnabled } from '../Utils/Utils';
-import { Appender } from '../Common/Appender';
+import { LoggerProvider } from '../Common/LoggerProvider';
 import type { Logger } from '../Common/Logger';
 
 export class BaseLogger implements Logger {
@@ -16,9 +16,9 @@ export class BaseLogger implements Logger {
   private fLogLevel: LoggerTypes.Level = 'debug';
 
   /**
-   * Hold appenders
+   * Hold providers
    */
-  private fAppenders: Map<string, Appender<any>> = new Map();
+  private fProviders: Map<string, LoggerProvider<any>> = new Map();
 
   /**
    * Configure logger
@@ -27,19 +27,24 @@ export class BaseLogger implements Logger {
   public configure(options: LoggerTypes.Options): void {
     this.fLogLevel = options?.logLevel ?? 'debug';
 
-    if (!options?.appenders?.length) {
+    if (!options?.providers?.length) {
       return;
     }
     
-    // reset registerd appenders
-    this.fAppenders.clear();
+    // reset registerd providers
+    this.fProviders.clear();
 
-    // register appenders from options
-    for (const appender of options?.appenders ?? []) {
-      this.fAppenders.set(appender.name, this.gContainer.resolve(appender.provider));
+    // register providers from options
+    for (const logger of options?.providers ?? []) {
+      try {
+        const provider = this.gContainer.resolve<LoggerProvider>(logger.provider);
+        
+        provider.initialize(logger.options);
 
-      // initialize appender
-      this.fAppenders.get(appender.name)?.initialize(appender.options);
+        this.fProviders.set(logger.name, provider);
+      } catch (error) {
+        console.error(`Failed to initialize logger provider: ${logger.provider.name}`, error);
+      }
     }
   }
 
@@ -96,7 +101,7 @@ export class BaseLogger implements Logger {
     }
 
     // process message through appenders
-    for (const appender of this.fAppenders.values()) {
+    for (const appender of this.fProviders.values()) {
       appender.processMessage(message);
     }
   }

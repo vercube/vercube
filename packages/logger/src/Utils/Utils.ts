@@ -30,10 +30,6 @@ export const colors = {
   cyanBright: colorIfAllowed((text: string) => `\x1B[96m${text}\x1B[39m`),
 };
 
-export const yellow = colorIfAllowed(
-  (text: string) => `\x1B[38;5;3m${text}\x1B[39m`,
-);
-
 export const LOG_LEVEL_COLORS: Record<LoggerTypes.Level, ColorTextFn> = {
   debug: colors.green,
   info: colors.bold,

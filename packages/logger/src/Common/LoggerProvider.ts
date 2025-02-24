@@ -1,13 +1,13 @@
 import type { LoggerTypes } from '../Types/LoggerTypes';
 
 /**
- * Abstract base class for implementing log appenders.
- * Appenders are responsible for processing and outputting log messages to various destinations.
+ * Abstract base class for implementing log provider.
+ * Providers are responsible for processing and outputting log messages to various destinations.
  * Each appender can be initialized with custom options and handles message processing according to its implementation.
  *
  * @template T - The type of options used to initialize the appender
  */
-export abstract class Appender<T = unknown> {
+export abstract class LoggerProvider<T = unknown> {
 
   /**
    * Initializes the appender with the provided options.

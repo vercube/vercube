@@ -1,10 +1,10 @@
-import { Appender } from '../Common/Appender';
+import { LoggerProvider } from '../Common/LoggerProvider';
 import { LoggerTypes } from '../Types/LoggerTypes';
 
 /**
  * A logger implementation that formats log messages as JSON.
  */
-export class JsonAppender extends Appender {
+export class JsonAppender extends LoggerProvider {
 
   /**
    * Initializes the appender with the provided options.

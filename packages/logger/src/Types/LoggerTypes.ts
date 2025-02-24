@@ -1,5 +1,5 @@
 import type { IOC } from '@vercube/di';
-import type { Appender } from '../Common/Appender';
+import type { LoggerProvider } from '../Common/LoggerProvider';
 
 export namespace LoggerTypes {
 
@@ -17,7 +17,7 @@ export namespace LoggerTypes {
   }
 
 
-  export interface LogAppender<T extends IOC.Newable<Appender>> {
+  export interface LogAppender<T extends IOC.Newable<LoggerProvider>> {
     name: string;
     provider: T;
     options?: Parameters<InstanceType<T>['initialize']>[0];
@@ -25,7 +25,7 @@ export namespace LoggerTypes {
 
   export interface Options {
     logLevel?: Level;
-    appenders?: LogAppender<any>[];
+    providers?: LogAppender<any>[];
   }
 
 }
