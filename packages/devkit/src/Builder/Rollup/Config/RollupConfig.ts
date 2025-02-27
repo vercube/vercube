@@ -5,13 +5,9 @@ import RollupPluginCommonJS from '@rollup/plugin-commonjs';
 import RollupPluginNodeResolve from '@rollup/plugin-node-resolve';
 import { DEFAULT_EXTENSIONS } from '../Utils/Utils';
 import { RollupEsbuildPlugin } from '../Plugins/EsbuildPlugin';
+import { BuilderTypes } from 'packages/devkit/src/Support/BuilderTypes';
 
-export interface RollupBuildOptions {
-  input: string;
-  output: string;
-}
-
-export function getRollupOptions(ctx: RollupBuildOptions): RollupOptions {
+export function getBuildOptions(ctx: BuilderTypes.BuildOptions): RollupOptions {
 
   return {
     // Define the input options

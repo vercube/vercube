@@ -9,16 +9,16 @@
     "dev": "vercube dev"
   },
   "devDependencies": {
-    "@vercube/auth": "workspace:*",
+    "@types/node": "22",
     "@vercube/cli": "workspace:*",
+    "tsx": "4.19.3"
+  },
+  "dependencies": {
+    "@vercube/auth": "workspace:*",
     "@vercube/core": "workspace:*",
     "@vercube/di": "workspace:*",
     "@vercube/logger": "workspace:*",
     "@vercube/storage": "workspace:*",
-    "@types/node": "22",
-    "tsx": "4.19.3"
-  },
-  "dependencies": {
     "lodash": "4.17.21",
     "tslib": "2.7.0",
     "zod": "3.24.2"

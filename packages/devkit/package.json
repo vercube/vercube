@@ -21,20 +21,22 @@
     "dist"
   ],
   "dependencies": {
-    "@rollup/pluginutils": "5.1.4",
+    "@oxc-project/runtime": "0.53.0",
+    "@rollup/plugin-alias": "5.1.1",
     "@rollup/plugin-commonjs": "28.0.2",
     "@rollup/plugin-node-resolve": "16.0.0",
-    "@rollup/plugin-alias": "5.1.1",
     "@rollup/plugin-replace": "6.0.2",
     "@rollup/plugin-typescript": "12.1.2",
+    "@rollup/pluginutils": "5.1.4",
     "consola": "3.4.0",
     "esbuild": "0.25.0",
     "hookable": "5.5.3",
     "magic-string": "0.30.17",
     "mlly": "1.7.4",
+    "oxc-parser": "^0.53.0",
+    "oxc-transform": "0.53.0",
     "pathe": "2.0.3",
+    "rolldown": "1.0.0-beta.3-commit.ca90fa2",
     "rollup": "4.34.8"
-  },
-  "devDependencies": {
   }
 }

@@ -1,6 +1,6 @@
 
 import { defineCommand, type CommandDef } from 'citty';
-import { createDevServerApp, createDevServer, createRollupWatcher } from '@vercube/devkit';
+import { createDevServerApp, createDevServer, createWatcher } from '@vercube/devkit';
 
 export const devCommand: CommandDef = defineCommand({
   meta: {
@@ -15,6 +15,6 @@ export const devCommand: CommandDef = defineCommand({
     createDevServer(app);
 
     // create rollup watcher to watch for changes
-    createRollupWatcher(app);
+    await createWatcher(app);
   },
 });
