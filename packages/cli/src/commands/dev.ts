@@ -1,6 +1,6 @@
 
 import { defineCommand, type CommandDef } from 'citty';
-import { createDevServerApp, createDevServer, createWatcher } from '@vercube/devkit';
+import { createVercube, createDevServer, watch } from '@vercube/devkit';
 
 export const devCommand: CommandDef = defineCommand({
   meta: {
@@ -8,13 +8,13 @@ export const devCommand: CommandDef = defineCommand({
     description: 'Start development server',
   },
   async run() {
-    // create new dev server app
-    const app = createDevServerApp();
+    // create new app
+    const app = createVercube();
 
     // create dev server
     createDevServer(app);
 
     // create rollup watcher to watch for changes
-    await createWatcher(app);
+    await watch(app);
   },
 });

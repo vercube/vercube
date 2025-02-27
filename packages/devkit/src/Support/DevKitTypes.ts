@@ -1,12 +1,13 @@
 import type { Hookable } from 'hookable';
 import { type Worker as _Worker } from 'node:worker_threads';
 
-export namespace DevServerTypes {
+export namespace DevKitTypes {
 
   type HookResult = void | Promise<void>;
 
   export interface Hooks {
     'dev:reload': () => HookResult;
+    'build:before-start': () => HookResult;
   }
 
   /**
