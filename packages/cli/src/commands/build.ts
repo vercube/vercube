@@ -1,11 +1,16 @@
-import { defineCommand } from 'citty';
+import { createVercube, build } from '@vercube/devkit';
+import { defineCommand, type CommandDef } from 'citty';
 
-export default defineCommand({
+export const buildCommand: CommandDef = defineCommand({
   meta: {
     name: 'build',
     description: 'Build the project',
   },
   run: async () => {
-    throw new Error('Build command not implemented yet');
+    // create new app
+    const app = createVercube();
+
+    // run build
+    await build(app);
   },
 });

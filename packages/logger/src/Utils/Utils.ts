@@ -18,16 +18,22 @@ export function isLogLevelEnabled(targetLevel: LoggerTypes.Level, currentLevel: 
   return LOG_LEVEL_VALUES[targetLevel] >= LOG_LEVEL_VALUES[currentLevel];
 }
 
-const isColorAllowed = () => !process.env.NO_COLOR;
-const colorIfAllowed = (colorFn: ColorTextFn) => (text: string) => isColorAllowed() ? colorFn(text) : text;
+const isColorAllowed = (): boolean => !process.env.NO_COLOR;
 
-export const colors = {
-  bold: colorIfAllowed((text: string) => `\x1B[1m${text}\x1B[0m`),
-  green: colorIfAllowed((text: string) => `\x1B[32m${text}\x1B[39m`),
-  yellow: colorIfAllowed((text: string) => `\x1B[33m${text}\x1B[39m`),
-  red: colorIfAllowed((text: string) => `\x1B[31m${text}\x1B[39m`),
-  magentaBright: colorIfAllowed((text: string) => `\x1B[95m${text}\x1B[39m`),
-  cyanBright: colorIfAllowed((text: string) => `\x1B[96m${text}\x1B[39m`),
+const colorIfAllowed = (colorFn: ColorTextFn): ColorTextFn => {
+  const wrappedFn: ColorTextFn = (text: string): string => {
+    return isColorAllowed() ? colorFn(text) : text;
+  };
+  return wrappedFn;
+};
+
+export const colors: Record<string, ColorTextFn> = {
+  bold: colorIfAllowed((text: string): string => `\x1B[1m${text}\x1B[0m`),
+  green: colorIfAllowed((text: string): string => `\x1B[32m${text}\x1B[39m`),
+  yellow: colorIfAllowed((text: string): string => `\x1B[33m${text}\x1B[39m`),
+  red: colorIfAllowed((text: string): string => `\x1B[31m${text}\x1B[39m`),
+  magentaBright: colorIfAllowed((text: string): string => `\x1B[95m${text}\x1B[39m`),
+  cyanBright: colorIfAllowed((text: string): string => `\x1B[96m${text}\x1B[39m`),
 };
 
 export const LOG_LEVEL_COLORS: Record<LoggerTypes.Level, ColorTextFn> = {

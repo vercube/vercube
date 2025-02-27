@@ -1,26 +1,19 @@
+ 
 import consola from 'consola';
-import { watch as RollupWatch } from 'rollup';
-import { getRollupOptions } from '../Builder/Rollup/Config/RollupConfig';
-import type { DevServerTypes } from './Types';
+import type { DevKitTypes } from '../Support/DevKitTypes';
+import { getWatcher } from '../Utils/Utils';
 
 /**
- * Creates a Rollup watcher for the given application.
- * @param {DevServerTypes.App} app - The application instance.
+ * Creates a watcher for the given application.
+ * @param {DevKitTypes.App} app - The application instance.
+ * This file is highly inspired by Nitro
+ * @see https://github.com/nitrojs/nitro/blob/v2/src/core/build/dev.ts
  */
-export function createRollupWatcher(app: DevServerTypes.App): void {
-  const rollupConfig = getRollupOptions({
-    input: 'src/index.ts',
-    output: 'dist',
-  });
-
-  const watcher = RollupWatch({
-    ...rollupConfig,
-    cache: true,
-    onwarn: () => {},
-  });
+export async function watch(app: DevKitTypes.App): Promise<void> {
+  const watcher = await getWatcher('rolldown');
   let start: number;
 
-  watcher.on('event', (event) => {
+  watcher.on('event', (event: any) => {
     switch (event.code) {
       // The watcher is (re)starting
       case 'START': {

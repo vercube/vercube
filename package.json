@@ -25,8 +25,8 @@
     "@commitlint/cli": "19.7.1",
     "@commitlint/config-conventional": "19.7.1",
     "@nx/js": "20.4.6",
-    "@nx/rollup": "20.4.6",
-    "@rollup/plugin-typescript": "12.1.2",
+    "@nx/plugin": "20.4.6",
+    "@oxc-project/runtime": "0.53.0",
     "@types/lodash": "4.17.15",
     "@types/node": "22.13.5",
     "eslint": "9.21.0",
@@ -34,21 +34,16 @@
     "globals": "16.0.0",
     "lint-staged": "15.4.3",
     "nx": "20.4.6",
+    "oxc-transform": "0.53.0",
+    "rolldown": "1.0.0-beta.3-commit.ca90fa2",
     "simple-git-hooks": "2.11.1",
     "tslib": "2.8.1",
     "typescript": "5.7.3",
-    "typescript-eslint": "8.24.1",
-    "unbuild": "3.3.1"
+    "typescript-eslint": "8.25.0",
+    "unplugin-isolated-decl": "0.11.2"
   },
   "simple-git-hooks": {
     "pre-commit": "pnpm pre-commit",
     "commit-msg": "pnpm dlx commitlint --edit $1"
-  },
-  "pnpm": {
-    "peerDependencyRules": {
-      "ignoreMissing": [
-        "picomatch"
-      ]
-    }
   }
 }

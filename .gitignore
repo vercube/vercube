@@ -24,7 +24,6 @@ coverage
 # Build Outputs
 .next/
 out/
-build
 dist
 
 
@@ -43,3 +42,4 @@ packages/**/dist
 .idea
 .nx/
 .eslintcache
+tmp
