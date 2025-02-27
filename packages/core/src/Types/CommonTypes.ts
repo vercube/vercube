@@ -1,4 +1,4 @@
-import type { H3Event } from 'h3';
+import type { H3Event, MultiPartData as H3MultiPartData } from 'h3';
 import { MetadataTypes } from './MetadataTypes';
 
 /**
@@ -11,3 +11,5 @@ export interface MiddlewareOptions<T = unknown> {
   middlewareArgs?: T;
   methodArgs?: MetadataTypes.Arg[];
 }
+
+export type MultiPartData = H3MultiPartData;
