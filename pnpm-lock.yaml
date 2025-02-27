@@ -191,6 +191,21 @@ importers:
 
   playground:
     dependencies:
+      '@vercube/auth':
+        specifier: workspace:*
+        version: link:../packages/auth
+      '@vercube/core':
+        specifier: workspace:*
+        version: link:../packages/core
+      '@vercube/di':
+        specifier: workspace:*
+        version: link:../packages/di
+      '@vercube/logger':
+        specifier: workspace:*
+        version: link:../packages/logger
+      '@vercube/storage':
+        specifier: workspace:*
+        version: link:../packages/storage
       lodash:
         specifier: 4.17.21
         version: 4.17.21
@@ -204,24 +219,9 @@ importers:
       '@types/node':
         specifier: '22'
         version: 22.13.5
-      '@vercube/auth':
-        specifier: workspace:*
-        version: link:../packages/auth
       '@vercube/cli':
         specifier: workspace:*
         version: link:../packages/cli
-      '@vercube/core':
-        specifier: workspace:*
-        version: link:../packages/core
-      '@vercube/di':
-        specifier: workspace:*
-        version: link:../packages/di
-      '@vercube/logger':
-        specifier: workspace:*
-        version: link:../packages/logger
-      '@vercube/storage':
-        specifier: workspace:*
-        version: link:../packages/storage
       tsx:
         specifier: 4.19.3
         version: 4.19.3
