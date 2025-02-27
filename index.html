@@ -10,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,100..900;1,100..900&display=swap"
     rel="stylesheet">
   <style>
+    /* Base Styles */
     * {
       margin: 0;
       padding: 0;
@@ -30,6 +31,151 @@
       color: #ad58ff;
     }
 
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h2 {
+      font-size: 48px;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      line-height: 1.2;
+      letter-spacing: -1px;
+    }
+
+    .d-none {
+      display: none;
+    }
+
+    /* Section Styles */
+    .section {
+      padding: 8rem 4rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .section-background {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+    }
+
+    .section-content {
+      position: relative;
+      z-index: 2;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 5rem;
+    }
+
+    .section-header h2 {
+      font-size: 48px;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      background: linear-gradient(to right, #ad58ff, #ff56bd);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      display: inline-block;
+    }
+
+    .section-header p {
+      font-size: 18px;
+      color: rgba(255, 255, 255, 0.7);
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* Navigation Styles */
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 70px;
+      background-color: transparent;
+      z-index: 1000;
+      transition: background-color 0.3s ease, border-bottom 0.3s ease;
+      border-bottom: 1px solid transparent;
+      padding: 0 4rem;
+    }
+
+    .navbar.scrolled {
+      background-color: rgba(12, 4, 32, 0.95);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-color: rgba(255, 255, 255, 0.05);
+    }
+
+    .navbar-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .navbar-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      color: white;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 1.25rem;
+    }
+
+    .navbar-logo svg,
+    .navbar-logo img {
+      max-width: 28px;
+      max-height: 28px;
+    }
+
+    .navbar-nav {
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+    }
+
+    .nav-link {
+      color: rgba(255, 255, 255, 0.7);
+      text-decoration: none;
+      font-size: 0.9375rem;
+      font-weight: 500;
+      transition: color 0.2s ease;
+      position: relative;
+    }
+
+    .nav-link:hover {
+      color: white;
+    }
+
+    .nav-link-github {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .navbar-toggle {
+      display: none;
+      background: none;
+      border: none;
+      color: white;
+      cursor: pointer;
+      padding: 0.5rem;
+    }
+
+    /* Hero Section */
     .hero {
       position: relative;
       width: 100%;
@@ -89,7 +235,26 @@
       margin-left: auto;
     }
 
-    /* Updated hero-cta styling */
+    .hero-flex {
+      display: flex;
+      justify-content: space-between;
+      gap: 4rem;
+    }
+
+    .hero-left {
+      flex: 1;
+      max-width: 700px;
+    }
+
+    .hero-right {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      max-width: 500px;
+    }
+
+    /* Hero CTA Buttons */
     .hero-buttons {
       margin-top: 40px;
       display: flex;
@@ -151,7 +316,7 @@
       transform: translateX(0);
     }
 
-    /* Updated command-input styling */
+    /* Command Input */
     .command-container {
       margin-top: 32px;
     }
@@ -208,258 +373,238 @@
       background: rgba(255, 255, 255, 0.1);
     }
 
-    /* New feature section styles */
-    .section {
-      padding: 8rem 4rem;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .section-background {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 0;
-    }
-
-    .section-content {
-      position: relative;
-      z-index: 2;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    .section-header {
-      text-align: center;
-      margin-bottom: 5rem;
-    }
-
-    .section-header h2 {
-      font-size: 48px;
-      font-weight: 700;
-      margin-bottom: 1rem;
-      background: linear-gradient(to right, #ad58ff, #ff56bd);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-      display: inline-block;
-    }
-
-    .section-header p {
-      font-size: 18px;
-      color: rgba(255, 255, 255, 0.7);
-      max-width: 600px;
-      margin: 0 auto;
-      line-height: 1.6;
-    }
-
-    /* Feature grid */
-    .features-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 2rem;
+    /* Zero Config Section */
+    .zero-config-container {
+      display: flex;
+      align-items: center;
+      gap: 4rem;
       margin-top: 2rem;
     }
 
-    .feature-card {
-      background: rgba(30, 20, 60, 0.5);
-      border: 1px solid rgba(173, 88, 255, 0.2);
-      border-radius: 16px;
-      padding: 2.5rem;
-      transition: all 0.3s ease;
-      position: relative;
-      overflow: hidden;
-      backdrop-filter: blur(10px);
+    .zero-config-text {
+      flex: 1;
     }
 
-    .feature-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
-      border-color: rgba(173, 88, 255, 0.4);
-    }
-
-    .feature-card-icon {
-      margin-bottom: 1.5rem;
-      width: 50px;
-      height: 50px;
-      background: linear-gradient(135deg, #ad58ff, #ff56bd);
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .feature-card h3 {
-      font-size: 24px;
-      margin-bottom: 1rem;
+    .zero-config-text h2 {
+      font-size: 2.5rem;
       font-weight: 600;
+      margin-bottom: 1.5rem;
+      line-height: 1.2;
     }
 
-    .feature-card p {
-      color: rgba(255, 255, 255, 0.7);
+    .zero-config-description {
+      font-size: 1.125rem;
+      color: rgba(255, 255, 255, 0.8);
       line-height: 1.6;
+      margin-bottom: 1.5rem;
     }
 
-    /* Code section */
-    .code-section {
-      background: rgba(20, 10, 40, 0.6);
-      border-radius: 16px;
-      border: 1px solid rgba(173, 88, 255, 0.2);
+    .zero-config-extra {
+      font-size: 1rem;
+      color: rgba(255, 255, 255, 0.6);
+      line-height: 1.6;
+      margin-bottom: 1.5rem;
+    }
+
+    .zero-config-button {
+      margin-top: 1.5rem;
+    }
+
+    .zero-config-code {
+      flex: 1;
+    }
+
+    .code-block {
+      border-radius: 8px;
       overflow: hidden;
-      margin: 3rem auto;
-      max-width: 800px;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      background: rgba(12, 4, 32, 0.6);
+      border: 1px solid rgba(173, 88, 255, 0.2);
+      font-family: "SF Mono", SFMono-Regular, ui-monospace, Menlo, Monaco, Consolas, monospace;
     }
 
     .code-header {
-      background: rgba(12, 4, 32, 0.9);
-      padding: 1rem 1.5rem;
       display: flex;
-      align-items: center;
       justify-content: space-between;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      align-items: center;
+      padding: 0.75rem 1rem;
+      background: rgba(0, 0, 0, 0.2);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     }
 
-    .code-title {
+    .code-filename {
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      font-family: "SF Mono", SFMono-Regular, ui-monospace, Menlo, Monaco, Consolas, monospace;
-      font-size: 14px;
-      color: rgba(255, 255, 255, 0.8);
+      font-size: 0.875rem;
+      color: rgba(255, 255, 255, 0.7);
     }
 
-    .code-body {
+    .code-copy-btn {
+      background: none;
+      border: none;
+      color: rgba(255, 255, 255, 0.5);
+      cursor: pointer;
+      padding: 0.25rem;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .code-copy-btn:hover {
+      color: white;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .code-content {
       padding: 1.5rem;
-      font-family: "SF Mono", SFMono-Regular, ui-monospace, Menlo, Monaco, Consolas, monospace;
-      font-size: 14px;
+    }
+
+    .code-content pre {
+      margin: 0;
+      font-size: 0.9375rem;
       line-height: 1.6;
-      color: rgba(255, 255, 255, 0.9);
       overflow-x: auto;
     }
 
-    .code-body pre {
-      margin: 0;
+    .code-import {
+      color: #FF56BD;
     }
 
-    .code-body .keyword {
-      color: #ff56bd;
+    .code-function {
+      color: #AD58FF;
     }
 
-    .code-body .function {
-      color: #ad58ff;
-    }
-
-    .code-body .string {
+    .code-string {
       color: #4ADE80;
     }
 
-    .code-body .comment {
+    .code-comment {
       color: rgba(255, 255, 255, 0.4);
     }
 
-    /* Modules section */
-    .modules-grid {
+    /* Modules Section */
+    .modules-minimal {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 1.5rem;
       margin-top: 3rem;
     }
 
-    .module-card {
-      background: rgba(30, 20, 60, 0.5);
-      border: 1px solid rgba(173, 88, 255, 0.2);
-      border-radius: 12px;
-      padding: 1.5rem;
-      text-align: center;
-      transition: all 0.3s ease;
+    .module-minimal {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      padding: 1.25rem;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.03);
+      transition: all 0.2s ease;
     }
 
-    .module-card:hover {
-      transform: translateY(-3px);
+    .module-minimal:hover {
       border-color: rgba(173, 88, 255, 0.4);
-      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+      background: rgba(173, 88, 255, 0.05);
+      transform: translateY(-2px);
     }
 
-    .module-icon {
-      width: 40px;
-      height: 40px;
-      margin: 0 auto 1rem;
+    .module-icon-minimal {
+      width: 38px;
+      height: 38px;
       display: flex;
       align-items: center;
       justify-content: center;
+      border-radius: 6px;
+      background: rgba(173, 88, 255, 0.1);
+      flex-shrink: 0;
     }
 
-    .module-card h4 {
-      font-size: 18px;
+    .module-content {
+      flex: 1;
+    }
+
+    .module-content h4 {
+      font-size: 1rem;
       font-weight: 600;
       margin-bottom: 0.5rem;
+      color: white;
     }
 
-    .module-card p {
-      font-size: 14px;
+    .module-content p {
+      font-size: 0.875rem;
       color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 0.5rem;
+      line-height: 1.5;
     }
 
-    .module-tag {
+    .module-tag-minimal {
       display: inline-block;
-      background: rgba(173, 88, 255, 0.2);
+      font-size: 0.75rem;
+      padding: 0.125rem 0.5rem;
       border-radius: 20px;
-      padding: 0.25rem 0.75rem;
-      font-size: 12px;
+      background: rgba(173, 88, 255, 0.15);
       color: #ad58ff;
-      margin-top: 0.5rem;
     }
 
-    /* Open source section */
+    /* Open Source Section */
     .open-source-section {
       text-align: center;
       padding: 6rem 2rem;
     }
 
-    .sponsor-buttons {
-      display: flex;
-      gap: 1.5rem;
-      justify-content: center;
-      margin-top: 3rem;
-      flex-wrap: wrap;
+    .opensource-heart {
+      margin: 0 auto 1.5rem;
+      text-align: center;
+      filter: drop-shadow(0 0 12px rgba(173, 88, 255, 0.6));
     }
 
-    .sponsor-button {
+    .opensource-title {
+      font-size: 3.5rem;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .opensource-desc {
+      font-size: 1.1rem;
+      text-align: center;
+      color: rgba(255, 255, 255, 0.7);
+      margin: 0 auto 3rem;
+      line-height: 1.6;
+      max-width: 600px;
+    }
+
+    .opensource-links {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      margin-top: 2rem;
+    }
+
+    .minimal-link {
       display: flex;
       align-items: center;
-      justify-content: center;
       gap: 0.75rem;
-      padding: 1rem 2rem;
-      background: rgba(30, 20, 60, 0.7);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
-      color: white;
-      font-weight: 500;
+      color: rgba(255, 255, 255, 0.7);
       text-decoration: none;
-      transition: all 0.3s ease;
+      font-size: 1rem;
+      padding: 0.75rem 1.5rem;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      transition: all 0.2s ease;
+      width: 195px;
+      text-align: center;
+      justify-content: center;
     }
 
-    .github-button {
-      background: linear-gradient(to right, #2ea043, #3fb950);
-      border: none;
-    }
-
-    .support-button {
-      background: linear-gradient(to right, #db61a2, #e668a7);
-      border: none;
-    }
-
-    .twitter-button {
-      background: linear-gradient(to right, #1d9bf0, #57b4f5);
-      border: none;
-    }
-
-    .sponsor-button:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    .minimal-link:hover {
+      color: white;
+      border-color: rgba(173, 88, 255, 0.4);
+      background: rgba(173, 88, 255, 0.1);
+      transform: translateY(-2px);
     }
 
     /* Footer Styles */
@@ -562,134 +707,7 @@
       font-weight: 300;
     }
 
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    h2 {
-      font-size: 48px;
-      font-weight: 600;
-      margin-bottom: 1.5rem;
-      line-height: 1.2;
-      letter-spacing: -1px;
-    }
-
-    /* Navigation Bar Styles */
-    .navbar {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 70px;
-      background-color: transparent;
-      z-index: 1000;
-      transition: background-color 0.3s ease, border-bottom 0.3s ease;
-      border-bottom: 1px solid transparent;
-      padding: 0 4rem;
-    }
-
-    .navbar.scrolled {
-      background-color: rgba(12, 4, 32, 0.95);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      border-color: rgba(255, 255, 255, 0.05);
-    }
-
-    .navbar-container {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      height: 100%;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    .navbar-logo {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      color: white;
-      text-decoration: none;
-      font-weight: 600;
-      font-size: 1.25rem;
-    }
-
-    .navbar-logo svg,
-    .navbar-logo img {
-      max-width: 28px;
-      max-height: 28px;
-    }
-
-    .navbar-nav {
-      display: flex;
-      align-items: center;
-      gap: 2rem;
-    }
-
-    .nav-link {
-      color: rgba(255, 255, 255, 0.7);
-      text-decoration: none;
-      font-size: 0.9375rem;
-      font-weight: 500;
-      transition: color 0.2s ease;
-      position: relative;
-    }
-
-    .nav-link:hover {
-      color: white;
-    }
-
-    .nav-link-github {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .navbar-toggle {
-      display: none;
-      background: none;
-      border: none;
-      color: white;
-      cursor: pointer;
-      padding: 0.5rem;
-    }
-
-    .contact-button {
-      background-color: rgba(255, 255, 255, 0.1);
-      color: white;
-      font-size: 14px;
-      font-weight: 500;
-      padding: 8px 16px;
-      border-radius: 40px;
-      text-decoration: none;
-      transition: all 0.3s ease;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .contact-button:hover {
-      background-color: rgba(255, 255, 255, 0.15);
-    }
-
-    .hero-flex {
-      display: flex;
-      justify-content: space-between;
-      gap: 4rem;
-    }
-
-    .hero-left {
-      flex: 1;
-      max-width: 700px;
-    }
-
-    .hero-right {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      max-width: 500px;
-    }
-
+    /* Media Queries */
     @media (max-width: 1000px) {
       .hero .hero-background svg {
         width: 100%;
@@ -698,6 +716,19 @@
     }
 
     @media (max-width: 992px) {
+      .section {
+        padding: 6rem 2rem;
+      }
+
+      .zero-config-container {
+        flex-direction: column;
+        gap: 3rem;
+      }
+
+      .zero-config-text {
+        text-align: center;
+      }
+
       .footer-content {
         grid-template-columns: 1fr;
         gap: 3rem;
@@ -725,20 +756,24 @@
         margin-top: 0;
       }
 
-      .features-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .modules-grid {
+      .modules-minimal {
         grid-template-columns: repeat(2, 1fr);
-      }
-
-      .section {
-        padding: 6rem 2rem;
       }
     }
 
     @media (max-width: 768px) {
+      .hero {
+        padding: 0 2rem;
+      }
+
+      .hero-title {
+        font-size: 48px;
+      }
+
+      .hero-buttons {
+        flex-direction: column;
+      }
+
       .navbar {
         padding: 0 2rem;
       }
@@ -782,20 +817,23 @@
         text-align: center;
       }
 
-      .hero {
-        padding: 0 2rem;
-      }
-
-      .hero-title {
-        font-size: 48px;
-      }
-
-      .hero-buttons {
-        flex-direction: column;
-      }
-
-      .modules-grid {
+      .modules-minimal {
         grid-template-columns: 1fr;
+      }
+
+      .opensource-links {
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .minimal-link {
+        width: 100%;
+        max-width: 280px;
+      }
+
+      .opensource-title {
+        font-size: 2.5rem;
       }
     }
 
@@ -822,17 +860,9 @@
         font-size: 40px;
       }
 
-      .sponsor-buttons {
-        flex-direction: column;
+      .zero-config-container .zero-config-code {
+        display: none;
       }
-
-      .sponsor-button {
-        width: 100%;
-      }
-    }
-
-    .d-none {
-      display: none;
     }
   </style>
 </head>
@@ -884,7 +914,7 @@
         
         <!-- Gradient wave lines -->
         <g opacity="0.4">
-          <!-- Generate 30 curved lines with different positions -->
+          <!-- Generate curved lines with different positions -->
           <path d="M0,200 Q600,100 1200,300" stroke="url(#gradient1)" stroke-width="1" fill="none" />
           <path d="M0,220 Q600,120 1200,320" stroke="url(#gradient1)" stroke-width="1" fill="none" />
           <path d="M0,240 Q600,140 1200,340" stroke="url(#gradient1)" stroke-width="1" fill="none" />
@@ -950,13 +980,10 @@
               <span class="command-prompt">$</span>
               <span class="command-text">pnpm create vercube@latest</span>
               <button class="copy-button">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path
-                    d="M8 4V16C8 16.5304 8.21071 17.0391 8.58579 17.4142C8.96086 17.7893 9.46957 18 10 18H18C18.5304 18 19.0391 17.7893 19.4142 17.4142C19.7893 17.0391 20 16.5304 20 16V7.242C20 6.97556 19.9467 6.71181 19.8433 6.46624C19.7399 6.22068 19.5885 5.99824 19.398 5.812L16.188 2.602C16.0018 2.41148 15.7793 2.26012 15.5338 2.15673C15.2882 2.05334 15.0244 2.00001 14.758 2H10C9.46957 2 8.96086 2.21071 8.58579 2.58579C8.21071 2.96086 8 3.46957 8 4Z"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                  <path
-                    d="M16 18V20C16 20.5304 15.7893 21.0391 15.4142 21.4142C15.0391 21.7893 14.5304 22 14 22H6C5.46957 22 4.96086 21.7893 4.58579 21.4142C4.21071 21.0391 4 20.5304 4 20V8C4 7.46957 4.21071 6.96086 4.58579 6.58579C4.96086 6.21071 5.46957 6 6 6H8"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                 </svg>
               </button>
             </div>
@@ -971,195 +998,53 @@
     </div>
   </div>
 
-
-  <!-- Features Section -->
-  <section class="section d-none">
+  <!-- Zero Config Section -->
+  <section class="section">
     <div class="section-background">
       <svg viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg"
         style="transform: translateY(-50px)">
         <defs>
-          <linearGradient id="gradient1-features" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stop-color="#ad58ff" stop-opacity="0.4" />
+          <linearGradient id="gradient1-zero" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#ad58ff" stop-opacity="0.3" />
             <stop offset="100%" stop-color="#ff56bd" stop-opacity="0.1" />
           </linearGradient>
         </defs>
 
-        <!-- Background base -->
         <rect width="100%" height="100%" fill="#0c0420" />
 
-        <!-- Gradient wave lines -->
-        <g opacity="0.4">
-          <!-- Mirrored wave pattern from hero section -->
-          <path d="M0,300 Q600,400 1200,300" stroke="url(#gradient1-features)" stroke-width="1" fill="none" />
-          <path d="M0,320 Q600,420 1200,320" stroke="url(#gradient1-features)" stroke-width="1" fill="none" />
-          <path d="M0,340 Q600,440 1200,340" stroke="url(#gradient1-features)" stroke-width="1" fill="none" />
-          <path d="M0,360 Q600,460 1200,360" stroke="url(#gradient1-features)" stroke-width="1" fill="none" />
-          <path d="M0,380 Q600,480 1200,380" stroke="url(#gradient1-features)" stroke-width="1" fill="none" />
-          <path d="M0,400 Q600,500 1200,400" stroke="url(#gradient1-features)" stroke-width="1" fill="none" />
-          <path d="M0,420 Q600,520 1200,420" stroke="url(#gradient1-features)" stroke-width="1" fill="none" />
-          <path d="M0,440 Q600,540 1200,440" stroke="url(#gradient1-features)" stroke-width="1" fill="none" />
-          <path d="M0,460 Q600,560 1200,460" stroke="url(#gradient1-features)" stroke-width="1" fill="none" />
-          <path d="M0,480 Q600,580 1200,480" stroke="url(#gradient1-features)" stroke-width="1" fill="none" />
-          <path d="M0,500 Q600,600 1200,500" stroke="url(#gradient1-features)" stroke-width="1" fill="none" />
-          <path d="M0,520 Q600,620 1200,520" stroke="url(#gradient1-features)" stroke-width="1" fill="none" />
-          <path d="M0,540 Q600,640 1200,540" stroke="url(#gradient1-features)" stroke-width="1" fill="none" />
-          <path d="M0,560 Q600,660 1200,560" stroke="url(#gradient1-features)" stroke-width="1" fill="none" />
-          <path d="M0,580 Q600,680 1200,580" stroke="url(#gradient1-features)" stroke-width="1" fill="none" />
+        <g opacity="0.3">
+          <path d="M0,300 Q600,400 1200,300" stroke="url(#gradient1-zero)" stroke-width="1" fill="none" />
+          <path d="M0,330 Q600,430 1200,330" stroke="url(#gradient1-zero)" stroke-width="1" fill="none" />
+          <path d="M0,360 Q600,460 1200,360" stroke="url(#gradient1-zero)" stroke-width="1" fill="none" />
+          <path d="M0,390 Q600,490 1200,390" stroke="url(#gradient1-zero)" stroke-width="1" fill="none" />
+          <path d="M0,420 Q600,520 1200,420" stroke="url(#gradient1-zero)" stroke-width="1" fill="none" />
+          <path d="M0,450 Q600,550 1200,450" stroke="url(#gradient1-zero)" stroke-width="1" fill="none" />
+          <path d="M0,480 Q600,580 1200,480" stroke="url(#gradient1-zero)" stroke-width="1" fill="none" />
+          <path d="M0,510 Q600,610 1200,510" stroke="url(#gradient1-zero)" stroke-width="1" fill="none" />
         </g>
       </svg>
     </div>
-
-    <div class="section-content">
-      <div class="section-header">
-        <h2>Core Features</h2>
-        <p>Vercube comes with a powerful set of features designed to make server development faster and more enjoyable.
-        </p>
-      </div>
-
-      <div class="features-minimal">
-        <div class="feature-minimal">
-          <div class="feature-icon-minimal">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-              stroke="#ad58ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
-            </svg>
-          </div>
-          <div class="feature-content">
-            <h4>High Performance</h4>
-            <p>Built on top of H3 engine for exceptional speed with minimal overhead.</p>
-          </div>
-        </div>
-
-        <div class="feature-minimal">
-          <div class="feature-icon-minimal">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-              stroke="#ad58ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-            </svg>
-          </div>
-          <div class="feature-content">
-            <h4>Type Safety</h4>
-            <p>100% TypeScript checked with OOP principles and decorators.</p>
-          </div>
-        </div>
-
-        <div class="feature-minimal">
-          <div class="feature-icon-minimal">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-              stroke="#ad58ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
-              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
-            </svg>
-          </div>
-          <div class="feature-content">
-            <h4>Best Developer Experience</h4>
-            <p>Intuitive APIs and powerful tooling that makes development a joy.</p>
-          </div>
-        </div>
-
-        <div class="feature-minimal">
-          <div class="feature-icon-minimal">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-              stroke="#ad58ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3 3v18h18" />
-              <path d="M18.4 3a9.9 9.9 0 0 1 .6 10.9" />
-              <path d="M13 7.1a9.9 9.9 0 0 1 .9 8.9" />
-              <path d="M7.6 11.9A9.9 9.9 0 0 1 9 7.1" />
-            </svg>
-          </div>
-          <div class="feature-content">
-            <h4>Runtime Agnostic</h4>
-            <p>Works seamlessly across Node.js, Deno, Bun and serverless environments.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <style>
-    /* Minimalistic Feature styles */
-    .features-minimal {
-      display: flex;
-      gap: 1.5rem;
-      margin-top: 3rem;
-      flex-wrap: wrap;
-    }
-
-    .feature-minimal {
-      flex: 1;
-      min-width: 220px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-      padding: 1.5rem;
-      border-radius: 6px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      background: rgba(255, 255, 255, 0.03);
-      transition: all 0.2s ease;
-    }
-
-    .feature-minimal:hover {
-      border-color: rgba(173, 88, 255, 0.4);
-      background: rgba(173, 88, 255, 0.05);
-      transform: translateY(-2px);
-    }
-
-    .feature-icon-minimal {
-      width: 50px;
-      height: 50px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 25px;
-      background: rgba(173, 88, 255, 0.1);
-      margin-bottom: 1.25rem;
-    }
-
-    .feature-content h4 {
-      font-size: 1.125rem;
-      font-weight: 600;
-      margin-bottom: 0.75rem;
-      color: white;
-    }
-
-    .feature-content p {
-      font-size: 0.875rem;
-      color: rgba(255, 255, 255, 0.7);
-      line-height: 1.5;
-    }
-
-    @media (max-width: 992px) {
-      .features-minimal {
-        flex-wrap: wrap;
-      }
-
-      .feature-minimal {
-        min-width: calc(50% - 0.75rem);
-      }
-    }
-
-    @media (max-width: 768px) {
-      .feature-minimal {
-        min-width: 100%;
-      }
-    }
-  </style>
-
-  <!-- Zero Config Section -->
-  <section class="section d-none">
     <div class="section-content">
       <div class="zero-config-container">
         <div class="zero-config-text">
           <h2>Zero Configuration</h2>
           <p class="zero-config-description">
-            Get started in seconds with zero configuration needed. Vercube works out of the box while remaining fully
-            customizable.
+            Get started in seconds with zero configuration needed. Vercube works out of the box while using rolldown.rs - the fastest Rust-based bundler available.
           </p>
           <p class="zero-config-extra">
-            That's it! A complete Vercube project requires zero configuration to run while still giving you the
-            flexibility to customize every aspect when needed.
+            Focus on building your application instead of configuring your tools. Vercube handles the complexity while giving you the flexibility to customize when needed.
           </p>
+          
+          <div class="zero-config-button">
+            <a href="#" class="hero-cta github">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+              </svg>
+              Configuration Guide
+            </a>
+          </div>
         </div>
 
         <div class="zero-config-code">
@@ -1184,128 +1069,15 @@
             <div class="code-content">
               <pre><code><span class="code-import">import</span> { <span class="code-function">defineConfig</span> } <span class="code-import">from</span> <span class="code-string">'@vercube/core'</span>;
 
-<span class="code-import">export</span> <span class="code-import">default</span> <span class="code-function">defineConfig</span>({ });</code></pre>
+<span class="code-import">export</span> <span class="code-import">default</span> <span class="code-function">defineConfig</span>({ 
+  <span class="code-comment">// additional config here</span>
+});</code></pre>
             </div>
           </div>
         </div>
       </div>
     </div>
   </section>
-
-  <style>
-    /* Zero Config Section Styles */
-    .zero-config-container {
-      display: flex;
-      align-items: center;
-      gap: 4rem;
-      margin-top: 2rem;
-    }
-
-    .zero-config-text {
-      flex: 1;
-    }
-
-    .zero-config-text h2 {
-      font-size: 2.5rem;
-      font-weight: 600;
-      margin-bottom: 1.5rem;
-      line-height: 1.2;
-    }
-
-    .zero-config-description {
-      font-size: 1.125rem;
-      color: rgba(255, 255, 255, 0.8);
-      line-height: 1.6;
-      margin-bottom: 1.5rem;
-    }
-
-    .zero-config-extra {
-      font-size: 1rem;
-      color: rgba(255, 255, 255, 0.6);
-      line-height: 1.6;
-    }
-
-    .zero-config-code {
-      flex: 1;
-    }
-
-    .code-block {
-      border-radius: 8px;
-      overflow: hidden;
-      background: rgba(12, 4, 32, 0.6);
-      border: 1px solid rgba(173, 88, 255, 0.2);
-      font-family: "SF Mono", SFMono-Regular, ui-monospace, Menlo, Monaco, Consolas, monospace;
-    }
-
-    .code-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0.75rem 1rem;
-      background: rgba(0, 0, 0, 0.2);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    .code-filename {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 0.875rem;
-      color: rgba(255, 255, 255, 0.7);
-    }
-
-    .code-copy-btn {
-      background: none;
-      border: none;
-      color: rgba(255, 255, 255, 0.5);
-      cursor: pointer;
-      padding: 0.25rem;
-      border-radius: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s ease;
-    }
-
-    .code-copy-btn:hover {
-      color: white;
-      background: rgba(255, 255, 255, 0.1);
-    }
-
-    .code-content {
-      padding: 1.5rem;
-    }
-
-    .code-content pre {
-      margin: 0;
-      font-size: 0.9375rem;
-      line-height: 1.6;
-      overflow-x: auto;
-    }
-
-    .code-import {
-      color: #FF56BD;
-    }
-
-    .code-function {
-      color: #AD58FF;
-    }
-
-    .code-string {
-      color: #4ADE80;
-    }
-
-    @media (max-width: 992px) {
-      .zero-config-container {
-        flex-direction: column;
-        gap: 3rem;
-      }
-
-      .zero-config-text {
-        text-align: center;
-      }
-    }
-  </style>
 
   <section class="section">
     <div class="section-content">
@@ -1437,77 +1209,6 @@
     </div>
   </section>
 
-  <style>
-    /* Minimalistic Module styles */
-    .modules-minimal {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 1.5rem;
-      margin-top: 3rem;
-    }
-
-    .module-minimal {
-      display: flex;
-      align-items: flex-start;
-      gap: 1rem;
-      padding: 1.25rem;
-      border-radius: 6px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      background: rgba(255, 255, 255, 0.03);
-      transition: all 0.2s ease;
-    }
-
-    .module-minimal:hover {
-      border-color: rgba(173, 88, 255, 0.4);
-      background: rgba(173, 88, 255, 0.05);
-      transform: translateY(-2px);
-    }
-
-    .module-icon-minimal {
-      width: 38px;
-      height: 38px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 6px;
-      background: rgba(173, 88, 255, 0.1);
-      flex-shrink: 0;
-    }
-
-    .module-content {
-      flex: 1;
-    }
-
-    .module-content h4 {
-      font-size: 1rem;
-      font-weight: 600;
-      margin-bottom: 0.5rem;
-      color: white;
-    }
-
-    .module-content p {
-      font-size: 0.875rem;
-      color: rgba(255, 255, 255, 0.7);
-      margin-bottom: 0.5rem;
-      line-height: 1.5;
-    }
-
-    .module-tag-minimal {
-      display: inline-block;
-      font-size: 0.75rem;
-      padding: 0.125rem 0.5rem;
-      border-radius: 20px;
-      background: rgba(173, 88, 255, 0.15);
-      color: #ad58ff;
-    }
-
-    @media (max-width: 768px) {
-      .modules-minimal {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
-
   <!-- Open Source Section -->
   <section class="section open-source-section">
     <div class="section-background">
@@ -1550,10 +1251,6 @@
           <path
             d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
             fill="#ad58ff" stroke="#ad58ff" stroke-width="1"></path>
-          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="2" result="blur" />
-            <feComposite in="SourceGraphic" in2="blur" operator="over" />
-          </filter>
         </svg>
       </div>
 
@@ -1596,81 +1293,6 @@
       </div>
     </div>
   </section>
-
-  <style>
-    /* New Minimalistic Open Source section styles */
-    .opensource-heart {
-      margin: 0 auto 1.5rem;
-      text-align: center;
-      filter: drop-shadow(0 0 12px rgba(173, 88, 255, 0.6));
-    }
-
-    .opensource-title {
-      font-size: 3.5rem;
-      font-weight: 600;
-      text-align: center;
-      margin-bottom: 1.5rem;
-    }
-
-    .opensource-desc {
-      font-size: 1.1rem;
-      text-align: center;
-      color: rgba(255, 255, 255, 0.7);
-      margin: 0 auto 3rem;
-      line-height: 1.6;
-      max-width: 600px;
-    }
-
-    .opensource-links {
-      display: flex;
-      justify-content: center;
-      gap: 2rem;
-      margin-top: 2rem;
-    }
-
-    .minimal-link {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      color: rgba(255, 255, 255, 0.7);
-      text-decoration: none;
-      font-size: 1rem;
-      padding: 0.75rem 1.5rem;
-      border-radius: 6px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      background: rgba(255, 255, 255, 0.05);
-      backdrop-filter: blur(10px);
-      transition: all 0.2s ease;
-      width: 195px;
-      text-align: center;
-      justify-content: center;
-    }
-
-    .minimal-link:hover {
-      color: white;
-      border-color: rgba(173, 88, 255, 0.4);
-      background: rgba(173, 88, 255, 0.1);
-      transform: translateY(-2px);
-    }
-
-    @media (max-width: 768px) {
-      .opensource-links {
-        flex-direction: column;
-        align-items: center;
-        gap: 1rem;
-      }
-
-      .minimal-link {
-        width: 100%;
-        max-width: 280px;
-        justify-content: center;
-      }
-
-      .opensource-title {
-        font-size: 2.5rem;
-      }
-    }
-  </style>
 
   <!-- Footer -->
   <footer class="footer">
@@ -1794,6 +1416,25 @@
       }
     });
 
+    // Copy code block functionality
+    document.querySelector('.code-copy-btn').addEventListener('click', function() {
+      const codeContent = document.querySelector('.code-content pre code').textContent;
+      navigator.clipboard.writeText(codeContent).then(function() {
+        const button = document.querySelector('.code-copy-btn');
+        const originalSVG = button.innerHTML;
+        
+        button.innerHTML = `
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20 6L9 17L4 12" stroke="#4ADE80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        `;
+        
+        setTimeout(function() {
+          button.innerHTML = originalSVG;
+        }, 2000);
+      });
+    });
+    
     // Add scroll effect to navbar
     window.addEventListener('scroll', function () {
       const navbar = document.querySelector('.navbar');
