@@ -38,7 +38,7 @@
     "tslib": "2.8.1",
     "typescript": "5.7.3",
     "typescript-eslint": "8.25.0",
-    "unbuild": "3.3.1"
+    "unbuild": "3.5.0"
   },
   "simple-git-hooks": {
     "pre-commit": "pnpm pre-commit",
