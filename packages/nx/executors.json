@@ -1,0 +1,9 @@
+{
+  "executors": {
+    "rolldown": {
+      "implementation": "./src/executors/rolldown/rolldown",
+      "schema": "./src/executors/rolldown/schema.json",
+      "description": "rolldown executor"
+    }
+  }
+}

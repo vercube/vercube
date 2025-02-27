@@ -1,6 +1,6 @@
-import { defineCommand } from 'citty';
+import { defineCommand, type CommandDef } from 'citty';
 
-export default defineCommand({
+export const buildCommand: CommandDef = defineCommand({
   meta: {
     name: 'build',
     description: 'Build the project',

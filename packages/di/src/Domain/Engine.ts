@@ -26,10 +26,10 @@ export interface IClassMapEntry {
  * to store those informations in object prototype, but accessing this map is blazing fast with Map
  * container (<1ms).
  */
-const classMap: Map<IOC.Prototype, IClassMapEntry> = new Map();
+const classMap: Map<IOC.Prototype, IClassMapEntry> = new Map<IOC.Prototype, IClassMapEntry>();
 
 // we need to cache root object prototype, we will check it later on
-const ROOT_PROTO = Object.getPrototypeOf({});
+const ROOT_PROTO: object = Object.getPrototypeOf({});
 
 /**
  * This method registers @Inject() in particular class.
@@ -46,13 +46,21 @@ function registerInject(
 ): void {
 
   // find entry for this class, create new one if not found
-  let entry = classMap.get(prototype);
+  let entry: IClassMapEntry | undefined = classMap.get(prototype);
   if (!entry) {
-    entry = { deps: [] };
+    const newEntry: IClassMapEntry = {
+      deps: [],
+    };
+    entry = newEntry;
     classMap.set(prototype, entry);
   }
 
-  entry.deps.push({ propertyName, dependency, type });
+  const newDep: IClassDep = {
+    propertyName: propertyName,
+    dependency: dependency,
+    type: type,
+  };
+  entry.deps.push(newDep);
 }
 
 /**
@@ -61,7 +69,8 @@ function registerInject(
  * @returns class map entry or null if cannot be found
  */
 function getEntryForClass(classType: IOC.Newable<unknown>): IClassMapEntry | null {
-  return classMap.get(classType.prototype) ?? null;
+  const entry: IClassMapEntry | undefined = classMap.get(classType.prototype);
+  return entry === undefined ? null : entry;
 }
 
 /**
@@ -72,15 +81,14 @@ function getEntryForClass(classType: IOC.Newable<unknown>): IClassMapEntry | nul
 function getDeps(instance: IOC.Instance): IClassDep[] {
 
   // get info for classmap, fallback to empty array if its not defined
-  const prototype = Object.getPrototypeOf(instance);
+  const prototype: IOC.Prototype | null = Object.getPrototypeOf(instance);
   if (!prototype) {
     return [];
   }
 
   // return data
-  const entry = classMap.get(prototype);
-  return entry?.deps ?? [];
-
+  const entry: IClassMapEntry | undefined = classMap.get(prototype);
+  return entry !== undefined && entry.deps !== undefined ? entry.deps : [];
 }
 
 /**
@@ -93,7 +101,7 @@ function getDeps(instance: IOC.Instance): IClassDep[] {
 function injectDeps(container: Container, instance: IOC.Instance, method: IOC.InjectMethod): void {
 
   // get class metadata, if there are no @Injects for this class, just skip
-  let prototype = Object.getPrototypeOf(instance);
+  let prototype: IOC.Prototype | null = Object.getPrototypeOf(instance);
   if (!prototype) {
     return;
   }
@@ -107,12 +115,14 @@ function injectDeps(container: Container, instance: IOC.Instance, method: IOC.In
   do {
 
     // get entry for "current prototype"
-    const entry = classMap.get(prototype);
+    const entry: IClassMapEntry | undefined = classMap.get(prototype);
     if (entry) {
 
       // iterate over all dependencies for this class..
       for (const iter of entry.deps) {
-        const { propertyName, dependency, type } = iter;
+        const propertyName: string = iter.propertyName;
+        const dependency: IOC.ServiceKey = iter.dependency;
+        const type: IOC.DependencyType = iter.type;
 
         // this is a hack for derived classes which improperly override original @Injects()
         // this should be fixed in those bad classess itself so @TODO
@@ -123,7 +133,7 @@ function injectDeps(container: Container, instance: IOC.Instance, method: IOC.In
         // for optional dependencies, we simply inject it as lazy dep but we allow for null to be passed
         if (type === IOC.DependencyType.OPTIONAL) {
           Object.defineProperty(instance, propertyName, {
-            get: () => container.getOptional(dependency),
+            get: function(): any { return container.getOptional(dependency); },
           });
           continue;
         }
@@ -132,7 +142,7 @@ function injectDeps(container: Container, instance: IOC.Instance, method: IOC.In
         switch (method) {
           case IOC.InjectMethod.LAZY: {
             Object.defineProperty(instance, propertyName, {
-              get: () => container.get(dependency),
+              get: function(): any { return container.get(dependency); },
             });
             break;
           }
@@ -146,9 +156,7 @@ function injectDeps(container: Container, instance: IOC.Instance, method: IOC.In
             throw new Error(`IOCEngine.injectDeps() - invalid inject method ${method}`);
           }
         }
-
       }
-
     }
 
     // walk up to parent class & collect deps again...
@@ -156,12 +164,16 @@ function injectDeps(container: Container, instance: IOC.Instance, method: IOC.In
 
   // repeat until we walk through whole proto chain..
   } while (prototype && prototype !== ROOT_PROTO);
-
 }
 
-export const IOCEngine = {
-  registerInject,
-  getEntryForClass,
-  injectDeps,
-  getDeps,
+export const IOCEngine: {
+  registerInject: typeof registerInject;
+  getEntryForClass: typeof getEntryForClass;
+  injectDeps: typeof injectDeps;
+  getDeps: typeof getDeps;
+} = {
+  registerInject: registerInject,
+  getEntryForClass: getEntryForClass,
+  injectDeps: injectDeps,
+  getDeps: getDeps,
 };

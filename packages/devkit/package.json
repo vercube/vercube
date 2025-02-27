@@ -20,9 +20,6 @@
   "files": [
     "dist"
   ],
-  "scripts": {
-    "build": "unbuild"
-  },
   "dependencies": {
     "@rollup/pluginutils": "5.1.4",
     "@rollup/plugin-commonjs": "28.0.2",

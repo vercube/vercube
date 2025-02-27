@@ -1,8 +1,8 @@
 
-import { defineCommand } from 'citty';
+import { defineCommand, type CommandDef } from 'citty';
 import { createDevServerApp, createDevServer, createRollupWatcher } from '@vercube/devkit';
 
-export default defineCommand({
+export const devCommand: CommandDef = defineCommand({
   meta: {
     name: 'dev',
     description: 'Start development server',

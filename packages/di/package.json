@@ -19,12 +19,5 @@
   "types": "./dist/index.d.ts",
   "files": [
     "dist"
-  ],
-  "scripts": {
-    "build": "unbuild"
-  },
-  "dependencies": {
-  },
-  "devDependencies": {
-  }
+  ]
 }
