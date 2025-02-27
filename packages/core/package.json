@@ -21,7 +21,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "unbuild"
+    "build": "rolldown -c ./rolldown.config.mjs",
+    "build:unbuild": "unbuild"
   },
   "dependencies": {
     "@standard-schema/spec": "1.0.0",

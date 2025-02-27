@@ -20,9 +20,6 @@
   "files": [
     "dist"
   ],
-  "scripts": {
-    "build": "unbuild"
-  },
   "dependencies": {
     "@vercube/di": "workspace:*",
     "@vercube/logger": "workspace:*"

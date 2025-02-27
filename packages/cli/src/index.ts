@@ -1,7 +1,7 @@
 import { defineCommand, runMain } from 'citty';
 import { version } from '../package.json';
-import build from './commands/build';
-import dev from './commands/dev';
+import { buildCommand } from './commands/build';
+import { devCommand } from './commands/dev';
 
 const main = defineCommand({
   meta: {
@@ -10,8 +10,8 @@ const main = defineCommand({
     description: 'Vercube CLI',
   },
   subCommands: {
-    build,
-    dev,
+    build: buildCommand,
+    dev: devCommand,
   },
 });
 

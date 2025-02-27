@@ -23,9 +23,6 @@
     "bin": {
       "vercube": "./dist/index.cjs"
     },
-    "scripts": {
-      "build": "unbuild"
-    },
     "dependencies": {
       "@vercube/devkit": "workspace:*",
       "citty": "0.1.6"
