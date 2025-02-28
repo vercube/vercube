@@ -1,11 +1,6 @@
 // .vitepress/config.js
 import { defineConfig } from 'vitepress';
-import { readFile } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const home = await readFile(resolve(__dirname, 'home.html'));
 
 export default defineConfig({
   // Site metadata
