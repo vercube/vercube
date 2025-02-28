@@ -1,6 +1,6 @@
 import { Container } from '@vercube/di';
 import { BaseLogger, Logger } from '@vercube/logger';
-import { SignaleProvider } from '@vercube/logger';
+import { SignaleProvider, ConsoleProvider } from '@vercube/logger';
 import { HooksService } from '../Services/Hooks/HooksService';
 import { MetadataResolver } from '../Services/Metadata/MetadataResolver';
 import { RouterRegistry } from '../Services/Router/RouterRegistry';
@@ -23,7 +23,7 @@ export function createContainer(): Container {
   container.bind(Logger, BaseLogger);
   container.get(Logger).configure({
     providers: [
-      { name: 'console', provider: SignaleProvider },
+      { name: 'console', provider: ConsoleProvider },
     ],
   });
 

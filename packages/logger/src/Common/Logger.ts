@@ -30,7 +30,7 @@ export abstract class Logger {
   public abstract info(...args: LoggerTypes.Arg[]): void;
 
   /**
-   * Logs an informational message.
+   * Logs a success message.
    * @param args - Additional parameters to be logged
    * @returns A value determined by the implementing class
    */
