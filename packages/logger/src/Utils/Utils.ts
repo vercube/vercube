@@ -37,8 +37,8 @@ export const colors: Record<string, ColorTextFn> = {
 };
 
 export const LOG_LEVEL_COLORS: Record<LoggerTypes.Level, ColorTextFn> = {
-  debug: colors.blue,
+  debug: colors.green,
   info: colors.bold,
-  error: colors.red,
   warn: colors.yellow,
+  error: colors.red,
 };
