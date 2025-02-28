@@ -58,6 +58,7 @@ export default class PlaygroundController {
     this.gLogger.info('PlaygroundController::index', 'Info method');
     this.gLogger.warn('PlaygroundController::index', 'Warn method');
     this.gLogger.error('PlaygroundController::index', 'Error method');
+    this.gLogger.success('PlaygroundController::index', 'Success method');
     return { message: 'Hello, world!' };
   }
 

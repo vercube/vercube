@@ -1,6 +1,6 @@
 import { Container } from '@vercube/di';
 import { BaseLogger, Logger } from '@vercube/logger';
-import { SignaleProvider } from '@vercube/logger/providers';
+import { SignaleProvider } from '@vercube/logger';
 import { HooksService } from '../Services/Hooks/HooksService';
 import { MetadataResolver } from '../Services/Metadata/MetadataResolver';
 import { RouterRegistry } from '../Services/Router/RouterRegistry';

@@ -12,11 +12,6 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs"
-    },
-    "./providers": {
-      "types": "./dist/Providers/index.d.ts",
-      "import": "./dist/Providers/index.mjs",
-      "require": "./dist/Providers/index.cjs"
     }
   },
   "main": "./dist/index.cjs",

@@ -3,7 +3,7 @@ import type { LoggerProvider } from '../Common/LoggerProvider';
 
 export namespace LoggerTypes {
 
-  export type Level = 'debug' | 'info' | 'warn' | 'error';
+  export type Level = 'debug' | 'info' | 'warn' | 'error' | 'success';
 
   export type Arg = any;
 
