@@ -35,7 +35,7 @@
     "lint-staged": "15.4.3",
     "nx": "20.4.6",
     "oxc-transform": "0.53.0",
-    "rolldown": "1.0.0-beta.3-commit.ca90fa2",
+    "rolldown": "1.0.0-beta.3",
     "simple-git-hooks": "2.11.1",
     "tslib": "2.8.1",
     "typescript": "5.7.3",
