@@ -4,7 +4,7 @@
 
 Modern Node.js applications often require complex architectures that enable the creation of scalable and maintainable systems. Existing frameworks like Express or Koa provide basic functionality but typically require additional libraries and configuration to achieve a modern application architecture.
 
-[Routing-controllers](https://github.com/typestack/routing-controllers)was a step in the right direction, introducing a decorator and class-based approach, but with the evolution of the JavaScript/TypeScript ecosystem and the emergence of new standards and runtimes (Bun, Deno), there was a need to create a new solution that:
+[Routing-controllers](https://github.com/typestack/routing-controllers) was a step in the right direction, introducing a decorator and class-based approach, but with the evolution of the JavaScript/TypeScript ecosystem and the emergence of new standards and runtimes (Bun, Deno), there was a need to create a new solution that:
 
 - Fully utilizes the capabilities of the latest versions of TypeScript and JavaScript
 - Offers configuration flexibility while maintaining ease of use
