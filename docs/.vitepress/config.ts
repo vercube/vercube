@@ -47,7 +47,7 @@ export default defineConfig({
           items: [
             { text: 'What is Vercube?', link: '/guide/' },
             { text: 'Getting Started', link: '/guide/getting-started' },
-            { text: 'Installation', link: '/guide/installation' },
+            { text: 'Installation', link: '/guide/install' },
             { text: 'Project Structure', link: '/guide/project-structure' },
           ],
         },
@@ -67,9 +67,7 @@ export default defineConfig({
           items: [
             { text: 'Dependency Injection', link: '/guide/dependency-injection' },
             { text: 'Authentication', link: '/guide/authentication' },
-            { text: 'Database', link: '/guide/database' },
             { text: 'File Uploads', link: '/guide/file-uploads' },
-            { text: 'WebSockets', link: '/guide/websockets' },
           ],
         },
       ],
@@ -79,14 +77,11 @@ export default defineConfig({
           items: [
             { text: 'Overview', link: '/config/' },
             { text: 'Environment Variables', link: '/config/environment-variables' },
-            { text: 'Server Options', link: '/config/server-options' },
-            { text: 'Routes Configuration', link: '/config/routes' },
           ],
         },
         {
           text: 'Performance Tuning',
           items: [
-            { text: 'Optimization', link: '/config/optimization' },
             { text: 'Caching', link: '/config/caching' },
             { text: 'Rate Limiting', link: '/config/rate-limiting' },
           ],
@@ -100,6 +95,7 @@ export default defineConfig({
             { text: 'HTTP Server', link: '/modules/http-server' },
             { text: 'Router', link: '/modules/router' },
             { text: 'Logger', link: '/modules/logger' },
+            { text: 'Dependencie Injection', link: '/modules/di' },
           ],
         },
         {
