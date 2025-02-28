@@ -26,8 +26,10 @@
     "dist"
   ],
   "dependencies": {
-    "@vercube/di": "workspace:*"
+    "@vercube/di": "workspace:*",
+    "signale": "1.4.0"
   },
   "devDependencies": {
+    "@types/signale": "1.4.7"
   }
 }
