@@ -4,7 +4,7 @@
 
 Modern Node.js applications often require complex architectures that enable the creation of scalable and maintainable systems. Existing frameworks like Express or Koa provide basic functionality but typically require additional libraries and configuration to achieve a modern application architecture.
 
-Routing-controllers was a step in the right direction, introducing a decorator and class-based approach, but with the evolution of the JavaScript/TypeScript ecosystem and the emergence of new standards and runtimes (Bun, Deno), there was a need to create a new solution that:
+[Routing-controllers](https://github.com/typestack/routing-controllers)was a step in the right direction, introducing a decorator and class-based approach, but with the evolution of the JavaScript/TypeScript ecosystem and the emergence of new standards and runtimes (Bun, Deno), there was a need to create a new solution that:
 
 - Fully utilizes the capabilities of the latest versions of TypeScript and JavaScript
 - Offers configuration flexibility while maintaining ease of use
@@ -34,7 +34,7 @@ Vercube can be seen as a modern evolution of the concepts introduced by routing-
 
 ## Why Vercube?
 
-In the Node.js ecosystem, there are many frameworks such as [Express](https://expressjs.com/), [Koa](https://koajs.com/), [Fastify](https://fastify.dev/), [NestJS](https://nestjs.com/), or [Ts.ED](https://tsed.dev/). So why choose Vercube? Here are the main reasons:
+In the Node.js ecosystem, there are many frameworks such as [Express](https://expressjs.com/), [Koa](https://koajs.com/), [Fastify](https://fastify.dev/), [NestJS](https://nestjs.com/), [Routing-Controllers](https://github.com/typestack/routing-controllers), or [Ts.ED](https://tsed.dev/). So why choose Vercube? Here are the main reasons:
 
 ### Performance without compromise
 
