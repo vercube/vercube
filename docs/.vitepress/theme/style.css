@@ -1,0 +1,160 @@
+/* Vercube Theme for VitePress
+ * This CSS will style VitePress to match the Vercube design
+ */
+
+ *, *::before, *::after {
+  font-optical-sizing: auto;
+  font-style: normal;
+ }
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-optical-sizing: auto;
+  font-style: normal;
+}
+
+body {
+  font-family: Public Sans, "Public Sans Fallback: Arial", ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji;
+  background-color: #0c0420;
+  color: white;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+ :root {
+  --vp-c-brand: #ad58ff;
+  --vp-c-brand-light: #bd75ff;
+  --vp-c-brand-lighter: #d8a8ff;
+  --vp-c-brand-dark: #9b3ef3;
+  --vp-c-brand-darker: #8829e9;
+  --vp-c-brand-secondary: #ff56bd;
+  
+  --vp-c-bg: #0c0420;
+  --vp-c-bg-soft: #13072b;
+  --vp-c-bg-mute: #1a0a38;
+  --vp-c-bg-alt: #0a0118;
+  
+  --vp-c-border: rgba(255, 255, 255, 0.1);
+  --vp-c-divider: rgba(255, 255, 255, 0.08);
+  --vp-c-gutter: rgba(255, 255, 255, 0.05);
+  
+  --vp-c-text-1: rgba(255, 255, 255, 0.9);
+  --vp-c-text-2: rgba(255, 255, 255, 0.7);
+  --vp-c-text-3: rgba(255, 255, 255, 0.5);
+  --vp-c-text-4: rgba(255, 255, 255, 0.3);
+  
+  
+  --vp-font-family-base: Public Sans, "Public Sans Fallback: Arial", ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji;
+  --vp-font-family-mono: "SF Mono", SFMono-Regular, ui-monospace, Menlo, Monaco, Consolas, monospace;
+  
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: linear-gradient(to right, #ad58ff, #ff56bd);
+  --vp-home-hero-image-background-image: linear-gradient(to right, rgba(173, 88, 255, 0.4), rgba(255, 86, 189, 0.2));
+  --vp-home-hero-image-filter: blur(40px);
+  --vp-nav-height: 69px;
+  --vp-nav-logo-height: 28px;
+  
+  --vp-button-brand-bg: white;
+  --vp-button-brand-text: #0c0420;
+  --vp-button-brand-hover-bg: white;
+  --vp-button-brand-hover-text: #0c0420;
+  --vp-button-brand-active-bg: rgba(255, 255, 255, 0.9);
+  --vp-button-brand-active-text: #0c0420;
+  
+  --vp-button-alt-bg: rgba(255, 255, 255, 0.05);
+  --vp-button-alt-hover-bg: rgba(173, 88, 255, 0.1);
+  --vp-button-alt-text: rgba(255, 255, 255, 0.8);
+  --vp-button-alt-hover-text: white;
+  
+  --vercube-shadow-sm: 0 4px 8px rgba(0, 0, 0, 0.3);
+  --vercube-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+  --vercube-glow: 0 0 12px rgba(173, 88, 255, 0.3);
+}
+
+.dark {
+  --vp-c-bg: #0c0420;
+  --vp-c-bg-soft: #13072b;
+  --vp-c-bg-mute: #1a0a38;
+  --vp-c-bg-alt: #0a0118;
+}
+
+.VPNav {
+  background: rgba(12, 4, 32, 0.95);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.VPNavBar {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+footer.VPFooter {
+  display: none !important;
+}
+
+.vercube-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.VPNavBar.has-sidebar {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.VPNavBar.home .VPNavBarSearch {
+  display: none;
+}
+
+.VPNavBar .VPNavBarTitle a {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: white;
+  text-decoration: none;
+  font-weight: 800;
+  font-size: 1.25rem;
+  letter-spacing: -0.4px;
+}
+
+.VPNavBar .VPNavBarTitle img {
+  margin: 0;
+  max-height: 24px;
+}
+
+@media (min-width: 769px)  {
+  .VPNavBar .VPNavBarMenu {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+  }
+
+  .VPNavBar .VPNavBarMenu .VPNavBarMenuLink {
+    color: rgba(255, 255, 255, 0.7);
+    padding: 0;
+    text-decoration: none;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    transition: color 0.2s ease;
+    position: relative;
+    letter-spacing: -0.2px;
+  }
+}
+
+.VPNavBar .wrapper .container {
+  max-width: 1200px;
+}
+
+.VPNavBar .VPNavBarAppearance,
+.VPNavScreen .VPNavScreenAppearance {
+  display: none !important;
+}
+
+.VPContent.is-home {
+  padding-top: 0 !important;
+}
+
+.VPHome {
+  margin-bottom: 0 !important;
+}

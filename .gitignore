@@ -43,3 +43,7 @@ packages/**/dist
 .nx/
 .eslintcache
 tmp
+
+# Vitepress
+docs/.vitepress/dist
+docs/.vitepress/cache
