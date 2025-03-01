@@ -32,7 +32,7 @@ jobs:
         run: pnpm install
  
       - name: Build
-        run: pnpm build
+        run: pnpm build -- --verbose
  
       - name: Test
         run: pnpm test
