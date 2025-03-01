@@ -2,6 +2,10 @@
 export * from './Common/App';
 export * from './Common/CreateApp';
 
+// Config
+export * from './Config/Config';
+export * from './Config/Loader';
+
 // Http decorators
 export * from './Decorators/Http/Body';
 export * from './Decorators/Http/Connect';
@@ -52,6 +56,7 @@ export * from './Types/CommonTypes';
 export * from './Types/HooksTypes';
 export * from './Types/HttpTypes';
 export * from './Types/MetadataTypes';
+export * from './Types/ConfigTypes';
 
 // Utils
 export * from './Utils/Utils';

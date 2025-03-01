@@ -8,7 +8,7 @@ export const buildCommand: CommandDef = defineCommand({
   },
   run: async () => {
     // create new app
-    const app = createVercube();
+    const app = await createVercube();
 
     // run build
     await build(app);

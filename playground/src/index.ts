@@ -9,7 +9,7 @@ async function main() {
 
   app.registerPlugin(CustomPlugin, { foo: 'bar' });
 
-  await app.listen({ port: 3001 });
+  await app.listen();
 }
 
 await main();
