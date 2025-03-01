@@ -14,7 +14,7 @@
     "lint": "eslint --cache --fix .",
     "test": "nx run-many -t test",
     "pre-commit": "lint-staged",
-    "postinstall": "simple-git-hooks",
+    "postinstall": "simple-git-hooks && nx build @vercube/nx",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs"
