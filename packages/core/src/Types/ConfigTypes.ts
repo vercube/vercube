@@ -44,6 +44,11 @@ export namespace ConfigTypes {
        */
       publicDir?: string;
     },
+
+    /**
+     * The bundler to use for the application build.
+     */
+    bundler?: 'rollup' | 'rolldown';
   }
 
   /**
@@ -117,6 +122,7 @@ export namespace ConfigTypes {
 
     /**
      * Build configuration options.
+     * This property is only used when using vercube cli.
      */
     build?: BuildOptions;
   }

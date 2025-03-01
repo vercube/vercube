@@ -4,6 +4,7 @@ export * from './Common/CreateApp';
 
 // Config
 export * from './Config/Config';
+export * from './Config/Loader';
 
 // Http decorators
 export * from './Decorators/Http/Body';

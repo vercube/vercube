@@ -20,8 +20,6 @@ export async function createApp(cfg?: ConfigTypes.Config): Promise<App> {
   // create app instance
   const app = container.resolve(App);
 
-  console.log(config);
-
   // set runtime config
   container.get<RuntimeConfig>(RuntimeConfig).runtimeConfig = config?.runtime ?? {};
 

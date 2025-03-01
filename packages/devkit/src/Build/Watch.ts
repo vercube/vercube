@@ -10,7 +10,7 @@ import { getWatcher } from '../Utils/Utils';
  * @see https://github.com/nitrojs/nitro/blob/v2/src/core/build/dev.ts
  */
 export async function watch(app: DevKitTypes.App): Promise<void> {
-  const watcher = await getWatcher('rolldown');
+  const watcher = await getWatcher(app.config);
   let start: number;
 
   watcher.on('event', (event: any) => {

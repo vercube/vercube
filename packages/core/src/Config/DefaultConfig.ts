@@ -38,6 +38,11 @@ export const defaultConfig: ConfigTypes.Config = {
        */
       publicDir: 'public',
     },
+
+    /**
+     * Default bundler set to 'rolldown'
+     */
+    bundler: 'rolldown',
   },
 
   /**
