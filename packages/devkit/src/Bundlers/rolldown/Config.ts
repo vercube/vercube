@@ -1,21 +1,31 @@
+import type { ConfigTypes } from '@vercube/core';
 import type { RolldownOptions } from 'rolldown';
-import { resolve } from 'node:path';
+import { resolve } from 'pathe';
 import { builtinModules } from 'node:module';
-import { BuilderTypes } from '../../Support/BuilderTypes';
 import UnpluginIsolatedDecl from 'unplugin-isolated-decl/rolldown';
 
-export const getBuildOptions = async (ctx: BuilderTypes.BuildOptions): Promise<RolldownOptions> => {
+/**
+ * Generates a Rolldown configuration based on the provided build options.
+ * 
+ * @param {ConfigTypes.BuildOptions} [ctx] - Build configuration options
+ * @returns {Promise<RolldownOptions>} A promise that resolves to the Rolldown configuration
+ */
+export async function getRolldownConfig(ctx?: ConfigTypes.BuildOptions): Promise<RolldownOptions> {
+  const root = ctx?.root ?? process.cwd();
+  const pkg = (await import(resolve(root, 'package.json'), { with: { type: 'json' } })).default;
+  const input = ctx?.entry ?? 'src/index.ts';
+  const output = ctx?.output?.dir ?? 'dist';
 
-  const pkg = (await import(resolve(process.cwd(), 'package.json'), { with: { type: 'json' } })).default;
+  console.log('------> input', input);
 
   return {
     // Define the input options
     input: {
-      index: ctx.input,
+      index: input,
     },
 
     resolve: {
-      tsconfigFilename: resolve(process.cwd(), 'tsconfig.json'),
+      tsconfigFilename: resolve(root, 'tsconfig.json'),
     },
 
     external: [
@@ -27,7 +37,7 @@ export const getBuildOptions = async (ctx: BuilderTypes.BuildOptions): Promise<R
 
     // Define the output options
     output: {
-      dir: resolve(process.cwd(), 'dist'),
+      dir: resolve(root, output),
       entryFileNames: '[name].mjs',
       format: 'esm',
       exports: 'auto',

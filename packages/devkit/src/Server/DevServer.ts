@@ -11,8 +11,6 @@ import type { DevKitTypes } from '../Support/DevKitTypes';
  * @see https://github.com/nitrojs/nitro/blob/v2/src/core/dev-server/server.ts
  */
 export function createDevServer(app: DevKitTypes.App): DevKitTypes.DevServer {
-  consola.error(app.config.build);
-
   const forkEntry = resolve(process.cwd(), app.config.build?.output?.dir ?? 'dist', 'index.mjs');
   let reloadPromise: Promise<void> | undefined;
   let currentFork: ChildProcess | undefined;
