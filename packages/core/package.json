@@ -31,10 +31,6 @@
     "c12": "^3.0.2",
     "defu": "^6.1.4",
     "h3": "1.15.1",
-    "listhen": "1.9.0",
-    "lodash": "4.17.21"
-  },
-  "devDependencies": {
-    "@types/lodash": "4.17.15"
+    "listhen": "1.9.0"
   }
 }

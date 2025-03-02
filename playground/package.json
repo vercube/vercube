@@ -20,7 +20,6 @@
     "@vercube/di": "workspace:*",
     "@vercube/logger": "workspace:*",
     "@vercube/storage": "workspace:*",
-    "lodash": "4.17.21",
     "tslib": "2.7.0",
     "zod": "3.24.2"
   }
