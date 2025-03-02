@@ -49,9 +49,10 @@ export default async function rolldownExecutor(options: RolldownExecutorSchema, 
         // For paths like "./providers", get "Providers/index.ts"
         sourcePath = exportPath.slice(2) + '/index.ts'; // Remove ./ and add index.ts
         // Capitalize first letter of each path segment for proper directory matching
-        sourcePath = sourcePath.split('/').map(segment => 
-          segment.charAt(0).toUpperCase() + segment.slice(1),
-        ).join('/');
+        sourcePath = sourcePath.split('/').map(segment => {
+          if (segment === 'index.ts') return segment;
+          return segment.charAt(0).toUpperCase() + segment.slice(1);
+        }).join('/');
       }
       
       // Full path to the source file

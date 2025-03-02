@@ -4,6 +4,7 @@ import { listen } from 'listhen';
 import { RouterRegistry } from '../Services/Router/RouterRegistry';
 import { PluginsRegistry } from '../Services/Plugins/PluginsRegistry';
 import type { BasePlugin } from '../Services/Plugins/BasePlugin';
+import { ConfigTypes } from '../Types/ConfigTypes';
 
 /**
  * Represents the main application class.
@@ -24,6 +25,9 @@ export class App {
 
   /** Holds the dependency injection container */
   private fInternalContainer!: Container;
+
+  /** Hold app config */
+  private fConfig: ConfigTypes.Config;
 
   /**
    * Gets the dependency injection container.
@@ -48,8 +52,9 @@ export class App {
    *
    * @returns {Promise<void>} A promise that resolves when the application is initialized.
    */
-  public async init(): Promise<void> {
-    this.fH3App = createApp({ debug: true });
+  public async init(cfg: ConfigTypes.Config): Promise<void> {
+    this.fConfig = cfg;
+    this.fH3App = createApp({ debug: this.fConfig.dev });
   }
 
   /**
@@ -65,12 +70,10 @@ export class App {
   /**
    * Starts the application and begins listening for incoming requests.
    *
-   * @param {Object} [opts] - Optional parameters.
-   * @param {number} [opts.port] - The port to listen on.
    * @returns {Promise<void>} A promise that resolves when the application starts listening.
    * @throws {Error} If the application is already initialized.
    */
-  public async listen(opts?: { port?: number }): Promise<void> {
+  public async listen(): Promise<void> {
     if (this.fIsInitialized) {
       throw new Error('App is already initialized');
     }
@@ -85,7 +88,7 @@ export class App {
     initializeContainer(this.container);
 
     // start listening
-    await listen(toNodeListener(this.fH3App), { port: opts?.port ?? 3000 });
+    await listen(toNodeListener(this.fH3App), { port: this.fConfig?.server?.port ?? 3000 });
   }
 
   /**

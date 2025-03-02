@@ -9,7 +9,7 @@ export const devCommand: CommandDef = defineCommand({
   },
   async run() {
     // create new app
-    const app = createVercube();
+    const app = await createVercube();
 
     // create dev server
     createDevServer(app);

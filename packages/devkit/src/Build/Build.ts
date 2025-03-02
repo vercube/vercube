@@ -1,6 +1,5 @@
 import { DevKitTypes } from '../Support/DevKitTypes';
-import { getBundlerConfig } from '../Utils/Utils';
-import { rolldown, type RolldownOptions, type OutputOptions } from 'rolldown';
+import { getBundler, getBundlerConfig } from '../Utils/Utils';
 
 /**
  * Builds the application using the given application instance.
@@ -9,12 +8,13 @@ import { rolldown, type RolldownOptions, type OutputOptions } from 'rolldown';
  */
 export async function build(app: DevKitTypes.App): Promise<void> {
 
-  const config = await getBundlerConfig('rolldown') as RolldownOptions; // as default for now
+  const config = await getBundlerConfig(app.config);
+  const bundler = getBundler(app.config?.build?.bundler ?? 'rolldown');
 
-  const build = await rolldown({ ...config }).catch((error) => {
+  const build = await bundler({ ...config } as any satisfies Parameters<typeof bundler>[0]).catch((error) => {
     throw error;
   });
 
-  await build.write(config.output as OutputOptions);
+  await build.write(config.output as any);
 
 }

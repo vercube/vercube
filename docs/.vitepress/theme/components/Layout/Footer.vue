@@ -15,7 +15,7 @@
                 </path>
               </svg>
             </a>
-            <a href="https://discord.gg/vercube" class="social-link">
+            <a href="https://discord.gg/4KHyV3Hq" class="social-link" target="_blank">
               <svg width="20" height="20" viewBox="0 -28.5 256 256" version="1.1" xmlns="http://www.w3.org/2000/svg"
                 xmlns:xlink="http://www.w3.org/1999/xlink" preserveAspectRatio="xMidYMid" fill="#000000">
                 <g id="SVGRepo_bgCarrier" stroke-width="0"></g>

@@ -1,3 +1,4 @@
+import { ConfigTypes } from '@vercube/core';
 import type { Hookable } from 'hookable';
 import { type Worker as _Worker } from 'node:worker_threads';
 
@@ -18,6 +19,11 @@ export namespace DevKitTypes {
      * The hooks associated with the application.
      */
     hooks: Hookable<Hooks>;
+
+    /**
+     * The configuration object for the application.
+     */
+    config: ConfigTypes.Config;
   }
 
   /**

@@ -9,12 +9,12 @@
     "node": ">=22"
   },
   "scripts": {
-    "build": "nx run-many -t build",
+    "build": "nx run-many -t build --exclude=playground",
     "dev": "nx watch --all -- nx run \\$NX_PROJECT_NAME:build",
     "lint": "eslint --cache --fix .",
     "test": "nx run-many -t test",
     "pre-commit": "lint-staged",
-    "postinstall": "simple-git-hooks",
+    "postinstall": "simple-git-hooks && nx build @vercube/nx",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs"
@@ -30,6 +30,9 @@
     "@nx/js": "20.4.6",
     "@nx/plugin": "20.4.6",
     "@oxc-project/runtime": "0.53.0",
+    "@swc-node/register": "^1.10.9",
+    "@swc/core": "^1.11.5",
+    "@swc/helpers": "^0.5.15",
     "@types/lodash": "4.17.15",
     "@types/node": "22.13.5",
     "eslint": "9.21.0",

@@ -28,6 +28,8 @@
     "@rollup/plugin-replace": "6.0.2",
     "@rollup/plugin-typescript": "12.1.2",
     "@rollup/pluginutils": "5.1.4",
+    "@vercube/core": "workspace:*",
+    "dotenv": "16.4.7",
     "consola": "3.4.0",
     "esbuild": "0.25.0",
     "hookable": "5.5.3",
