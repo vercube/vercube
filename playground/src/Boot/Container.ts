@@ -3,7 +3,7 @@ import { StorageManager, MemoryStorage } from '@vercube/storage';
 import PlaygroundController from '../Controllers/PlaygroundController';
 import { BasicAuthenticationProvider } from '../Services/BasicAuthenticationProvider';
 import { Logger } from '@vercube/logger';
-import { SignaleProvider } from '@vercube/logger';
+import { SignaleProvider } from '@vercube/logger/providers';
 import { DummyAuthorizationProvider } from '../Services/DummyAuthorizationProvider';
 
 export function useContainer(container: Container): void {
