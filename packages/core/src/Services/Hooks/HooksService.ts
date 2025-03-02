@@ -21,7 +21,6 @@
  *
  * Everything 100% typechecked.
  */
-import remove from 'lodash/remove';
 import type { HooksTypes } from '../../Types/HooksTypes';
 
 /**
@@ -111,9 +110,9 @@ export class HooksService {
   /**
    * Removes listener from particular event.
    * @param eventId eventId returned from .on() method.
-   * @returns true if event was removed, false if it wasnt registered
+   * @throws Error if event was not registered
    */
-  public off<T>(eventId: HooksTypes.HookID): number {
+  public off<T>(eventId: HooksTypes.HookID): void {
 
     const type: HooksTypes.HookType<T> = eventId.__type;
     const handlersOfType: HooksTypes.HookHandler<T>[] | undefined = this.fHandlers.get(type);
@@ -122,14 +121,13 @@ export class HooksService {
       throw new Error('Trying to unbind event that was not bound.');
     }
 
-    const removed: HooksTypes.HookHandler<any>[] = remove(handlersOfType, (h) => h.id === eventId.__id);
+    const index = handlersOfType.findIndex(handler => handler.id === eventId.__id);
 
-    if (removed.length === 0) {
+    if (index === -1) {
       throw new Error('Trying to unbind event that was not bound.');
     }
 
-    return removed.length;
-
+    handlersOfType.splice(index, 1);
   }
 
   /**
@@ -178,11 +176,11 @@ export class HooksService {
 
         // copy all properties to convert it to class instance
 
-         
+
         const rawInstance: any = instance;
         const rawData: any = data;
         rawInstance[key] = rawData[key];
-         
+
 
       }
     }

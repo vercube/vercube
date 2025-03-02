@@ -32,9 +32,6 @@ importers:
       '@swc/helpers':
         specifier: ^0.5.15
         version: 0.5.15
-      '@types/lodash':
-        specifier: 4.17.15
-        version: 4.17.15
       '@types/node':
         specifier: 22.13.5
         version: 22.13.5
@@ -122,13 +119,6 @@ importers:
       listhen:
         specifier: 1.9.0
         version: 1.9.0
-      lodash:
-        specifier: 4.17.21
-        version: 4.17.21
-    devDependencies:
-      '@types/lodash':
-        specifier: 4.17.15
-        version: 4.17.15
 
   packages/devkit:
     dependencies:
@@ -233,9 +223,6 @@ importers:
       '@vercube/storage':
         specifier: workspace:*
         version: link:../packages/storage
-      lodash:
-        specifier: 4.17.21
-        version: 4.17.21
       tslib:
         specifier: 2.7.0
         version: 2.7.0
@@ -2264,9 +2251,6 @@ packages:
   '@types/linkify-it@5.0.0':
     resolution: {integrity: sha512-sVDA58zAw4eWAffKOaQH5/5j3XeayukzDk+ewSsnv3p4yJEZHCCzMDiZM8e0OUrRvmpGZ85jf4yDHkHsgBNr9Q==}
 
-  '@types/lodash@4.17.15':
-    resolution: {integrity: sha512-w/P33JFeySuhN6JLkysYUK2gEmy9kHHFN7E8ro0tkfmlDOgxBDzWEZ/J8cWA+fHqFevpswDTFZnDx+R9lbL6xw==}
-
   '@types/markdown-it@14.1.2':
     resolution: {integrity: sha512-promo4eFwuiW+TfGxhi+0x3czqTYJkG8qB17ZUJiVF10Xm7NLVRSLUsfRTU/6h1e24VvRnXCx+hG7li58lkzog==}
 
@@ -3805,9 +3789,6 @@ packages:
 
   lodash.upperfirst@4.3.1:
     resolution: {integrity: sha512-sReKOYJIJf74dhJONhU4e0/shzi1trVbSWDOhKYE5XV2O+H7Sb2Dihwuc7xWxVl+DgFPyTqIN3zMfT9cq5iWDg==}
-
-  lodash@4.17.21:
-    resolution: {integrity: sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==}
 
   log-symbols@4.1.0:
     resolution: {integrity: sha512-8XPvpAA8uyhfteu8pIvQxpJZ7SYYdpUivZpGy6sFsBuKRY/7rQGavedeB8aK+Zkyq6upMFVL/9AW6vOYzfRyLg==}
@@ -7100,8 +7081,6 @@ snapshots:
 
   '@types/linkify-it@5.0.0': {}
 
-  '@types/lodash@4.17.15': {}
-
   '@types/markdown-it@14.1.2':
     dependencies:
       '@types/linkify-it': 5.0.0
@@ -8901,8 +8880,6 @@ snapshots:
   lodash.uniq@4.5.0: {}
 
   lodash.upperfirst@4.3.1: {}
-
-  lodash@4.17.21: {}
 
   log-symbols@4.1.0:
     dependencies:
