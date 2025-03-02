@@ -9,6 +9,3 @@ export { isLogLevelEnabled } from './Utils/Utils';
 
 // Types
 export * from './Types/LoggerTypes';
-
-// Providers
-export * from './Providers';
