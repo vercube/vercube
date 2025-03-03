@@ -26,6 +26,11 @@ export namespace ConfigTypes {
    */
   export interface BuildOptions {
     /**
+     * The root directory for the application.
+     */
+    root?: string;
+
+    /**
      * The entry point file for the application build.
      */
     entry?: string;
@@ -48,7 +53,7 @@ export namespace ConfigTypes {
     /**
      * The bundler to use for the application build.
      */
-    bundler?: 'rollup' | 'rolldown';
+    bundler?: 'rolldown';
   }
 
   /**

@@ -1,7 +1,6 @@
- 
-import consola from 'consola';
+ import consola from 'consola';
 import type { DevKitTypes } from '../Support/DevKitTypes';
-import { getWatcher } from '../Utils/Utils';
+import { getWatchFunc } from '../Utils/Utils';
 
 /**
  * Creates a watcher for the given application.
@@ -10,35 +9,26 @@ import { getWatcher } from '../Utils/Utils';
  * @see https://github.com/nitrojs/nitro/blob/v2/src/core/build/dev.ts
  */
 export async function watch(app: DevKitTypes.App): Promise<void> {
-  const watcher = await getWatcher(app.config);
+  // get bundler "watch" func based on config
+  const bundler = app?.config?.build?.bundler ?? 'rolldown';
+  const watcher = getWatchFunc(bundler);
   let start: number;
 
-  watcher.on('event', (event: any) => {
-    switch (event.code) {
-      // The watcher is (re)starting
-      case 'START': {
-        return;
-      }
-
-      // Building an individual bundle
-      case 'BUNDLE_START': {
-        console.clear();
-        consola.info({ tag: 'build', message: 'Start building...' });
-        start = Date.now();
-        return;
-      }
-
-      // Finished building all bundles
-      case 'END': {
-        consola.success({ tag: 'build', message: `Built in ${Date.now() - start}ms`});
-        app.hooks.callHook('dev:reload');
-        return;
-      }
-
-      // Encountered an error while bundling
-      case 'ERROR': {
-        console.log(event.error);
-      }
-    }
+  // set hooks listeners
+  app.hooks.hook('bundler-watch:start', () => {
+    console.clear();
+    consola.info({ tag: 'build', message: 'Start building...' });
+    start = Date.now();
   });
+
+  app.hooks.hook('bundler-watch:end', () => {
+    consola.success({ tag: 'build', message: `Built in ${Date.now() - start}ms`});
+    app.hooks.callHook('dev:reload');
+  });
+
+  app.hooks.hook('bundler-watch:error', (error: Error) => {
+    console.log(error);
+  });
+
+  await watcher(app);
 };

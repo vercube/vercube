@@ -25,9 +25,18 @@ export const defaultConfig: ConfigTypes.Config = {
    */
   build: {
     /**
+     * Default root directory for the application
+     */
+    root: process.cwd(),
+
+    /**
      * Default entry point for the application
      */
     entry: 'src/index.ts',
+
+    /**
+     * Default output settings
+     */
     output: {
       /**
        * Main output directory for build artifacts

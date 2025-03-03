@@ -1,5 +1,5 @@
-import { DevKitTypes } from '../Support/DevKitTypes';
-import { getBundler, getBundlerConfig } from '../Utils/Utils';
+import type { DevKitTypes } from '../Support/DevKitTypes';
+import { getBuildFunc } from '../Utils/Utils';
 
 /**
  * Builds the application using the given application instance.
@@ -7,14 +7,9 @@ import { getBundler, getBundlerConfig } from '../Utils/Utils';
  * @returns {Promise<void>} A promise that resolves when the build is complete.
  */
 export async function build(app: DevKitTypes.App): Promise<void> {
+  // get bundler "build" func based on config
+  const bundler = app?.config?.build?.bundler ?? 'rolldown';
+  const build = getBuildFunc(bundler);
 
-  const config = await getBundlerConfig(app.config);
-  const bundler = getBundler(app.config?.build?.bundler ?? 'rolldown');
-
-  const build = await bundler({ ...config } as any satisfies Parameters<typeof bundler>[0]).catch((error) => {
-    throw error;
-  });
-
-  await build.write(config.output as any);
-
+  await build(app?.config?.build);
 }
