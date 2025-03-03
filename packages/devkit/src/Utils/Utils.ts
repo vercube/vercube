@@ -2,7 +2,6 @@
  
 import type { DevKitTypes } from '../Support/DevKitTypes';
 import { build as rolldownBuild, watch as rolldownWatch } from '../Bundlers/Rolldown';
-import { build as rollupBuild, watch as rollupWatch } from '../Bundlers/Rollup';
 
 /**
  * Returns the appropriate build function based on the specified bundler
