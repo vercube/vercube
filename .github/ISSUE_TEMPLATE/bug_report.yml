@@ -1,0 +1,61 @@
+name: Bug Report
+description: Report a bug you've encountered
+title: "[BUG]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug! Please fill out the form below to help us resolve the issue faster.
+  
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: What version of the software are you using?
+      placeholder: e.g. v0.0.1-alpha
+    validations:
+      required: true
+      
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: Describe the bug in detail.
+      placeholder: Describe what happened and what you expected to happen.
+    validations:
+      required: true
+      
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: How can we reproduce this bug? Please Provide a reproduction repository, stackblitz link or step-by-step instructions.
+      placeholder: https://stackblitz.com/edit/...
+    validations:
+      required: true
+      
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      description: Which operating system are you using?
+      options:
+        - Windows
+        - macOS
+        - Linux
+    validations:
+      required: true
+      
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: If you have access to error logs, please paste them here.
+      render: shell
+      
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Information
+      description: Any other information that might be helpful.
