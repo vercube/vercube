@@ -27,7 +27,7 @@ export class BaseLogger implements Logger {
 
   /**
    * Configure logger
-   * @param options 
+   * @param options
    */
   public configure(options: LoggerTypes.Options): void {
     this.fLogLevel = options?.logLevel ?? 'debug';
@@ -35,7 +35,7 @@ export class BaseLogger implements Logger {
     if (!options?.providers?.length) {
       return;
     }
-    
+
     // reset registerd providers
     this.fProviders.clear();
 
@@ -96,6 +96,15 @@ export class BaseLogger implements Logger {
   }
 
   /**
+   * Logs an success message.
+   * @param args - Additional parameters to be logged
+   * @returns A value determined by the implementing class
+   */
+  public success(...args: LoggerTypes.Arg[]): void {
+    this.printMessage({ level: 'success', args });
+  }
+
+  /**
    * Prints a log message according to the specified format and level.
    * This is an abstract method that should be implemented by subclasses.
    * @param message - The log message object containing level, tag, and arguments
@@ -110,7 +119,7 @@ export class BaseLogger implements Logger {
 
     // process message through appenders
     for (const [, provider] of providersToProcess) {
-      
+
       provider.processMessage(message);
     }
   }
