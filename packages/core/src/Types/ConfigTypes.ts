@@ -53,7 +53,7 @@ export namespace ConfigTypes {
     /**
      * The bundler to use for the application build.
      */
-    bundler?: 'rollup' | 'rolldown';
+    bundler?: 'rolldown';
   }
 
   /**

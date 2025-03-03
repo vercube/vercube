@@ -1,4 +1,5 @@
-/* eslint-disable unicorn/no-useless-switch-case */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+ 
 import type { DevKitTypes } from '../Support/DevKitTypes';
 import { build as rolldownBuild, watch as rolldownWatch } from '../Bundlers/Rolldown';
 import { build as rollupBuild, watch as rollupWatch } from '../Bundlers/Rollup';
@@ -9,15 +10,7 @@ import { build as rollupBuild, watch as rollupWatch } from '../Bundlers/Rollup';
  * @returns {DevKitTypes.BuildFunc} The build function for the specified bundler
  */
 export function getBuildFunc(bundler: string): DevKitTypes.BuildFunc {
-  switch (bundler) {
-    case 'rollup': { 
-      return rollupBuild;
-    }
-    case 'rolldown':
-    default: {
-      return rolldownBuild;
-    }
-  }
+  return rolldownBuild;
 }
 
 /**
@@ -26,13 +19,5 @@ export function getBuildFunc(bundler: string): DevKitTypes.BuildFunc {
  * @returns {DevKitTypes.WatchFunc} The watch function for the specified bundler
  */
 export function getWatchFunc(bundler: string): DevKitTypes.WatchFunc {
-  switch (bundler) {
-    case 'rollup': {
-      return rollupWatch;
-    }
-    case 'rolldown':
-    default: {
-      return rolldownWatch;
-    }
-  }
+  return rolldownWatch;
 }
