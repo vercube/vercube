@@ -1,5 +1,5 @@
 <p style="text-align: center" align="center">
-  <img src="./.github/assets/small-banner.png" alt="Vercube code"/>
+  <img src="./.github/assets/logo.png" width="200" alt="Vercube code"/>
 </p>
 
 # Vercube
