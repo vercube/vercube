@@ -97,12 +97,12 @@ export class RequestHandler {
 
         return response;
       },
-      onBeforeResponse: async (event: HttpEvent, response) => {
-        // call after middlewares
-        for (const middleware of afterMiddlewares) {
-          await (middleware.middleware as AfterMiddleware).onResponse(event, response.body);
-        }
-      },
+      onBeforeResponse: afterMiddlewares.map(middleware => {
+        return async (event: HttpEvent, response) => {
+          // call after middleware
+          await (middleware.middleware as AfterMiddleware).onResponse(event, response);
+        };
+      }),
     });
   }
 

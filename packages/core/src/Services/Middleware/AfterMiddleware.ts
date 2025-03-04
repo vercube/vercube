@@ -1,4 +1,4 @@
-import type { HttpEvent, MiddlewareOptions } from '../../Types/CommonTypes';
+import type { HttpEvent } from '../../Types/CommonTypes';
 
 /**
  * BaseMiddleware class that serves as a base for all middleware implementations.
@@ -15,6 +15,6 @@ export interface AfterMiddleware<T = unknown> {
    * @param {T} response - The HTTP response body.
    * @returns {void | Promise<void>} - A void or a promise that resolves when the processing is complete.
    */
-  onResponse(event: HttpEvent, response: T): void | Promise<void>
+  onResponse(event: HttpEvent, response: { body?: T }): void | Promise<void>
 
 }

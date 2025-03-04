@@ -12,7 +12,7 @@ export class FirstMiddleware implements AfterMiddleware {
    * @param {unknown} body - The HTTP response body.
    * @returns {Promise<void>} - A promise that resolves when the processing is complete.
    */
-  public async onResponse(event: HttpEvent, body: unknown): Promise<void> {
+  public async onResponse(event: HttpEvent, { body }: { body: any }): Promise<void> {
     console.log(body);
   }
 
