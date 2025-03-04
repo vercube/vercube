@@ -33,7 +33,7 @@
     "@swc-node/register": "^1.10.9",
     "@swc/core": "^1.11.5",
     "@swc/helpers": "^0.5.15",
-    "@types/node": "22.13.8",
+    "@types/node": "22.13.9",
     "eslint": "9.21.0",
     "eslint-config-unjs": "0.4.2",
     "globals": "16.0.0",
