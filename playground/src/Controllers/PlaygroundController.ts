@@ -38,7 +38,7 @@ const schemaQueryParams = z.object({
  * This is a sample controller that demonstrates how to create a controller using the @vercube/core package.
  */
 @Controller('/api/playground')
-@Middleware(FirstMiddleware)
+@Middleware(FirstMiddleware, {type: 'after'})
 export default class PlaygroundController {
 
   @Inject(StorageManager)

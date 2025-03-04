@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
-import { BaseMiddleware } from '../../Services/Middleware/BaseMiddleware';
 import { MetadataTypes } from '../../Types/MetadataTypes';
 import { initializeMetadata } from '../../Utils/Utils';
+import { AfterMiddleware, BeforeMiddleware } from '@vercube/core';
+import { IOC } from '@vercube/di';
 
-interface MiddlewareDecoratorParams extends Omit<MetadataTypes.Middleware, 'middleware'> {
+interface MiddlewareDecoratorParams extends Omit<MetadataTypes.Middleware, 'middleware' | 'target'> {
 }
 
 /**
@@ -13,14 +14,14 @@ interface MiddlewareDecoratorParams extends Omit<MetadataTypes.Middleware, 'midd
  * @param opts.type - The type of middleware ('before' or 'after')
  * @param opts.priority - Priority order for middleware execution (default: 999)
  * @returns A decorator function that can be applied to classes or methods
- * 
+ *
  * @example
  * ```typescript
  * @Middleware(AuthMiddleware)
  * class UserController {
  *   // ...
  * }
- * 
+ *
  * // Or on a specific method:
  * @Middleware(ValidationMiddleware, { type: 'before', priority: 1 })
  * public async createUser() {
@@ -28,7 +29,16 @@ interface MiddlewareDecoratorParams extends Omit<MetadataTypes.Middleware, 'midd
  * }
  * ```
  */
-export function Middleware(middleware: typeof BaseMiddleware, opts?: MiddlewareDecoratorParams): Function {
+export function Middleware(middleware: IOC.Newable<BeforeMiddleware>, opts?: MiddlewareDecoratorParams & {
+  type: undefined
+}): Function
+export function Middleware(middleware: IOC.Newable<BeforeMiddleware>, opts: MiddlewareDecoratorParams & {
+  type: 'before'
+}): Function
+export function Middleware(middleware: IOC.Newable<AfterMiddleware>, opts: MiddlewareDecoratorParams & {
+  type: 'after'
+}): Function
+export function Middleware(middleware: IOC.Newable<BeforeMiddleware | AfterMiddleware>, opts?: MiddlewareDecoratorParams): Function {
   return function internalDecorator(target: Function, propertyName?: string) {
     const ctx = ((propertyName) ? target : target.prototype) as MetadataTypes.Metadata;
     const meta = initializeMetadata(ctx);

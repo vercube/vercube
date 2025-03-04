@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { BadRequestError, BaseMiddleware, type HttpEvent } from '@vercube/core';
+import { BadRequestError, type HttpEvent } from '@vercube/core';
+import { BeforeMiddleware } from '@vercube/core';
 
 /**
  * SecondMiddleware class that implements the BaseMiddleware interface.
  */
-export class SecondMiddleware implements BaseMiddleware {
+export class SecondMiddleware implements BeforeMiddleware {
 
   /**
    * Middleware function that processes the HTTP event.
@@ -12,7 +13,7 @@ export class SecondMiddleware implements BaseMiddleware {
    * @param {HttpEvent} event - The HTTP event to be processed.
    * @returns {Promise<void>} - A promise that resolves when the processing is complete.
    */
-  public async use(event: HttpEvent): Promise<void> {
+  public async onRequest(event: HttpEvent): Promise<void> {
     console.log('SecondMiddleware');
     throw new BadRequestError('Unauthorized');
   }

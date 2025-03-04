@@ -1,7 +1,10 @@
- 
+
 import type { NodeEventContext } from 'h3';
-import type { BaseMiddleware } from '../Services/Middleware/BaseMiddleware';
 import { ValidationTypes } from './ValidationTypes';
+import { BeforeMiddleware } from '../Services/Middleware/BeforeMiddleware';
+import { AfterMiddleware } from '../Services/Middleware/AfterMiddleware';
+import { IOC } from '@vercube/di';
+
 export namespace MetadataTypes {
 
   export type Request = NodeEventContext['req'];
@@ -47,14 +50,14 @@ export namespace MetadataTypes {
   }
 
   export interface Action {
-    handler: (req: Request, res: Response) => void;
+    handler: (req: Request, res: Response) => void | Response;
   }
 
   export interface Middleware {
     target: string;
     type?: 'before' | 'after';
     priority?: number;
-    middleware: typeof BaseMiddleware;
+    middleware: IOC.Newable<BeforeMiddleware | AfterMiddleware>;
     args?: unknown;
   }
 

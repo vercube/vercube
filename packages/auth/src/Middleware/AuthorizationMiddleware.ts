@@ -1,5 +1,5 @@
 import {
-  type BaseMiddleware,
+  type BeforeMiddleware,
   type MiddlewareOptions,
   type HttpEvent,
   ForbiddenError,
@@ -11,13 +11,13 @@ import { AuthorizationProvider } from '../Services/AuthorizationProvider';
 /**
  * Middleware for authorization
  * @class AuthorizationMiddleware
- * @implements {BaseMiddleware}
+ * @implements {BeforeMiddleware}
  * @description Authorizes incoming request
  * @example
  * const middleware = new AuthorizationMiddleware<UserType>();
  * await middleware.use(event, args);
  */
-export class AuthorizationMiddleware<T> implements BaseMiddleware {
+export class AuthorizationMiddleware<T> implements BeforeMiddleware {
 
   @Inject(Container)
   private gContainer: Container;
@@ -32,7 +32,7 @@ export class AuthorizationMiddleware<T> implements BaseMiddleware {
    * @param {MiddlewareOptions} args - Additional arguments for the middleware
    * @returns {Promise<void>} - A promise that resolves when the processing is complete.
    */
-  public async use(
+  public async onRequest(
     event: HttpEvent,
     args: MiddlewareOptions<{options: AuthorizationTypes.MiddlewareOptions, params: T}>,
   ): Promise<void> {

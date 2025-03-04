@@ -39,7 +39,8 @@ export * from './Services/Hooks/HooksService';
 export * from './Services/Plugins/BasePlugin';
 
 // Middlewares
-export * from './Services/Middleware/BaseMiddleware';
+export * from './Services/Middleware/BeforeMiddleware';
+export * from './Services/Middleware/AfterMiddleware';
 
 // Errors
 export * from './Errors/HttpError';
