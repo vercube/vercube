@@ -53,11 +53,11 @@ export namespace MetadataTypes {
     handler: (req: Request, res: Response) => void | Response;
   }
 
-  export interface Middleware {
+  export interface Middleware<T = IOC.Newable<BeforeMiddleware | AfterMiddleware>> {
     target: string;
     type?: 'before' | 'after';
     priority?: number;
-    middleware: IOC.Newable<BeforeMiddleware | AfterMiddleware>;
+    middleware: T;
     args?: unknown;
   }
 

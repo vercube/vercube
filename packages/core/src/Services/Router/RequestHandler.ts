@@ -1,7 +1,7 @@
 import { defineEventHandler, type EventHandler } from 'h3';
 import { Container, Inject } from '@vercube/di';
 import { MetadataResolver } from '../Metadata/MetadataResolver';
-import { AfterMiddleware, BeforeMiddleware, HttpEvent } from '@vercube/core';
+import { AfterMiddleware, BeforeMiddleware, HttpEvent, type MetadataTypes } from '@vercube/core';
 
 /**
  * Options for the RequestHandler.
@@ -62,8 +62,8 @@ export class RequestHandler {
       }));
 
     // get middleware types
-    const beforeMiddlewares = resolvedMiddlewares.filter((m) => m.type === 'before');
-    const afterMiddlewares = resolvedMiddlewares.filter((m) => m.type === 'after');
+    const beforeMiddlewares = resolvedMiddlewares.filter(m => this.filterBeforeMiddleware(m));
+    const afterMiddlewares = resolvedMiddlewares.filter((m) => this.filterAfterMiddleware(m));
 
     // sort middlewares by priority
     beforeMiddlewares.sort((a, b) => (a?.priority ?? 999) - (b?.priority ?? 999));
@@ -73,14 +73,12 @@ export class RequestHandler {
       onRequest: beforeMiddlewares.map(middleware => {
         return async (event: HttpEvent) => {
           const args = await this.gMetadataResolver.resolveArgs(method.args, event);
-          (middleware.middleware as BeforeMiddleware).onRequest(event, { middlewareArgs: middleware.args, methodArgs: args });
+          middleware.middleware.onRequest(event, { middlewareArgs: middleware.args, methodArgs: args });
         };
       }),
       handler: async (event: HttpEvent) => {
-        const actions = method.actions;
-
         // call all actions like setting headers, etc.
-        for (const action of actions) {
+        for (const action of method.actions) {
           const actionResult = action.handler(event.node.req, event.node.res);
 
           if (actionResult != null) {
@@ -100,10 +98,17 @@ export class RequestHandler {
       onBeforeResponse: afterMiddlewares.map(middleware => {
         return async (event: HttpEvent, response) => {
           // call after middleware
-          await (middleware.middleware as AfterMiddleware).onResponse(event, response);
+          await middleware.middleware.onResponse(event, response);
         };
       }),
     });
   }
 
+  private filterBeforeMiddleware(middleware: MetadataTypes.Middleware<BeforeMiddleware | AfterMiddleware>): middleware is MetadataTypes.Middleware<BeforeMiddleware> {
+    return middleware.type === 'before';
+  }
+
+  private filterAfterMiddleware(middleware: MetadataTypes.Middleware<BeforeMiddleware | AfterMiddleware>): middleware is MetadataTypes.Middleware<AfterMiddleware> {
+    return middleware.type === 'after';
+  }
 }
