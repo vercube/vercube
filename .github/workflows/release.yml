@@ -17,6 +17,9 @@ on:
         description: 'Alpha tag (required only if `alpha`)'
         required: false
 
+env:
+  GITHUB_TOKEN: ${{ secrets.PAT }}
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -42,6 +45,7 @@ jobs:
       - name: Setup environment
         run: |
           pnpm config set "//registry.npmjs.org/:_authToken=${NPM_TOKEN}"
+          git config 
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
