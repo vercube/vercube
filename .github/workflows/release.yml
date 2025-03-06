@@ -29,6 +29,10 @@ jobs:
         with:
           fetch-depth: 0
 
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 10
+
       - name: Setup Node.js environment
         uses: actions/setup-node@v4
         with:
@@ -50,11 +54,11 @@ jobs:
             echo "❌ Alpha tag is required"
             exit 1
           fi
-          pnpm nx release prerelease --preid=${{ inputs.alphaTag }} --verbose --dry-run
+          pnpm nx release prerelease --preid=${{ inputs.alphaTag }} --verbose --dry-run --first-release
 
       - name: NX Release (stable)
         if: inputs.version != 'alpha'
-        run: pnpm nx release ${{ inputs.version }} --verbose --dry-run
+        run: pnpm nx release ${{ inputs.version }} --verbose --dry-run --first-release
 
       - name: Push tags and changes
         run: git push --follow-tags origin main
