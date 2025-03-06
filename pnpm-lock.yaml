@@ -21,8 +21,8 @@ importers:
         specifier: 20.4.6
         version: 20.4.6(@babel/traverse@7.26.9)(@swc-node/register@1.10.9(@swc/core@1.11.5(@swc/helpers@0.5.15))(@swc/types@0.1.19)(typescript@5.7.3))(@swc/core@1.11.5(@swc/helpers@0.5.15))(@types/node@22.13.9)(@zkochan/js-yaml@0.0.7)(babel-plugin-macros@3.1.0)(eslint@9.21.0(jiti@2.4.2))(nx@20.4.6(@swc-node/register@1.10.9(@swc/core@1.11.5(@swc/helpers@0.5.15))(@swc/types@0.1.19)(typescript@5.7.3))(@swc/core@1.11.5(@swc/helpers@0.5.15)))(ts-node@10.9.1(@swc/core@1.11.5(@swc/helpers@0.5.15))(@types/node@22.13.9)(typescript@5.7.3))(typescript@5.7.3)
       '@oxc-project/runtime':
-        specifier: 0.53.0
-        version: 0.53.0
+        specifier: 0.55.0
+        version: 0.55.0
       '@swc-node/register':
         specifier: ^1.10.9
         version: 1.10.9(@swc/core@1.11.5(@swc/helpers@0.5.15))(@swc/types@0.1.19)(typescript@5.7.3)
@@ -55,7 +55,7 @@ importers:
         version: 0.53.0
       rolldown:
         specifier: 1.0.0-beta.3-commit.ca90fa2
-        version: 1.0.0-beta.3-commit.ca90fa2(@oxc-project/runtime@0.53.0)(typescript@5.7.3)
+        version: 1.0.0-beta.3-commit.ca90fa2(@oxc-project/runtime@0.55.0)(typescript@5.7.3)
       sass-embedded:
         specifier: ^1.85.1
         version: 1.85.1
@@ -123,8 +123,8 @@ importers:
   packages/devkit:
     dependencies:
       '@oxc-project/runtime':
-        specifier: 0.53.0
-        version: 0.53.0
+        specifier: 0.55.0
+        version: 0.55.0
       '@vercube/core':
         specifier: workspace:*
         version: link:../core
@@ -148,7 +148,7 @@ importers:
         version: 2.0.3
       rolldown:
         specifier: 1.0.0-beta.3-commit.ca90fa2
-        version: 1.0.0-beta.3-commit.ca90fa2(@oxc-project/runtime@0.53.0)(typescript@5.7.3)
+        version: 1.0.0-beta.3-commit.ca90fa2(@oxc-project/runtime@0.55.0)(typescript@5.7.3)
 
   packages/di: {}
 
@@ -1583,8 +1583,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@oxc-project/runtime@0.53.0':
-    resolution: {integrity: sha512-iyZ//fKb3glRZyV6kWo04QjNkXKSj9B61M74Y0Gpqfi+vWAv2nBHdUa5ZiN8fDIobzmPtOu8F4bTj/CdK3w5bg==}
+  '@oxc-project/runtime@0.55.0':
+    resolution: {integrity: sha512-GxSaPdrdPbRCuGVpEa0OVgppcLW4acu56BDgJRzmalBtXOCcN+Rdt7Pvop6mKnTt5t0uYMll2KaTHaYWnB5kBw==}
     engines: {node: '>=6.9.0'}
 
   '@oxc-project/types@0.52.0':
@@ -6434,7 +6434,7 @@ snapshots:
   '@oxc-parser/binding-win32-x64-msvc@0.53.0':
     optional: true
 
-  '@oxc-project/runtime@0.53.0': {}
+  '@oxc-project/runtime@0.55.0': {}
 
   '@oxc-project/types@0.52.0': {}
 
@@ -9203,13 +9203,13 @@ snapshots:
 
   rfdc@1.4.1: {}
 
-  rolldown@1.0.0-beta.3-commit.ca90fa2(@oxc-project/runtime@0.53.0)(typescript@5.7.3):
+  rolldown@1.0.0-beta.3-commit.ca90fa2(@oxc-project/runtime@0.55.0)(typescript@5.7.3):
     dependencies:
       '@oxc-project/types': 0.52.0
       '@valibot/to-json-schema': 1.0.0-beta.5(valibot@1.0.0-beta.14(typescript@5.7.3))
       valibot: 1.0.0-beta.14(typescript@5.7.3)
     optionalDependencies:
-      '@oxc-project/runtime': 0.53.0
+      '@oxc-project/runtime': 0.55.0
       '@rolldown/binding-darwin-arm64': 1.0.0-beta.3-commit.ca90fa2
       '@rolldown/binding-darwin-x64': 1.0.0-beta.3-commit.ca90fa2
       '@rolldown/binding-freebsd-x64': 1.0.0-beta.3-commit.ca90fa2
