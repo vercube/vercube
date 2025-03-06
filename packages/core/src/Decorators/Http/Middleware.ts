@@ -13,14 +13,14 @@ interface MiddlewareDecoratorParams extends Omit<MetadataTypes.Middleware, 'midd
  * @param opts.type - The type of middleware ('before' or 'after')
  * @param opts.priority - Priority order for middleware execution (default: 999)
  * @returns A decorator function that can be applied to classes or methods
- * 
+ *
  * @example
  * ```typescript
  * @Middleware(AuthMiddleware)
  * class UserController {
  *   // ...
  * }
- * 
+ *
  * // Or on a specific method:
  * @Middleware(ValidationMiddleware, { type: 'before', priority: 1 })
  * public async createUser() {
@@ -35,7 +35,6 @@ export function Middleware(middleware: typeof BaseMiddleware, opts?: MiddlewareD
 
     meta.__middlewares.push({
       target: propertyName ?? '__global__',
-      type: opts?.type ?? 'before',
       priority: opts?.priority ?? 999, // default priority is 999 to ensure it runs last
       middleware,
     });

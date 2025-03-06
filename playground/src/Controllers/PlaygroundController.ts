@@ -21,6 +21,7 @@ import { Logger } from '@vercube/logger';
 import { BasicAuthenticationProvider } from '../Services/BasicAuthenticationProvider';
 import { AuthorizationParameters } from '../Types/AuthorizationParameters';
 import { DummyAuthorizationProvider } from '../Services/DummyAuthorizationProvider';
+import { SecondMiddleware } from '../Middlewares/SecondMiddleware';
 
 const schema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -53,6 +54,7 @@ export default class PlaygroundController {
    */
   @Get('/')
   @SetHeader('X-Test-Response-Header', '1')
+  @Middleware(SecondMiddleware)
   public async index(): Promise<{ message: string }> {
     this.gLogger.debug('PlaygroundController::index', 'Debug method');
     this.gLogger.info('PlaygroundController::index', 'Info method');

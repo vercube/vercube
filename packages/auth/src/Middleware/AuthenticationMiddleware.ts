@@ -27,7 +27,7 @@ export class AuthenticationMiddleware implements BaseMiddleware {
    * @param {MiddlewareOptions} args - Additional arguments for the middleware
    * @returns {Promise<void>} - A promise that resolves when the processing is complete.
    */
-  public async use(event: HttpEvent, args?: MiddlewareOptions<AuthenticationTypes.MiddlewareOptions>): Promise<void> {
+  public async onRequest(event: HttpEvent, args: MiddlewareOptions<AuthenticationTypes.MiddlewareOptions>): Promise<void> {
     let provider = this.gAuthenticationProvider;
 
     if (args?.middlewareArgs?.provider) {
