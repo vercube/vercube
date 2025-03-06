@@ -45,8 +45,6 @@ jobs:
       - name: Setup environment
         run: |
           pnpm config set "//registry.npmjs.org/:_authToken=${NPM_TOKEN}"
-          git config --global user.email "release@vercube.dev"
-          git config --global user.name "Vercube-CI"
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
@@ -61,10 +59,14 @@ jobs:
             exit 1
           fi
           pnpm nx release prerelease --preid=${{ inputs.alphaTag }} --verbose --first-release --yes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: NX Release (stable)
         if: inputs.version != 'alpha'
         run: pnpm nx release ${{ inputs.version }} --verbose --first-release --yes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push tags and changes
         run: git push --follow-tags origin main
