@@ -45,7 +45,6 @@ jobs:
       - name: Setup environment
         run: |
           pnpm config set "//registry.npmjs.org/:_authToken=${NPM_TOKEN}"
-          git config 
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
