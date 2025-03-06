@@ -60,13 +60,13 @@ jobs:
             echo "❌ Alpha tag is required"
             exit 1
           fi
-          pnpm nx release prerelease --preid=${{ inputs.alphaTag }} --verbose --first-release --yes
+          pnpm nx release prerelease --preid=${{ inputs.alphaTag }} --verbose --yes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: NX Release (stable)
         if: inputs.version != 'alpha'
-        run: pnpm nx release ${{ inputs.version }} --verbose --first-release --yes
+        run: pnpm nx release ${{ inputs.version }} --verbose --yes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
