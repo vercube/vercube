@@ -55,11 +55,11 @@ jobs:
             echo "❌ Alpha tag is required"
             exit 1
           fi
-          pnpm nx release prerelease --preid=${{ inputs.alphaTag }} --verbose --dry-run --first-release
+          pnpm nx release prerelease --preid=${{ inputs.alphaTag }} --verbose --dry-run --first-release --yes
 
       - name: NX Release (stable)
         if: inputs.version != 'alpha'
-        run: pnpm nx release ${{ inputs.version }} --verbose --dry-run --first-release
+        run: pnpm nx release ${{ inputs.version }} --verbose --dry-run --first-release --yes
 
       - name: Push tags and changes
         run: git push --follow-tags origin main
