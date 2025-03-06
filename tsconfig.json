@@ -19,8 +19,16 @@
     "noEmit": false,
     "importHelpers": true,
     "skipLibCheck": true,
-    "lib": ["dom", "es6", "es2017", "es2019", "ESNext"],
-    "typeRoots": ["node_modules/@types"],
+    "lib": [
+      "dom",
+      "es6",
+      "es2017",
+      "es2019",
+      "ESNext"
+    ],
+    "typeRoots": [
+      "node_modules/@types"
+    ],
     "paths": {
       "@vercube/*": [
         "packages/*/src"
@@ -28,9 +36,15 @@
       "@vercube/logger/providers/*": [
         "packages/logger/src/Providers/*"
       ],
-      "nx": ["packages/nx/src/index.ts"]
+      "nx": [
+        "packages/nx/src/index.ts"
+      ]
     }
   },
-  "include": ["packages/**/*.ts"],
-  "exclude": ["node_modules"]
+  "include": [
+    "packages/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }
