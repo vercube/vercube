@@ -24,6 +24,10 @@ export class MetadataResolver {
     return url;
   }
 
+  public resolveMethod(ctx: MetadataTypes.Metadata, propertyName: string): MetadataTypes.Method {
+    return ctx.__metadata.__methods[propertyName];
+  }
+
   /**
    * Resolves metadata for a given event.
    *
@@ -33,7 +37,7 @@ export class MetadataResolver {
    * @return {Object} The resolved metadata.
    */
   public async resolve(event: HttpEvent, ctx: MetadataTypes.Metadata, propertyName: string): Promise<MetadataTypes.ResolvedData> {
-    const metadata = ctx.__metadata.__methods[propertyName];
+    const metadata = this.resolveMethod(ctx, propertyName);
     const args = await this.resolveArgs(metadata?.args ?? [], event);
 
     return {
@@ -52,9 +56,9 @@ export class MetadataResolver {
    * @param {MetadataTypes.Arg[]} args - The arguments to resolve.
    * @param {HttpEvent} event - The event to resolve arguments for.
    * @return {unknown[]} The resolved arguments.
-   * @private
+   * @public
    */
-  private async resolveArgs(args: MetadataTypes.Arg[], event: HttpEvent): Promise<MetadataTypes.Arg[]> {
+  public async resolveArgs(args: MetadataTypes.Arg[], event: HttpEvent): Promise<MetadataTypes.Arg[]> {
     // sort arguments by index
     args.sort((a, b) => a.idx - b.idx);
 
@@ -118,13 +122,13 @@ export class MetadataResolver {
 
   /**
    * Resolves middleware functions for a given context and property name.
-   * 
+   *
    * @param {MetadataTypes.Ctx} ctx - The metadata context object
    * @param {string} propertyName - The name of the property to resolve middlewares for
    * @returns {MetadataTypes.Middleware[]} Array of middleware functions that apply globally or to the specific property
-   * @private
+   * @public
    */
-  private resolveMiddlewares(ctx: MetadataTypes.Metadata, propertyName: string): MetadataTypes.Middleware[] {
+  public resolveMiddlewares(ctx: MetadataTypes.Metadata, propertyName: string): MetadataTypes.Middleware[] {
     const middlewares = ctx?.__metadata?.__middlewares?.filter((m) => m.target === '__global__' || m.target === propertyName) ?? [];
 
     // return middlewares sorted by global first

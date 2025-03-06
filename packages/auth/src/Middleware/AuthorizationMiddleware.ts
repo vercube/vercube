@@ -32,7 +32,7 @@ export class AuthorizationMiddleware<T> implements BaseMiddleware {
    * @param {MiddlewareOptions} args - Additional arguments for the middleware
    * @returns {Promise<void>} - A promise that resolves when the processing is complete.
    */
-  public async use(
+  public async onRequest(
     event: HttpEvent,
     args: MiddlewareOptions<{options: AuthorizationTypes.MiddlewareOptions, params: T}>,
   ): Promise<void> {

@@ -1,4 +1,4 @@
- 
+
 import type { NodeEventContext } from 'h3';
 import type { BaseMiddleware } from '../Services/Middleware/BaseMiddleware';
 import { ValidationTypes } from './ValidationTypes';
@@ -52,7 +52,6 @@ export namespace MetadataTypes {
 
   export interface Middleware {
     target: string;
-    type?: 'before' | 'after';
     priority?: number;
     middleware: typeof BaseMiddleware;
     args?: unknown;
