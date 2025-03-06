@@ -17,9 +17,6 @@ on:
         description: 'Alpha tag (required only if `alpha`)'
         required: false
 
-env:
-  GITHUB_TOKEN: ${{ secrets.PAT }}
-
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -60,17 +57,17 @@ jobs:
             echo "❌ Alpha tag is required"
             exit 1
           fi
-          pnpm nx release prerelease --preid=${{ inputs.alphaTag }} --verbose --first-release --yes
+          pnpm nx release prerelease --preid=${{ inputs.alphaTag }} --verbose --first-release --yes --skip-commit
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PAT }}
 
       - name: NX Release (stable)
         if: inputs.version != 'alpha'
         run: pnpm nx release ${{ inputs.version }} --verbose --first-release --yes
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PAT }}
 
       - name: Push tags and changes
         run: git push --follow-tags origin main
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PAT }}
