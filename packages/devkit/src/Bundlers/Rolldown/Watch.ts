@@ -26,14 +26,12 @@ export async function watch(app: DevKitTypes.App): Promise<void> {
 
       // Building an individual bundle
       case 'BUNDLE_START': {
-        console.log(`Bundling ${event.input}...`);
         app.hooks.callHook('bundler-watch:start');
         return;
       }
 
       // Finished building all bundles
       case 'END': {
-        console.log('Bundled.');
         app.hooks.callHook('bundler-watch:end');
         return;
       }
