@@ -1,6 +1,9 @@
 import { type Container, initializeContainer, Inject } from '@vercube/di';
-import { createApp, toNodeListener, type App as H3App } from 'h3';
+import { createApp, toNodeListener, type App as H3App, serveStatic, eventHandler } from 'h3';
 import { listen } from 'listhen';
+import { readFile, stat } from 'node:fs/promises';
+import { existsSync, statSync } from 'node:fs';
+import { join, resolve  } from 'pathe';
 import { RouterRegistry } from '../Services/Router/RouterRegistry';
 import { PluginsRegistry } from '../Services/Plugins/PluginsRegistry';
 import type { BasePlugin } from '../Services/Plugins/BasePlugin';
@@ -78,6 +81,9 @@ export class App {
       throw new Error('App is already initialized');
     }
 
+    // initialize static server
+    this.initializeStaticServer();
+
     // resolve routes
     this.resolveRoutes();
 
@@ -108,6 +114,39 @@ export class App {
    */
   private async resolvePlugins(): Promise<void> {
     await this.gPluginsRegistry.init(this);
+  }
+
+  /**
+   * Initializes the static server for the application.
+   *
+   * @private
+   */
+  private initializeStaticServer(): void {
+    const staticDirs = (this.fConfig?.server?.staticDirs || ['public'])
+      .filter(Boolean)
+      .map((d) => resolve(process.cwd(), d))
+      .filter((d) => existsSync(d) && statSync(d).isDirectory());
+
+    for (const dir of staticDirs) {
+      this.fH3App.use(
+        eventHandler(async (event) => {
+          await serveStatic(event, {
+            fallthrough: true,
+            getContents: (id) => readFile(join(dir, id)),
+            getMeta: async (id) => {
+              const stats = await stat(join(dir, id)).catch(() => {});
+              if (!stats || !stats.isFile()) {
+                return;
+              }
+              return {
+                size: stats.size,
+                mtime: stats.mtimeMs,
+              };
+            },
+          });
+        }),
+      );
+    }
   }
 
 }
