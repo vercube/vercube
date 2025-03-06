@@ -39,7 +39,7 @@
     "globals": "16.0.0",
     "lint-staged": "15.4.3",
     "nx": "20.4.6",
-    "oxc-transform": "0.53.0",
+    "oxc-transform": "0.55.0",
     "rolldown": "1.0.0-beta.3-commit.ca90fa2",
     "sass-embedded": "^1.85.1",
     "simple-git-hooks": "2.11.1",
