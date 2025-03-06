@@ -1,12 +1,20 @@
 {
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "packageManager": "pnpm",
   "release": {
     "projects": [
-      "*"
+      "*",
+      "!playground",
+      "!@vercube/nx"
     ],
+    "git": {
+      "commitMessage": "chore: release v{version} [no ci]"
+    },
     "releaseTagPattern": "v{version}",
     "version": {
+      "preVersionCommand": "pnpm build",
       "generatorOptions": {
+        "preserveLocalDependencyProtocols": true,
         "skipLockFileUpdate": true,
         "fallbackCurrentVersionResolver": "git-tag",
         "currentVersionResolver": "registry"
@@ -15,9 +23,8 @@
     "changelog": {
       "automaticFromRef": true,
       "workspaceChangelog": {
-        "renderOptions": {
-          "authors": false
-        }
+        "file": false,
+        "createRelease": "github"
       }
     }
   },

@@ -1,0 +1,67 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        type: choice
+        description: Select version
+        required: true
+        options:
+          - patch
+          - minor
+          - major
+          - alpha
+      alphaTag:
+        type: string
+        description: 'Alpha tag (required only if `alpha`)'
+        required: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 10
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Setup environment
+        run: |
+          pnpm config set "//registry.npmjs.org/:_authToken=${NPM_TOKEN}"
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Release (alpha)
+        if: inputs.version == 'alpha'
+        run: |
+          if [ -z "${{ inputs.alphaTag }}" ]; then
+            echo "❌ Alpha tag is required"
+            exit 1
+          fi
+          pnpm nx release prerelease --preid=${{ inputs.alphaTag }} --verbose --dry-run --first-release --yes
+
+      - name: NX Release (stable)
+        if: inputs.version != 'alpha'
+        run: pnpm nx release ${{ inputs.version }} --verbose --dry-run --first-release --yes
+
+      - name: Push tags and changes
+        run: git push --follow-tags origin main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
