@@ -119,6 +119,9 @@ importers:
       listhen:
         specifier: 1.9.0
         version: 1.9.0
+      pathe:
+        specifier: 2.0.3
+        version: 2.0.3
 
   packages/devkit:
     dependencies:

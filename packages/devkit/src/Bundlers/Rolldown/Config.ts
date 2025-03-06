@@ -16,8 +16,6 @@ export async function getRolldownConfig(ctx?: ConfigTypes.BuildOptions): Promise
   const input = ctx?.entry ?? 'src/index.ts';
   const output = ctx?.output?.dir ?? 'dist';
 
-  console.log('------> input', input);
-
   return {
     // Define the input options
     input: {
