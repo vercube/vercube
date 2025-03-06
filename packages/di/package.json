@@ -1,7 +1,6 @@
 {
   "name": "@vercube/di",
   "version": "0.0.1-alpha.9",
-  "private": false,
   "description": "Dependencie Injection  module for Vercube framework",
   "packageManager": "pnpm@9.10.0",
   "repository": "@vercube/di",
@@ -20,5 +19,8 @@
   "types": "./dist/index.d.ts",
   "files": [
     "dist"
-  ]
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
 }

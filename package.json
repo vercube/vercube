@@ -4,7 +4,7 @@
   "description": "Next generation NodeJS framework on top of H3",
   "packageManager": "pnpm@9.15.0",
   "type": "module",
-  "private": false,
+  "private": true,
   "engines": {
     "node": ">=22"
   },

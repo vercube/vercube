@@ -1,7 +1,6 @@
 {
   "name": "@vercube/auth",
   "version": "0.0.1-alpha.9",
-  "private": false,
   "description": "Auth module for Vercube framework",
   "packageManager": "pnpm@9.10.0",
   "repository": "@vercube/auth",
@@ -25,5 +24,8 @@
     "@vercube/core": "workspace:*",
     "@vercube/di": "workspace:*"
   },
-  "devDependencies": {}
+  "devDependencies": {},
+  "publishConfig": {
+    "access": "public"
+  }
 }

@@ -1,7 +1,6 @@
 {
   "name": "@vercube/cli",
   "version": "0.0.1-alpha.9",
-  "private": false,
   "description": "CLI module for Vercube framework",
   "packageManager": "pnpm@9.10.0",
   "repository": "@vercube/cli",
@@ -28,5 +27,8 @@
     "@vercube/devkit": "workspace:*",
     "citty": "0.1.6"
   },
-  "devDependencies": {}
+  "devDependencies": {},
+  "publishConfig": {
+    "access": "public"
+  }
 }

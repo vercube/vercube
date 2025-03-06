@@ -1,7 +1,6 @@
 {
   "name": "@vercube/storage",
   "version": "0.0.1-alpha.9",
-  "private": false,
   "description": "Storage module for Vercube framework",
   "packageManager": "pnpm@9.10.0",
   "repository": "@vercube/storage",
@@ -25,5 +24,8 @@
     "@vercube/di": "workspace:*",
     "@vercube/logger": "workspace:*"
   },
-  "devDependencies": {}
+  "devDependencies": {},
+  "publishConfig": {
+    "access": "public"
+  }
 }
