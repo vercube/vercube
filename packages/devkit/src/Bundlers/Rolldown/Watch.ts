@@ -19,7 +19,6 @@ export async function watch(app: DevKitTypes.App): Promise<void> {
     switch (event.code) {
       // The watcher is (re)starting
       case 'START': {
-        console.log('Starting watcher...');
         app.hooks.callHook('bundler-watch:init');
         return;
       }
