@@ -45,6 +45,6 @@ jobs:
       #     NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Push tags and commits
-        run: git push --follow-tags origin master
+        run: git push --follow-tags origin main
         env:
           GITHUB_TOKEN: ${{ secrets.PAT }}
