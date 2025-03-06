@@ -11,6 +11,8 @@ import {
   QueryParams,
   MultipartFormData,
   MultiPartData,
+  Session,
+  SessionEvent,
 } from '@vercube/core';
 import { Authenticate, Authorize } from '@vercube/auth';
 import { FirstMiddleware } from '../Middlewares/FirstMiddleware';
@@ -167,6 +169,23 @@ export default class PlaygroundController {
   public async upload(@MultipartFormData() form: MultiPartData[]): Promise<{ message: string }> {
 
     console.log(form);
+
+    return { message: 'Hello, world!' };
+  }
+
+  /**
+   * Handles GET requests to the /session endpoint.
+   * @returns {Promise<{ message: string }>} A promise that resolves to an object containing a greeting message.
+   */
+  @Get('/session')
+  public async session(@Session() session: SessionEvent<{ count: number }>): Promise<{ message: string }> {
+    const count = (session.data.count || 0) + 1;
+
+    await session.update({
+      count: count,
+    });
+
+    console.log(session.data);
 
     return { message: 'Hello, world!' };
   }

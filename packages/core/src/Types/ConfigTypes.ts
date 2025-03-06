@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
-import type { LoggerTypes } from '@vercube/logger';
- 
+import type { LoggerTypes } from '@vercube/logger'; 
 /**
  * Namespace containing configuration type definitions for the Vercube framework.
  */
@@ -10,7 +9,25 @@ export namespace ConfigTypes {
    * Runtime configuration interface that can be modified during application execution.
    */
   export interface RuntimeConfig {
-    // add runtime config here
+    /**
+     * Session configuration options.
+     */
+    session?: {
+      /**
+       * The secret used to sign the session ID cookie.
+       */
+      secret?: string;
+
+      /**
+       * The name of the session ID cookie.
+       */
+      name?: string;
+
+      /**
+       * The duration of time for the session to be active.
+       */
+      duration?: number;
+    }
   }
 
   /**

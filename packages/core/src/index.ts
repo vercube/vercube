@@ -30,6 +30,7 @@ export * from './Decorators/Http/Status';
 export * from './Decorators/Http/Redirect';
 export * from './Decorators/Http/Middleware';
 export * from './Decorators/Http/MultipartFormData';
+export * from './Decorators/Http/Session';
 
 // Hooks
 export * from './Decorators/Hooks/Listen';
