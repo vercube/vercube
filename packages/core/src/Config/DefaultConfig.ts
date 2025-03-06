@@ -1,4 +1,5 @@
 import { ConfigTypes } from '../Types/ConfigTypes';
+import generateRandomHash from '../Utils/InternalUtils';
 
 /**
  * Default configuration for the Vercube application.
@@ -86,5 +87,25 @@ export const defaultConfig: ConfigTypes.Config = {
   /**
    * Empty runtime configuration
    */
-  runtime: {},
+  runtime: {
+    /**
+     * Session configuration options.
+     */
+    session: {
+      /**
+       * The secret used to sign the session ID cookie.
+       */
+      secret: process.env?.SECRET ?? generateRandomHash(),
+
+      /**
+       * The name of the session ID cookie.
+       */
+      name: 'vercube_session',
+
+      /**
+       * The duration of time for the session to be active.
+       */
+      duration: 60 * 60 * 24 * 7, // 7 days as default
+    },
+  },
 };

@@ -1,4 +1,4 @@
-import { getHeader, getHeaders, getQuery, getRouterParam, readBody, readMultipartFormData } from 'h3';
+import { getHeader, getHeaders, getQuery, getRouterParam, readBody, readMultipartFormData, useSession } from 'h3';
 import type { MetadataTypes } from '../../Types/MetadataTypes';
 import type { HttpEvent } from '../../Types/CommonTypes';
 
@@ -113,6 +113,17 @@ export class MetadataResolver {
       }
       case 'response': {
         return event.node.res;
+      }
+      case 'session': {
+        return useSession(event, {
+          name: arg?.data?.name,
+          password: arg?.data?.secret,
+          cookie: {
+            httpOnly: true,
+            secure: true,
+          },
+          maxAge: arg?.data?.duration,
+        });
       }
       default: {
         throw new Error(`Unknown argument type: ${arg.type}`);
