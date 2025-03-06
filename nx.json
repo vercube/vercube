@@ -24,7 +24,10 @@
       "automaticFromRef": true,
       "workspaceChangelog": {
         "file": false,
-        "createRelease": "github"
+        "createRelease": "github",
+        "renderOptions": {
+          "authors": false
+        }
       }
     }
   },
