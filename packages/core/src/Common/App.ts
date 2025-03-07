@@ -8,6 +8,7 @@ import { RouterRegistry } from '../Services/Router/RouterRegistry';
 import { PluginsRegistry } from '../Services/Plugins/PluginsRegistry';
 import type { BasePlugin } from '../Services/Plugins/BasePlugin';
 import { ConfigTypes } from '../Types/ConfigTypes';
+import { ErrorHandlerProvider } from '../Services/ErrorHandler/ErrorHandlerProvider';
 
 /**
  * Represents the main application class.
@@ -19,6 +20,9 @@ export class App {
 
   @Inject(PluginsRegistry)
   private gPluginsRegistry!: PluginsRegistry;
+
+  @Inject(ErrorHandlerProvider)
+  private gErrorHandler!: ErrorHandlerProvider;
 
   /** Holds H3 app instance */
   private fH3App!: H3App;
@@ -57,7 +61,12 @@ export class App {
    */
   public async init(cfg: ConfigTypes.Config): Promise<void> {
     this.fConfig = cfg;
-    this.fH3App = createApp({ debug: this.fConfig.dev });
+    this.fH3App = createApp({
+      debug: this.fConfig.dev,
+      onError: async (error, event) => {
+        await this.gErrorHandler.handleError(error, event);
+      },
+    });
   }
 
   /**
