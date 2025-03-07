@@ -38,7 +38,7 @@
     "eslint-config-unjs": "0.4.2",
     "globals": "16.0.0",
     "lint-staged": "15.4.3",
-    "nx": "20.4.6",
+    "nx": "20.5.0",
     "oxc-transform": "0.56.0",
     "rolldown": "1.0.0-beta.3-commit.ca90fa2",
     "sass-embedded": "^1.85.1",
