@@ -23,7 +23,7 @@ import { Logger } from '@vercube/logger';
 import { BasicAuthenticationProvider } from '../Services/BasicAuthenticationProvider';
 import { AuthorizationParameters } from '../Types/AuthorizationParameters';
 import { DummyAuthorizationProvider } from '../Services/DummyAuthorizationProvider';
-import { SecondMiddleware } from '../Middlewares/SecondMiddleware';
+import { BadRequestError } from '@vercube/core';
 
 const schema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -56,7 +56,6 @@ export default class PlaygroundController {
    */
   @Get('/')
   @SetHeader('X-Test-Response-Header', '1')
-  @Middleware(SecondMiddleware)
   public async index(): Promise<{ message: string }> {
     this.gLogger.debug('PlaygroundController::index', 'Debug method');
     this.gLogger.info('PlaygroundController::index', 'Info method');
@@ -188,6 +187,15 @@ export default class PlaygroundController {
     console.log(session.data);
 
     return { message: 'Hello, world!' };
+  }
+
+  /**
+   * Handles GET requests to the /session endpoint.
+   * @returns {Promise<{ message: string }>} A promise that resolves to an object containing a greeting message.
+   */
+  @Get('/error')
+  public async error(): Promise<void> {
+    throw new BadRequestError('Test message');
   }
 
 }

@@ -10,6 +10,8 @@ import { ValidationProvider } from '../Services/Validation/ValidationProvider';
 import { StandardSchemaValidationProvider } from '../Services/Validation/StandardSchemaValidationProvider';
 import { RuntimeConfig } from '../Services/Config/RuntimeConfig';
 import { ConfigTypes } from '../Types/ConfigTypes';
+import { ErrorHandlerProvider } from '../Services/ErrorHandler/ErrorHandlerProvider';
+import { DefaultErrorHandlerProvider } from '../Services/ErrorHandler/DefaultErrorHandlerProvider';
 
 /**
  * Creates and configures a new dependency injection container for the application.
@@ -29,6 +31,9 @@ export function createContainer(config: ConfigTypes.Config): Container {
       { name: 'console', provider: ConsoleProvider },
     ],
   });
+
+  // bind default error provider
+  container.bind(ErrorHandlerProvider, DefaultErrorHandlerProvider);
 
   // bind core services
   container.bind(HooksService);
