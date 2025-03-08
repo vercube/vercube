@@ -10,10 +10,18 @@ import { Logger } from '@vercube/logger';
  * @class DefaultErrorHandlerProvider
  */
 export class DefaultErrorHandlerProvider extends ErrorHandlerProvider {
+  
   @Inject(Logger)
   private gLogger!: Logger;
 
-  handleError(error: H3Error, event: HttpEvent): void {
+/**
+ * Handles errors by logging them and sending an appropriate HTTP response
+ * 
+ * @param error - The H3Error object containing error details
+ * @param event - The HTTP event object
+ * @returns void
+ */
+  public handleError(error: H3Error, event: HttpEvent): void {
     this.gLogger.error(error);
 
     setResponseStatus(event, error.statusCode ?? 500);
