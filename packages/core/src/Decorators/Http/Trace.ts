@@ -1,8 +1,8 @@
 import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
-import { RouterRegistry } from '../../Services/Router/RouterRegistry';
 import { MetadataResolver } from '../../Services/Metadata/MetadataResolver';
 import { RequestHandler } from '../../Services/Router/RequestHandler';
 import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
+import { Router } from '../../Services/Router/Router';
 
 interface TraceDecoratorOptions {
   path: string;
@@ -19,8 +19,8 @@ interface TraceDecoratorOptions {
  */
 class TraceDecorator extends BaseDecorator<TraceDecoratorOptions> {
 
-  @Inject(RouterRegistry)
-  private gRouterRegistry!: RouterRegistry;
+  @Inject(Router)
+  private gRouter: Router;
 
   @Inject(RequestHandler)
   private gRequestHandler!: RequestHandler;
@@ -44,10 +44,10 @@ class TraceDecorator extends BaseDecorator<TraceDecoratorOptions> {
       propertyName: this.propertyName,
     });
 
-    this.gRouterRegistry.registerRoute({
+    this.gRouter.addRoute({
       path: this.options.path,
-      method: 'trace',
-      handler: this.gRequestHandler.handleRequest({ instance: this.instance, propertyName: this.propertyName }),
+      method: 'TRACE',
+      handler: this.gRequestHandler.prepareHandler({ instance: this.instance, propertyName: this.propertyName }),
     });
   }
 

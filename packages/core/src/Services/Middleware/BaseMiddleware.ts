@@ -1,5 +1,5 @@
 
-import type { HttpEvent, MiddlewareOptions } from '../../Types/CommonTypes';
+import type { MaybePromise, MiddlewareOptions } from '../../Types/CommonTypes';
 
 /**
  * BaseMiddleware class that serves as a base for all middleware implementations.
@@ -12,11 +12,11 @@ export class BaseMiddleware<T = unknown, U = unknown> {
    * WARNING: This method cannot return a value, it will be ignored.
    * Middleware can only modify the event object or throw an HttpError like BadRequestError, ForbiddenError, etc.
    *
-   * @param {HttpEvent} event - The HTTP event to be processed.
+   * @param {Request} request - The HTTP Request to process
    * @param {T[]} args - Additional arguments for the middleware.
    * @returns {void | Promise<void>} - A void or a promise that resolves when the processing is complete.
    */
-  onRequest?(event: HttpEvent, args: MiddlewareOptions<T>): void | Promise<void>;
+  onRequest?(request: Request, args: MiddlewareOptions<T>): MaybePromise<void | Response>;
 
   /**
    * Middleware function that processes the response.
@@ -28,6 +28,6 @@ export class BaseMiddleware<T = unknown, U = unknown> {
    * @param {unknown} response - The response from the controller.
    * @returns {void | Promise<void>} - A void or a promise that resolves when the processing is complete.
    */
-  onResponse?(event: HttpEvent, response: { body?: U }): void | Promise<void>;
+  onResponse?(request: Request, response: Response, payload: U): MaybePromise<void | Response>;
 
 }

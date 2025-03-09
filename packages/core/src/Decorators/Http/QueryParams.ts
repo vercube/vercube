@@ -41,7 +41,6 @@ class QueryParamsDecorator extends BaseDecorator<QueryParamsDecoratorOptions, Me
     // add query parameter to metadata
     meta.__middlewares.unshift({
       target: this.propertyName,
-      type: 'before',
       priority: -1,
       args: {},
       middleware: ValidationMiddleware,

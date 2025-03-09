@@ -27,9 +27,13 @@ class RedirectDecorator extends BaseDecorator<RedirectDecoratorOptions, Metadata
     const method = initializeMetadataMethod(this.prototype, this.propertyName);
 
     method.actions.push({
-      handler: (req: MetadataTypes.Request, res: MetadataTypes.Response) => {
-        res.statusCode = this.options.code;
-        res.setHeader('Location', this.options.location);
+      handler: () => {
+        return new Response(undefined, {
+          status: this.options.code,
+          headers: {
+            'Location': this.options.location,
+          },
+        });
       },
     });
   }

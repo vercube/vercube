@@ -1,12 +1,7 @@
 
-import type { NodeEventContext } from 'h3';
 import type { BaseMiddleware } from '../Services/Middleware/BaseMiddleware';
 import { ValidationTypes } from './ValidationTypes';
 export namespace MetadataTypes {
-
-  export type Request = NodeEventContext['req'];
-
-  export type Response = NodeEventContext['res'];
 
   export interface Metadata {
     __metadata: Ctx;
@@ -47,7 +42,7 @@ export namespace MetadataTypes {
   }
 
   export interface Action {
-    handler: (req: Request, res: Response) => void;
+    handler: (req: Request, res: Response) => void | Response | ResponseInit;
   }
 
   export interface Middleware {

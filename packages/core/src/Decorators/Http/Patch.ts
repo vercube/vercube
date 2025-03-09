@@ -1,7 +1,7 @@
 import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
-import { RouterRegistry } from '../../Services/Router/RouterRegistry';
 import { MetadataResolver } from '../../Services/Metadata/MetadataResolver';
 import { RequestHandler } from '../../Services/Router/RequestHandler';
+import { Router } from '../../Services/Router/Router';
 
 interface PatchDecoratorOptions {
   path: string;
@@ -18,8 +18,8 @@ interface PatchDecoratorOptions {
  */
 class PatchDecorator extends BaseDecorator<PatchDecoratorOptions> {
 
-  @Inject(RouterRegistry)
-  private gRouterRegistry!: RouterRegistry;
+  @Inject(Router)
+  private gRouter!: Router;
 
   @Inject(RequestHandler)
   private gRequestHandler!: RequestHandler;
@@ -40,10 +40,10 @@ class PatchDecorator extends BaseDecorator<PatchDecoratorOptions> {
       propertyName: this.propertyName,
     });
 
-    this.gRouterRegistry.registerRoute({
+    this.gRouter.addRoute({
       path: this.options.path,
-      method: 'patch',
-      handler: this.gRequestHandler.handleRequest({ instance: this.instance, propertyName: this.propertyName }),
+      method: 'PATCH',
+      handler: this.gRequestHandler.prepareHandler({ instance: this.instance, propertyName: this.propertyName }),
     });
 
   }

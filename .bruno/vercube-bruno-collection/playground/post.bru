@@ -5,7 +5,18 @@ meta {
 }
 
 post {
-  url: {{url}}/api/playground
-  body: none
+  url: {{url}}/api/playground?test1=1&test2=2
+  body: json
   auth: none
+}
+
+params:query {
+  test1: 1
+  test2: 2
+}
+
+body:json {
+  {
+    "test": "test"
+  }
 }

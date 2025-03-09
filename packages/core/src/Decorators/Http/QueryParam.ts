@@ -42,7 +42,6 @@ class QueryParamDecorator extends BaseDecorator<QueryParamDecoratorOptions, Meta
 
     meta.__middlewares.unshift({
       target: this.propertyName,
-      type: 'before',
       priority: -1,
       args: {},
       middleware: ValidationMiddleware,

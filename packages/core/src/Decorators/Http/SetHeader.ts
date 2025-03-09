@@ -29,8 +29,8 @@ class SetHeaderDecorator extends BaseDecorator<SetHeaderDecoratorOptions, Metada
     const method = initializeMetadataMethod(this.prototype, this.propertyName);
 
     method.actions.push({
-      handler: (req: MetadataTypes.Request, res: MetadataTypes.Response) => {
-        res.setHeader(this.options.key, this.options.value);
+      handler: (req: Request, res: Response) => {
+        res.headers.append(this.options.key, this.options.value);
       },
     });
   }

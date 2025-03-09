@@ -28,9 +28,9 @@ class StatusDecorator extends BaseDecorator<StatusDecoratorOptions, MetadataType
     const method = initializeMetadataMethod(this.prototype, this.propertyName);
 
     method.actions.push({
-      handler: (req: MetadataTypes.Request, res: MetadataTypes.Response) => {
-        res.statusCode = this.options.code;
-      },
+      handler: () => ({
+        status: this.options.code,
+      }),
     });
   }
 

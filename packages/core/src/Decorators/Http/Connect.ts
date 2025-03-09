@@ -1,8 +1,8 @@
 import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
-import { RouterRegistry } from '../../Services/Router/RouterRegistry';
 import { MetadataResolver } from '../../Services/Metadata/MetadataResolver';
 import { RequestHandler } from '../../Services/Router/RequestHandler';
 import { MetadataTypes } from '../../Types/MetadataTypes';
+import { Router } from '../../Services/Router/Router';
 
 interface ConnectDecoratorOptions {
   path: string;
@@ -19,8 +19,8 @@ interface ConnectDecoratorOptions {
  */
 class ConnectDecorator extends BaseDecorator<ConnectDecoratorOptions, MetadataTypes.Metadata> {
 
-  @Inject(RouterRegistry)
-  private gRouterRegistry!: RouterRegistry;
+  @Inject(Router)
+  private gRouter!: Router;
 
   @Inject(RequestHandler)
   private gRequestHandler!: RequestHandler;
@@ -41,10 +41,10 @@ class ConnectDecorator extends BaseDecorator<ConnectDecoratorOptions, MetadataTy
       propertyName: this.propertyName,
     });
 
-    this.gRouterRegistry.registerRoute({
+    this.gRouter.addRoute({
       path: this.options.path,
-      method: 'connect',
-      handler: this.gRequestHandler.handleRequest({ instance: this.instance, propertyName: this.propertyName }),
+      method: 'CONNECT',
+      handler: this.gRequestHandler.prepareHandler({ instance: this.instance, propertyName: this.propertyName }),
     });
 
   }

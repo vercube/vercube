@@ -1,6 +1,9 @@
-import { getHeader, getHeaders, getQuery, getRouterParam, readBody, readMultipartFormData, useSession } from 'h3';
 import type { MetadataTypes } from '../../Types/MetadataTypes';
-import type { HttpEvent } from '../../Types/CommonTypes';
+import { RouterTypes } from '../../Types/RouterTypes';
+import { resolveRouterParam } from '../../Resolvers/RouterParam';
+import { resolveRequestBody } from '../../Resolvers/Body';
+import { resolveQueryParam, resolveQueryParams } from '../../Resolvers/Query';
+import { getRequestHeader, getRequestHeaders } from '../../Resolvers/Headers';
 
 /**
  * Class responsible for resolving metadata for route handlers.
@@ -29,28 +32,6 @@ export class MetadataResolver {
   }
 
   /**
-   * Resolves metadata for a given event.
-   *
-   * @param {HttpEvent} event - The event to resolve metadata for.
-   * @param {MetadataTypes.Ctx} ctx - The metadata context.
-   * @param {string} propertyName - The name of the property.
-   * @return {Object} The resolved metadata.
-   */
-  public async resolve(event: HttpEvent, ctx: MetadataTypes.Metadata, propertyName: string): Promise<MetadataTypes.ResolvedData> {
-    const metadata = this.resolveMethod(ctx, propertyName);
-    const args = await this.resolveArgs(metadata?.args ?? [], event);
-
-    return {
-      req: event.node.req,
-      res: event.node.res,
-      url: metadata?.url ?? null,
-      args,
-      actions: metadata?.actions ?? [],
-      middlewares: this.resolveMiddlewares(ctx, propertyName),
-    };
-  }
-
-  /**
    * Resolves arguments for a given event.
    *
    * @param {MetadataTypes.Arg[]} args - The arguments to resolve.
@@ -58,7 +39,7 @@ export class MetadataResolver {
    * @return {unknown[]} The resolved arguments.
    * @public
    */
-  public async resolveArgs(args: MetadataTypes.Arg[], event: HttpEvent): Promise<MetadataTypes.Arg[]> {
+  public async resolveArgs(args: MetadataTypes.Arg[], event: RouterTypes.RouterEvent): Promise<MetadataTypes.Arg[]> {
     // sort arguments by index
     args.sort((a, b) => a.idx - b.idx);
 
@@ -76,54 +57,53 @@ export class MetadataResolver {
    * Resolves an argument for a given event.
    *
    * @param {MetadataTypes.Arg} arg - The argument to resolve.
-   * @param {HttpEvent} event - The event to resolve the argument for.
+   * 
    * @return {unknown} The resolved argument.
    * @private
    */
-  private resolveArg(arg: MetadataTypes.Arg, event: HttpEvent): unknown {
+  private resolveArg(arg: MetadataTypes.Arg, event: RouterTypes.RouterEvent): unknown {
     switch (arg.type) {
       case 'param': {
-        return getRouterParam(
-          event,
-          arg?.data?.name,
-          { decode: arg?.data?.decode ?? false },
-        ) ?? null;
+        return resolveRouterParam(arg?.data?.name ?? '', event);
       }
       case 'body': {
-        return readBody(event);
+        return resolveRequestBody(event);
       }
       case 'multipart-form-data': {
-        return readMultipartFormData(event);
+        // TODO: add support for multipart/form-data
+        return null;
+        // return readMultipartFormData(event);
       }
       case 'query-param': {
-        const query = getQuery(event);
-        return query[arg?.data?.name] ?? null;
+        return resolveQueryParam(arg?.data?.name ?? '', event);
       }
       case 'query-params': {
-        return getQuery(event);
+        return resolveQueryParams(event);
       }
       case 'header': {
-        return getHeader(event, arg?.data?.name) ?? null;
+        return getRequestHeader(arg.data?.name ?? '', event);
       }
       case 'headers': {
-        return getHeaders(event);
+        return getRequestHeaders(event);
       }
       case 'request': {
-        return event.node.req;
+        return event.request;
       }
       case 'response': {
-        return event.node.res;
+        return event.response;
       }
       case 'session': {
-        return useSession(event, {
-          name: arg?.data?.name,
-          password: arg?.data?.secret,
-          cookie: {
-            httpOnly: true,
-            secure: true,
-          },
-          maxAge: arg?.data?.duration,
-        });
+        // TODO: add support for session
+        return null; 
+        // return useSession(event, {
+        //   name: arg?.data?.name,
+        //   password: arg?.data?.secret,
+        //   cookie: {
+        //     httpOnly: true,
+        //     secure: true,
+        //   },
+        //   maxAge: arg?.data?.duration,
+        // });
       }
       default: {
         throw new Error(`Unknown argument type: ${arg.type}`);

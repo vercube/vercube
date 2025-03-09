@@ -20,10 +20,6 @@
   "files": [
     "dist"
   ],
-  "scripts": {
-    "build": "rolldown -c ./rolldown.config.mjs",
-    "build:unbuild": "unbuild"
-  },
   "dependencies": {
     "@standard-schema/spec": "1.0.0",
     "@vercube/di": "workspace:*",
@@ -32,7 +28,9 @@
     "defu": "6.1.4",
     "h3": "1.15.1",
     "listhen": "1.9.0",
-    "pathe": "2.0.3"
+    "pathe": "2.0.3",
+    "rou3": "^0.5.1",
+    "srvx": "^0.1.4"
   },
   "publishConfig": {
     "access": "public"

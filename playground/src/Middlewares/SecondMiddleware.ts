@@ -1,4 +1,4 @@
-import { BaseMiddleware, type HttpEvent } from '@vercube/core';
+import { BaseMiddleware } from '@vercube/core';
 import { BadRequestError } from '@vercube/core';
 
 /**
@@ -12,7 +12,7 @@ export class SecondMiddleware implements BaseMiddleware {
    * @param {HttpEvent} event - The HTTP event to be processed.
    * @returns {Promise<void>} - A promise that resolves when the processing is complete.
    */
-  public async onResponse(event: HttpEvent, { body }: { body: any }): Promise<void> {
+  public async onResponse(request: Request, response: Response, body: unknown): Promise<void> {
     throw new BadRequestError('Lol');
   }
 
