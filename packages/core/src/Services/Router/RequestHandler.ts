@@ -73,7 +73,7 @@ export class RequestHandler {
       onRequest: beforeMiddlewares.map(middleware => {
         return async (event: HttpEvent) => {
           const args = await this.gMetadataResolver.resolveArgs(method.args, event);
-          middleware.middleware.onRequest?.(event, { middlewareArgs: middleware.args, methodArgs: args });
+          await middleware.middleware.onRequest?.(event, { middlewareArgs: middleware.args, methodArgs: args });
         };
       }),
       handler: async (event: HttpEvent) => {
