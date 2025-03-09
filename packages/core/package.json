@@ -26,11 +26,9 @@
     "@vercube/logger": "workspace:*",
     "c12": "3.0.2",
     "defu": "6.1.4",
-    "h3": "1.15.1",
-    "listhen": "1.9.0",
     "pathe": "2.0.3",
-    "rou3": "^0.5.1",
-    "srvx": "^0.1.4"
+    "rou3": "0.5.1",
+    "srvx": "0.1.4"
   },
   "publishConfig": {
     "access": "public"
