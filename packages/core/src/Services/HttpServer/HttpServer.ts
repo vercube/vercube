@@ -2,6 +2,8 @@ import { Inject } from '@vercube/di';
 import { serve, type Server} from 'srvx';
 import { Router } from '../Router/Router';
 import { RequestHandler } from '../Router/RequestHandler';
+import { ConfigTypes } from 'packages/core/dist';
+import { ErrorHandlerProvider } from '../ErrorHandler/ErrorHandlerProvider';
 
 /**
  * HTTP server implementation for handling incoming web requests
@@ -26,6 +28,12 @@ export class HttpServer {
   private gRequestHandler: RequestHandler;
 
   /**
+   * Error handler provider for managing error responses
+   */
+  @Inject(ErrorHandlerProvider)
+  private gErrorHandlerProvider: ErrorHandlerProvider;
+
+  /**
    * Underlying server instance
    * @private
    */
@@ -36,9 +44,22 @@ export class HttpServer {
    * 
    * @returns {Promise<void>} A promise that resolves when the server is ready
    */
-  public async initialize(): Promise<void> {
+  public async initialize(config: ConfigTypes.Config): Promise<void> {
+    const { port, host } = config.server ?? {};
+
     this.fServer = serve({
-      port: 3000,
+      bun: {
+        error(error: Error) {
+          return this.gErrorHandlerProvider.handleError(error);
+        },
+      },
+      deno: {
+        onError(error: Error) {
+          return this.gErrorHandlerProvider.handleError(error);
+        },
+      },
+      hostname: host,
+      port,
       fetch: this.handleRequest.bind(this),
     });
 

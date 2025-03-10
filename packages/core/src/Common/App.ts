@@ -53,7 +53,7 @@ export class App {
    */
   public async init(cfg: ConfigTypes.Config): Promise<void> {
     this.fConfig = cfg;
-    await this.gHttpServer.initialize();
+    await this.gHttpServer.initialize(this.fConfig);
     this.gRouter.init();
   }
 

@@ -60,6 +60,10 @@ export const defaultConfig: ConfigTypes.Config = {
    */
   server: {
     /**
+     * Default runtime environment set to 'node'
+     */
+    runtime: 'node',
+    /**
      * Default host for local development
      */
     host: 'localhost',
