@@ -2,7 +2,7 @@ import { Inject } from '@vercube/di';
 import { serve, type Server} from 'srvx';
 import { Router } from '../Router/Router';
 import { RequestHandler } from '../Router/RequestHandler';
-import { ConfigTypes } from 'packages/core/dist';
+import { ConfigTypes, NotFoundError } from 'packages/core/dist';
 import { ErrorHandlerProvider } from '../ErrorHandler/ErrorHandlerProvider';
 
 /**
@@ -49,12 +49,12 @@ export class HttpServer {
 
     this.fServer = serve({
       bun: {
-        error(error: Error) {
+        error: (error: Error) => {
           return this.gErrorHandlerProvider.handleError(error);
         },
       },
       deno: {
-        onError(error: Error) {
+        onError: (error: Error) => {
           return this.gErrorHandlerProvider.handleError(error);
         },
       },
@@ -79,17 +79,17 @@ export class HttpServer {
    * @private
    */
   private async handleRequest(request: Request): Promise<Response> {
-    const route = this.gRouter.resolve({ path: request.url, method: request.method });
+    try {
+      const route = this.gRouter.resolve({ path: request.url, method: request.method });
 
-    if (!route) {
-      return new Response(JSON.stringify({ message: 'Route not found', statusCode: 404 }, null, 2), {
-        status: 404,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      if (!route) {
+        throw new NotFoundError('Route not found');
+      }
+  
+      return this.gRequestHandler.handleRequest(request, route);
+    } catch (error) {
+      return this.gErrorHandlerProvider.handleError(error);
     }
-
-    return this.gRequestHandler.handleRequest(request, route);
+    
   }
 }
