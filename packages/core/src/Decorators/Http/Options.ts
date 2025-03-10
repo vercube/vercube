@@ -1,8 +1,8 @@
 import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
-import { RouterRegistry } from '../../Services/Router/RouterRegistry';
 import { MetadataResolver } from '../../Services/Metadata/MetadataResolver';
 import { RequestHandler } from '../../Services/Router/RequestHandler';
 import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
+import { Router } from '../../Services/Router/Router';
 
 interface OptionsDecoratorOptions {
   path: string;
@@ -12,15 +12,15 @@ interface OptionsDecoratorOptions {
  * A decorator class for handling HTTP OPTIONS requests.
  *
  * This class extends the BaseDecorator and is used to register OPTIONS routes
- * with the RouterRegistry. It also resolves metadata for the route handler
+ * with the Router. It also resolves metadata for the route handler
  * using the MetadataResolver.
  *
  * @extends {BaseDecorator<OptionsDecoratorOptions>}
  */
 class OptionsDecorator extends BaseDecorator<OptionsDecoratorOptions> {
 
-  @Inject(RouterRegistry)
-  private gRouterRegistry!: RouterRegistry;
+  @Inject(Router)
+  private gRouter: Router;
 
   @Inject(RequestHandler)
   private gRequestHandler!: RequestHandler;
@@ -32,7 +32,7 @@ class OptionsDecorator extends BaseDecorator<OptionsDecoratorOptions> {
    * Called when the decorator is created.
    *
    * This method constructs the full path for the route, registers the route
-   * with the RouterRegistry, and sets up the event handler for the OPTIONS request.
+   * with the Router, and sets up the event handler for the OPTIONS request.
    */
   public override created(): void {
     initializeMetadata(this.prototype);
@@ -44,10 +44,10 @@ class OptionsDecorator extends BaseDecorator<OptionsDecoratorOptions> {
       propertyName: this.propertyName,
     });
 
-    this.gRouterRegistry.registerRoute({
+    this.gRouter.addRoute({
       path: this.options.path,
-      method: 'options',
-      handler: this.gRequestHandler.handleRequest({ instance: this.instance, propertyName: this.propertyName }),
+      method: 'OPTIONS',
+      handler: this.gRequestHandler.prepareHandler({ instance: this.instance, propertyName: this.propertyName }),
     });
 
   }

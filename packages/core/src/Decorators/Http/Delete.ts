@@ -1,9 +1,9 @@
 import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
-import { RouterRegistry } from '../../Services/Router/RouterRegistry';
 import { MetadataResolver } from '../../Services/Metadata/MetadataResolver';
 import { RequestHandler } from '../../Services/Router/RequestHandler';
 import { MetadataTypes } from '../../Types/MetadataTypes';
 import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
+import { Router } from '../../Services/Router/Router';
 
 interface DeleteDecoratorOptions {
   path: string;
@@ -13,15 +13,15 @@ interface DeleteDecoratorOptions {
  * A decorator class for handling HTTP DELETE requests.
  *
  * This class extends the BaseDecorator and is used to register DELETE routes
- * with the RouterRegistry. It also resolves metadata for the route handler
+ * with the Router. It also resolves metadata for the route handler
  * using the MetadataResolver.
  *
  * @extends {BaseDecorator<DeleteDecoratorOptions>}
  */
 class DeleteDecorator extends BaseDecorator<DeleteDecoratorOptions, MetadataTypes.Metadata> {
 
-  @Inject(RouterRegistry)
-  private gRouterRegistry!: RouterRegistry;
+  @Inject(Router)
+  private gRouter: Router;
 
   @Inject(RequestHandler)
   private gRequestHandler!: RequestHandler;
@@ -33,7 +33,7 @@ class DeleteDecorator extends BaseDecorator<DeleteDecoratorOptions, MetadataType
    * Called when the decorator is created.
    *
    * This method constructs the full path for the route, registers the route
-   * with the RouterRegistry, and sets up the event handler for the DELETE request.
+   * with the Router, and sets up the event handler for the DELETE request.
    */
   public override created(): void {
     initializeMetadata(this.prototype);
@@ -45,10 +45,10 @@ class DeleteDecorator extends BaseDecorator<DeleteDecoratorOptions, MetadataType
       propertyName: this.propertyName,
     });
 
-    this.gRouterRegistry.registerRoute({
+    this.gRouter.addRoute({
       path: this.options.path,
-      method: 'delete',
-      handler: this.gRequestHandler.handleRequest({ instance: this.instance, propertyName: this.propertyName }),
+      method: 'DELETE',
+      handler: this.gRequestHandler.prepareHandler({ instance: this.instance, propertyName: this.propertyName }),
     });
 
   }

@@ -3,7 +3,7 @@
 </p>
 
 # Vercube
-Vercube is a free and open-source NodeJS framework on top of [h3](https://h3.unjs.io/)
+An ultra-efficient JavaScript server framework that runs anywhere - Node.js, Bun, or Deno - with unmatched flexibility and complete configurability for developers who refuse to sacrifice speed or control.
 
 > [!WARNING]
 > The project is currently in the early stages of active development and is not yet suitable for production use. Significant features are still being implemented, and ongoing work is required to ensure stability and performance. We recommend refraining from using the project in a production environment until further progress has been made and a more stable release is available.

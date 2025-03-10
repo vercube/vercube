@@ -1,9 +1,8 @@
-import { type H3Error, MIMES, setResponseStatus } from 'h3';
-import { Inject } from '@vercube/di';
-import { Logger } from '@vercube/logger';
-import type { HttpEvent } from '../../Types/CommonTypes';
 import { ErrorHandlerProvider } from './ErrorHandlerProvider';
 import { InternalServerError } from '../../Errors/Http/InternalServerError';
+import { HttpError } from '../../Errors/HttpError';
+import { Logger } from '@vercube/logger';
+import { Inject } from '@vercube/di';
 
 /**
  * Default error handler provider
@@ -13,22 +12,26 @@ import { InternalServerError } from '../../Errors/Http/InternalServerError';
 export class DefaultErrorHandlerProvider extends ErrorHandlerProvider {
 
   @Inject(Logger)
-  private gLogger!: Logger;
+  private gLogger: Logger;
 
   /**
-   * Handles errors by logging them and sending an appropriate HTTP response
+   * Handles an error that occurred during request processing
    * 
-   * @param error - The H3Error object containing error details
-   * @param event - The HTTP event object
-   * @returns void
+   * @param error - The Error object containing error details
+   * @returns Promise<Response> | Response - The response to be sent to the client
    */
-  public handleError(error: H3Error, event: HttpEvent): void {
+  public handleError(error: Error): Response {
+
     const _internalError = new InternalServerError();
+    const status = (error as any)?.status ?? 500;
 
-    setResponseStatus(event, error.statusCode ?? 500);
-    event.node.res.setHeader('content-type', MIMES.json);
+    // check if the error is known error type and return it.
+    if (error instanceof HttpError) {
+      return new Response(JSON.stringify({ ...error }, undefined, 2), { status });
+    }
 
+    this.gLogger.error(error);
 
-    event.node.res.end(JSON.stringify({ ...(error?.cause ?? _internalError.cause!) }, undefined, 2));
+    return new Response(JSON.stringify({ ...(error?.cause ?? _internalError.cause!) }, undefined, 2), { status });
   }
 }

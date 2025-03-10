@@ -78,6 +78,11 @@ export namespace ConfigTypes {
    */
   export interface ServerOptions {
     /**
+     * The runtime environment for the application.
+     */
+    runtime?: 'node' | 'bun' | 'deno';
+
+    /**
      * The hostname to bind the server to.
      */
     host?: string;

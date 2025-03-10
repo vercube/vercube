@@ -13,6 +13,7 @@ import {
   MultiPartData,
   Session,
   SessionEvent,
+  Param,
 } from '@vercube/core';
 import { Authenticate, Authorize } from '@vercube/auth';
 import { FirstMiddleware } from '../Middlewares/FirstMiddleware';
@@ -24,6 +25,7 @@ import { BasicAuthenticationProvider } from '../Services/BasicAuthenticationProv
 import { AuthorizationParameters } from '../Types/AuthorizationParameters';
 import { DummyAuthorizationProvider } from '../Services/DummyAuthorizationProvider';
 import { BadRequestError } from '@vercube/core';
+import { SecondMiddleware } from 'src/Middlewares/SecondMiddleware';
 
 const schema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -102,6 +104,16 @@ export default class PlaygroundController {
   @Authorize<AuthorizationParameters>({ role: 'admin' }, { provider: DummyAuthorizationProvider })
   public async dummyAuthorization(): Promise<{ message: string }> {
     return { message: 'Hello, world!' };
+  }
+
+  /**
+   * Handles GET requests to the /:id endpoint.
+   * @returns {Promise<{ message: string }>} A promise that resolves to an object containing a greeting message.
+   */
+  @Get('/:id')
+  @Status(HTTPStatus.CONFLICT)
+  public async get(@Param('id') id: string): Promise<{ message: string }> {
+    return { message: `Hello, ${id}!` };
   }
 
   /**
@@ -194,6 +206,7 @@ export default class PlaygroundController {
    * @returns {Promise<{ message: string }>} A promise that resolves to an object containing a greeting message.
    */
   @Get('/error')
+  @Middleware(SecondMiddleware)
   public async error(): Promise<void> {
     throw new BadRequestError('Test message');
   }

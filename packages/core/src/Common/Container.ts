@@ -3,7 +3,6 @@ import { BaseLogger, Logger } from '@vercube/logger';
 import { ConsoleProvider } from '@vercube/logger/providers';
 import { HooksService } from '../Services/Hooks/HooksService';
 import { MetadataResolver } from '../Services/Metadata/MetadataResolver';
-import { RouterRegistry } from '../Services/Router/RouterRegistry';
 import { PluginsRegistry } from '../Services/Plugins/PluginsRegistry';
 import { RequestHandler } from '../Services/Router/RequestHandler';
 import { ValidationProvider } from '../Services/Validation/ValidationProvider';
@@ -12,6 +11,8 @@ import { RuntimeConfig } from '../Services/Config/RuntimeConfig';
 import { ConfigTypes } from '../Types/ConfigTypes';
 import { ErrorHandlerProvider } from '../Services/ErrorHandler/ErrorHandlerProvider';
 import { DefaultErrorHandlerProvider } from '../Services/ErrorHandler/DefaultErrorHandlerProvider';
+import { HttpServer } from '../Services/HttpServer/HttpServer';
+import { Router } from '../Services/Router/Router';
 
 /**
  * Creates and configures a new dependency injection container for the application.
@@ -34,11 +35,12 @@ export function createContainer(config: ConfigTypes.Config): Container {
 
   // bind default error provider
   container.bind(ErrorHandlerProvider, DefaultErrorHandlerProvider);
+  container.bind(HttpServer);
+  container.bind(Router);
 
   // bind core services
   container.bind(HooksService);
   container.bind(MetadataResolver);
-  container.bind(RouterRegistry);
   container.bind(PluginsRegistry);
   container.bind(RequestHandler);
   container.bind(RuntimeConfig);

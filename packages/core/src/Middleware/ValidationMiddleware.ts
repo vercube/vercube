@@ -1,7 +1,7 @@
 
 import { InjectOptional } from '@vercube/di';
 import { BaseMiddleware } from '../Services/Middleware/BaseMiddleware';
-import { HttpEvent, MiddlewareOptions } from '../Types/CommonTypes';
+import type { MiddlewareOptions } from '../Types/CommonTypes';
 import { BadRequestError } from '../Errors/Http/BadRequestError';
 import { ValidationProvider } from '../Services/Validation/ValidationProvider';
 
@@ -21,12 +21,13 @@ export class ValidationMiddleware implements BaseMiddleware {
 
   /**
    * Middleware function that processes the HTTP event
-   * @param {HttpEvent} event - The HTTP event to be processed
+   * @param {Request} request - The HTTP request object
+   * @param {Response} response - The HTTP response object
    * @param {MiddlewareOptions} args - Additional arguments for the middleware
    * @returns {Promise<void>} - A promise that resolves when the processing is complete
    * @throws {BadRequestError} - If validation fails
    */
-  public async onRequest(event: HttpEvent, args: MiddlewareOptions): Promise<void> {
+  public async onRequest(request: Request, response: Response, args: MiddlewareOptions): Promise<void> {
     if (!this.gValidationProvider) {
       console.warn('ValidationMiddleware::ValidationProvider is not registered');
       return;

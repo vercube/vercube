@@ -1,0 +1,16 @@
+meta {
+  name: /:id
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{url}}/api/playground/test?test=1&test=2
+  body: none
+  auth: none
+}
+
+params:query {
+  test: 1
+  test: 2
+}

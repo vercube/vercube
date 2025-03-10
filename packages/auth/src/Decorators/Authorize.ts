@@ -18,7 +18,6 @@ export function Authorize<T>(params: T, options?: AuthorizationTypes.MiddlewareO
 
     meta.__middlewares.push({
       target: propertyName ?? '__global__',
-      type: 'before',
       priority: -998,
       middleware: AuthorizationMiddleware,
       args: {

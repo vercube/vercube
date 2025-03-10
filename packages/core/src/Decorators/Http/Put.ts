@@ -1,8 +1,8 @@
 import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
-import { RouterRegistry } from '../../Services/Router/RouterRegistry';
 import { MetadataResolver } from '../../Services/Metadata/MetadataResolver';
 import { RequestHandler } from '../../Services/Router/RequestHandler';
 import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
+import { Router } from '../../Services/Router/Router';
 
 interface PutDecoratorOptions {
   path: string;
@@ -12,15 +12,15 @@ interface PutDecoratorOptions {
  * A decorator class for handling HTTP PUT requests.
  *
  * This class extends the BaseDecorator and is used to register PUT routes
- * with the RouterRegistry. It also resolves metadata for the route handler
+ * with the Router. It also resolves metadata for the route handler
  * using the MetadataResolver.
  *
  * @extends {BaseDecorator<PutDecoratorOptions>}
  */
 class PutDecorator extends BaseDecorator<PutDecoratorOptions> {
 
-  @Inject(RouterRegistry)
-  private gRouterRegistry!: RouterRegistry;
+  @Inject(Router)
+  private gRouter: Router;
 
   @Inject(RequestHandler)
   private gRequestHandler!: RequestHandler;
@@ -32,7 +32,7 @@ class PutDecorator extends BaseDecorator<PutDecoratorOptions> {
    * Called when the decorator is created.
    *
    * This method constructs the full path for the route, registers the route
-   * with the RouterRegistry, and sets up the event handler for the PUT request.
+   * with the Router, and sets up the event handler for the PUT request.
    */
   public override created(): void {
     initializeMetadata(this.prototype);
@@ -44,10 +44,10 @@ class PutDecorator extends BaseDecorator<PutDecoratorOptions> {
       propertyName: this.propertyName,
     });
 
-    this.gRouterRegistry.registerRoute({
+    this.gRouter.addRoute({
       path: this.options.path,
-      method: 'put',
-      handler: this.gRequestHandler.handleRequest({ instance: this.instance, propertyName: this.propertyName }),
+      method: 'PUT',
+      handler: this.gRequestHandler.prepareHandler({ instance: this.instance, propertyName: this.propertyName }),
     });
 
   }

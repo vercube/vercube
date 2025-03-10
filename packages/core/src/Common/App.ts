@@ -1,31 +1,23 @@
 import { type Container, initializeContainer, Inject } from '@vercube/di';
-import { createApp, toNodeListener, type App as H3App, serveStatic, eventHandler } from 'h3';
-import { listen } from 'listhen';
-import { readFile, stat } from 'node:fs/promises';
-import { existsSync, statSync } from 'node:fs';
-import { join, resolve  } from 'pathe';
-import { RouterRegistry } from '../Services/Router/RouterRegistry';
 import { PluginsRegistry } from '../Services/Plugins/PluginsRegistry';
 import type { BasePlugin } from '../Services/Plugins/BasePlugin';
 import { ConfigTypes } from '../Types/ConfigTypes';
-import { ErrorHandlerProvider } from '../Services/ErrorHandler/ErrorHandlerProvider';
+import { HttpServer } from '../Services/HttpServer/HttpServer';
+import { Router } from '../Services/Router/Router';
 
 /**
  * Represents the main application class.
  */
 export class App {
 
-  @Inject(RouterRegistry)
-  private gRouterRegistry!: RouterRegistry;
+  @Inject(Router)
+  private gRouter: Router;
 
   @Inject(PluginsRegistry)
-  private gPluginsRegistry!: PluginsRegistry;
+  private gPluginsRegistry: PluginsRegistry;
 
-  @Inject(ErrorHandlerProvider)
-  private gErrorHandler!: ErrorHandlerProvider;
-
-  /** Holds H3 app instance */
-  private fH3App!: H3App;
+  @Inject(HttpServer)
+  private gHttpServer: HttpServer;
 
   /** Holds the initialization status of the application */
   private fIsInitialized: boolean = false;
@@ -61,12 +53,8 @@ export class App {
    */
   public async init(cfg: ConfigTypes.Config): Promise<void> {
     this.fConfig = cfg;
-    this.fH3App = createApp({
-      debug: this.fConfig.dev,
-      onError: async (error, event) => {
-        await this.gErrorHandler.handleError(error, event);
-      },
-    });
+    await this.gHttpServer.initialize(this.fConfig);
+    this.gRouter.init();
   }
 
   /**
@@ -93,27 +81,11 @@ export class App {
     // initialize static server
     this.initializeStaticServer();
 
-    // resolve routes
-    this.resolveRoutes();
-
     // resolve plugins
     await this.resolvePlugins();
 
     // initialize container with all decorators
     initializeContainer(this.container);
-
-    // start listening
-    await listen(toNodeListener(this.fH3App), { port: this.fConfig?.server?.port ?? 3000 });
-  }
-
-  /**
-   * Resolves and initializes the routes for the application.
-   *
-   * @private
-   */
-  private resolveRoutes(): void {
-    this.gRouterRegistry.init();
-    this.fH3App.use(this.gRouterRegistry.router);
   }
 
   /**
@@ -131,31 +103,7 @@ export class App {
    * @private
    */
   private initializeStaticServer(): void {
-    const staticDirs = (this.fConfig?.server?.staticDirs || ['public'])
-      .filter(Boolean)
-      .map((d) => resolve(process.cwd(), d))
-      .filter((d) => existsSync(d) && statSync(d).isDirectory());
-
-    for (const dir of staticDirs) {
-      this.fH3App.use(
-        eventHandler(async (event) => {
-          await serveStatic(event, {
-            fallthrough: true,
-            getContents: (id) => readFile(join(dir, id)),
-            getMeta: async (id) => {
-              const stats = await stat(join(dir, id)).catch(() => {});
-              if (!stats || !stats.isFile()) {
-                return;
-              }
-              return {
-                size: stats.size,
-                mtime: stats.mtimeMs,
-              };
-            },
-          });
-        }),
-      );
-    }
+    // TODO: add static server support
   }
 
 }

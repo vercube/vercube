@@ -36,7 +36,6 @@ class BodyDecorator extends BaseDecorator<BodyDecoratorOptions, MetadataTypes.Me
     // add query parameter to metadata
     meta.__middlewares.unshift({
       target: this.propertyName,
-      type: 'before',
       priority: -1,
       args: {},
       middleware: ValidationMiddleware,

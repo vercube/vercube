@@ -6,10 +6,6 @@ import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils'
 interface ParamDecoratorOptions {
   // name of the route parameter
   name: string;
-  // @see https://h3.unjs.io/utils/request#getrouterparamevent-name-opts-decode
-  opts: {
-    decode?: boolean;
-  };
 }
 
 /**
@@ -42,7 +38,6 @@ class ParamDecorator extends BaseDecorator<ParamDecoratorOptions, MetadataTypes.
       type: 'param',
       data: {
         name: this.options.name,
-        decode: this.options?.opts?.decode ?? false,
       },
     });
 
@@ -61,6 +56,6 @@ class ParamDecorator extends BaseDecorator<ParamDecoratorOptions, MetadataTypes.
  * @param {boolean} [opts.decode=false] - Whether to decode the parameter.
  * @return {Function} The decorator function.
  */
-export function Param(name: string, opts?: ParamDecoratorOptions['opts']): Function {
-  return createDecorator(ParamDecorator, { name, opts });
+export function Param(name: string): Function {
+  return createDecorator(ParamDecorator, { name });
 }

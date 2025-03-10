@@ -1,45 +1,49 @@
-import { defineEventHandler, type EventHandler } from 'h3';
 import { Container, Inject } from '@vercube/di';
 import { MetadataResolver } from '../Metadata/MetadataResolver';
-import { HttpEvent } from '@vercube/core';
+import { RouterTypes } from '../../Types/RouterTypes';
+import { ErrorHandlerProvider } from '../ErrorHandler/ErrorHandlerProvider';
 
 /**
- * Options for the RequestHandler.
- * @interface
+ * Options for configuring a request handler
+ * @interface RequestHandlerOptions
  */
 export interface RequestHandlerOptions {
+  /** The controller instance that contains the handler method */
   instance: any;
+  /** The name of the method to be used as the handler */
   propertyName: string;
 }
 
 /**
- * Handles incoming requests by resolving metadata and invoking the appropriate handler method.
- * @class
+ * Handles HTTP requests by preparing and executing route handlers with their associated middlewares
+ * 
+ * The RequestHandler is responsible for:
+ * - Preparing route handlers with their metadata
+ * - Executing middleware chains (before and after)
+ * - Processing request/response lifecycle
+ * - Error handling during request processing
  */
 export class RequestHandler {
 
-  /**
-   * Resolver for metadata associated with routes.
-   * @type {MetadataResolver}
-   * @private
-   */
+  /** Resolver for extracting metadata from controller classes and methods */
   @Inject(MetadataResolver)
   private gMetadataResolver!: MetadataResolver;
 
-  /**
-   * Container for dependency injection.
-   * @type {Container}
-   * @private
-   */
+  /** DI container for resolving dependencies */
   @Inject(Container)
   private gContainer!: Container;
 
+  /** Provider for handling errors during request processing */
+  @Inject(ErrorHandlerProvider)
+  private gErrorHandlerProvider: ErrorHandlerProvider;
+
   /**
-   * Handles an incoming request.
-   * @param {RequestHandlerOptions} params - The options for handling the request.
-   * @returns {EventHandler} The event handler for the request.
+   * Prepares a route handler by resolving its metadata and middlewares
+   * 
+   * @param {RequestHandlerOptions} params - Configuration options for the handler
+   * @returns {RouterTypes.RouterHandler} A prepared handler with resolved metadata and middlewares
    */
-  public handleRequest(params: RequestHandlerOptions): EventHandler {
+  public prepareHandler(params: RequestHandlerOptions): RouterTypes.RouterHandler {
     const { instance, propertyName } = params;
 
     // get the prototype of the instance to access the metadata
@@ -69,39 +73,129 @@ export class RequestHandler {
     beforeMiddlewares.sort((a, b) => (a?.priority ?? 999) - (b?.priority ?? 999));
     afterMiddlewares.sort((a, b) => (a?.priority ?? 999) - (b?.priority ?? 999));
 
-    return defineEventHandler({
-      onRequest: beforeMiddlewares.map(middleware => {
-        return async (event: HttpEvent) => {
-          const args = await this.gMetadataResolver.resolveArgs(method.args, event);
-          await middleware.middleware.onRequest?.(event, { middlewareArgs: middleware.args, methodArgs: args });
-        };
-      }),
-      handler: async (event: HttpEvent) => {
-        // call all actions like setting headers, etc.
-        for (const action of method.actions) {
-          const actionResult = action.handler(event.node.req, event.node.res);
-
-          if (actionResult != null) {
-            return actionResult;
-          }
-        }
-
-        const args = await this.gMetadataResolver.resolveArgs(method.args, event);
-        let response = instance[propertyName].call(instance, ...args?.map((a) => a.resolved) ?? []);
-
-        if (response instanceof Promise) {
-          response = await response;
-        }
-
-        return response;
+    return {
+      instance,
+      propertyName,
+      args: method.args,
+      middlewares: {
+        beforeMiddlewares,
+        afterMiddlewares,
       },
-      onBeforeResponse: afterMiddlewares.map(middleware => {
-        return async (event: HttpEvent, response) => {
-          // call after middleware
-          await middleware.middleware.onResponse?.(event, response);
-        };
-      }),
-    });
+      actions: method.actions,
+    };
   }
 
+  /**
+   * Processes an HTTP request through the middleware chain and route handler
+   * 
+   * The request handling lifecycle:
+   * 1. Execute "before" middlewares
+   * 2. Apply route actions (status codes, redirects, etc.)
+   * 3. Resolve handler arguments
+   * 4. Execute the route handler
+   * 5. Execute "after" middlewares
+   * 6. Format and return the final response
+   * 
+   * @param {Request} request - The incoming HTTP request
+   * @param {RouterTypes.RouteMatched<RouterTypes.RouterHandler>} route - The matched route with handler data
+   * @returns {Promise<Response>} The HTTP response
+   */
+  public async handleRequest(request: Request, route: RouterTypes.RouteMatched<RouterTypes.RouterHandler>): Promise<Response> {
+    try {
+      const { instance, propertyName, actions, args, middlewares } = route.data;
+      let fakeResponse = new Response(undefined, {
+        headers: {
+          'Content-Type': request.headers.get('Content-Type') ?? 'application/json',
+        },
+      });
+      
+      // 1. Call before route middlewares
+      for await (const hook of middlewares?.beforeMiddlewares ?? []) {
+        try {
+          const hookResponse = await hook.middleware.onRequest?.(request, fakeResponse, { middlewareArgs: hook.args, methodArgs: args });
+
+          if (hookResponse instanceof Response) {
+            return hookResponse;
+          }
+        } catch (error) {
+          return this.gErrorHandlerProvider.handleError(error);
+        }
+      }
+
+      // 2. Call every actions like set status code, set redirection etc.
+      for (const action of actions) {
+        const actionResponse = action.handler(request, fakeResponse);
+
+        if (actionResponse !== null) {
+          fakeResponse = this.processOverrideResponse(actionResponse!, fakeResponse);
+        }
+      }
+
+      // 3. Resolve all args
+      const resolvedArgs = await this.gMetadataResolver.resolveArgs(args, { ...route, request, response: fakeResponse });
+      
+      // 4. Call current route handler
+      let handlerResponse = instance[propertyName].call(instance, ...resolvedArgs?.map((a) => a.resolved) ?? []);
+
+      if (handlerResponse instanceof Promise) {
+        handlerResponse = await handlerResponse;
+      }
+
+      // 5. Call after route middlewars
+      for await (const hook of middlewares?.afterMiddlewares ?? []) {
+        try {
+          const hookResponse = await hook.middleware.onResponse?.(request, fakeResponse, handlerResponse);
+
+          if (hookResponse !== null) {
+            fakeResponse = this.processOverrideResponse(hookResponse!, fakeResponse);
+          }
+        } catch (error) {
+          return this.gErrorHandlerProvider.handleError(error);
+        }
+      }
+
+      // 6. Set response
+      const body = JSON.stringify(handlerResponse);
+
+      return new Response(body, {
+        status: fakeResponse.status,
+        statusText: fakeResponse.statusText,
+        headers: fakeResponse.headers,
+      });
+
+    } catch (error_) {
+      return this.gErrorHandlerProvider.handleError(error_);
+    }
+  }
+
+  /**
+   * Processes and merges response overrides from middlewares or actions
+   * 
+   * This method handles different response formats:
+   * - If a full Response object is provided, it's used directly
+   * - If ResponseInit is provided, it's merged with the base response
+   * 
+   * @param {Response | ResponseInit} response - The response or response options to apply
+   * @param {Response} [base] - The base response to extend (optional)
+   * @returns {Response} The processed response with applied overrides
+   * @private
+   */
+  private processOverrideResponse(response: Response | ResponseInit, base?: Response): Response {
+    let fakeResponse = base ?? new Response();
+
+    if (response != null && response instanceof Response) {
+      return response;
+    } else if (response !== null) {
+      const responseInit = response as ResponseInit;
+
+      // override fake response before pass it to the args
+      fakeResponse = new Response(undefined, {
+        status: responseInit?.status ?? fakeResponse.status,
+        headers: responseInit?.headers ?? fakeResponse.headers,
+        statusText: responseInit?.statusText ?? fakeResponse.statusText,
+      });
+    }
+
+    return fakeResponse;
+  }
 }
