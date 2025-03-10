@@ -16,7 +16,7 @@ export class BaseMiddleware<T = any, U = any> {
    * @param {T[]} args - Additional arguments for the middleware.
    * @returns {void | Promise<void>} - A void or a promise that resolves when the processing is complete.
    */
-  onRequest?(request: Request, args: MiddlewareOptions<T>): MaybePromise<void | Response>;
+  onRequest?(request: Request, response: Response, args: MiddlewareOptions<T>): MaybePromise<void | Response>;
 
   /**
    * Middleware function that processes the response.

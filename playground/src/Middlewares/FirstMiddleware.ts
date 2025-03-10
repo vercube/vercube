@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+ 
 import { BaseMiddleware } from '@vercube/core';
 
 /**
@@ -12,7 +12,7 @@ export class FirstMiddleware implements BaseMiddleware {
    * @param {Request} request - The incoming HTTP request.
    * @returns {Promise<void>} - A promise that resolves when the processing is complete.
    */
-  public async onRequest(request: Request): Promise<void> {
+  public async onRequest(): Promise<void> {
     console.log('First middleware');
   }
 

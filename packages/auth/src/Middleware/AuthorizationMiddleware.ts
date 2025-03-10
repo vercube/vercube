@@ -27,12 +27,14 @@ export class AuthorizationMiddleware<T> implements BaseMiddleware {
   /**
    * Middleware function that processes the HTTP event.
    *
-   * @param {Request} event - The HTTP request event.
+   * @param {Request} request - The HTTP request event.
+   * @param {Response} response - The HTTP response event.
    * @param {MiddlewareOptions} args - Additional arguments for the middleware
    * @returns {Promise<void>} - A promise that resolves when the processing is complete.
    */
   public async onRequest(
     request: Request,
+    response: Response,
     args: MiddlewareOptions<{options: AuthorizationTypes.MiddlewareOptions, params: T}>,
   ): Promise<void> {
     let provider = this.gAuthorizationProvider;

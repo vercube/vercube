@@ -24,10 +24,15 @@ export class AuthenticationMiddleware implements BaseMiddleware<AuthenticationTy
    * Middleware function that processes the HTTP event.
    *
    * @param {Request} request - The HTTP request to be processed
+   * @param {Response} response - The HTTP response to be processed
    * @param {MiddlewareOptions} args - Additional arguments for the middleware
    * @returns {Promise<void>} - A promise that resolves when the processing is complete.
    */
-  public async onRequest(request: Request, args: MiddlewareOptions<AuthenticationTypes.MiddlewareOptions>): Promise<void> {
+  public async onRequest(
+    request: Request,
+    response: Response,
+    args: MiddlewareOptions<AuthenticationTypes.MiddlewareOptions>,
+  ): Promise<void> {
     let provider = this.gAuthenticationProvider;
 
     if (args?.middlewareArgs?.provider) {

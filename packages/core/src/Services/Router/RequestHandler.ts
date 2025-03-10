@@ -112,7 +112,7 @@ export class RequestHandler {
       // 1. Call before route middlewares
       for await (const hook of middlewares?.beforeMiddlewares ?? []) {
         try {
-          const hookResponse = await hook.middleware.onRequest?.(request, { middlewareArgs: hook.args, methodArgs: args });
+          const hookResponse = await hook.middleware.onRequest?.(request, fakeResponse, { middlewareArgs: hook.args, methodArgs: args });
 
           if (hookResponse instanceof Response) {
             return hookResponse;
@@ -150,7 +150,6 @@ export class RequestHandler {
             fakeResponse = this.processOverrideResponse(hookResponse!, fakeResponse);
           }
         } catch (error) {
-          console.log('Tutaj jestem teraz');
           return this.gErrorHandlerProvider.handleError(error);
         }
       }

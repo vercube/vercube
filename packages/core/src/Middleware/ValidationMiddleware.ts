@@ -22,11 +22,12 @@ export class ValidationMiddleware implements BaseMiddleware {
   /**
    * Middleware function that processes the HTTP event
    * @param {Request} request - The HTTP request object
+   * @param {Response} response - The HTTP response object
    * @param {MiddlewareOptions} args - Additional arguments for the middleware
    * @returns {Promise<void>} - A promise that resolves when the processing is complete
    * @throws {BadRequestError} - If validation fails
    */
-  public async onRequest(request: Request, args: MiddlewareOptions): Promise<void> {
+  public async onRequest(request: Request, response: Response, args: MiddlewareOptions): Promise<void> {
     if (!this.gValidationProvider) {
       console.warn('ValidationMiddleware::ValidationProvider is not registered');
       return;
