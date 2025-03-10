@@ -27,11 +27,10 @@
     <div class="hero-content">
       <div class="hero-flex">
         <div class="hero-left">
-          <div class="hero-tag">// NEXT GENERATION NODE.JS FRAMEWORK</div>
+          <div class="hero-tag">// NEXT GENERATION JAVASCRIPT SERVER FRAMEWORK</div>
           <h1 class="hero-title">Unleash your server development.</h1>
 
-          <p class="hero-description mobile">An ultra-efficient Node.js framework built on top of H3 - fully configurable and
-            packed with a rich suite of out-of-the-box modules for developers who demand performance.</p>
+          <p class="hero-description mobile">{{ description }}</p>
 
           <div class="hero-buttons">
             <a href="#" class="hero-cta primary">
@@ -76,8 +75,7 @@
         </div>
 
         <div class="hero-right">
-          <p class="hero-description desktop">An ultra-efficient Node.js framework built on top of H3 - fully configurable and
-            packed with a rich suite of out-of-the-box modules for developers who demand performance.</p>
+          <p class="hero-description desktop">{{ description }}</p>
         </div>
       </div>
     </div>
@@ -86,6 +84,8 @@
 
 <script setup>
 import { ref } from 'vue';
+
+const description = ref('An ultra-efficient JavaScript server framework that runs anywhere - Node.js, Bun, or Deno - with unmatched flexibility and complete configurability for developers who refuse to sacrifice speed or control.');
 
 // Command text state
 const commandText = ref('pnpm create vercube@latest');

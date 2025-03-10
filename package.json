@@ -1,7 +1,7 @@
 {
   "name": "vercube-monorepo",
   "version": "0.0.0",
-  "description": "Next generation NodeJS framework on top of H3",
+  "description": "An ultra-efficient JavaScript server framework that runs anywhere - Node.js, Bun, or Deno - with unmatched flexibility and complete configurability for developers who refuse to sacrifice speed or control.",
   "packageManager": "pnpm@9.15.0",
   "type": "module",
   "private": true,
