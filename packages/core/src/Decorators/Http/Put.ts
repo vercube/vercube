@@ -12,7 +12,7 @@ interface PutDecoratorOptions {
  * A decorator class for handling HTTP PUT requests.
  *
  * This class extends the BaseDecorator and is used to register PUT routes
- * with the RouterRegistry. It also resolves metadata for the route handler
+ * with the Router. It also resolves metadata for the route handler
  * using the MetadataResolver.
  *
  * @extends {BaseDecorator<PutDecoratorOptions>}
@@ -32,7 +32,7 @@ class PutDecorator extends BaseDecorator<PutDecoratorOptions> {
    * Called when the decorator is created.
    *
    * This method constructs the full path for the route, registers the route
-   * with the RouterRegistry, and sets up the event handler for the PUT request.
+   * with the Router, and sets up the event handler for the PUT request.
    */
   public override created(): void {
     initializeMetadata(this.prototype);

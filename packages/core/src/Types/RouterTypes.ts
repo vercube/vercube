@@ -14,7 +14,7 @@ export namespace RouterTypes {
     method: string;
   }
 
-  export interface X {
+  export interface MiddlewareDefinition{
     middleware: BaseMiddleware<unknown, unknown>;
     target: string;
     priority?: number;
@@ -26,8 +26,8 @@ export namespace RouterTypes {
     propertyName: string;
     args: MetadataTypes.Arg[];
     middlewares: {
-      beforeMiddlewares: X[];
-      afterMiddlewares: X[];
+      beforeMiddlewares: MiddlewareDefinition[];
+      afterMiddlewares: MiddlewareDefinition[];
     };
     actions: MetadataTypes.Action[];
   }

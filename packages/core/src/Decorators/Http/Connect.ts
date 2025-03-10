@@ -12,7 +12,7 @@ interface ConnectDecoratorOptions {
  * A decorator class for handling HTTP CONNECT requests.
  *
  * This class extends the BaseDecorator and is used to register CONNECT routes
- * with the RouterRegistry. It also resolves metadata for the route handler
+ * with the Router. It also resolves metadata for the route handler
  * using the MetadataResolver.
  *
  * @extends {BaseDecorator<ConnectDecoratorOptions>}
@@ -32,7 +32,7 @@ class ConnectDecorator extends BaseDecorator<ConnectDecoratorOptions, MetadataTy
    * Called when the decorator is created.
    *
    * This method constructs the full path for the route, registers the route
-   * with the RouterRegistry, and sets up the event handler for the CONNECT request.
+   * with the Router, and sets up the event handler for the CONNECT request.
    */
   public override created(): void {
     this.options.path = this.gMetadataResolver.resolveUrl({

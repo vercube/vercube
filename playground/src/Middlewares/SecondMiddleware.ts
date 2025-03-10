@@ -9,7 +9,9 @@ export class SecondMiddleware implements BaseMiddleware {
   /**
    * Middleware function that processes the HTTP event.
    *
-   * @param {HttpEvent} event - The HTTP event to be processed.
+   * @param {Request} request - The HTTP Request to process
+   * @param {Response} response - The HTTP Response to process
+   * @param {unknown} body - The body of the request
    * @returns {Promise<void>} - A promise that resolves when the processing is complete.
    */
   public async onResponse(request: Request, response: Response, body: unknown): Promise<void> {

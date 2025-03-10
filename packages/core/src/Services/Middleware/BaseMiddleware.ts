@@ -24,8 +24,8 @@ export class BaseMiddleware<T = any, U = any> {
    * WARNING: This method cannot return a value, it will be ignored.
    * Middleware can only modify the event object or throw an HttpError like BadRequestError, ForbiddenError, etc.
    *
-   * @param {HttpEvent} event - The HTTP event to be processed.
-   * @param {unknown} response - The response from the controller.
+   * @param {Request} request - The HTTP Request to process
+   * @param {Response} response - The HTTP Response to process
    * @returns {void | Promise<void>} - A void or a promise that resolves when the processing is complete.
    */
   onResponse?(request: Request, response: Response, payload: U): MaybePromise<void | Response>;

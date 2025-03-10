@@ -33,6 +33,10 @@ export class Router {
    * @throws {Error} If router is not initialized
    */
   public addRoute(route: RouterTypes.Route): void {
+    if (!this.fRouterContext) {
+      throw new Error('Router not initialized. Please call init() before adding routes.');
+    }
+
     addRoute(this.fRouterContext, route.method.toUpperCase(), route.path, route.handler);
   }
 

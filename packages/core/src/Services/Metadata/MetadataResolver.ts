@@ -35,7 +35,7 @@ export class MetadataResolver {
    * Resolves arguments for a given event.
    *
    * @param {MetadataTypes.Arg[]} args - The arguments to resolve.
-   * @param {HttpEvent} event - The event to resolve arguments for.
+   * @param {RouterTypes.RouterEvent} event - The event to resolve arguments for.
    * @return {unknown[]} The resolved arguments.
    * @public
    */
