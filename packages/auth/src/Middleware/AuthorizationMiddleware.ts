@@ -1,7 +1,6 @@
 import {
   type BaseMiddleware,
   type MiddlewareOptions,
-  type HttpEvent,
   ForbiddenError,
 } from '@vercube/core';
 import { Container, Inject, InjectOptional } from '@vercube/di';
@@ -28,12 +27,12 @@ export class AuthorizationMiddleware<T> implements BaseMiddleware {
   /**
    * Middleware function that processes the HTTP event.
    *
-   * @param {HttpEvent} event - The HTTP event to be processed.
+   * @param {Request} event - The HTTP request event.
    * @param {MiddlewareOptions} args - Additional arguments for the middleware
    * @returns {Promise<void>} - A promise that resolves when the processing is complete.
    */
   public async onRequest(
-    event: HttpEvent,
+    request: Request,
     args: MiddlewareOptions<{options: AuthorizationTypes.MiddlewareOptions, params: T}>,
   ): Promise<void> {
     let provider = this.gAuthorizationProvider;
@@ -47,7 +46,7 @@ export class AuthorizationMiddleware<T> implements BaseMiddleware {
       return;
     }
 
-    const authorizationError = await provider.authorize(args.middlewareArgs!.params, event);
+    const authorizationError = await provider.authorize(request, args.middlewareArgs!.params);
 
     if (authorizationError) {
       throw new ForbiddenError(authorizationError);

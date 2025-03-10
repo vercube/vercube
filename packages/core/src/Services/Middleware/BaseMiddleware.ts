@@ -4,7 +4,7 @@ import type { MaybePromise, MiddlewareOptions } from '../../Types/CommonTypes';
 /**
  * BaseMiddleware class that serves as a base for all middleware implementations.
  */
-export class BaseMiddleware<T = unknown, U = unknown> {
+export class BaseMiddleware<T = any, U = any> {
 
   /**
    * Middleware function that processes the HTTP event.

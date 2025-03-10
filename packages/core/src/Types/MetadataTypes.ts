@@ -45,10 +45,10 @@ export namespace MetadataTypes {
     handler: (req: Request, res: Response) => void | Response | ResponseInit;
   }
 
-  export interface Middleware {
+  export interface Middleware<T = unknown, U = unknown> {
     target: string;
     priority?: number;
-    middleware: typeof BaseMiddleware;
+    middleware: typeof BaseMiddleware<T, U>;
     args?: unknown;
   }
 

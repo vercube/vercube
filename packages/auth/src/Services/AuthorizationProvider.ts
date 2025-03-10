@@ -1,5 +1,3 @@
-import type {HttpEvent} from '@vercube/core';
-
 /**
  * Abstract class representing an authorization provider
  * Provides a common interface for different authorization implementations
@@ -12,10 +10,10 @@ export abstract class AuthorizationProvider<T> {
 
   /**
    * Authorizes based on given params
-   * @param params - Additional parameters
-   * @param event - The HTTP event
+   * @param {Request} request - The request object
+   * @param {T} params - Additional parameters
    * @returns An error string or Promise of error string, null or Promise of null if authentication is successful
    */
-  public abstract authorize(params: T, event: HttpEvent): Promise<string | null> | string | null;
+  public abstract authorize(request: Request, params: T): Promise<string | null> | string | null;
 
 }

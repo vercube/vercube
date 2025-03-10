@@ -17,7 +17,6 @@ export function Authenticate(options?: AuthenticationTypes.MiddlewareOptions): F
 
     meta.__middlewares.push({
       target: propertyName ?? '__global__',
-      type: 'before',
       priority: -999,
       middleware: AuthenticationMiddleware,
       args: {...options},

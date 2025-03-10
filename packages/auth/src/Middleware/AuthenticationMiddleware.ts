@@ -1,4 +1,4 @@
-import { type BaseMiddleware, type MiddlewareOptions, type HttpEvent, UnauthorizedError } from '@vercube/core';
+import { type BaseMiddleware, type MiddlewareOptions, UnauthorizedError } from '@vercube/core';
 import { Container, Inject, InjectOptional } from '@vercube/di';
 import { AuthenticationProvider } from '../Services/AuthenticationProvider';
 import { AuthenticationTypes } from '../Types/AuthenticationTypes';
@@ -12,7 +12,7 @@ import { AuthenticationTypes } from '../Types/AuthenticationTypes';
  * const middleware = new AuthenticationMiddleware();
  * await middleware.use(event);
  */
-export class AuthenticationMiddleware implements BaseMiddleware {
+export class AuthenticationMiddleware implements BaseMiddleware<AuthenticationTypes.MiddlewareOptions> {
 
   @Inject(Container)
   private gContainer: Container;
@@ -23,11 +23,11 @@ export class AuthenticationMiddleware implements BaseMiddleware {
   /**
    * Middleware function that processes the HTTP event.
    *
-   * @param {HttpEvent} event - The HTTP event to be processed.
+   * @param {Request} request - The HTTP request to be processed
    * @param {MiddlewareOptions} args - Additional arguments for the middleware
    * @returns {Promise<void>} - A promise that resolves when the processing is complete.
    */
-  public async onRequest(event: HttpEvent, args: MiddlewareOptions<AuthenticationTypes.MiddlewareOptions>): Promise<void> {
+  public async onRequest(request: Request, args: MiddlewareOptions<AuthenticationTypes.MiddlewareOptions>): Promise<void> {
     let provider = this.gAuthenticationProvider;
 
     if (args?.middlewareArgs?.provider) {
@@ -39,7 +39,7 @@ export class AuthenticationMiddleware implements BaseMiddleware {
       return;
     }
 
-    const authenticationError = await provider.authenticate(event);
+    const authenticationError = await provider.authenticate(request);
 
     if (authenticationError) {
       throw new UnauthorizedError(authenticationError);
