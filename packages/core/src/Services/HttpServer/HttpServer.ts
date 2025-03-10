@@ -1,8 +1,8 @@
 import { Inject } from '@vercube/di';
+import { ConfigTypes, NotFoundError } from '@vercube/core';
 import { serve, type Server} from 'srvx';
 import { Router } from '../Router/Router';
 import { RequestHandler } from '../Router/RequestHandler';
-import { ConfigTypes, NotFoundError } from 'packages/core/dist';
 import { ErrorHandlerProvider } from '../ErrorHandler/ErrorHandlerProvider';
 
 /**
