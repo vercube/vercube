@@ -120,8 +120,8 @@ importers:
         specifier: 0.5.1
         version: 0.5.1
       srvx:
-        specifier: 0.1.4
-        version: 0.1.4
+        specifier: 0.2.5
+        version: 0.2.5
 
   packages/devkit:
     dependencies:
@@ -2646,8 +2646,8 @@ packages:
   convert-source-map@2.0.0:
     resolution: {integrity: sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg==}
 
-  cookie-es@1.2.2:
-    resolution: {integrity: sha512-+W7VmiVINB+ywl1HGXJXmrqkOhpKrIiVZV6tQuV54ZyQC7MMuBt81Vc336GMLoHBq5hV/F9eXgt5Mnx0Rha5Fg==}
+  cookie-es@2.0.0:
+    resolution: {integrity: sha512-RAj4E421UYRgqokKUmotqAwuplYw15qtdXfY+hGzgCJ/MBjCVZcSoHK/kH9kocfjRjcDME7IiDWR/1WX1TM2Pg==}
 
   copy-anything@3.0.5:
     resolution: {integrity: sha512-yCEafptTtb4bk7GLEQoM8KVJpxAfdBJYaXyzQEgQQQgYrZiDp8SJmGKlYza6CYjEDNstAdNdKA3UuoULlEbS6w==}
@@ -4276,8 +4276,8 @@ packages:
   sprintf-js@1.0.3:
     resolution: {integrity: sha512-D9cPgkvLlV3t3IzL0D0YLvGA9Ahk4PcvVwUbN0dSGr1aP0Nrt4AEnTUbuGvquEC0mA64Gqt1fzirlRs5ibXx8g==}
 
-  srvx@0.1.4:
-    resolution: {integrity: sha512-hHt1/s+3o4tOOjC2YCr7bwi4msAXYJYErVpz2w/FcvG3ODRV0GZsdHsBjeKqY46psZmRbItfPLMp2oP7JsZaow==}
+  srvx@0.2.5:
+    resolution: {integrity: sha512-G63uf9Emf8PQPlWkBKFfcqTkVjwIF5Z8lfECidSiaAXrd19Pj6ijU676yRfYP3KShZY7KmLsfb4/unIOCtnWfA==}
 
   stack-utils@2.0.6:
     resolution: {integrity: sha512-XlkWvfIm6RmsWtNJx+uqtKLS8eqFbxUg0ZzLXqY0caEy9l7hruX8IpiDnjsLavoBgqCCR71TqWO8MaXYheJ3RQ==}
@@ -7377,7 +7377,7 @@ snapshots:
 
   convert-source-map@2.0.0: {}
 
-  cookie-es@1.2.2: {}
+  cookie-es@2.0.0: {}
 
   copy-anything@3.0.5:
     dependencies:
@@ -9240,9 +9240,9 @@ snapshots:
 
   sprintf-js@1.0.3: {}
 
-  srvx@0.1.4:
+  srvx@0.2.5:
     dependencies:
-      cookie-es: 1.2.2
+      cookie-es: 2.0.0
 
   stack-utils@2.0.6:
     dependencies:
