@@ -155,7 +155,7 @@ export class RequestHandler {
       }
 
       // 6. Set response
-      const body = JSON.stringify(handlerResponse);
+      const body = fakeResponse?.body ?? JSON.stringify(handlerResponse);
 
       return new Response(body, {
         status: fakeResponse.status,

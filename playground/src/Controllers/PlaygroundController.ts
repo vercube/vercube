@@ -9,10 +9,6 @@ import {
   Post,
   Body,
   QueryParams,
-  MultipartFormData,
-  MultiPartData,
-  Session,
-  SessionEvent,
   Param,
 } from '@vercube/core';
 import { Authenticate, Authorize } from '@vercube/auth';
@@ -24,7 +20,6 @@ import { Logger } from '@vercube/logger';
 import { BasicAuthenticationProvider } from '../Services/BasicAuthenticationProvider';
 import { AuthorizationParameters } from '../Types/AuthorizationParameters';
 import { DummyAuthorizationProvider } from '../Services/DummyAuthorizationProvider';
-import { BadRequestError } from '@vercube/core';
 import { SecondMiddleware } from 'src/Middlewares/SecondMiddleware';
 
 const schema = z.object({
@@ -173,42 +168,13 @@ export default class PlaygroundController {
   }
 
   /**
-   * Handles GET requests to the /upload endpoint.
-   * @returns {Promise<{ message: string }>} A promise that resolves to an object containing a greeting message.
-   */
-  @Post('/upload')
-  public async upload(@MultipartFormData() form: MultiPartData[]): Promise<{ message: string }> {
-
-    console.log(form);
-
-    return { message: 'Hello, world!' };
-  }
-
-  /**
-   * Handles GET requests to the /session endpoint.
-   * @returns {Promise<{ message: string }>} A promise that resolves to an object containing a greeting message.
-   */
-  @Get('/session')
-  public async session(@Session() session: SessionEvent<{ count: number }>): Promise<{ message: string }> {
-    const count = (session.data.count || 0) + 1;
-
-    await session.update({
-      count: count,
-    });
-
-    console.log(session.data);
-
-    return { message: 'Hello, world!' };
-  }
-
-  /**
    * Handles GET requests to the /session endpoint.
    * @returns {Promise<{ message: string }>} A promise that resolves to an object containing a greeting message.
    */
   @Get('/error')
   @Middleware(SecondMiddleware)
-  public async error(): Promise<void> {
-    throw new BadRequestError('Test message');
+  public async error(): Promise<{ message: string }> {
+    return { message: 'Hello, world!' };
   }
 
 }
