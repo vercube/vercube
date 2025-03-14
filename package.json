@@ -30,7 +30,7 @@
     "@commitlint/config-conventional": "19.8.0",
     "@nx/js": "20.5.0",
     "@nx/plugin": "20.5.0",
-    "@oxc-project/runtime": "0.57.0",
+    "@oxc-project/runtime": "0.58.1",
     "@swc-node/register": "^1.10.10",
     "@swc/core": "^1.11.9",
     "@swc/helpers": "^0.5.15",
