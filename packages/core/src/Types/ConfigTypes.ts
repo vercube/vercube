@@ -106,11 +106,16 @@ export namespace ConfigTypes {
        */
       cert: string;
     };
-    
+
     /**
-     * Array of directories to serve static files from.
+     * Static server options
      */
-    staticDirs?: string[];
+    static: {
+      dirs: string[];
+      maxAge?: number;
+      immutable?: boolean;
+      etag?: boolean;
+    }
   }
  
   /**

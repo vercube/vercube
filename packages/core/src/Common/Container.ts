@@ -13,6 +13,8 @@ import { ErrorHandlerProvider } from '../Services/ErrorHandler/ErrorHandlerProvi
 import { DefaultErrorHandlerProvider } from '../Services/ErrorHandler/DefaultErrorHandlerProvider';
 import { HttpServer } from '../Services/HttpServer/HttpServer';
 import { Router } from '../Services/Router/Router';
+import { GlobalMiddlewareRegistry } from '../Services/Middleware/GlobalMiddlewareRegistry';
+import { StaticRequestHandler } from '../Services/Router/StaticRequestHandler';
 
 /**
  * Creates and configures a new dependency injection container for the application.
@@ -36,6 +38,7 @@ export function createContainer(config: ConfigTypes.Config): Container {
   // bind default error provider
   container.bind(ErrorHandlerProvider, DefaultErrorHandlerProvider);
   container.bind(HttpServer);
+  container.bind(StaticRequestHandler);
   container.bind(Router);
 
   // bind core services
@@ -44,6 +47,7 @@ export function createContainer(config: ConfigTypes.Config): Container {
   container.bind(PluginsRegistry);
   container.bind(RequestHandler);
   container.bind(RuntimeConfig);
+  container.bind(GlobalMiddlewareRegistry);
 
   // bind validation providers
   // use StandardSchema as default
