@@ -30,7 +30,9 @@ class SetHeaderDecorator extends BaseDecorator<SetHeaderDecoratorOptions, Metada
 
     method.actions.push({
       handler: (req: Request, res: Response) => {
+        res.headers.delete(this.options.key);
         res.headers.append(this.options.key, this.options.value);
+        return res;
       },
     });
   }
