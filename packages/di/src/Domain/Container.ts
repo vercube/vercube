@@ -238,7 +238,8 @@ export class Container {
    * @returns new class instance with dependencies
    */
   public resolve<T>(classType: IOC.Newable<T>, method: IOC.InjectMethod = IOC.InjectMethod.LAZY): T {
-    const newInstance = new classType();
+    const constructorDependencies = this.getConstructorDependencies(classType);
+    const newInstance = new classType(...constructorDependencies);
     this.internalProcessInjects(newInstance, method);
     return newInstance;
   }
@@ -340,7 +341,8 @@ export class Container {
       case IOC.ServiceFactoryType.CLASS_SINGLETON: {
         if (!this.fSingletonInstances.has(serviceDef.serviceKey)) {
           const constructor = (serviceDef.serviceValue as IOC.Newable<unknown>);
-          const instance = new constructor();
+          const constructorDeps = this.getConstructorDependencies(constructor);
+          const instance = new constructor(...constructorDeps);
           this.fSingletonInstances.set(serviceDef.serviceKey, instance);
           this.internalProcessInjects(instance, this.fInjectMethod);
           return instance;
@@ -351,7 +353,8 @@ export class Container {
 
       case IOC.ServiceFactoryType.CLASS: {
         const constructor = (serviceDef.serviceValue as IOC.Newable<unknown>);
-        const instance = new constructor();
+        const constructorDeps = this.getConstructorDependencies(constructor);
+        const instance = new constructor(...constructorDeps);
         this.internalProcessInjects(instance, this.fInjectMethod);
         return instance;
       }
@@ -494,4 +497,29 @@ export class Container {
     return 'Unknown';
   }
 
+  protected getConstructorDependencies(classType: IOC.Newable<unknown>): unknown[] {
+    const deps = IOCEngine.getDeps(classType, true);
+    const ctorDeps = deps.filter(dep => !dep.propertyName && dep.propertyIndex != null);
+
+    const ctorDepValues: unknown[] = [];
+
+    for (const dep of ctorDeps) {
+      let ctorDepValue: unknown;
+
+      if (dep.type === IOC.DependencyType.STANDARD) {
+        ctorDepValue = this.get(dep.dependency);
+      }
+      if (dep.type === IOC.DependencyType.OPTIONAL) {
+        ctorDepValue = this.getOptional(dep.dependency);
+      }
+
+      if (!ctorDepValue) {
+        throw new Error(`Invalid dependency type ${dep.type}`);
+      }
+
+      ctorDepValues[dep.propertyIndex] = ctorDepValue;
+    }
+
+    return ctorDepValues;
+  }
 }

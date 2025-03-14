@@ -5,6 +5,7 @@ import { BasicAuthenticationProvider } from '../Services/BasicAuthenticationProv
 import { Logger } from '@vercube/logger';
 import { ConsoleProvider } from '@vercube/logger/providers';
 import { DummyAuthorizationProvider } from '../Services/DummyAuthorizationProvider';
+import { DummyService } from '../Services/DummyService';
 
 export function useContainer(container: Container): void {
   container.bind(BasicAuthenticationProvider);
@@ -19,4 +20,5 @@ export function useContainer(container: Container): void {
       { name: 'console', provider: ConsoleProvider, logLevel: 'error' },
     ],
   });
+  container.bind(DummyService);
 }

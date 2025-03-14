@@ -36,6 +36,11 @@ export interface IDecoratorEntry {
 }
 
 /**
+ * This is a type for entity that is decorated.
+ */
+export type DecoratorTarget = IDecoratedPrototype | IClassType<unknown>;
+
+/**
  * This is a type for every class instance that is decorated. It should contain hidden __decorators
  * array that holds information about all decorators used in this class. It will be used later for
  * turning those declarations for real code.

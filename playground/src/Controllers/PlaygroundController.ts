@@ -21,6 +21,7 @@ import { BasicAuthenticationProvider } from '../Services/BasicAuthenticationProv
 import { AuthorizationParameters } from '../Types/AuthorizationParameters';
 import { DummyAuthorizationProvider } from '../Services/DummyAuthorizationProvider';
 import { SecondMiddleware } from 'src/Middlewares/SecondMiddleware';
+import { DummyService } from '../Services/DummyService';
 
 const schema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -47,6 +48,8 @@ export default class PlaygroundController {
   @Inject(Logger)
   private gLogger: Logger;
 
+  constructor(@Inject(DummyService) private dummyService: DummyService) {}
+
   /**
    * Handles GET requests to the / endpoint.
    * @returns {Promise<{ message: string }>} A promise that resolves to an object containing a greeting message.
@@ -58,6 +61,7 @@ export default class PlaygroundController {
     this.gLogger.info('PlaygroundController::index', 'Info method');
     this.gLogger.warn('PlaygroundController::index', 'Warn method');
     this.gLogger.error('PlaygroundController::index', 'Error method');
+    this.dummyService.hello();
     return { message: 'Hello, world!' };
   }
 
