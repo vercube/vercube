@@ -4,6 +4,7 @@ import type { BasePlugin } from '../Services/Plugins/BasePlugin';
 import { ConfigTypes } from '../Types/ConfigTypes';
 import { HttpServer } from '../Services/HttpServer/HttpServer';
 import { Router } from '../Services/Router/Router';
+import { StaticRequestHandler } from '../Services/Router/StaticRequestHandler';
 
 /**
  * Represents the main application class.
@@ -18,6 +19,9 @@ export class App {
 
   @Inject(HttpServer)
   private gHttpServer: HttpServer;
+
+  @Inject(StaticRequestHandler)
+  private gStaticRequestHandler: StaticRequestHandler;
 
   /** Holds the initialization status of the application */
   private fIsInitialized: boolean = false;
@@ -54,6 +58,11 @@ export class App {
   public async init(cfg: ConfigTypes.Config): Promise<void> {
     this.fConfig = cfg;
     await this.gHttpServer.initialize(this.fConfig);
+
+    if (this.fConfig.server?.static) {
+      this.gStaticRequestHandler.initialize(this.fConfig.server?.static);
+    }
+    
     this.gRouter.init();
   }
 
@@ -78,9 +87,6 @@ export class App {
       throw new Error('App is already initialized');
     }
 
-    // initialize static server
-    this.initializeStaticServer();
-
     // resolve plugins
     await this.resolvePlugins();
 
@@ -95,15 +101,6 @@ export class App {
    */
   private async resolvePlugins(): Promise<void> {
     await this.gPluginsRegistry.init(this);
-  }
-
-  /**
-   * Initializes the static server for the application.
-   *
-   * @private
-   */
-  private initializeStaticServer(): void {
-    // TODO: add static server support
   }
 
 }

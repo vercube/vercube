@@ -4,7 +4,7 @@ import { serve, type Server} from 'srvx';
 import { Router } from '../Router/Router';
 import { RequestHandler } from '../Router/RequestHandler';
 import { ErrorHandlerProvider } from '../ErrorHandler/ErrorHandlerProvider';
-
+import { StaticRequestHandler } from '../Router/StaticRequestHandler';
 /**
  * HTTP server implementation for handling incoming web requests
  * 
@@ -32,6 +32,12 @@ export class HttpServer {
    */
   @Inject(ErrorHandlerProvider)
   private gErrorHandlerProvider: ErrorHandlerProvider;
+
+  /**
+   * Static server for serving static files
+   */
+  @Inject(StaticRequestHandler)
+  private gStaticRequestHandler: StaticRequestHandler;
 
   /**
    * Underlying server instance
@@ -82,8 +88,15 @@ export class HttpServer {
     try {
       const route = this.gRouter.resolve({ path: request.url, method: request.method });
 
+      // if no route is found, try to serve static file
       if (!route) {
-        throw new NotFoundError('Route not found');
+        const response = await this.gStaticRequestHandler.handleRequest(request);
+
+        if (response) {
+          return response;
+        } else {
+          throw new NotFoundError('Route not found');
+        }
       }
   
       return this.gRequestHandler.handleRequest(request, route);

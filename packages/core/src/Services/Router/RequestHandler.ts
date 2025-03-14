@@ -2,6 +2,7 @@ import { Container, Inject } from '@vercube/di';
 import { MetadataResolver } from '../Metadata/MetadataResolver';
 import { RouterTypes } from '../../Types/RouterTypes';
 import { ErrorHandlerProvider } from '../ErrorHandler/ErrorHandlerProvider';
+import { GlobalMiddlewareRegistry } from '../Middleware/GlobalMiddlewareRegistry';
 
 /**
  * Options for configuring a request handler
@@ -37,6 +38,9 @@ export class RequestHandler {
   @Inject(ErrorHandlerProvider)
   private gErrorHandlerProvider: ErrorHandlerProvider;
 
+  @Inject(GlobalMiddlewareRegistry)
+  private gGlobalMiddlewareRegistry: GlobalMiddlewareRegistry;
+
   /**
    * Prepares a route handler by resolving its metadata and middlewares
    * 
@@ -55,8 +59,11 @@ export class RequestHandler {
     // get middlewares
     const middlewares = this.gMetadataResolver.resolveMiddlewares(prototype, propertyName);
 
+    // get global middlewares
+    const globalMiddlewares = this.gGlobalMiddlewareRegistry.middlewares;
+
     // get unique middlewares;
-    const uniqueMiddlewares = middlewares
+    const uniqueMiddlewares = [...middlewares, ...globalMiddlewares]
       .filter((m, index, self) => self.findIndex((t) => t.middleware === m.middleware) === index);
 
     // resolve middlewares

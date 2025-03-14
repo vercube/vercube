@@ -76,11 +76,11 @@ export const defaultConfig: ConfigTypes.Config = {
      */
     https: false,
     /**
-     * Default static file directories
+     * Default static server config
      */
-    staticDirs: [
-      'public',
-    ],
+    static: {
+      dirs: ['public'],
+    },
   },
 
   /**
