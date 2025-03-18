@@ -23,7 +23,7 @@
   "dependencies": {
     "@oxc-project/runtime": "0.58.1",
     "@vercube/core": "workspace:*",
-    "consola": "3.4.0",
+    "consola": "3.4.1",
     "dotenv": "16.4.7",
     "hookable": "5.5.3",
     "oxc-parser": "0.58.1",
