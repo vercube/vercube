@@ -21,7 +21,7 @@
     "dist"
   ],
   "dependencies": {
-    "@oxc-project/runtime": "0.61.0",
+    "@oxc-project/runtime": "0.61.2",
     "@vercube/core": "workspace:*",
     "consola": "3.4.2",
     "dotenv": "16.4.7",
