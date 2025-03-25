@@ -32,7 +32,7 @@
     "@nx/plugin": "20.6.2",
     "@oxc-project/runtime": "0.61.2",
     "@swc-node/register": "^1.10.10",
-    "@swc/core": "^1.11.12",
+    "@swc/core": "^1.11.13",
     "@swc/helpers": "^0.5.15",
     "@types/node": "22.13.12",
     "eslint": "9.23.0",
