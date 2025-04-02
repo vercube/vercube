@@ -120,8 +120,8 @@ importers:
         specifier: 0.5.1
         version: 0.5.1
       srvx:
-        specifier: 0.2.5
-        version: 0.2.5
+        specifier: 0.2.7
+        version: 0.2.7
 
   packages/devkit:
     dependencies:
@@ -4279,8 +4279,9 @@ packages:
   sprintf-js@1.0.3:
     resolution: {integrity: sha512-D9cPgkvLlV3t3IzL0D0YLvGA9Ahk4PcvVwUbN0dSGr1aP0Nrt4AEnTUbuGvquEC0mA64Gqt1fzirlRs5ibXx8g==}
 
-  srvx@0.2.5:
-    resolution: {integrity: sha512-G63uf9Emf8PQPlWkBKFfcqTkVjwIF5Z8lfECidSiaAXrd19Pj6ijU676yRfYP3KShZY7KmLsfb4/unIOCtnWfA==}
+  srvx@0.2.7:
+    resolution: {integrity: sha512-iMic+FvEyd57WN2+ni9tq6jDD940NI2cfhw/LrzgCLelXdfcQUGxjp7TIeHQlmMwrz53Tz/l0CQecqvRA+9Yww==}
+    engines: {node: '>=20.11.1'}
 
   stack-utils@2.0.6:
     resolution: {integrity: sha512-XlkWvfIm6RmsWtNJx+uqtKLS8eqFbxUg0ZzLXqY0caEy9l7hruX8IpiDnjsLavoBgqCCR71TqWO8MaXYheJ3RQ==}
@@ -9204,7 +9205,7 @@ snapshots:
 
   sprintf-js@1.0.3: {}
 
-  srvx@0.2.5:
+  srvx@0.2.7:
     dependencies:
       cookie-es: 2.0.0
 
