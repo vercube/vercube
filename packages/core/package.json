@@ -1,6 +1,6 @@
 {
   "name": "@vercube/core",
-  "version": "0.0.1-alpha.16",
+  "version": "0.0.1-alpha.17",
   "description": "Core module for Vercube framework",
   "packageManager": "pnpm@9.10.0",
   "repository": "@vercube/core",
