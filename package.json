@@ -39,6 +39,7 @@
     "eslint-config-unjs": "0.4.2",
     "globals": "16.0.0",
     "lint-staged": "15.5.0",
+    "mermaid": "11.6.0",
     "nx": "20.7.1",
     "oxc-transform": "0.62.0",
     "rolldown": "1.0.0-beta.7",
@@ -48,7 +49,8 @@
     "typescript": "5.8.2",
     "typescript-eslint": "8.29.0",
     "unplugin-isolated-decl": "0.13.5",
-    "vitepress": "^1.6.3"
+    "vitepress": "1.6.3",
+    "vitepress-plugin-mermaid": "2.0.17"
   },
   "simple-git-hooks": {
     "pre-commit": "pnpm pre-commit",
