@@ -110,7 +110,7 @@ export namespace ConfigTypes {
     /**
      * Static server options
      */
-    static: {
+    static?: {
       dirs: string[];
       maxAge?: number;
       immutable?: boolean;
