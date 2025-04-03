@@ -99,6 +99,17 @@ export default defineConfig({
             { text: 'Advanced', link: '/modules/logger/advanced' },
           ],
         },
+        {
+          text: 'Storage',
+          items: [
+            { text: 'Overview', link: '/modules/storage' },
+            { text: 'Storage Manager', link: '/modules/storage/storage-manager' },
+            { text: 'Storage Interface', link: '/modules/storage/storage-interface' },
+            { text: 'Storage Types', link: '/modules/storage/storage-types' },
+            { text: 'Storage Implementations', link: '/modules/storage/storage-implementations' },
+            { text: 'Advanced Usage', link: '/modules/storage/advanced' },
+          ],
+        },
       ],
     },
     
