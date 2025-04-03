@@ -57,7 +57,7 @@ jobs:
             echo "❌ Alpha tag is required"
             exit 1
           fi
-          pnpm nx release prerelease --preid=${{ inputs.alphaTag }} --verbose --first-release --yes --skip-commit
+          pnpm nx release prerelease --preid=${{ inputs.alphaTag }} --verbose --first-release --yes
         env:
           GITHUB_TOKEN: ${{ secrets.PAT }}
 
