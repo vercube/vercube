@@ -24,7 +24,6 @@
     "@vercube/di": "workspace:*",
     "@vercube/logger": "workspace:*"
   },
-  "devDependencies": {},
   "publishConfig": {
     "access": "public"
   }
