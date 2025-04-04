@@ -22,9 +22,9 @@
   ],
   "dependencies": {
     "@vercube/core": "workspace:*",
-    "@vercube/di": "workspace:*"
+    "@vercube/di": "workspace:*",
+    "@vercube/logger": "workspace:*"
   },
-  "devDependencies": {},
   "publishConfig": {
     "access": "public"
   }

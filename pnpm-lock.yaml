@@ -101,6 +101,9 @@ importers:
       '@vercube/di':
         specifier: workspace:*
         version: link:../di
+      '@vercube/logger':
+        specifier: workspace:*
+        version: link:../logger
 
   packages/cli:
     dependencies:

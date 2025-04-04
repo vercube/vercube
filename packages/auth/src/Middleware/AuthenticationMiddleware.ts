@@ -2,6 +2,7 @@ import { type BaseMiddleware, type MiddlewareOptions, UnauthorizedError } from '
 import { Container, Inject, InjectOptional } from '@vercube/di';
 import { AuthenticationProvider } from '../Services/AuthenticationProvider';
 import { AuthenticationTypes } from '../Types/AuthenticationTypes';
+import { Logger } from '@vercube/logger';
 
 /**
  * Middleware for authentication
@@ -19,6 +20,9 @@ export class AuthenticationMiddleware implements BaseMiddleware<AuthenticationTy
 
   @InjectOptional(AuthenticationProvider)
   private gAuthenticationProvider: AuthenticationProvider | null;
+
+  @InjectOptional(Logger)
+  private gLogger: Logger | null;
 
   /**
    * Middleware function that processes the HTTP event.
@@ -40,7 +44,7 @@ export class AuthenticationMiddleware implements BaseMiddleware<AuthenticationTy
     }
 
     if (!provider) {
-      console.warn('AuthenticationMiddleware::AuthenticationProvider is not registered');
+      this.gLogger?.warn('AuthenticationMiddleware::AuthenticationProvider is not registered');
       return;
     }
 

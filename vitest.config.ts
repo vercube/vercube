@@ -17,6 +17,8 @@ export default defineConfig({
         'packages/nx/**',
         // this is only proxy for the cli package
         'packages/create-app/**',
+        // this package is not needed to be tested
+        'packages/cli/**',
         // we should no test types
         'packages/**/Types/**',
         // bundlers
