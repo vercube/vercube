@@ -15,8 +15,12 @@ export default defineConfig({
         'packages/**/src/**/*.mock.ts',
         // this is only for nx workspace build
         'packages/nx/**',
+        // this is only proxy for the cli package
+        'packages/create-app/**',
         // we should no test types
         'packages/**/Types/**',
+        // bundlers
+        'packages/devkit/src/Bundlers/**',
       ],
     },
   },

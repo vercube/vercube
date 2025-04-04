@@ -1,5 +1,5 @@
 import { createHooks } from 'hookable';
-import type { DevKitTypes } from '../Support/DevKitTypes';
+import type { DevKitTypes } from '../Types/DevKitTypes';
 import { loadVercubeConfig } from '@vercube/core';
 
 /**

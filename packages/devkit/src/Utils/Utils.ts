@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
  
-import type { DevKitTypes } from '../Support/DevKitTypes';
+import type { DevKitTypes } from '../Types/DevKitTypes';
 import { build as rolldownBuild, watch as rolldownWatch } from '../Bundlers/Rolldown';
 
 /**
