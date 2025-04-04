@@ -37,12 +37,15 @@ jobs:
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      # - name: NX Release Nightly
-      #   run: |
-      #     pnpm nx release prerelease --preid=nightly --verbose --yes --skip-commit
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.PAT }}
-      #     NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Test
+        run: pnpm test
+
+      - name: NX Release Nightly
+        run: |
+          pnpm nx release prerelease --preid=nightly --verbose --yes
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Push tags and commits
         run: git push --follow-tags origin main
