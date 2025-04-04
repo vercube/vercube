@@ -25,24 +25,6 @@ class Container {
 }
 ```
 
-## Constructor
-
-### `constructor(options?: ContainerOptions)`
-
-Creates a new container instance with optional configuration.
-
-```typescript
-interface ContainerOptions {
-  autoBindInjectable?: boolean;  // Automatically bind classes with @Injectable decorator
-  strictMode?: boolean;          // Enable strict mode for dependency resolution
-}
-
-const container = new Container({
-  autoBindInjectable: true,
-  strictMode: false
-});
-```
-
 ## Registration Methods
 
 ### `bind<T>(key: ServiceKey<T>, value?: ServiceValue<T>): void`
@@ -211,10 +193,11 @@ Creates a new instance of a class, automatically resolving its dependencies.
 
 ```typescript
 class UserController {
-  constructor(
-    @Inject(UserService) private userService: UserService,
-    @Inject(Logger) private logger: Logger
-  ) {}
+  @Inject(UserService)
+  private userService: UserService,
+  
+  @Inject(Logger)
+  private logger: Logger
 }
 
 const controller = container.resolve(UserController);
@@ -293,11 +276,14 @@ container.bindInstance(Database, db);
 
 // Use the services
 class App {
-  constructor(
-    @Inject(ConfigService) private config: ConfigService,
-    @Inject(Logger) private logger: Logger,
-    @Inject(Database) private db: Database
-  ) {}
+  @Inject(ConfigService)
+  private config!: ConfigService;
+  
+  @Inject(Logger)
+  private logger!: Logger;
+
+  @Inject(Database)
+  private db!: Database;
 }
 ```
 

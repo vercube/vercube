@@ -63,7 +63,8 @@ type Constructor<T> = new (...args: any[]) => T;
 
 ```typescript
 class UserService {
-  constructor(private logger: Logger) {}
+  @Inject(Logger)
+  private logger!: Logger;
 }
 
 const UserServiceConstructor: Constructor<UserService> = UserService;
@@ -222,7 +223,6 @@ type InjectableClass<T> = Constructor<T> & {
 #### Examples
 
 ```typescript
-@Injectable()
 class UserService {}
 
 const InjectableUserService: InjectableClass<UserService> = UserService;
@@ -283,54 +283,14 @@ container.bind<IUserRepository>('IUserRepository', UserRepository);
 
 // Use services with type safety
 class UserService {
-  constructor(
-    @Inject('ILogger') private logger: ILogger,
-    @Inject('IUserRepository') private userRepository: IUserRepository
-  ) {}
+  @Inject('ILogger')
+  private logger!: ILogger;
+  
+  @Inject('IUserRepository')
+  private userRepository!: IUserRepository;
 }
 ```
 
 ### Type-Safe Service Resolution
 
-```typescript
-// Get a service with type checking
-const logger = container.get<ILogger>('ILogger');
-logger.info('Hello, world!');
-
-// Get an optional service
-const optionalLogger = container.getOptional<ILogger>('ILogger');
-if (optionalLogger) {
-  optionalLogger.info('Logger is available');
-}
-
-// Resolve a class with dependencies
-const userService = container.resolve<UserService>(UserService);
 ```
-
-## Best Practices
-
-1. **Use Interfaces for Service Keys**
-   - Better abstraction
-   - Easier to swap implementations
-   - More maintainable code
-
-2. **Use Type Parameters**
-   - Leverage TypeScript's type system
-   - Catch errors at compile time
-   - Better IDE support
-
-3. **Use Type Guards**
-   - Safe type checking
-   - Runtime type safety
-   - Better error handling
-
-4. **Document Complex Types**
-   - Use JSDoc comments
-   - Provide examples
-   - Explain type constraints
-
-## See Also
-
-- [Container](./container.md) - The core container class and its methods
-- [Decorators](./decorators.md) - Available decorators for dependency injection
-- [Advanced Topics](./advanced.md) - Advanced usage patterns and techniques 

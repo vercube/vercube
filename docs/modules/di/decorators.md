@@ -6,16 +6,15 @@ Vercube provides a set of decorators for dependency injection. These decorators 
 
 ### `@Inject`
 
-The `@Inject` decorator is used to inject a required dependency into a class property or constructor parameter.
+The `@Inject` decorator is used to inject a required dependency into a class property.
 
 ```typescript
 class UserService {
   @Inject(Logger)
   private logger!: Logger;
-
-  constructor(
-    @Inject(UserRepository) private userRepository: UserRepository
-  ) {}
+  
+  @Inject(UserRepository)
+  private userRepository: UserRepository;
 }
 ```
 
@@ -25,7 +24,7 @@ class UserService {
 
 #### Usage Notes
 
-- Can be used on class properties or constructor parameters
+- Can only be used on class properties
 - The service must be registered in the container
 - Throws an error if the service is not found
 
@@ -37,10 +36,9 @@ The `@InjectOptional` decorator is used to inject an optional dependency. If the
 class UserService {
   @InjectOptional(Logger)
   private logger?: Logger;
-
-  constructor(
-    @InjectOptional(UserRepository) private userRepository?: UserRepository
-  ) {}
+  
+  @InjectOptional(UserRepository)
+  private userRepository?: UserRepository;
 }
 ```
 
@@ -50,7 +48,7 @@ class UserService {
 
 #### Usage Notes
 
-- Can be used on class properties or constructor parameters
+- Can only be used on class properties
 - The service does not need to be registered
 - The property type should be marked as optional with `?`
 
@@ -77,18 +75,6 @@ class UserService {
 - Can be async
 - Multiple `@Init` methods are executed in the order they are defined
 
-### `@Injectable`
-
-The `@Injectable` decorator marks a class as injectable, allowing it to be automatically registered with the container.
-
-```typescript
-@Injectable()
-class UserService {
-  @Inject(Logger)
-  private logger!: Logger;
-}
-```
-
 #### Usage Notes
 
 - When `autoBindInjectable` is enabled in the container options, decorated classes are automatically registered
@@ -100,12 +86,12 @@ class UserService {
 ### Basic Dependency Injection
 
 ```typescript
-@Injectable()
 class UserController {
-  constructor(
-    @Inject(UserService) private userService: UserService,
-    @Inject(Logger) private logger: Logger
-  ) {}
+  @Inject(UserService)
+  private userService: UserService;
+  
+  @Inject(Logger)
+  private logger: Logger;
 
   async getUser(id: string) {
     this.logger.info(`Fetching user ${id}`);
@@ -117,7 +103,6 @@ class UserController {
 ### Optional Dependencies
 
 ```typescript
-@Injectable()
 class NotificationService {
   @InjectOptional(EmailService)
   private emailService?: EmailService;
@@ -139,7 +124,6 @@ class NotificationService {
 ### Initialization
 
 ```typescript
-@Injectable()
 class DatabaseService {
   @Inject(Logger)
   private logger!: Logger;
@@ -171,7 +155,6 @@ interface ILogger {
   error(message: string): void;
 }
 
-@Injectable()
 class ConsoleLogger implements ILogger {
   info(message: string): void {
     console.log(message);
@@ -182,7 +165,6 @@ class ConsoleLogger implements ILogger {
   }
 }
 
-@Injectable()
 class UserService {
   @Inject(ILogger)
   private logger!: ILogger;
@@ -206,12 +188,7 @@ class UserService {
    - Handle async initialization
    - Perform setup tasks after injection
 
-4. **Use Interfaces with `@Injectable`**
-   - Better abstraction
-   - Easier to swap implementations
-   - More maintainable code
-
-5. **Handle Optional Dependencies Gracefully**
+4. **Handle Optional Dependencies Gracefully**
    - Check for existence before use
    - Provide fallback behavior
    - Document optional nature

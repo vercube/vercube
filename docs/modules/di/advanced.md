@@ -70,7 +70,6 @@ resolve<T>(target: Constructor<T>): T {
 You can implement lifecycle hooks to manage service resources:
 
 ```typescript
-@Injectable()
 class DatabaseService {
   private connection?: Connection;
 
@@ -143,12 +142,12 @@ class NotificationService {
 You can compose services to create more complex functionality:
 
 ```typescript
-@Injectable()
 class CompositeLogger implements ILogger {
-  constructor(
-    @Inject(FileLogger) private fileLogger: FileLogger,
-    @Inject(ConsoleLogger) private consoleLogger: ConsoleLogger
-  ) {}
+    @Inject(FileLogger)
+    private fileLogger: FileLogger;
+
+    @Inject(ConsoleLogger)
+    private consoleLogger: ConsoleLogger;
 
   info(message: string): void {
     this.fileLogger.info(message);

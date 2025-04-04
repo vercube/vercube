@@ -214,25 +214,18 @@ const userService = container.resolve(UserService);
 
 When working with Vercube's DI system, consider these best practices:
 
-1. **Use Constructor Injection When Possible**
+1. **Use Property Injection**
    ```typescript
-   class UserController {
-     constructor(
-       @Inject(UserService) private userService: UserService,
-       @Inject(Logger) private logger: Logger
-     ) {}
+   class UserService {
+     @Inject(Logger)
+     private logger!: Logger;
+     
+     @Inject(UserRepository)
+     private userRepository!: UserRepository;
    }
    ```
 
-2. **Register Services Early**
-   ```typescript
-   // In your application bootstrap
-   container.bind(Logger, ConsoleLogger);
-   container.bind(UserService);
-   container.bind(UserController);
-   ```
-
-3. **Use Interfaces for Better Abstraction**
+2. **Use Interfaces for Better Abstraction**
    ```typescript
    interface ILogger {
      info(message: string): void;
@@ -245,7 +238,7 @@ When working with Vercube's DI system, consider these best practices:
    }
    ```
 
-4. **Keep Services Focused**
+3. **Keep Services Focused**
    ```typescript
    // Good
    class UserService {

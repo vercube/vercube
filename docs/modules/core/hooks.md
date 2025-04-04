@@ -104,7 +104,8 @@ class NotificationService {
   @Inject(HooksService)
   private hooksService: HooksService;
   
-  constructor() {
+  @Init()
+  private init() {
     // Register a listener for the UserCreatedHook
     this.hooksService.on(UserCreatedHook, async (data) => {
       await this.sendWelcomeEmail(data.user);
@@ -167,7 +168,8 @@ class NotificationService {
   
   private hookId: HooksTypes.HookID;
   
-  constructor() {
+  @Init()
+  private init() {
     // Register a listener and store the ID
     this.hookId = this.hooksService.on(UserCreatedHook, async (data) => {
       await this.sendWelcomeEmail(data.user);
