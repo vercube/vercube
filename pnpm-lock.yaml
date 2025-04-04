@@ -78,7 +78,7 @@ importers:
         specifier: 0.13.5
         version: 0.13.5(@swc/core@1.11.16(@swc/helpers@0.5.15))(typescript@5.8.2)
       vitepress:
-        specifier: ^1.6.3
+        specifier: 1.6.3
         version: 1.6.3(@algolia/client-search@5.20.3)(@types/node@22.14.0)(axios@1.8.4)(postcss@8.5.3)(sass-embedded@1.86.2)(search-insights@2.17.3)(typescript@5.8.2)
       vitepress-plugin-mermaid:
         specifier: 2.0.17
@@ -114,8 +114,8 @@ importers:
         specifier: 2.0.3
         version: 2.0.3
       std-env:
-        specifier: 3.8.1
-        version: 3.8.1
+        specifier: 3.9.0
+        version: 3.9.0
       tinyexec:
         specifier: 1.0.1
         version: 1.0.1
@@ -4862,8 +4862,8 @@ packages:
     resolution: {integrity: sha512-XlkWvfIm6RmsWtNJx+uqtKLS8eqFbxUg0ZzLXqY0caEy9l7hruX8IpiDnjsLavoBgqCCR71TqWO8MaXYheJ3RQ==}
     engines: {node: '>=10'}
 
-  std-env@3.8.1:
-    resolution: {integrity: sha512-vj5lIj3Mwf9D79hBkltk5qmkFI+biIKWS2IBxEyEU3AX1tUf7AoL8nSazCOiiqQsGKIq01SClsKEzweu34uwvA==}
+  std-env@3.9.0:
+    resolution: {integrity: sha512-UGvjygr6F6tpH7o2qyqR6QYpwraIjKSdtzyBdyytFOHmPZY917kwdwLG0RbOjWOnKmnm3PeHjaoLLMie7kPLQw==}
 
   string-argv@0.3.2:
     resolution: {integrity: sha512-aqD2Q0144Z+/RqG52NeHEkZauTAUWJO8c6yTftGJKO3Tja5tUgIfmIl6kExvhtxSDP7fXB6DvzkfMpCd/F3G+Q==}
@@ -10459,7 +10459,7 @@ snapshots:
     dependencies:
       escape-string-regexp: 2.0.0
 
-  std-env@3.8.1: {}
+  std-env@3.9.0: {}
 
   string-argv@0.3.2: {}
 

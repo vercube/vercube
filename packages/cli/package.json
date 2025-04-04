@@ -30,7 +30,7 @@
     "giget": "2.0.0",
     "nypm": "0.6.0",
     "pathe": "2.0.3",
-    "std-env": "3.8.1",
+    "std-env": "3.9.0",
     "tinyexec": "1.0.1"
   },
   "publishConfig": {
