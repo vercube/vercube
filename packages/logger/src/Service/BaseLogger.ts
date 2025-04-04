@@ -40,7 +40,7 @@ export class BaseLogger implements Logger {
     this.fProviders.clear();
 
     // register providers from options
-    for (const logger of options?.providers ?? []) {
+    for (const logger of options.providers) {
       try {
         // Resolve provider instance
         const provider = this.gContainer.resolve<LoggerProvider>(logger.provider);
@@ -110,7 +110,6 @@ export class BaseLogger implements Logger {
 
     // process message through appenders
     for (const [, provider] of providersToProcess) {
-      
       provider.processMessage(message);
     }
   }
