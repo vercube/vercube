@@ -46,7 +46,7 @@ export class Router {
    * This method creates a new router context and triggers
    * the before and after initialization hooks.
    */
-  public init(): void {
+  public initialize(): void {
     // trigger before init hook
     this.gHooksService.trigger(RouterBeforeInitHook);
 

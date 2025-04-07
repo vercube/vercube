@@ -1,7 +1,7 @@
 import { resolve } from 'node:path';
 import { fork, type ChildProcess } from 'node:child_process';
 import consola from 'consola';
-import type { DevKitTypes } from '../Support/DevKitTypes';
+import type { DevKitTypes } from '../Types/DevKitTypes';
 
 /**
  * Creates a development server for the given application.

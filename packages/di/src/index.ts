@@ -5,7 +5,7 @@ export * from './Common/BaseDecorators';
 export * from './Decorators/Inject';
 export * from './Decorators/InjectOptional';
 export * from './Decorators/Init';
-
+export * from './Decorators/Destroy';
 // Domain
 export * from './Domain/Container';
 

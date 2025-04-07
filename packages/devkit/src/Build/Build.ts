@@ -1,4 +1,4 @@
-import type { DevKitTypes } from '../Support/DevKitTypes';
+import type { DevKitTypes } from '../Types/DevKitTypes';
 import { getBuildFunc } from '../Utils/Utils';
 
 /**

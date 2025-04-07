@@ -1,5 +1,5 @@
 import { watch as rolldownWatch } from 'rolldown';
-import { DevKitTypes } from '../../Support/DevKitTypes';
+import { DevKitTypes } from '../../Types/DevKitTypes';
 import { getRolldownConfig } from './Config';
 
 /**

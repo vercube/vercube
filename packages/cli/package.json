@@ -1,6 +1,6 @@
 {
   "name": "@vercube/cli",
-  "version": "0.0.1-alpha.11",
+  "version": "0.0.1-alpha.18",
   "description": "CLI module for Vercube framework",
   "packageManager": "pnpm@9.10.0",
   "repository": "@vercube/cli",
@@ -25,9 +25,14 @@
   },
   "dependencies": {
     "@vercube/devkit": "workspace:*",
-    "citty": "0.1.6"
+    "citty": "0.1.6",
+    "consola": "3.4.2",
+    "giget": "2.0.0",
+    "nypm": "0.6.0",
+    "pathe": "2.0.3",
+    "std-env": "3.9.0",
+    "tinyexec": "1.0.1"
   },
-  "devDependencies": {},
   "publishConfig": {
     "access": "public"
   }

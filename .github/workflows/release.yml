@@ -50,6 +50,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Test
+        run: pnpm test
+
       - name: Release (alpha)
         if: inputs.version == 'alpha'
         run: |
@@ -57,7 +60,7 @@ jobs:
             echo "❌ Alpha tag is required"
             exit 1
           fi
-          pnpm nx release prerelease --preid=${{ inputs.alphaTag }} --verbose --first-release --yes --skip-commit
+          pnpm nx release prerelease --preid=${{ inputs.alphaTag }} --verbose --first-release --yes
         env:
           GITHUB_TOKEN: ${{ secrets.PAT }}
 

@@ -6,7 +6,7 @@ import {
 import { Container, Inject, InjectOptional } from '@vercube/di';
 import { AuthorizationTypes } from '../Types/AuthorizationTypes';
 import { AuthorizationProvider } from '../Services/AuthorizationProvider';
-
+import { Logger } from '@vercube/logger';
 /**
  * Middleware for authorization
  * @class AuthorizationMiddleware
@@ -23,6 +23,9 @@ export class AuthorizationMiddleware<T> implements BaseMiddleware {
 
   @InjectOptional(AuthorizationProvider)
   private gAuthorizationProvider: AuthorizationProvider<T> | null;
+
+  @InjectOptional(Logger)
+  private gLogger: Logger | null;
 
   /**
    * Middleware function that processes the HTTP event.
@@ -44,7 +47,7 @@ export class AuthorizationMiddleware<T> implements BaseMiddleware {
     }
 
     if (!provider) {
-      console.warn('AuthorizationMiddleware::AuthorizationProvider is not registered');
+      this.gLogger?.warn('AuthorizationMiddleware::AuthorizationProvider is not registered');
       return;
     }
 

@@ -1,0 +1,17 @@
+{
+  "name": "create-vercube",
+  "version": "0.0.1-alpha.18",
+  "description": "Create a Vercube app in seconds",
+  "license": "MIT",
+  "repository": "@vercube/create-app",
+  "main": "bin/create-vercube.js",
+  "bin": {
+    "create-vercube": "bin/create-vercube.js"
+  },
+  "files": [
+    "bin"
+  ],
+  "dependencies": {
+    "@vercube/cli": "workspace:*"
+  }
+}
