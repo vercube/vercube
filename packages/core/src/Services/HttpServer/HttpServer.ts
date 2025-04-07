@@ -68,7 +68,14 @@ export class HttpServer {
       port,
       fetch: this.handleRequest.bind(this),
     });
+  }
 
+  /**
+   * Listens for incoming requests on the HTTP server
+   * 
+   * @returns {Promise<void>} A promise that resolves when the server is ready to listen
+   */
+  public async listen(): Promise<void> {
     await this.fServer.ready();
   }
 

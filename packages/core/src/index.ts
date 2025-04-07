@@ -42,6 +42,9 @@ export * from './Services/Plugins/BasePlugin';
 // Middlewares
 export * from './Services/Middleware/BaseMiddleware';
 
+// HttpServer
+export * from './Services/HttpServer/HttpServer';
+
 // Errors
 export * from './Errors/HttpError';
 export * from './Errors/Http/BadRequestError';

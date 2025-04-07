@@ -63,7 +63,7 @@ export class App {
       this.gStaticRequestHandler.initialize(this.fConfig.server?.static);
     }
     
-    this.gRouter.init();
+    this.gRouter.initialize();
   }
 
   /**
@@ -92,6 +92,11 @@ export class App {
 
     // initialize container with all decorators
     initializeContainer(this.container);
+
+    // listen for incoming requests
+    await this.gHttpServer.listen();
+
+    this.fIsInitialized = true;
   }
 
   /**
