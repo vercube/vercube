@@ -44,7 +44,7 @@
     "globals": "16.0.0",
     "lint-staged": "15.5.0",
     "mermaid": "11.6.0",
-    "nx": "20.7.1",
+    "nx": "20.7.2",
     "oxc-transform": "0.62.0",
     "rolldown": "1.0.0-beta.7",
     "sass-embedded": "^1.86.3",
