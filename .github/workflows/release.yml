@@ -51,7 +51,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Test
-        run: pnpm test
+        run: pnpm build && pnpm test
 
       - name: Release (alpha)
         if: inputs.version == 'alpha'
