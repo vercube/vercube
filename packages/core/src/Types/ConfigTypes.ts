@@ -53,6 +53,11 @@ export namespace ConfigTypes {
     entry?: string;
 
     /**
+     * Defines to pass to the build.
+     */
+    define?: Record<string, string>;
+
+    /**
      * Output configuration for build artifacts.
      */
     output?: {
