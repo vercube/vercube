@@ -42,7 +42,7 @@
     "eslint": "9.24.0",
     "eslint-config-unjs": "0.4.2",
     "globals": "16.0.0",
-    "lint-staged": "15.5.0",
+    "lint-staged": "15.5.1",
     "mermaid": "11.6.0",
     "nx": "20.7.2",
     "oxc-transform": "0.63.0",
