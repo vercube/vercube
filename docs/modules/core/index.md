@@ -17,7 +17,7 @@ The Core module provides the following key components:
 
 - [Application](./application.md) - Application lifecycle and configuration
 - [Decorators](./decorators.md) - Core decorators for defining application components
-- [Error Handling](./error-handling.md) - Error handling system
+- [Error Handling](/guide/error-handling) - Error handling system
 - [Hooks](./hooks.md) - Application lifecycle hooks
 - [Validation](./validation.md) - Data validation system
 

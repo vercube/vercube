@@ -4,36 +4,17 @@ Vercube is built with a modular architecture, allowing you to use only the compo
 
 ## Core Modules
 
-### Core
+### [Core](./core/index.md)
 
 The Core module is the foundation of the Vercube framework, providing essential functionality for building web applications.
 
-- [Core Documentation](./core/index.md) - Overview of the Core module
-- [App](./core/app.md) - Application lifecycle and configuration
-- [Container](./core/container.md) - Dependency injection container
-- [Router](./core/router.md) - Routing system
-- [Middleware](./core/middleware.md) - Middleware system
-- [Error Handling](./core/error-handling.md) - Error handling system
-
-### DI (Dependency Injection)
+### [DI (Dependency Injection)](./di/index.md)
 
 The DI module provides a powerful dependency injection system for managing dependencies in your application.
 
-- [DI Overview](./di/index.md) - Overview of the DI system
-- [Container](./di/container.md) - Container implementation
-- [Decorators](./di/decorators.md) - DI decorators
-- [Types](./di/types.md) - Type definitions
-- [Advanced Topics](./di/advanced.md) - Advanced DI patterns
-
-### Logger
+### [Logger](./logger/index.md)
 
 The Logger module provides a flexible and extensible logging system for your application.
-
-- [Logger Overview](./logger/index.md) - Overview of the Logger system
-- [Logger Class](./logger/logger.md) - Logger implementation
-- [Providers](./logger/providers.md) - Log providers
-- [Types](./logger/types.md) - Type definitions
-- [Advanced Topics](./logger/advanced.md) - Advanced logging patterns
 
 ## Module Architecture
 
@@ -53,9 +34,3 @@ We welcome contributions to Vercube modules. If you'd like to contribute:
 2. Create a feature branch
 3. Make your changes
 4. Submit a pull request
-
-## See Also
-
-- [Getting Started](../../guide/getting-started.md) - How to get started with Vercube
-- [Architecture](../../guide/architecture.md) - Vercube architecture overview
-- [Best Practices](../../guide/best-practices.md) - Best practices for using Vercube

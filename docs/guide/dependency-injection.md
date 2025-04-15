@@ -261,7 +261,7 @@ When working with Vercube's DI system, consider these best practices:
 
 ## Detailed DI API Documentation
 
-For a complete reference of the dependency injection API in Vercube, including all available decorators, container methods, and configuration options, please refer to the [Dependency Injection API Documentation](../modules/di.md). This document provides detailed information about:
+For a complete reference of the dependency injection API in Vercube, including all available decorators, container methods, and configuration options, please refer to the [Dependency Injection API Documentation](/modules/di/). This document provides detailed information about:
 
 - The `Container` class and its methods
 - The `@Inject` and `@InjectOptional` decorators

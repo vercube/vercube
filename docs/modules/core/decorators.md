@@ -202,7 +202,7 @@ The `@Listen` decorator:
 
 ## See Also
 
-- [Application](./application.md)
-- [Error Handling](./error-handling.md)
+- [Application](/modules/core/application)
+- [Error Handling](/guide/error-handling)
 - [Validation](./validation.md)
 - [Hooks](./hooks.md)

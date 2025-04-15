@@ -64,7 +64,3 @@ Visit `http://localhost:3000` in your browser, and you should see your Vercube a
 ::: tip Hot Reload
 The development server includes hot-reloading, so your changes will be reflected immediately without needing to restart the server.
 :::
-
-## Manual Setup
-
-If you prefer to set up your project manually or integrate Vercube into an existing project, check out our [Manual Setup](/guide/manual-setup) guide.

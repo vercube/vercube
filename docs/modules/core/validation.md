@@ -164,4 +164,4 @@ When validation fails, Vercube automatically returns a validation error response
 
 - [Application](./application.md) - Application class and lifecycle
 - [Decorators](./decorators.md) - Core decorators for defining application components
-- [Error Handling](./error-handling.md) - Error handling system
+- [Error Handling](/guide/error-handling) - Error handling system
