@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { defineCommand, runMain } from 'citty';
 import { version } from '../package.json';
 import { buildCommand } from './commands/build';
