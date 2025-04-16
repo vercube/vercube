@@ -1,3 +1,13 @@
+## 0.0.1-beta.6 (2025-04-16)
+
+### 🩹 Fixes
+
+- **cli:** fix executable ([5a97201](https://github.com/vercube/vercube/commit/5a97201))
+
+### ❤️ Thank You
+
+- Oskar Lebuda
+
 # Changelog
 
 All notable changes to the Vercube project will be documented in this file.
