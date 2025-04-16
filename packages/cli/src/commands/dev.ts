@@ -14,7 +14,7 @@ export const devCommand: CommandDef = defineCommand({
     // create dev server
     createDevServer(app);
 
-    // create rollup watcher to watch for changes
+    // create rolldown watcher to watch for changes
     await watch(app);
   },
 });

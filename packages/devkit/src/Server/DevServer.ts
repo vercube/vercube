@@ -1,6 +1,7 @@
 import { resolve } from 'node:path';
 import { fork, type ChildProcess } from 'node:child_process';
 import consola from 'consola';
+import { colors } from 'consola/utils';
 import type { DevKitTypes } from '../Types/DevKitTypes';
 
 /**
@@ -41,6 +42,7 @@ export function createDevServer(app: DevKitTypes.App): DevKitTypes.DevServer {
     reloadPromise = _reload()
       .then(() => {
         consola.success({ tag: 'worker', message: 'Worker reloaded successfully' });
+        consola.log(`\n${colors.green('➜')} App listening on port ${colors.bold(app.config.server?.port ?? 3000)}`);
       })
       .catch((error) => {
         consola.error({ tag: 'worker', message: 'Failed to reload worker', error });
