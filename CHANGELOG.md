@@ -1,3 +1,7 @@
+## 0.0.1 (2025-04-16)
+
+This was a version bump only, there were no code changes.
+
 ## 0.0.1-beta.7 (2025-04-16)
 
 ### 🩹 Fixes
