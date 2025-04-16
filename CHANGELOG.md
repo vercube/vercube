@@ -1,3 +1,13 @@
+## 0.0.1-beta.7 (2025-04-16)
+
+### 🩹 Fixes
+
+- **devkit:** add missing port log ([8e50595](https://github.com/vercube/vercube/commit/8e50595))
+
+### ❤️ Thank You
+
+- Oskar Lebuda
+
 ## 0.0.1-beta.6 (2025-04-16)
 
 ### 🩹 Fixes
