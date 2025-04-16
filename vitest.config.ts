@@ -26,4 +26,9 @@ export default defineConfig({
       ],
     },
   },
+  resolve: {
+    alias: {
+      '@vercube/*': './packages/$1/src',
+    },
+  },
 });

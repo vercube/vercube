@@ -20,7 +20,8 @@
     "postinstall": "simple-git-hooks && nx build @vercube/nx",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
-    "docs:preview": "vitepress preview docs"
+    "docs:preview": "vitepress preview docs",
+    "playground": "cd playground && pnpm dev"
   },
   "lint-staged": {
     "*.{js,ts}": [

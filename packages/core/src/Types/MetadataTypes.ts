@@ -1,6 +1,7 @@
 
 import type { BaseMiddleware } from '../Services/Middleware/BaseMiddleware';
-import { ValidationTypes } from './ValidationTypes';
+import type { RouterTypes } from './RouterTypes';
+import type { ValidationTypes } from './ValidationTypes';
 export namespace MetadataTypes {
 
   export interface Metadata {
@@ -36,6 +37,7 @@ export namespace MetadataTypes {
     idx: number;
     type: string;
     data?: Record<string, any>;
+    resolver?: (event: RouterTypes.RouterEvent) => Promise<unknown>;
     resolved?: unknown;
     validate?: boolean;
     validationSchema?: ValidationTypes.Schema;

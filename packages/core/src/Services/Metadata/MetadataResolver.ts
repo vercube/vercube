@@ -92,6 +92,9 @@ export class MetadataResolver {
       case 'response': {
         return event.response;
       }
+      case 'custom': {
+        return arg.data?.resolve(event);
+      }
       case 'session': {
         // TODO: add support for session
         return null; 

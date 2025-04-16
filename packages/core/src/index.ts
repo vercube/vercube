@@ -45,6 +45,9 @@ export * from './Services/Middleware/BaseMiddleware';
 // HttpServer
 export * from './Services/HttpServer/HttpServer';
 
+// Services
+export * from './Services/Metadata/MetadataResolver';
+
 // Errors
 export * from './Errors/HttpError';
 export * from './Errors/Http/BadRequestError';
@@ -61,6 +64,7 @@ export * from './Types/HooksTypes';
 export * from './Types/HttpTypes';
 export * from './Types/MetadataTypes';
 export * from './Types/ConfigTypes';
+export * from './Types/RouterTypes';
 
 // Utils
 export * from './Utils/Utils';

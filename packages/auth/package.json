@@ -1,6 +1,6 @@
 {
   "name": "@vercube/auth",
-  "version": "0.0.1-beta.0",
+  "version": "0.0.1-beta.5",
   "description": "Auth module for Vercube framework",
   "packageManager": "pnpm@9.10.0",
   "repository": "@vercube/auth",
@@ -18,7 +18,8 @@
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "dependencies": {
     "@vercube/core": "workspace:*",

@@ -23,7 +23,7 @@
     "changelog": {
       "automaticFromRef": true,
       "workspaceChangelog": {
-        "file": false,
+        "file": "CHANGELOG.md",
         "createRelease": "github"
       }
     }

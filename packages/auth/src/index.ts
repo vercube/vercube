@@ -1,11 +1,12 @@
 // Decorators
-export * from './Decorators/Authenticate';
-export * from './Decorators/Authorize';
+export * from './Decorators/Auth';
+export * from './Decorators/User';
 
 // Middlewares
-export * from './Middleware/AuthenticationMiddleware';
-export * from './Middleware/AuthorizationMiddleware';
+export * from './Middleware/AuthMiddleware';
 
 // Providers
-export * from './Services/AuthenticationProvider';
-export * from './Services/AuthorizationProvider';
+export * from './Services/AuthProvider';
+
+// Types
+export * from './Types/AuthTypes';

@@ -1,28 +1,27 @@
 import { type BaseMiddleware, type MiddlewareOptions, UnauthorizedError } from '@vercube/core';
 import { Container, Inject, InjectOptional } from '@vercube/di';
-import { AuthenticationProvider } from '../Services/AuthenticationProvider';
-import { AuthenticationTypes } from '../Types/AuthenticationTypes';
 import { Logger } from '@vercube/logger';
+import type { AuthTypes } from '../Types/AuthTypes';
+import { AuthProvider } from '../Services/AuthProvider';
 
 /**
- * Middleware for authentication
- * @class AuthenticationMiddleware
+ * Middleware for auth
  * @implements {BaseMiddleware}
- * @description Authenticates incoming request
+ * @description authorizes incoming request
  * @example
- * const middleware = new AuthenticationMiddleware();
+ * const middleware = new AuthMiddleware();
  * await middleware.use(event);
  */
-export class AuthenticationMiddleware implements BaseMiddleware<AuthenticationTypes.MiddlewareOptions> {
+export class AuthMiddleware implements BaseMiddleware<AuthTypes.MiddlewareOptions> {
 
   @Inject(Container)
   private gContainer: Container;
 
-  @InjectOptional(AuthenticationProvider)
-  private gAuthenticationProvider: AuthenticationProvider | null;
-
   @InjectOptional(Logger)
   private gLogger: Logger | null;
+
+  @InjectOptional(AuthProvider)
+  private gAuthProvider: AuthProvider | null;
 
   /**
    * Middleware function that processes the HTTP event.
@@ -35,20 +34,20 @@ export class AuthenticationMiddleware implements BaseMiddleware<AuthenticationTy
   public async onRequest(
     request: Request,
     response: Response,
-    args: MiddlewareOptions<AuthenticationTypes.MiddlewareOptions>,
+    args: MiddlewareOptions<AuthTypes.MiddlewareOptions>,
   ): Promise<void> {
-    let provider = this.gAuthenticationProvider;
+    let provider = this.gAuthProvider;
 
     if (args?.middlewareArgs?.provider) {
       provider = this.gContainer.getOptional(args.middlewareArgs.provider);
     }
 
     if (!provider) {
-      this.gLogger?.warn('AuthenticationMiddleware::AuthenticationProvider is not registered');
+      this.gLogger?.warn('AuthMiddleware::AuthProvider is not registered');
       return;
     }
 
-    const authenticationError = await provider.authenticate(request);
+    const authenticationError = await provider.validate(request, args.middlewareArgs);
 
     if (authenticationError) {
       throw new UnauthorizedError(authenticationError);

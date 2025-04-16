@@ -59,6 +59,6 @@ class QueryParamsDecorator extends BaseDecorator<QueryParamsDecoratorOptions, Me
  * @param {QueryParamsDecoratorOptions} options - The options for the decorator.
  * @return {Function} The decorator function.
  */
-export function QueryParams(options: QueryParamsDecoratorOptions): Function {
+export function QueryParams(options?: QueryParamsDecoratorOptions): Function {
   return createDecorator(QueryParamsDecorator, options);
 }
