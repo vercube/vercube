@@ -1,36 +1,8 @@
-## 0.0.1 (2025-04-16)
+## v0.0.1 (2025-04-17)
 
-This was a version bump only, there were no code changes.
+### 🎉 First Release
 
-## 0.0.1-beta.7 (2025-04-16)
-
-### 🩹 Fixes
-
-- **devkit:** add missing port log ([8e50595](https://github.com/vercube/vercube/commit/8e50595))
-
-### ❤️ Thank You
-
-- Oskar Lebuda
-
-## 0.0.1-beta.6 (2025-04-16)
-
-### 🩹 Fixes
-
-- **cli:** fix executable ([5a97201](https://github.com/vercube/vercube/commit/5a97201))
-
-### ❤️ Thank You
-
-- Oskar Lebuda
-
-# Changelog
-
-All notable changes to the Vercube project will be documented in this file.
-
-## v0.0.1-beta.1 (2023-11-15)
-
-### 🎉 First Beta Release
-
-This is the first beta release of Vercube, a next-generation Node.js framework for ultra-efficient server applications. This release introduces the core functionality of the framework and establishes the foundation for future development.
+This is the first release of Vercube, a next-generation Node.js framework for ultra-efficient server applications. This release introduces the core functionality of the framework and establishes the foundation for future development.
 
 ### ✨ Features
 
@@ -73,6 +45,6 @@ This is the first beta release of Vercube, a next-generation Node.js framework f
 
 ### ❤️ Thank You
 
-- Attila Orosz
+- Attila Orosz @attilaorosz 
 - Oskar Lebuda @OskarLebuda
-- Wojtek Gorzawski
+- Wojtek Gorzawski @wgorzawski 
