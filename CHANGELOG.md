@@ -1,3 +1,28 @@
+# Changelog
+
+## v0.0.2-beta.0
+
+[compare changes](https://github.com/vercube/vercube/compare/324e928a42733586baa08d79e6b12029db76cf8b...345b8ce956317b7db81b51488bf099d68f0113e6)
+
+### 💅 Refactors
+
+- **core:** Expose ErrorHandlerProvider ([f58e024](https://github.com/vercube/vercube/commit/f58e024))
+- **release:** Changelog generator ([4fa9860](https://github.com/vercube/vercube/commit/4fa9860))
+
+### 📦 Build
+
+- **packages:** Bump packages ([4735656](https://github.com/vercube/vercube/commit/4735656))
+- **packages:** Bump packages ([f6fd188](https://github.com/vercube/vercube/commit/f6fd188))
+
+### 🏡 Chore
+
+- **deps-dev:** Bump unplugin-isolated-decl from 0.13.6 to 0.13.7 ([9b8b4c0](https://github.com/vercube/vercube/commit/9b8b4c0))
+- **deps-dev:** Bump eslint from 9.24.0 to 9.25.0 ([b0aa5bc](https://github.com/vercube/vercube/commit/b0aa5bc))
+
+### ❤️ Contributors
+
+- Oskar Lebuda (@OskarLebuda)
+
 ## v0.0.1 (2025-04-17)
 
 ### 🎉 First Release
