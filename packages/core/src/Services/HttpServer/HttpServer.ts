@@ -91,7 +91,7 @@ export class HttpServer {
    * @returns {Promise<Response>} The HTTP response
    * @private
    */
-  private async handleRequest(request: Request): Promise<Response> {
+  public async handleRequest(request: Request): Promise<Response> {
     try {
       const route = this.gRouter.resolve({ path: request.url, method: request.method });
 

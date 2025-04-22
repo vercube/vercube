@@ -20,6 +20,8 @@
     "@vercube/di": "workspace:*",
     "@vercube/logger": "workspace:*",
     "@vercube/storage": "workspace:*",
+    "@vercube/h3": "workspace:*",
+    "h3": "npm:h3-nightly@2x",
     "tslib": "2.8.1",
     "zod": "3.24.3"
   }
