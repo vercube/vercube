@@ -48,7 +48,7 @@
     "nx": "20.8.0",
     "oxc-transform": "0.64.0",
     "rolldown": "1.0.0-beta.7",
-    "sass-embedded": "^1.86.3",
+    "sass-embedded": "^1.87.0",
     "simple-git-hooks": "2.12.1",
     "tslib": "2.8.1",
     "typescript": "5.8.3",
