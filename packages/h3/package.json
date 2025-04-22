@@ -1,0 +1,31 @@
+{
+  "name": "@vercube/h3",
+  "version": "0.0.2-beta.1",
+  "description": "H3  module for Vercube framework",
+  "packageManager": "pnpm@9.10.0",
+  "repository": "@vercube/h3",
+  "license": "MIT",
+  "sideEffects": false,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "dependencies": {
+    "@vercube/core": "workspace:*",
+    "h3": "npm:h3-nightly@2x"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

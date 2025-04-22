@@ -1,10 +1,12 @@
-import { type Container, initializeContainer, Inject } from '@vercube/di';
+import { type Container, initializeContainer, Inject, InjectOptional } from '@vercube/di';
 import { PluginsRegistry } from '../Services/Plugins/PluginsRegistry';
 import type { BasePlugin } from '../Services/Plugins/BasePlugin';
 import { ConfigTypes } from '../Types/ConfigTypes';
 import { HttpServer } from '../Services/HttpServer/HttpServer';
 import { Router } from '../Services/Router/Router';
 import { StaticRequestHandler } from '../Services/Router/StaticRequestHandler';
+import { Logger } from '@vercube/logger';
+import { colors } from '@vercube/logger';
 
 /**
  * Represents the main application class.
@@ -22,6 +24,9 @@ export class App {
 
   @Inject(StaticRequestHandler)
   private gStaticRequestHandler: StaticRequestHandler;
+
+  @InjectOptional(Logger)
+  private gLogger: Logger | null;
 
   /** Holds the initialization status of the application */
   private fIsInitialized: boolean = false;
@@ -95,6 +100,8 @@ export class App {
 
     // listen for incoming requests
     await this.gHttpServer.listen();
+
+    this.gLogger?.info(`\n${colors.green('➜')} App listening on port ${colors.bold(this.fConfig.server?.port?.toString() ?? '3000')}`);
 
     this.fIsInitialized = true;
   }

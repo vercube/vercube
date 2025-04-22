@@ -5,7 +5,7 @@ export * from './Common/Logger';
 export * from './Service/BaseLogger';
 
 // Utils
-export { isLogLevelEnabled } from './Utils/Utils';
+export { isLogLevelEnabled, colors } from './Utils/Utils';
 
 // Types
 export * from './Types/LoggerTypes';

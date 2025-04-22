@@ -204,6 +204,15 @@ importers:
 
   packages/di: {}
 
+  packages/h3:
+    dependencies:
+      '@vercube/core':
+        specifier: workspace:*
+        version: link:../core
+      h3:
+        specifier: npm:h3-nightly@2x
+        version: h3-nightly@2.0.0-20250417-222045-ac609aa
+
   packages/logger:
     dependencies:
       '@vercube/di':
@@ -239,12 +248,21 @@ importers:
       '@vercube/di':
         specifier: workspace:*
         version: link:../packages/di
+      '@vercube/h3':
+        specifier: workspace:*
+        version: link:../packages/h3
       '@vercube/logger':
         specifier: workspace:*
         version: link:../packages/logger
       '@vercube/storage':
         specifier: workspace:*
         version: link:../packages/storage
+      h3:
+        specifier: npm:h3-nightly@2x
+        version: h3-nightly@2.0.0-20250417-222045-ac609aa
+      srvx:
+        specifier: 0.4.0
+        version: 0.4.0
       tslib:
         specifier: 2.8.1
         version: 2.8.1
@@ -4015,6 +4033,15 @@ packages:
 
   graphemer@1.4.0:
     resolution: {integrity: sha512-EtKwoO6kxCL9WO5xipiHTZlSzBm7WLT627TqC/uVRd0HKmq8NXyebnNYxDoBi7wt8eTWrUrKXCOVaFq9x1kgag==}
+
+  h3-nightly@2.0.0-20250417-222045-ac609aa:
+    resolution: {integrity: sha512-EryLx6x5mGja0RqTHpdu+ItdVyB+i78AeRqac7DLeYbHW7vSEpvKwTBgTom3fMXSBwqR1OHuAF6IFqzFm9RpIw==}
+    engines: {node: '>=20.11.1'}
+    peerDependencies:
+      crossws: ^0.2.4
+    peerDependenciesMeta:
+      crossws:
+        optional: true
 
   hachure-fill@0.5.2:
     resolution: {integrity: sha512-3GKBOn+m2LX9iq+JC1064cSFprJY4jL1jCXTcpnfER5HYE2l/4EfWSGzkPa/ZDBmYI0ZOEj5VHV/eKnPGkHuOg==}
@@ -9854,6 +9881,12 @@ snapshots:
   graceful-fs@4.2.11: {}
 
   graphemer@1.4.0: {}
+
+  h3-nightly@2.0.0-20250417-222045-ac609aa:
+    dependencies:
+      cookie-es: 2.0.0
+      rou3: 0.6.0
+      srvx: 0.4.0
 
   hachure-fill@0.5.2: {}
 
