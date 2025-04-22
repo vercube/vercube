@@ -21,10 +21,8 @@
       }
     },
     "changelog": {
-      "automaticFromRef": true,
       "workspaceChangelog": {
-        "file": "CHANGELOG.md",
-        "createRelease": "github"
+        "file": false
       }
     }
   },
