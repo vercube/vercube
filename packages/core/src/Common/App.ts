@@ -110,6 +110,17 @@ export class App {
   }
 
   /**
+   * Handles an incoming HTTP request.
+   * This method is an adapter for HttpServer.handleRequest method.
+   * 
+   * @param {Request} request - The incoming HTTP request
+   * @returns {Promise<Response>} The HTTP response
+   */
+  public async fetch(request: Request): Promise<Response> {
+    return this.gHttpServer.handleRequest(request);
+  }
+
+  /**
    * Resolves and initializes the plugins for the application.
    *
    * @private
