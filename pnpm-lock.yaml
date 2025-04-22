@@ -260,9 +260,6 @@ importers:
       h3:
         specifier: npm:h3-nightly@2x
         version: h3-nightly@2.0.0-20250417-222045-ac609aa
-      srvx:
-        specifier: 0.4.0
-        version: 0.4.0
       tslib:
         specifier: 2.8.1
         version: 2.8.1
