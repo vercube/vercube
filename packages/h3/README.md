@@ -23,7 +23,6 @@
 An ultra-efficient JavaScript server framework that runs anywhere - Node.js, Bun, or Deno - with unmatched flexibility and complete configurability for developers who refuse to sacrifice speed or control.
 
 ## <a name="module">H3 Module</a>
-## <a name="module">H3 Module</a>
 The H3 module provides integration between Vercube applications and the H3 HTTP framework. 
 It allows you to:
 
