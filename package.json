@@ -46,7 +46,7 @@
     "lint-staged": "15.5.1",
     "mermaid": "11.6.0",
     "nx": "20.8.0",
-    "oxc-transform": "0.64.0",
+    "oxc-transform": "0.65.0",
     "rolldown": "1.0.0-beta.7",
     "sass-embedded": "^1.86.3",
     "simple-git-hooks": "2.12.1",
