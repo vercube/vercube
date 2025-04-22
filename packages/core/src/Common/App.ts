@@ -5,8 +5,7 @@ import { ConfigTypes } from '../Types/ConfigTypes';
 import { HttpServer } from '../Services/HttpServer/HttpServer';
 import { Router } from '../Services/Router/Router';
 import { StaticRequestHandler } from '../Services/Router/StaticRequestHandler';
-import { Logger } from '@vercube/logger';
-import { colors } from '@vercube/logger';
+import { Logger, colors } from '@vercube/logger';
 
 /**
  * Represents the main application class.
