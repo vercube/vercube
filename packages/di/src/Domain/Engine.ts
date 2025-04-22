@@ -10,6 +10,7 @@ import { Container } from './Container';
  */
 export interface IClassDep {
   propertyName: string;
+  propertyIndex: number;
   dependency: IOC.ServiceKey;
   type: IOC.DependencyType;
 }
@@ -34,13 +35,15 @@ const ROOT_PROTO: object = Object.getPrototypeOf({});
 /**
  * This method registers @Inject() in particular class.
  * @param prototype class prototype for which we register @Inject()
- * @param propertyName name of property that is inejcted
+ * @param propertyName name of property that is injected
+ * @param propertyIndex index of property that is injected
  * @param dependency what we should inject there
  * @param type type of dependency (standard or optional dependency)
  */
 function registerInject(
   prototype: IOC.Prototype,
   propertyName: string,
+  propertyIndex: number,
   dependency: IOC.ServiceKey,
   type: IOC.DependencyType,
 ): void {
@@ -57,6 +60,7 @@ function registerInject(
 
   const newDep: IClassDep = {
     propertyName: propertyName,
+    propertyIndex: propertyIndex,
     dependency: dependency,
     type: type,
   };
@@ -76,12 +80,13 @@ function getEntryForClass(classType: IOC.Newable<unknown>): IClassMapEntry | nul
 /**
  * Returns array of dependencies for particular class instance.
  * @param instance class instance
+ * @param onBasePrototype whether to use the base prototype instead of object prototype
  * @returns array of @Inject dependencies defined for this class
  */
-function getDeps(instance: IOC.Instance): IClassDep[] {
+function getDeps(instance: IOC.Instance, onBasePrototype = false): IClassDep[] {
 
   // get info for classmap, fallback to empty array if its not defined
-  const prototype: IOC.Prototype | null = Object.getPrototypeOf(instance);
+  const prototype: IOC.Prototype | null = onBasePrototype ? instance.prototype : Object.getPrototypeOf(instance);
   if (!prototype) {
     return [];
   }

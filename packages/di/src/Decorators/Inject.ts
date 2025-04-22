@@ -1,4 +1,4 @@
-import type { IDecoratedPrototype } from '../Utils/Utils';
+import type { DecoratorTarget } from '../Utils/Utils';
 import { IOCEngine } from '../Domain/Engine';
 import { IOC } from '../Types/IOCTypes';
 
@@ -8,7 +8,7 @@ import { IOC } from '../Types/IOCTypes';
  * @returns decorator
  */
 export function Inject(key: IOC.ServiceKey): Function {
-  return (target: IDecoratedPrototype, propertyName: string) => {
-    IOCEngine.registerInject(target, propertyName, key, IOC.DependencyType.STANDARD);
+  return (target: DecoratorTarget, propertyName: string, propertyIndex: number) => {
+    IOCEngine.registerInject(typeof target === 'function' ? target.prototype : target, propertyName, propertyIndex, key, IOC.DependencyType.STANDARD);
   };
 }
