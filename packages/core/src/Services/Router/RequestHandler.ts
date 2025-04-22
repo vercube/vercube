@@ -34,10 +34,6 @@ export class RequestHandler {
   @Inject(Container)
   private gContainer!: Container;
 
-  /** Provider for handling errors during request processing */
-  @Inject(ErrorHandlerProvider)
-  private gErrorHandlerProvider: ErrorHandlerProvider;
-
   @Inject(GlobalMiddlewareRegistry)
   private gGlobalMiddlewareRegistry: GlobalMiddlewareRegistry;
 
@@ -124,8 +120,8 @@ export class RequestHandler {
           if (hookResponse instanceof Response) {
             return hookResponse;
           }
-        } catch (error) {
-          return this.gErrorHandlerProvider.handleError(error);
+        } catch (error_) {
+          this.gContainer.get(ErrorHandlerProvider).handleError(error_);
         }
       }
 
@@ -156,8 +152,8 @@ export class RequestHandler {
           if (hookResponse !== null) {
             fakeResponse = this.processOverrideResponse(hookResponse!, fakeResponse);
           }
-        } catch (error) {
-          return this.gErrorHandlerProvider.handleError(error);
+        } catch (error_) {
+          this.gContainer.get(ErrorHandlerProvider).handleError(error_);
         }
       }
 
@@ -171,7 +167,7 @@ export class RequestHandler {
       });
 
     } catch (error_) {
-      return this.gErrorHandlerProvider.handleError(error_);
+      return this.gContainer.get(ErrorHandlerProvider).handleError(error_);
     }
   }
 

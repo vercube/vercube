@@ -1,4 +1,4 @@
-import { Inject } from '@vercube/di';
+import { Container, Inject } from '@vercube/di';
 import { ConfigTypes, NotFoundError } from '@vercube/core';
 import { serve, type Server} from 'srvx';
 import { Router } from '../Router/Router';
@@ -16,6 +16,12 @@ import { StaticRequestHandler } from '../Router/StaticRequestHandler';
 export class HttpServer {
 
   /**
+   * DI container for resolving dependencies
+   */
+  @Inject(Container)
+  private gContainer: Container;
+
+  /**
    * Router service for resolving routes
    */
   @Inject(Router)
@@ -26,12 +32,6 @@ export class HttpServer {
    */
   @Inject(RequestHandler)
   private gRequestHandler: RequestHandler;
-
-  /**
-   * Error handler provider for managing error responses
-   */
-  @Inject(ErrorHandlerProvider)
-  private gErrorHandlerProvider: ErrorHandlerProvider;
 
   /**
    * Static server for serving static files
@@ -56,12 +56,12 @@ export class HttpServer {
     this.fServer = serve({
       bun: {
         error: (error: Error) => {
-          return this.gErrorHandlerProvider.handleError(error);
+          return this.gContainer.get(ErrorHandlerProvider).handleError(error);
         },
       },
       deno: {
         onError: (error: Error) => {
-          return this.gErrorHandlerProvider.handleError(error);
+          return this.gContainer.get(ErrorHandlerProvider).handleError(error);
         },
       },
       hostname: host,
@@ -108,7 +108,7 @@ export class HttpServer {
   
       return this.gRequestHandler.handleRequest(request, route);
     } catch (error) {
-      return this.gErrorHandlerProvider.handleError(error);
+      return this.gContainer.get(ErrorHandlerProvider).handleError(error);
     }
     
   }

@@ -41,6 +41,7 @@ export * from './Services/Plugins/BasePlugin';
 
 // Middlewares
 export * from './Services/Middleware/BaseMiddleware';
+export * from './Services/Middleware/GlobalMiddlewareRegistry';
 
 // HttpServer
 export * from './Services/HttpServer/HttpServer';

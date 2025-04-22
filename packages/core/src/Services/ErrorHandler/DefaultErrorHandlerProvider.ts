@@ -16,13 +16,13 @@ export class DefaultErrorHandlerProvider extends ErrorHandlerProvider {
 
   /**
    * Handles an error that occurred during request processing
-   * 
+   *
    * @param error - The Error object containing error details
    * @returns Promise<Response> | Response - The response to be sent to the client
    */
   public handleError(error: Error): Response {
 
-    const _internalError = new InternalServerError();
+    const _internalError = new InternalServerError(error?.message ?? 'Internal server error');
     const status = (error as any)?.status ?? 500;
 
     // check if the error is known error type and return it.
@@ -32,6 +32,6 @@ export class DefaultErrorHandlerProvider extends ErrorHandlerProvider {
 
     this.gLogger.error(error);
 
-    return new Response(JSON.stringify({ ...(error?.cause ?? _internalError.cause!) }, undefined, 2), { status });
+    return new Response(JSON.stringify({ ...(error?.cause ?? _internalError) }, undefined, 2), { status });
   }
 }

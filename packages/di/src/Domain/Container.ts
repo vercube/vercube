@@ -84,6 +84,7 @@ export class Container {
     const existingServiceDef = this.fServices.get(key);
     if (existingServiceDef) {
       this.internalDispose(existingServiceDef);
+      this.fServices.delete(key);
     }
 
     this.fServices.set(key, newDef);
@@ -461,6 +462,7 @@ export class Container {
         // it might not exist yet because container is in initializing phase..
         if (existingInstance) {
           destroyDecorators(existingInstance, this);
+          this.fSingletonInstances.delete(def.serviceKey);
         }
         break;
       }

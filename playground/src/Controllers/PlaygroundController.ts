@@ -176,4 +176,13 @@ export default class PlaygroundController {
     return { message: 'Hello, world!' };
   }
 
+  /**
+   * Handles GET requests to the /error-throw endpoint.
+   * @returns {Promise<{ message: string }>} A promise that resolves to an object containing a greeting message.
+   */
+  @Get('/error-throw')
+  public async errorThrow(): Promise<{ message: string }> {
+    throw new Error('Test error');
+  }
+
 }
