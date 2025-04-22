@@ -1,8 +1,20 @@
 # Changelog
 
+## v0.0.2-beta.1
+
+[compare changes](https://github.com/vercube/vercube/compare/v0.0.2-beta.0...v0.0.2-beta.1)
+
+### 🩹 Fixes
+
+- **core:** Fix error handling override ([9adff07](https://github.com/vercube/vercube/commit/9adff07))
+
+### ❤️ Contributors
+
+- Oskar Lebuda (@OskarLebuda)
+
 ## v0.0.2-beta.0
 
-[compare changes](https://github.com/vercube/vercube/compare/324e928a42733586baa08d79e6b12029db76cf8b...345b8ce956317b7db81b51488bf099d68f0113e6)
+[compare changes](https://github.com/vercube/vercube/compare/v0.0.1...v0.0.2-beta.0)
 
 ### 💅 Refactors
 
