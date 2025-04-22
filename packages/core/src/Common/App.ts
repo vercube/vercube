@@ -100,7 +100,11 @@ export class App {
     // listen for incoming requests
     await this.gHttpServer.listen();
 
-    this.gLogger?.info(`\n${colors.green('➜')} App listening on port ${colors.bold(this.fConfig.server?.port?.toString() ?? '3000')}`);
+    this.gLogger?.info(
+      `\n${colors.green('➜')} App listening on port ${colors.bold(
+        this.fConfig.server?.port?.toString() ?? '3000',
+      )}`,
+    );
 
     this.fIsInitialized = true;
   }
