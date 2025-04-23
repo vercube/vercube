@@ -1,5 +1,39 @@
 # Changelog
 
+## v0.0.1...v0.0.2
+
+[compare changes](https://github.com/vercube/vercube/compare/v0.0.1...v0.0.2)
+
+### 🚀 Enhancements
+
+- **h3:** Add h3 integration ([#248](https://github.com/vercube/vercube/pull/248))
+- **core:** Add fetch method ([#249](https://github.com/vercube/vercube/pull/249))
+
+### 🩹 Fixes
+
+- **core:** Fix error handling override ([9adff07](https://github.com/vercube/vercube/commit/9adff07))
+
+### 💅 Refactors
+
+- **core:** Expose ErrorHandlerProvider ([f58e024](https://github.com/vercube/vercube/commit/f58e024))
+
+### 📖 Documentation
+
+- **h3:** Add h3 docs ([64c037a](https://github.com/vercube/vercube/commit/64c037a))
+
+### 📦 Build
+
+- **packages:** Bump packages ([4735656](https://github.com/vercube/vercube/commit/4735656))
+
+### 🏡 Chore
+
+- **deps-dev:** Bump unplugin-isolated-decl from 0.13.6 to 0.13.7 ([9b8b4c0](https://github.com/vercube/vercube/commit/9b8b4c0))
+- **deps-dev:** Bump eslint from 9.24.0 to 9.25.0 ([b0aa5bc](https://github.com/vercube/vercube/commit/b0aa5bc))
+
+### ❤️ Contributors
+
+- Oskar Lebuda (@OskarLebuda)
+
 ## v0.0.2-beta.1
 
 [compare changes](https://github.com/vercube/vercube/compare/v0.0.2-beta.0...v0.0.2-beta.1)
