@@ -153,8 +153,8 @@ importers:
         specifier: 2.0.3
         version: 2.0.3
       rou3:
-        specifier: 0.6.0
-        version: 0.6.0
+        specifier: 0.6.1
+        version: 0.6.1
       srvx:
         specifier: 0.4.0
         version: 0.4.0
@@ -5080,8 +5080,8 @@ packages:
     engines: {node: '>=18.0.0', npm: '>=8.0.0'}
     hasBin: true
 
-  rou3@0.6.0:
-    resolution: {integrity: sha512-0gF3uSNVOXvocv7+UEFz/4hKMwPCLDTzWUpIU3XNZjfzekJKiEF9vlpSCG/moJ4IzBqzPl48jomVMUwpiONmuw==}
+  rou3@0.6.1:
+    resolution: {integrity: sha512-mqyxhSO0LLAa/lwNhH3329NEbRFJEHpZGIqr0cWQTtQEwqFMpf0a15cGw3kh9nil1oufh97Qhx4KWsy++0yn4g==}
 
   roughjs@4.6.6:
     resolution: {integrity: sha512-ZUz/69+SYpFN/g/lUlo2FXcIjRkSu3nDarreVdGGndHEBJ6cXPdKguS8JGxwj5HA5xIbVKSmLgr5b3AWxtRfvQ==}
@@ -9882,7 +9882,7 @@ snapshots:
   h3-nightly@2.0.0-20250417-222045-ac609aa:
     dependencies:
       cookie-es: 2.0.0
-      rou3: 0.6.0
+      rou3: 0.6.1
       srvx: 0.4.0
 
   hachure-fill@0.5.2: {}
@@ -11222,7 +11222,7 @@ snapshots:
       '@rollup/rollup-win32-x64-msvc': 4.40.0
       fsevents: 2.3.3
 
-  rou3@0.6.0: {}
+  rou3@0.6.1: {}
 
   roughjs@4.6.6:
     dependencies:
