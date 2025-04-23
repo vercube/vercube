@@ -25,44 +25,13 @@ const container = new Container();
 
 // Create an application
 const app = createApp({
-  container,
-  port: 3000,
-  host: 'localhost'
+  server: {
+    port: 3000,
+    host: 'localhost'
+  }
 });
 ```
 
 ## Application Options
 
-The `createApp` function accepts the following options:
-
-```typescript
-interface AppOptions {
-  container: Container;
-  port?: number;
-  host?: string;
-  basePath?: string;
-  cors?: boolean | CorsOptions;
-  bodyParser?: boolean | BodyParserOptions;
-  compression?: boolean | CompressionOptions;
-  helmet?: boolean | HelmetOptions;
-  static?: boolean | StaticOptions;
-  errorHandler?: ErrorHandler;
-}
-```
-
-- `container` - The dependency injection container (required)
-- `port` - The port to listen on (default: 3000)
-- `host` - The host to listen on (default: 'localhost')
-- `basePath` - The base path for all routes (default: '/')
-- `cors` - CORS options (default: true)
-- `bodyParser` - Body parser options (default: true)
-- `compression` - Compression options (default: true)
-- `helmet` - Helmet options (default: true)
-- `static` - Static file serving options (default: false)
-- `errorHandler` - Global error handler (default: DefaultErrorHandler)
-
-## See Also
-
-- [Decorators](./decorators.md) - Core decorators for defining application components
-- [Error Handling](/guide/error-handling) - Error handling system
-- [Hooks](./hooks.md) - Application lifecycle hooks
+The `createApp` function accepts the [`ConfigTypes.Config`](/config/#config-options)

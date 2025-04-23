@@ -71,6 +71,7 @@ export default defineConfig({
       '/modules/': [
         {
           text: 'Core',
+          collapsed: true,
           items: [
             { text: 'Overview', link: '/modules/core' },
             { text: 'Application', link: '/modules/core/application' },
@@ -81,6 +82,7 @@ export default defineConfig({
         },
         {
           text: 'DI',
+          collapsed: true,
           items: [
             { text: 'Overview', link: '/modules/di' },
             { text: 'Container', link: '/modules/di/container' },
@@ -91,6 +93,7 @@ export default defineConfig({
         },
         {
           text: 'Logger',
+          collapsed: true,
           items: [
             { text: 'Overview', link: '/modules/logger' },
             { text: 'Logger', link: '/modules/logger/logger' },
@@ -101,6 +104,7 @@ export default defineConfig({
         },
         {
           text: 'Storage',
+          collapsed: true,
           items: [
             { text: 'Overview', link: '/modules/storage' },
             { text: 'Storage Manager', link: '/modules/storage/storage-manager' },
@@ -112,6 +116,7 @@ export default defineConfig({
         },
         {
           text: 'Auth',
+          collapsed: true,
           items: [
             { text: 'Overview', link: '/modules/auth' },
             { text: 'Auth Provider', link: '/modules/auth/auth-provider' },
@@ -120,6 +125,13 @@ export default defineConfig({
             { text: 'Auth Types', link: '/modules/auth/auth-types' },
             { text: 'Auth Implementations', link: '/modules/auth/auth-implementations' },
             { text: 'Advanced Usage', link: '/modules/auth/advanced' },
+          ],
+        },
+        {
+          text: 'H3',
+          collapsed: true,
+          items: [
+            { text: 'Overview', link: '/modules/h3' },
           ],
         },
       ],

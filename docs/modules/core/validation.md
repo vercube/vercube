@@ -1,3 +1,6 @@
+---
+next: false
+---
 # Validation
 
 Vercube integrates with the [Standard Schema](https://github.com/standard-schema/standard-schema) specification, allowing you to use any compatible schema validation library (such as Zod, Valibot, or ArkType) to validate data in your application.
@@ -140,28 +143,3 @@ When validation fails, Vercube automatically returns a validation error response
   ]
 }
 ```
-
-## Best Practices
-
-1. **Schema Definition**
-   - Choose a Standard Schema-compatible library that fits your needs
-   - Define schemas at the appropriate level
-   - Use meaningful names for schemas
-   - Reuse schemas for common data structures
-
-2. **Parameter Validation**
-   - Validate all incoming request data using appropriate parameter decorators
-   - Use descriptive error messages in your schemas
-   - Provide default values where appropriate
-   - Use type inference to ensure type safety
-
-3. **Error Handling**
-   - Handle validation errors appropriately
-   - Log validation errors with appropriate context
-   - Use meaningful error messages
-
-## See Also
-
-- [Application](./application.md) - Application class and lifecycle
-- [Decorators](./decorators.md) - Core decorators for defining application components
-- [Error Handling](/guide/error-handling) - Error handling system

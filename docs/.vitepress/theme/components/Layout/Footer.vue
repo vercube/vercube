@@ -29,7 +29,7 @@
                 </g>
               </svg>
             </a>
-            <a href="#" class="social-link">
+            <a href="https://x.com/vercubejs" class="social-link" target="_blank">
               <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
                 <path fill="currentColor"
                   d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584l-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z">
@@ -42,22 +42,20 @@
           <div class="footer-link-group">
             <h4>Product</h4>
             <ul>
-              <li><a href="#">Get started</a></li>
-              <li><a href="#">Documentation</a></li>
+              <li><a href="/guide/getting-started">Get started</a></li>
+              <li><a href="/config">Documentation</a></li>
             </ul>
           </div>
           <div class="footer-link-group">
             <h4>Resources</h4>
             <ul>
-              <li><a href="#">Blog</a></li>
-              <li><a href="#">Community</a></li>
+              <li><a href="https://github.com/vercube/vercube/graphs/contributors" target="_blank">Contributors</a></li>
             </ul>
           </div>
           <div class="footer-link-group">
             <h4>Enterprise</h4>
             <ul>
-              <li><a href="#">Support</a></li>
-              <li><a href="#">Sponsors</a></li>
+              <li><a href="https://github.com/sponsors/vercube" target="_blank">Sponsors</a></li>
             </ul>
           </div>
         </div>
@@ -76,6 +74,7 @@
   background-color: #0a0118;
   padding: 5rem 2rem 2rem;
   border-top: 1px solid rgba(255, 255, 255, 0.05);
+  z-index: 24;
 }
 
 .footer-content {
@@ -172,33 +171,44 @@
 }
 
 @media (max-width: 992px) {
+  .footer-content {
+    grid-template-columns: 1fr;
+    gap: 3rem;
+  }
 
-      .footer-content {
-        grid-template-columns: 1fr;
-        gap: 3rem;
-      }
+  .footer-links {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
 
-      .footer-links {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
+@media (max-width: 768px) {
 
-    @media (max-width: 768px) {
+  .footer {
+    padding: 4rem 2rem 2rem;
+  }
 
-      .footer {
-        padding: 4rem 2rem 2rem;
-      }
+  .footer-bottom {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+}
 
-      .footer-bottom {
-        flex-direction: column;
-        gap: 1rem;
-        text-align: center;
-      }
-    }
+@media (max-width: 480px) {
+  .footer-links {
+    grid-template-columns: 1fr;
+  }
+}
 
-    @media (max-width: 480px) {
-      .footer-links {
-        grid-template-columns: 1fr;
-      }
-    }
+@media (min-width: 960px) {
+.VPContent.has-sidebar ~ .footer {
+    padding-left: calc(var(--vp-sidebar-width) + 2rem);
+}
+}
+@media (min-width: 1440px) {
+.VPContent.has-sidebar ~ .footer {
+    padding-left: calc((100vw - var(--vp-layout-max-width)) / 2 + var(--vp-sidebar-width) + 2rem);
+}
+}
+
 </style>

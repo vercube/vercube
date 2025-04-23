@@ -1,3 +1,10 @@
+---
+prev: false
+next:
+   text: 'Application'
+   link: '/modules/core/application'
+---
+
 # Core Module
 
 The Core module is the foundation of the Vercube framework, providing essential functionality for building web applications. It includes the application lifecycle, dependency injection, routing, middleware, error handling, and validation.
@@ -61,35 +68,3 @@ The Hooks service provides a way to define and execute hooks at various points i
 ### Validation
 
 The Validation system provides a way to validate data in your application. It is based on the Standard Schema specification, which provides a common interface for schema validation libraries.
-
-## Best Practices
-
-1. **Application Structure**
-   - Organize your application into modules
-   - Use dependency injection for loose coupling
-   - Define routes using decorators
-   - Use middleware for cross-cutting concerns
-
-2. **Error Handling**
-   - Define global error handlers
-   - Use try-catch blocks for handling specific errors
-   - Log errors with appropriate context
-   - Return appropriate error responses
-
-3. **Validation**
-   - Validate input data at the boundaries of your application
-   - Use the Standard Schema specification for validation
-   - Provide clear error messages for validation failures
-   - Consider using custom validators for complex validation logic
-
-4. **Hooks**
-   - Use hooks for cross-cutting concerns
-   - Define hooks for application lifecycle events
-   - Use hooks for logging, monitoring, and other non-functional requirements
-   - Keep hook handlers focused and lightweight
-
-## See Also
-
-- [DI Module](../di/index.md) - Dependency injection system
-- [Logger Module](../logger/index.md) - Logging system
-- [Getting Started](../../guide/getting-started.md) - How to get started with Vercube
