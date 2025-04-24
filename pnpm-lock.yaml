@@ -156,8 +156,8 @@ importers:
         specifier: 0.6.1
         version: 0.6.1
       srvx:
-        specifier: 0.4.0
-        version: 0.4.0
+        specifier: 0.5.2
+        version: 0.5.2
     devDependencies:
       '@vitest/coverage-v8':
         specifier: ^3.1.2
@@ -5202,6 +5202,10 @@ packages:
 
   srvx@0.4.0:
     resolution: {integrity: sha512-6/bC6gP2WNv3iWeIcOWP7YD8vWWZNNMXkoX8GAu3LmVA5RknVHw4Jg0RmMqDxFSEzeTR518fwiZVeUntSb1dww==}
+    engines: {node: '>=20.11.1'}
+
+  srvx@0.5.2:
+    resolution: {integrity: sha512-dKyh8mBgRWgfv88h4Cy5FrTmazZNrj6HpvcnxI5DYcgaM8jc0B2IBQi6uPsJVyMt7OpfmYGVXMmwNPw6xGbaLw==}
     engines: {node: '>=20.11.1'}
 
   stack-utils@2.0.6:
@@ -11212,6 +11216,10 @@ snapshots:
   sprintf-js@1.0.3: {}
 
   srvx@0.4.0:
+    dependencies:
+      cookie-es: 2.0.0
+
+  srvx@0.5.2:
     dependencies:
       cookie-es: 2.0.0
 
