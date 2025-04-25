@@ -34,7 +34,7 @@
     "defu": "6.1.4",
     "pathe": "2.0.3",
     "rou3": "0.6.1",
-    "srvx": "0.4.0"
+    "srvx": "0.6.0"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^3.1.2",
