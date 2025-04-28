@@ -3,6 +3,7 @@ import { InternalServerError } from '../../Errors/Http/InternalServerError';
 import { HttpError } from '../../Errors/HttpError';
 import { Logger } from '@vercube/logger';
 import { Inject } from '@vercube/di';
+import { FastResponse } from '../../Types/CommonTypes';
 
 /**
  * Default error handler provider
@@ -27,11 +28,11 @@ export class DefaultErrorHandlerProvider extends ErrorHandlerProvider {
 
     // check if the error is known error type and return it.
     if (error instanceof HttpError) {
-      return new Response(JSON.stringify({ ...error }, undefined, 2), { status });
+      return new FastResponse(JSON.stringify({ ...error }, undefined, 2), { status });
     }
 
     this.gLogger.error(error);
 
-    return new Response(JSON.stringify({ ...(error?.cause ?? _internalError) }, undefined, 2), { status });
+    return new FastResponse(JSON.stringify({ ...(error?.cause ?? _internalError) }, undefined, 2), { status });
   }
 }

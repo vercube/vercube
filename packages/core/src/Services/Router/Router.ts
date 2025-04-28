@@ -36,7 +36,7 @@ export class Router {
     if (!this.fRouterContext) {
       throw new Error('Router not initialized. Please call init() before adding routes.');
     }
-
+    
     addRoute(this.fRouterContext, route.method.toUpperCase(), route.path, route.handler);
   }
 

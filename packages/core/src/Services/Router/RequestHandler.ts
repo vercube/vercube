@@ -3,6 +3,7 @@ import { MetadataResolver } from '../Metadata/MetadataResolver';
 import { RouterTypes } from '../../Types/RouterTypes';
 import { ErrorHandlerProvider } from '../ErrorHandler/ErrorHandlerProvider';
 import { GlobalMiddlewareRegistry } from '../Middleware/GlobalMiddlewareRegistry';
+import { FastResponse } from '../../Types/CommonTypes';
 
 /**
  * Options for configuring a request handler
@@ -105,8 +106,8 @@ export class RequestHandler {
    */
   public async handleRequest(request: Request, route: RouterTypes.RouteMatched<RouterTypes.RouterHandler>): Promise<Response> {
     try {
-      const { instance, propertyName, actions, args, middlewares } = route.data;
-      let fakeResponse = new Response(undefined, {
+      const { instance, propertyName, actions = [], args = [], middlewares } = route.data;
+      let fakeResponse = new FastResponse(undefined, {
         headers: {
           'Content-Type': request.headers.get('Content-Type') ?? 'application/json',
         },
@@ -135,7 +136,9 @@ export class RequestHandler {
       }
 
       // 3. Resolve all args
-      const resolvedArgs = await this.gMetadataResolver.resolveArgs(args, { ...route, request, response: fakeResponse });
+      const resolvedArgs = args.length > 0
+        ? await this.gMetadataResolver.resolveArgs(args, { ...route, request, response: fakeResponse })
+        : [];
       
       // 4. Call current route handler
       let handlerResponse = instance[propertyName].call(instance, ...resolvedArgs?.map((a) => a.resolved) ?? []);
@@ -160,9 +163,9 @@ export class RequestHandler {
       // 6. Set response
       const body = fakeResponse?.body ?? JSON.stringify(handlerResponse);
 
-      return new Response(body, {
-        status: fakeResponse.status,
-        statusText: fakeResponse.statusText,
+      return new FastResponse(body, {
+        status: fakeResponse.status ?? 200,
+        statusText: fakeResponse.statusText ?? 'OK',
         headers: fakeResponse.headers,
       });
 
@@ -184,15 +187,15 @@ export class RequestHandler {
    * @private
    */
   private processOverrideResponse(response: Response | ResponseInit, base?: Response): Response {
-    let fakeResponse = base ?? new Response();
+    let fakeResponse = base ?? new FastResponse();
 
-    if (response != null && response instanceof Response) {
+    if (response != null && response instanceof FastResponse) {
       return response;
     } else if (response !== null) {
       const responseInit = response as ResponseInit;
 
       // override fake response before pass it to the args
-      fakeResponse = new Response(undefined, {
+      fakeResponse = new FastResponse(undefined, {
         status: responseInit?.status ?? fakeResponse.status,
         headers: responseInit?.headers ?? fakeResponse.headers,
         statusText: responseInit?.statusText ?? fakeResponse.statusText,

@@ -49,6 +49,7 @@ export * from './Services/HttpServer/HttpServer';
 // Services
 export * from './Services/Metadata/MetadataResolver';
 export * from './Services/ErrorHandler/ErrorHandlerProvider';
+export * from './Services/Router/Router';
 
 // Errors
 export * from './Errors/HttpError';

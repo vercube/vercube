@@ -94,7 +94,7 @@ export class HttpServer {
   public async handleRequest(request: Request): Promise<Response> {
     try {
       const route = this.gRouter.resolve({ path: request.url, method: request.method });
-
+      
       // if no route is found, try to serve static file
       if (!route) {
         const response = await this.gStaticRequestHandler.handleRequest(request);
