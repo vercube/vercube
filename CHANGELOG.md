@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.0.3
+
+[compare changes](https://github.com/vercube/vercube/compare/v0.0.2...v0.0.3)
+
+### 🔥 Performance
+
+- **core:** Move to FastResponse ([#271](https://github.com/vercube/vercube/pull/271))
+
+### 📦 Build
+
+- **packages:** Bump packages ([a7dd995](https://github.com/vercube/vercube/commit/a7dd995))
+
+
+### ❤️ Contributors
+
+- Oskar Lebuda (@OskarLebuda)
+
 ## v0.0.2 🎉
 
 [compare changes](https://github.com/vercube/vercube/compare/v0.0.1...v0.0.2)
