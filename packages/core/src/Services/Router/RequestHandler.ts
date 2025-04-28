@@ -105,28 +105,31 @@ export class RequestHandler {
    * @returns {Promise<Response>} The HTTP response
    */
   public async handleRequest(request: Request, route: RouterTypes.RouteMatched<RouterTypes.RouterHandler>): Promise<Response> {
+
     try {
-      const { instance, propertyName, actions = [], args = [], middlewares } = route.data;
+      const { instance, propertyName, actions = [], args = [], middlewares = { beforeMiddlewares: [], afterMiddlewares: [] } } = route.data;
       let fakeResponse = new FastResponse(undefined, {
         headers: {
           'Content-Type': request.headers.get('Content-Type') ?? 'application/json',
         },
       });
-      
-      // 1. Call before route middlewares
-      for await (const hook of middlewares?.beforeMiddlewares ?? []) {
-        try {
-          const hookResponse = await hook.middleware.onRequest?.(request, fakeResponse, { middlewareArgs: hook.args, methodArgs: args });
 
-          if (hookResponse instanceof Response) {
-            return hookResponse;
+      // 1. Call before route middlewares
+      if (middlewares.beforeMiddlewares.length > 0) {
+        for await (const hook of middlewares.beforeMiddlewares) {
+          try {
+            const hookResponse = await hook.middleware.onRequest?.(request, fakeResponse, { middlewareArgs: hook.args, methodArgs: args });
+
+            if (hookResponse instanceof Response) {
+              return hookResponse;
+            }
+          } catch (error_) {
+            this.gContainer.get(ErrorHandlerProvider).handleError(error_);
           }
-        } catch (error_) {
-          this.gContainer.get(ErrorHandlerProvider).handleError(error_);
         }
       }
 
-      // 2. Call every actions like set status code, set redirection etc.
+      // 2. Call every actions
       for (const action of actions) {
         const actionResponse = action.handler(request, fakeResponse);
 
@@ -139,7 +142,7 @@ export class RequestHandler {
       const resolvedArgs = args.length > 0
         ? await this.gMetadataResolver.resolveArgs(args, { ...route, request, response: fakeResponse })
         : [];
-      
+
       // 4. Call current route handler
       let handlerResponse = instance[propertyName].call(instance, ...resolvedArgs?.map((a) => a.resolved) ?? []);
 
@@ -147,27 +150,31 @@ export class RequestHandler {
         handlerResponse = await handlerResponse;
       }
 
-      // 5. Call after route middlewars
-      for await (const hook of middlewares?.afterMiddlewares ?? []) {
-        try {
-          const hookResponse = await hook.middleware.onResponse?.(request, fakeResponse, handlerResponse);
+      // 5. Call after route middlewares
+      if (middlewares.afterMiddlewares.length > 0) {
+        for await (const hook of middlewares.afterMiddlewares) {
+          try {
+            const hookResponse = await hook.middleware.onResponse?.(request, fakeResponse, handlerResponse);
 
           if (hookResponse !== null) {
             fakeResponse = this.processOverrideResponse(hookResponse!, fakeResponse);
           }
         } catch (error_) {
           this.gContainer.get(ErrorHandlerProvider).handleError(error_);
+          }
         }
       }
 
       // 6. Set response
       const body = fakeResponse?.body ?? JSON.stringify(handlerResponse);
 
-      return new FastResponse(body, {
+      const response = new Response(body, {
         status: fakeResponse.status ?? 200,
         statusText: fakeResponse.statusText ?? 'OK',
         headers: fakeResponse.headers,
       });
+
+      return response;
 
     } catch (error_) {
       return this.gContainer.get(ErrorHandlerProvider).handleError(error_);
