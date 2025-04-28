@@ -1,8 +1,8 @@
 import { BaseDecorator, createDecorator } from '@vercube/di';
+import { FastResponse } from '../../Types/CommonTypes';
 import type { MetadataTypes } from '../../Types/MetadataTypes';
 import { HTTPStatus } from '../../Types/HttpTypes';
 import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
-
 /**
  * Options for the RedirectDecorator.
  * @typedef {Object} RedirectDecoratorOptions
@@ -28,7 +28,7 @@ class RedirectDecorator extends BaseDecorator<RedirectDecoratorOptions, Metadata
 
     method.actions.push({
       handler: () => {
-        return new Response(undefined, {
+        return new FastResponse(undefined, {
           status: this.options.code,
           headers: {
             'Location': this.options.location,
