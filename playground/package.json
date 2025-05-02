@@ -15,6 +15,7 @@
     "tsx": "4.19.4"
   },
   "dependencies": {
+    "@oxc-project/runtime": "0.67.0",
     "@vercube/auth": "workspace:*",
     "@vercube/core": "workspace:*",
     "@vercube/di": "workspace:*",

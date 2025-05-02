@@ -1,10 +1,11 @@
 import { Container, Inject } from '@vercube/di';
-import { ConfigTypes, NotFoundError } from '@vercube/core';
 import { serve, type Server} from 'srvx';
+import { ConfigTypes } from '../../Types/ConfigTypes';
 import { Router } from '../Router/Router';
 import { RequestHandler } from '../Router/RequestHandler';
 import { ErrorHandlerProvider } from '../ErrorHandler/ErrorHandlerProvider';
 import { StaticRequestHandler } from '../Router/StaticRequestHandler';
+import { NotFoundError } from '../../Errors/Http/NotFoundError';
 /**
  * HTTP server implementation for handling incoming web requests
  * 

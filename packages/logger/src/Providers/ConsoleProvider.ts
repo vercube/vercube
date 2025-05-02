@@ -1,11 +1,11 @@
-import { LoggerProvider } from '../Common/LoggerProvider';
-import { LoggerTypes } from '../Types/LoggerTypes';
+import type { LoggerProvider } from '../Common/LoggerProvider';
+import type { LoggerTypes } from '../Types/LoggerTypes';
 import { LOG_LEVEL_COLORS } from '../Utils/Utils';
  
 /**
  * ConsoleProvider class for logging messages to the console.
  */
-export class ConsoleProvider extends LoggerProvider {
+export class ConsoleProvider implements LoggerProvider {
 
   /**
    * Initializes the appender with the provided options.

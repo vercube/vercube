@@ -5,8 +5,10 @@
   "sourceRoot": "{projectRoot}/src",
   "targets": {
     "build": {
-      "executor": "@vercube/nx:rolldown",
+      "executor": "nx:run-commands",
       "options": {
+        "command": "obuild ./src/index.ts --tsconfig ../../tsconfig.json && obuild ./src/Providers/index.ts:./dist/providers --tsconfig ../../tsconfig.json",
+        "cwd": "{projectRoot}"
       }
     }
   }

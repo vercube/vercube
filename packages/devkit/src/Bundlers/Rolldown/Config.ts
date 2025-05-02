@@ -2,7 +2,7 @@ import type { ConfigTypes } from '@vercube/core';
 import type { RolldownOptions } from 'rolldown';
 import { resolve } from 'pathe';
 import { builtinModules } from 'node:module';
-import UnpluginIsolatedDecl from 'unplugin-isolated-decl/rolldown';
+import { dts } from 'rolldown-plugin-dts';
 
 /**
  * Generates a Rolldown configuration based on the provided build options.
@@ -53,11 +53,6 @@ export async function getRolldownConfig(ctx?: ConfigTypes.BuildOptions): Promise
       }
     },
 
-    plugins: [
-      UnpluginIsolatedDecl({
-        transformer: 'oxc',
-        patchCjsDefaultExport: true,
-      }),
-    ],
+    plugins: [dts({ isolatedDeclarations: true })],
   };
 };
