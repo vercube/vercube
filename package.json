@@ -47,7 +47,7 @@
     "lint-staged": "15.5.1",
     "mermaid": "11.6.0",
     "mitata": "1.0.34",
-    "nx": "20.8.1",
+    "nx": "21.0.0",
     "oxc-transform": "0.68.1",
     "rolldown": "1.0.0-beta.8",
     "sass-embedded": "^1.87.0",
