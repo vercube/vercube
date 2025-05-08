@@ -10,7 +10,7 @@
     "dev": "vercube dev"
   },
   "devDependencies": {
-    "@types/node": "^22.15.14",
+    "@types/node": "^22.15.15",
     "@vercube/cli": "workspace:*",
     "tsx": "4.19.4"
   },
