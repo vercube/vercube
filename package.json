@@ -30,7 +30,7 @@
     ]
   },
   "devDependencies": {
-    "@commitlint/cli": "19.8.0",
+    "@commitlint/cli": "19.8.1",
     "@commitlint/config-conventional": "19.8.0",
     "@nx/js": "21.0.0",
     "@nx/plugin": "21.0.0",
