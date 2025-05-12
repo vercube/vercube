@@ -48,7 +48,7 @@
     "mermaid": "11.6.0",
     "mitata": "1.0.34",
     "nx": "21.0.3",
-    "oxc-transform": "0.68.1",
+    "oxc-transform": "0.69.0",
     "rolldown": "1.0.0-beta.8",
     "sass-embedded": "^1.87.0",
     "simple-git-hooks": "2.13.0",
