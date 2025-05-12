@@ -44,7 +44,7 @@
     "eslint": "9.26.0",
     "eslint-config-unjs": "0.4.2",
     "globals": "16.1.0",
-    "lint-staged": "15.5.2",
+    "lint-staged": "16.0.0",
     "mermaid": "11.6.0",
     "mitata": "1.0.34",
     "nx": "21.0.3",
