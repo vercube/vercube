@@ -8,15 +8,9 @@
   "sideEffects": false,
   "type": "module",
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.cjs"
-    }
+    ".": "./dist/index.mjs"
   },
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
+  "types": "./dist/index.d.mts",
   "files": [
     "dist",
     "README.md"
@@ -30,7 +24,8 @@
     "oxc-parser": "0.69.0",
     "oxc-transform": "0.69.0",
     "pathe": "2.0.3",
-    "rolldown": "1.0.0-beta.8"
+    "rolldown": "1.0.0-beta.8",
+    "unplugin-isolated-decl": "0.14.1"
   },
   "publishConfig": {
     "access": "public"

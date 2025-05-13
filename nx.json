@@ -1,5 +1,9 @@
 {
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "tui": {
+    "enabled": false
+  },
+  "parallel": 4,
   "packageManager": "pnpm",
   "release": {
     "projects": [
@@ -28,10 +32,15 @@
   },
   "targetDefaults": {
     "build": {
-      "dependsOn": [
-        "^build"
-      ],
-      "cache": false
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          {
+            "command": "tsdown --config ../../tsdown.config.ts"
+          }
+        ],
+        "cwd": "{projectRoot}"
+      }
     },
     "test": {
       "dependsOn": [
