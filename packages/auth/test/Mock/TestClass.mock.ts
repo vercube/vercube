@@ -31,7 +31,7 @@ export class TestClass6 {
 }
 
 // Mock AuthProvider for testing
-export class MockAuthProvider extends AuthProvider<unknown, { id: number; name: string }> {
+export class MockAuthProvider extends AuthProvider {
   public async validate(request: Request, params: unknown): Promise<string | null> {
     return null; // Always valid for testing
   }
