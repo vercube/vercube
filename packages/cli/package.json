@@ -8,21 +8,15 @@
   "sideEffects": false,
   "type": "module",
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.cjs"
-    }
+    ".": "./dist/index.mjs"
   },
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
+  "types": "./dist/index.d.mts",
   "files": [
     "dist",
     "README.md"
   ],
   "bin": {
-    "vercube": "./dist/index.cjs"
+    "vercube": "./dist/index.mjs"
   },
   "dependencies": {
     "@vercube/devkit": "workspace:*",

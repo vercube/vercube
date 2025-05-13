@@ -5,9 +5,6 @@
   "sourceRoot": "{projectRoot}/src",
   "targets": {
     "build": {
-      "executor": "@vercube/nx:rolldown",
-      "options": {
-      }
     }
   }
 }
