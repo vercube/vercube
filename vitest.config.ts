@@ -13,8 +13,6 @@ export default defineConfig({
         'packages/**/src/**/*.d.ts',
         'packages/**/src/**/*.test.ts',
         'packages/**/src/**/*.mock.ts',
-        // this is only for nx workspace build
-        'packages/nx/**',
         // this is only proxy for the cli package
         'packages/create-app/**',
         // this package is not needed to be tested
