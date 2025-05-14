@@ -13,8 +13,8 @@
       "import": "./dist/index.mjs"
     },
     "./providers": {
-      "types": "./dist/providers/index.d.ts",
-      "import": "./dist/providers/index.mjs"
+      "types": "./dist/Providers/index.d.ts",
+      "import": "./dist/Providers/index.mjs"
     }
   },
   "types": "./dist/index.d.ts",
