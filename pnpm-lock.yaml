@@ -15,8 +15,8 @@ importers:
         specifier: 19.8.1
         version: 19.8.1
       '@oxc-project/runtime':
-        specifier: 0.69.0
-        version: 0.69.0
+        specifier: 0.70.0
+        version: 0.70.0
       '@types/node':
         specifier: 22.15.18
         version: 22.15.18
@@ -43,7 +43,7 @@ importers:
         version: 2.13.0
       tsdown:
         specifier: 0.11.9
-        version: 0.11.9(@oxc-project/runtime@0.69.0)(typescript@5.8.3)
+        version: 0.11.9(@oxc-project/runtime@0.70.0)(typescript@5.8.3)
       tslib:
         specifier: 2.8.1
         version: 2.8.1
@@ -135,8 +135,8 @@ importers:
   packages/devkit:
     dependencies:
       '@oxc-project/runtime':
-        specifier: 0.69.0
-        version: 0.69.0
+        specifier: 0.70.0
+        version: 0.70.0
       '@vercube/core':
         specifier: workspace:*
         version: link:../core
@@ -160,7 +160,7 @@ importers:
         version: 2.0.3
       rolldown:
         specifier: 1.0.0-beta.8
-        version: 1.0.0-beta.8(@oxc-project/runtime@0.69.0)(typescript@5.8.3)
+        version: 1.0.0-beta.8(@oxc-project/runtime@0.70.0)(typescript@5.8.3)
       unplugin-isolated-decl:
         specifier: 0.14.1
         version: 0.14.1(typescript@5.8.3)
@@ -961,8 +961,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@oxc-project/runtime@0.69.0':
-    resolution: {integrity: sha512-v4WCEJEktTuWY+DEaR1XNITKZD9S0BCyoBeCTyHUH3ppgrb4IlMeDTkwNyfvaIXBFfhlCX4DI445TJ4cqiK0FA==}
+  '@oxc-project/runtime@0.70.0':
+    resolution: {integrity: sha512-+OV+5OQ2/KFSamt9hecuQ682AB06QwMfEQHrko1v98zF3kWAOp1+CAc3P27mtEPQPMQvRR1d1BYE6BTijbcxzQ==}
     engines: {node: '>=6.9.0'}
 
   '@oxc-project/types@0.65.0':
@@ -4412,7 +4412,7 @@ snapshots:
   '@oxc-parser/binding-win32-x64-msvc@0.69.0':
     optional: true
 
-  '@oxc-project/runtime@0.69.0': {}
+  '@oxc-project/runtime@0.70.0': {}
 
   '@oxc-project/types@0.65.0': {}
 
@@ -6614,7 +6614,7 @@ snapshots:
 
   rfdc@1.4.1: {}
 
-  rolldown-plugin-dts@0.12.2(rolldown@1.0.0-beta.8-commit.d95f99e(@oxc-project/runtime@0.69.0))(typescript@5.8.3):
+  rolldown-plugin-dts@0.12.2(rolldown@1.0.0-beta.8-commit.d95f99e(@oxc-project/runtime@0.70.0))(typescript@5.8.3):
     dependencies:
       '@babel/generator': 7.27.1
       '@babel/parser': 7.27.2
@@ -6623,21 +6623,21 @@ snapshots:
       debug: 4.4.1
       dts-resolver: 2.0.1
       get-tsconfig: 4.10.0
-      rolldown: 1.0.0-beta.8-commit.d95f99e(@oxc-project/runtime@0.69.0)
+      rolldown: 1.0.0-beta.8-commit.d95f99e(@oxc-project/runtime@0.70.0)
     optionalDependencies:
       typescript: 5.8.3
     transitivePeerDependencies:
       - oxc-resolver
       - supports-color
 
-  rolldown@1.0.0-beta.8(@oxc-project/runtime@0.69.0)(typescript@5.8.3):
+  rolldown@1.0.0-beta.8(@oxc-project/runtime@0.70.0)(typescript@5.8.3):
     dependencies:
       '@oxc-project/types': 0.65.0
       '@valibot/to-json-schema': 1.0.0(valibot@1.0.0(typescript@5.8.3))
       ansis: 3.17.0
       valibot: 1.0.0(typescript@5.8.3)
     optionalDependencies:
-      '@oxc-project/runtime': 0.69.0
+      '@oxc-project/runtime': 0.70.0
       '@rolldown/binding-darwin-arm64': 1.0.0-beta.8
       '@rolldown/binding-darwin-x64': 1.0.0-beta.8
       '@rolldown/binding-freebsd-x64': 1.0.0-beta.8
@@ -6653,13 +6653,13 @@ snapshots:
     transitivePeerDependencies:
       - typescript
 
-  rolldown@1.0.0-beta.8-commit.d95f99e(@oxc-project/runtime@0.69.0):
+  rolldown@1.0.0-beta.8-commit.d95f99e(@oxc-project/runtime@0.70.0):
     dependencies:
       '@oxc-project/types': 0.69.0
       '@rolldown/pluginutils': 1.0.0-beta.8-commit.d95f99e
       ansis: 4.0.0
     optionalDependencies:
-      '@oxc-project/runtime': 0.69.0
+      '@oxc-project/runtime': 0.70.0
       '@rolldown/binding-darwin-arm64': 1.0.0-beta.8-commit.d95f99e
       '@rolldown/binding-darwin-x64': 1.0.0-beta.8-commit.d95f99e
       '@rolldown/binding-freebsd-x64': 1.0.0-beta.8-commit.d95f99e
@@ -6975,7 +6975,7 @@ snapshots:
       minimist: 1.2.8
       strip-bom: 3.0.0
 
-  tsdown@0.11.9(@oxc-project/runtime@0.69.0)(typescript@5.8.3):
+  tsdown@0.11.9(@oxc-project/runtime@0.70.0)(typescript@5.8.3):
     dependencies:
       ansis: 4.0.0
       cac: 6.7.14
@@ -6984,8 +6984,8 @@ snapshots:
       diff: 8.0.1
       empathic: 1.1.0
       hookable: 5.5.3
-      rolldown: 1.0.0-beta.8-commit.d95f99e(@oxc-project/runtime@0.69.0)
-      rolldown-plugin-dts: 0.12.2(rolldown@1.0.0-beta.8-commit.d95f99e(@oxc-project/runtime@0.69.0))(typescript@5.8.3)
+      rolldown: 1.0.0-beta.8-commit.d95f99e(@oxc-project/runtime@0.70.0)
+      rolldown-plugin-dts: 0.12.2(rolldown@1.0.0-beta.8-commit.d95f99e(@oxc-project/runtime@0.70.0))(typescript@5.8.3)
       semver: 7.7.2
       tinyexec: 1.0.1
       tinyglobby: 0.2.13
