@@ -215,8 +215,8 @@ importers:
         specifier: 2.8.1
         version: 2.8.1
       zod:
-        specifier: 3.24.4
-        version: 3.24.4
+        specifier: 3.25.9
+        version: 3.25.9
     devDependencies:
       '@vercube/cli':
         specifier: workspace:*
@@ -3730,8 +3730,8 @@ packages:
     resolution: {integrity: sha512-AyeEbWOu/TAXdxlV9wmGcR0+yh2j3vYPGOECcIj2S7MkrLyC7ne+oye2BKTItt0ii2PHk4cDy+95+LshzbXnGg==}
     engines: {node: '>=12.20'}
 
-  zod@3.24.4:
-    resolution: {integrity: sha512-OdqJE9UDRPwWsrHjLN2F8bPxvwJBK22EHLWtanu0LSYr5YqzsaaW3RMgmjwr8Rypg5k+meEJdSPXJZXE/yqOMg==}
+  zod@3.25.9:
+    resolution: {integrity: sha512-ho97WAF12mhTHd6/1lBbAPJP0cWKvWra6Stl2Tw93EBsIMoHME3bhGUGBXT0AaVmIWtOB1cFh98T+wb9RClo7g==}
 
   zwitch@2.0.4:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
@@ -7155,6 +7155,6 @@ snapshots:
 
   yocto-queue@1.2.1: {}
 
-  zod@3.24.4: {}
+  zod@3.25.9: {}
 
   zwitch@2.0.4: {}
