@@ -153,8 +153,8 @@ importers:
         specifier: 0.70.0
         version: 0.70.0
       oxc-transform:
-        specifier: 0.70.0
-        version: 0.70.0
+        specifier: 0.72.0
+        version: 0.72.0
       pathe:
         specifier: 2.0.3
         version: 2.0.3
@@ -1066,8 +1066,8 @@ packages:
     cpu: [arm64]
     os: [darwin]
 
-  '@oxc-transform/binding-darwin-arm64@0.70.0':
-    resolution: {integrity: sha512-h5DHbP2JqhI7o+hgVwiUn1OFTuKY2r1S6mO2wYPHS1LRWZM2GLNVo/cuCVJx5nRLHIfWBYtIIgbrG8ZrlrG2Cg==}
+  '@oxc-transform/binding-darwin-arm64@0.72.0':
+    resolution: {integrity: sha512-0yCY7Cc4uQn+jdVBBvDsMuOww0bP6+TUHQOKqMfIC0QC/1Zb3pK/p8hM0eQelFKrmO/6FP7pjuX+so0hdJVVUQ==}
     engines: {node: '>=14.0.0'}
     cpu: [arm64]
     os: [darwin]
@@ -1078,8 +1078,8 @@ packages:
     cpu: [x64]
     os: [darwin]
 
-  '@oxc-transform/binding-darwin-x64@0.70.0':
-    resolution: {integrity: sha512-1l0C5VOlfirfSzyL/fPtmxnZwoUJZI25leFQTCa3I2neOoFvcV4tncg5NYBpF18DbrHcEzTtTbhVRwCjO1RQ8A==}
+  '@oxc-transform/binding-darwin-x64@0.72.0':
+    resolution: {integrity: sha512-gFDeq5A2U4cnQ5fAmbuyYT5Amb+DFvOQJV7guah1A3YTfT6livBOZE0wWbn0LrW4tj2SjpAxHjwRoez5t1Lzcg==}
     engines: {node: '>=14.0.0'}
     cpu: [x64]
     os: [darwin]
@@ -1090,8 +1090,8 @@ packages:
     cpu: [x64]
     os: [freebsd]
 
-  '@oxc-transform/binding-freebsd-x64@0.70.0':
-    resolution: {integrity: sha512-bSkX/vXW9TGqm6LS56mCzM2dkeiAsS/OWvOS94NTBIZQHd5vLn6jtt8KYmGoO/7iOGP+UT2L7p7Da+y/LNB7cg==}
+  '@oxc-transform/binding-freebsd-x64@0.72.0':
+    resolution: {integrity: sha512-06CWIiEqaXm4D4FvKPVVPPUhgj0zyMS8NExncGMepe4aBkb9n7TTMv2BMv2OYzoM6OM6Q6m9xSA6wq7Wx8n9JA==}
     engines: {node: '>=14.0.0'}
     cpu: [x64]
     os: [freebsd]
@@ -1102,14 +1102,14 @@ packages:
     cpu: [arm]
     os: [linux]
 
-  '@oxc-transform/binding-linux-arm-gnueabihf@0.70.0':
-    resolution: {integrity: sha512-Ru35tW9h+0fC/h/NpbBOuxW9xBYHrVTvk/rHZXg860QDC17W/ORPY7DJ4sBN+JPcm69UNssRELEydvy62p5hnQ==}
+  '@oxc-transform/binding-linux-arm-gnueabihf@0.72.0':
+    resolution: {integrity: sha512-/Jwfrhp9jWDx9bGTojmQ7OeeUfSW4uHikk6x5GmBfQ4eoD3phnoAQ0Ej7pqGzLGP2kXv/m7GJo6bgOUXT06Qvg==}
     engines: {node: '>=14.0.0'}
     cpu: [arm]
     os: [linux]
 
-  '@oxc-transform/binding-linux-arm-musleabihf@0.70.0':
-    resolution: {integrity: sha512-NUpJ2hFE8R29zvL4YN/JvyfaT2Vpcw4NyEVdBICEN6DLJvM2fYUrtN3c7q/5RSMPERWGDdkX4oebHy3gOReb5A==}
+  '@oxc-transform/binding-linux-arm-musleabihf@0.72.0':
+    resolution: {integrity: sha512-ERnuvthMhMkWPnnZxl8qEGeU912TpOdKMHvn/WhHXZW9iSw2JuucR5+QuSvzRKRf4ocwJzCnS+clgRMr3wuz1Q==}
     engines: {node: '>=14.0.0'}
     cpu: [arm]
     os: [linux]
@@ -1120,8 +1120,8 @@ packages:
     cpu: [arm64]
     os: [linux]
 
-  '@oxc-transform/binding-linux-arm64-gnu@0.70.0':
-    resolution: {integrity: sha512-ijMtGrOgXgEzyHJoaieDBfBe2IaW53RlaDPVKLu6SRaqzbYSzjkBocMCWPnlhHAlsXXot4iXqUz/mIvi9iySgQ==}
+  '@oxc-transform/binding-linux-arm64-gnu@0.72.0':
+    resolution: {integrity: sha512-dNV4gydJxuOZIwuekoMrQTOyuiL3fdmjZgdNuEWvjjRnm+Cl6mdgDzt/suIy8hLdughAG0DZPXyRH93ftRK+zA==}
     engines: {node: '>=14.0.0'}
     cpu: [arm64]
     os: [linux]
@@ -1132,8 +1132,8 @@ packages:
     cpu: [arm64]
     os: [linux]
 
-  '@oxc-transform/binding-linux-arm64-musl@0.70.0':
-    resolution: {integrity: sha512-VUK5p1ooBC8zObwIAoo4et3x9h0kuBeas4UehbNN4HfnhwkM8yRCt5owHypslIi1vytfPpkexRpZcw68lAiThw==}
+  '@oxc-transform/binding-linux-arm64-musl@0.72.0':
+    resolution: {integrity: sha512-ir2bPafrK9aPco8Pki2I/7MSsdYmAFfns51uvNC+PCw/1KN4AG3Vs/ras91uTGjE3j+jSsui4SM/rnsn1qU4qg==}
     engines: {node: '>=14.0.0'}
     cpu: [arm64]
     os: [linux]
@@ -1144,8 +1144,8 @@ packages:
     cpu: [riscv64]
     os: [linux]
 
-  '@oxc-transform/binding-linux-riscv64-gnu@0.70.0':
-    resolution: {integrity: sha512-IqOHDigJosjwgWSWv7WBJHiVzQdYj3uvFDOndHTsZuQdx3UHBvejcJPTVFZocMVH/JPr4QCnmzEXfNVlscoRAQ==}
+  '@oxc-transform/binding-linux-riscv64-gnu@0.72.0':
+    resolution: {integrity: sha512-2fnzzfejnbsAq182V027Tv9OiZmdK83qG5ktGmspkcRhXAvXhdCHTlpur52sw45pZHeJBDEfc0QDjGo99kmgsQ==}
     engines: {node: '>=14.0.0'}
     cpu: [riscv64]
     os: [linux]
@@ -1156,8 +1156,8 @@ packages:
     cpu: [s390x]
     os: [linux]
 
-  '@oxc-transform/binding-linux-s390x-gnu@0.70.0':
-    resolution: {integrity: sha512-p9u5bmQkzwzMMVqaPDZwwJCJIzm5MqK6n5VyPYNVCpSWJmI9YtxRpL7A+Szbjrv1I8RAQ3Lfvd7vLcQbybzZbg==}
+  '@oxc-transform/binding-linux-s390x-gnu@0.72.0':
+    resolution: {integrity: sha512-ovL2cHsOqZzBbfrDFg7U5D8rU9kc6Athq0zbyxaoQ0pCW9IV4T4kEGHlWAYinAPQSVmWW8FyXi/dQHSB9fzWjw==}
     engines: {node: '>=14.0.0'}
     cpu: [s390x]
     os: [linux]
@@ -1168,8 +1168,8 @@ packages:
     cpu: [x64]
     os: [linux]
 
-  '@oxc-transform/binding-linux-x64-gnu@0.70.0':
-    resolution: {integrity: sha512-CtKvuyXNAheW2WBrR6RyyksStT84UfZLh+EjhYbNzQUMMBmUni5xfcJJiDPLhV2fmZ+iCMaHv36IIPS4gkP3wQ==}
+  '@oxc-transform/binding-linux-x64-gnu@0.72.0':
+    resolution: {integrity: sha512-gb+OuZHRCBk/64zaZQOPje8GUXqyNq/qPbPnVPWHTBGvSeat1+2m19LojTfMa4a9K1btKNItFPnXKiEf6AuPWQ==}
     engines: {node: '>=14.0.0'}
     cpu: [x64]
     os: [linux]
@@ -1180,8 +1180,8 @@ packages:
     cpu: [x64]
     os: [linux]
 
-  '@oxc-transform/binding-linux-x64-musl@0.70.0':
-    resolution: {integrity: sha512-KM68LeDbF7HM3SeRC8ljJ2fISEmTGyjw70VP4xnAJy9FotneYmDqD7UDbtdcl956m2zePFUNdmdlLEwmP211Ag==}
+  '@oxc-transform/binding-linux-x64-musl@0.72.0':
+    resolution: {integrity: sha512-Ks3nM1+zl0xHy63a7YxFFNceoymrY/1B0Y5MlAxSkEpyhUSfLlxr9hXlwr3iNTCbHw7Tcnwi7fKLAtEyL8avrQ==}
     engines: {node: '>=14.0.0'}
     cpu: [x64]
     os: [linux]
@@ -1191,8 +1191,8 @@ packages:
     engines: {node: '>=14.0.0'}
     cpu: [wasm32]
 
-  '@oxc-transform/binding-wasm32-wasi@0.70.0':
-    resolution: {integrity: sha512-jT8y6XnATCbArIZqVE8BgFSJLASSPXcsCPHo1dk5GDJHxls8SuWo0VecE4v4OAphOVPhX1Jdyj1lie6oK6xEnQ==}
+  '@oxc-transform/binding-wasm32-wasi@0.72.0':
+    resolution: {integrity: sha512-OckBCdQHMLD3KCAWup2f5sT+8psbSBGRXEoJEere95uGscZoeapWlbFQFXYWuOK5Y4b2QXd9MKib/CUAIsrx9g==}
     engines: {node: '>=14.0.0'}
     cpu: [wasm32]
 
@@ -1202,8 +1202,8 @@ packages:
     cpu: [arm64]
     os: [win32]
 
-  '@oxc-transform/binding-win32-arm64-msvc@0.70.0':
-    resolution: {integrity: sha512-OFmHVkWeIG6PqouPzVULCuD8PfLA0ASHSfKvMM6/l3Soowz38nkfi8y2OpH8StDyXK3kgn+PkMpS03NAITeGlQ==}
+  '@oxc-transform/binding-win32-arm64-msvc@0.72.0':
+    resolution: {integrity: sha512-DjDLZg305vf/kGKHgKtdyEp9KQVGyBGr98PoKAG2GFSXUhhYzjdYja77/UExlGwpnIOvUqvwvS36xsVTcly6nw==}
     engines: {node: '>=14.0.0'}
     cpu: [arm64]
     os: [win32]
@@ -1214,8 +1214,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@oxc-transform/binding-win32-x64-msvc@0.70.0':
-    resolution: {integrity: sha512-o59kbIXgY2HXUlHepZHD/Zz4k0it80yZHL+QIbsYs1/K/i6iydrhdUKIabRkFcPg9qvxXXJ/xxDAggC8KdBoPA==}
+  '@oxc-transform/binding-win32-x64-msvc@0.72.0':
+    resolution: {integrity: sha512-GetSTZYjJH8gU+pOV651OzUnVbMzn55MoJ5qFFJ6TwDtJWtEFpaLz68nv/2NKK2FGEfrkqd/+uUrbn5IG+QWUg==}
     engines: {node: '>=14.0.0'}
     cpu: [x64]
     os: [win32]
@@ -2948,8 +2948,8 @@ packages:
     resolution: {integrity: sha512-kUhDLBT+RT2PyXHDVCppqO2SmmXcvi/yGrPIZRJsfA0mIlLnfzjdhcxObI9nuCR+k7UlUCb1FrANDkszDwnxIg==}
     engines: {node: '>=14.0.0'}
 
-  oxc-transform@0.70.0:
-    resolution: {integrity: sha512-cPaTMNm7ciuDYhypBk7P8srrNU1aPT+yNYU3818odl8aygThFZZ2kXGpvkxtP1XXgVeMpe/nopVJnjQndkO2Uw==}
+  oxc-transform@0.72.0:
+    resolution: {integrity: sha512-z1Bj/4EVJYuAjujLEgzis7/8s6TqJV6AD760Dar2D5Of372eSTFmhsg8MOvRvbR0DJ8H3xFj0qAHWAwuw2oqTg==}
     engines: {node: '>=14.0.0'}
 
   p-limit@2.3.0:
@@ -4392,7 +4392,7 @@ snapshots:
 
   '@oxc-parser/binding-wasm32-wasi@0.69.0':
     dependencies:
-      '@napi-rs/wasm-runtime': 0.2.9
+      '@napi-rs/wasm-runtime': 0.2.10
     optional: true
 
   '@oxc-parser/binding-wasm32-wasi@0.70.0':
@@ -4423,72 +4423,72 @@ snapshots:
   '@oxc-transform/binding-darwin-arm64@0.69.0':
     optional: true
 
-  '@oxc-transform/binding-darwin-arm64@0.70.0':
+  '@oxc-transform/binding-darwin-arm64@0.72.0':
     optional: true
 
   '@oxc-transform/binding-darwin-x64@0.69.0':
     optional: true
 
-  '@oxc-transform/binding-darwin-x64@0.70.0':
+  '@oxc-transform/binding-darwin-x64@0.72.0':
     optional: true
 
   '@oxc-transform/binding-freebsd-x64@0.69.0':
     optional: true
 
-  '@oxc-transform/binding-freebsd-x64@0.70.0':
+  '@oxc-transform/binding-freebsd-x64@0.72.0':
     optional: true
 
   '@oxc-transform/binding-linux-arm-gnueabihf@0.69.0':
     optional: true
 
-  '@oxc-transform/binding-linux-arm-gnueabihf@0.70.0':
+  '@oxc-transform/binding-linux-arm-gnueabihf@0.72.0':
     optional: true
 
-  '@oxc-transform/binding-linux-arm-musleabihf@0.70.0':
+  '@oxc-transform/binding-linux-arm-musleabihf@0.72.0':
     optional: true
 
   '@oxc-transform/binding-linux-arm64-gnu@0.69.0':
     optional: true
 
-  '@oxc-transform/binding-linux-arm64-gnu@0.70.0':
+  '@oxc-transform/binding-linux-arm64-gnu@0.72.0':
     optional: true
 
   '@oxc-transform/binding-linux-arm64-musl@0.69.0':
     optional: true
 
-  '@oxc-transform/binding-linux-arm64-musl@0.70.0':
+  '@oxc-transform/binding-linux-arm64-musl@0.72.0':
     optional: true
 
   '@oxc-transform/binding-linux-riscv64-gnu@0.69.0':
     optional: true
 
-  '@oxc-transform/binding-linux-riscv64-gnu@0.70.0':
+  '@oxc-transform/binding-linux-riscv64-gnu@0.72.0':
     optional: true
 
   '@oxc-transform/binding-linux-s390x-gnu@0.69.0':
     optional: true
 
-  '@oxc-transform/binding-linux-s390x-gnu@0.70.0':
+  '@oxc-transform/binding-linux-s390x-gnu@0.72.0':
     optional: true
 
   '@oxc-transform/binding-linux-x64-gnu@0.69.0':
     optional: true
 
-  '@oxc-transform/binding-linux-x64-gnu@0.70.0':
+  '@oxc-transform/binding-linux-x64-gnu@0.72.0':
     optional: true
 
   '@oxc-transform/binding-linux-x64-musl@0.69.0':
     optional: true
 
-  '@oxc-transform/binding-linux-x64-musl@0.70.0':
+  '@oxc-transform/binding-linux-x64-musl@0.72.0':
     optional: true
 
   '@oxc-transform/binding-wasm32-wasi@0.69.0':
     dependencies:
-      '@napi-rs/wasm-runtime': 0.2.9
+      '@napi-rs/wasm-runtime': 0.2.10
     optional: true
 
-  '@oxc-transform/binding-wasm32-wasi@0.70.0':
+  '@oxc-transform/binding-wasm32-wasi@0.72.0':
     dependencies:
       '@napi-rs/wasm-runtime': 0.2.10
     optional: true
@@ -4496,13 +4496,13 @@ snapshots:
   '@oxc-transform/binding-win32-arm64-msvc@0.69.0':
     optional: true
 
-  '@oxc-transform/binding-win32-arm64-msvc@0.70.0':
+  '@oxc-transform/binding-win32-arm64-msvc@0.72.0':
     optional: true
 
   '@oxc-transform/binding-win32-x64-msvc@0.69.0':
     optional: true
 
-  '@oxc-transform/binding-win32-x64-msvc@0.70.0':
+  '@oxc-transform/binding-win32-x64-msvc@0.72.0':
     optional: true
 
   '@pkgjs/parseargs@0.11.0':
@@ -6324,22 +6324,22 @@ snapshots:
       '@oxc-transform/binding-win32-arm64-msvc': 0.69.0
       '@oxc-transform/binding-win32-x64-msvc': 0.69.0
 
-  oxc-transform@0.70.0:
+  oxc-transform@0.72.0:
     optionalDependencies:
-      '@oxc-transform/binding-darwin-arm64': 0.70.0
-      '@oxc-transform/binding-darwin-x64': 0.70.0
-      '@oxc-transform/binding-freebsd-x64': 0.70.0
-      '@oxc-transform/binding-linux-arm-gnueabihf': 0.70.0
-      '@oxc-transform/binding-linux-arm-musleabihf': 0.70.0
-      '@oxc-transform/binding-linux-arm64-gnu': 0.70.0
-      '@oxc-transform/binding-linux-arm64-musl': 0.70.0
-      '@oxc-transform/binding-linux-riscv64-gnu': 0.70.0
-      '@oxc-transform/binding-linux-s390x-gnu': 0.70.0
-      '@oxc-transform/binding-linux-x64-gnu': 0.70.0
-      '@oxc-transform/binding-linux-x64-musl': 0.70.0
-      '@oxc-transform/binding-wasm32-wasi': 0.70.0
-      '@oxc-transform/binding-win32-arm64-msvc': 0.70.0
-      '@oxc-transform/binding-win32-x64-msvc': 0.70.0
+      '@oxc-transform/binding-darwin-arm64': 0.72.0
+      '@oxc-transform/binding-darwin-x64': 0.72.0
+      '@oxc-transform/binding-freebsd-x64': 0.72.0
+      '@oxc-transform/binding-linux-arm-gnueabihf': 0.72.0
+      '@oxc-transform/binding-linux-arm-musleabihf': 0.72.0
+      '@oxc-transform/binding-linux-arm64-gnu': 0.72.0
+      '@oxc-transform/binding-linux-arm64-musl': 0.72.0
+      '@oxc-transform/binding-linux-riscv64-gnu': 0.72.0
+      '@oxc-transform/binding-linux-s390x-gnu': 0.72.0
+      '@oxc-transform/binding-linux-x64-gnu': 0.72.0
+      '@oxc-transform/binding-linux-x64-musl': 0.72.0
+      '@oxc-transform/binding-wasm32-wasi': 0.72.0
+      '@oxc-transform/binding-win32-arm64-msvc': 0.72.0
+      '@oxc-transform/binding-win32-x64-msvc': 0.72.0
 
   p-limit@2.3.0:
     dependencies:
