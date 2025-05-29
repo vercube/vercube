@@ -31,7 +31,7 @@
   "devDependencies": {
     "@commitlint/cli": "19.8.1",
     "@commitlint/config-conventional": "19.8.1",
-    "@oxc-project/runtime": "0.72.0",
+    "@oxc-project/runtime": "0.72.1",
     "@types/node": "22.15.21",
     "@vitest/coverage-v8": "3.1.4",
     "@vitest/ui": "3.1.4",
