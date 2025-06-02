@@ -21,7 +21,7 @@
     "consola": "3.4.2",
     "dotenv": "16.5.0",
     "hookable": "5.5.3",
-    "oxc-parser": "0.72.0",
+    "oxc-parser": "0.72.2",
     "oxc-transform": "0.72.0",
     "pathe": "2.0.3",
     "rolldown": "1.0.0-beta.9",
