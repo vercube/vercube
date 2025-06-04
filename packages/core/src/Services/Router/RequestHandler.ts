@@ -205,7 +205,7 @@ export class RequestHandler {
     let fakeResponse = base ?? new FastResponse();
 
     if (response != null && response instanceof FastResponse) {
-      return response;
+      return response as Response;
     } else if (response !== null) {
       const responseInit = response as ResponseInit;
 
