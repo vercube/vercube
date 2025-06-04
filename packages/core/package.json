@@ -23,7 +23,7 @@
     "defu": "6.1.4",
     "pathe": "2.0.3",
     "rou3": "0.6.2",
-    "srvx": "0.7.3"
+    "srvx": "0.7.5"
   },
   "publishConfig": {
     "access": "public"
