@@ -124,7 +124,11 @@ export class RequestHandler {
               return hookResponse;
             }
           } catch (error_) {
-            this.gContainer.get(ErrorHandlerProvider).handleError(error_);
+            const error = this.gContainer.get(ErrorHandlerProvider).handleError(error_);
+
+            if (error instanceof Response) {
+              return error;
+            }
           }
         }
       }
@@ -156,11 +160,15 @@ export class RequestHandler {
           try {
             const hookResponse = await hook.middleware.onResponse?.(request, fakeResponse, handlerResponse);
 
-          if (hookResponse !== null) {
-            fakeResponse = this.processOverrideResponse(hookResponse!, fakeResponse);
-          }
-        } catch (error_) {
-          this.gContainer.get(ErrorHandlerProvider).handleError(error_);
+            if (hookResponse !== null) {
+              fakeResponse = this.processOverrideResponse(hookResponse!, fakeResponse);
+            }
+          } catch (error_) {
+            const error = this.gContainer.get(ErrorHandlerProvider).handleError(error_);
+
+            if (error instanceof Response) {
+              return error;
+            }
           }
         }
       }
