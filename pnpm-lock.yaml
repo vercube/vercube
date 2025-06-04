@@ -123,8 +123,8 @@ importers:
         specifier: 0.6.2
         version: 0.6.2
       srvx:
-        specifier: 0.7.3
-        version: 0.7.3
+        specifier: 0.7.5
+        version: 0.7.5
 
   packages/create-app:
     dependencies:
@@ -3400,8 +3400,8 @@ packages:
     resolution: {integrity: sha512-dKyh8mBgRWgfv88h4Cy5FrTmazZNrj6HpvcnxI5DYcgaM8jc0B2IBQi6uPsJVyMt7OpfmYGVXMmwNPw6xGbaLw==}
     engines: {node: '>=20.11.1'}
 
-  srvx@0.7.3:
-    resolution: {integrity: sha512-oEV2fS42a7KAeZUY3A59/HIWFm53EVVm2kXXxsWw15LPCcyQNfcnzqQJKyO8UGBWFtyIn1+9efhjr65xEmmytw==}
+  srvx@0.7.5:
+    resolution: {integrity: sha512-wAQo9uaiOpxX20V7OSNFgKjKHHIQqhsK0sxBGoxID3aIiaiQFRIlGm0bACKvit/iyhEqdWQfEy55R/j/jrqlZg==}
     engines: {node: '>=20.16.0'}
 
   stackback@0.0.2:
@@ -6903,7 +6903,7 @@ snapshots:
     dependencies:
       cookie-es: 2.0.0
 
-  srvx@0.7.3:
+  srvx@0.7.5:
     dependencies:
       cookie-es: 2.0.0
 
