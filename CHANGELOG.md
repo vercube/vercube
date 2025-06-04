@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.0.4...v0.0.5
+
+[compare changes](https://github.com/vercube/vercube/compare/v0.0.4...v0.0.5)
+
+### 🩹 Fixes
+
+- **core:** Fix validation query ([48122c1](https://github.com/vercube/vercube/commit/48122c1))
+
+### ❤️ Contributors
+
+- Oskar Lebuda
+
 ## v0.0.3...v0.0.4
 
 [compare changes](https://github.com/vercube/vercube/compare/v0.0.3...v0.0.4)
