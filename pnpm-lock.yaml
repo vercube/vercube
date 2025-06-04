@@ -120,8 +120,8 @@ importers:
         specifier: 2.0.3
         version: 2.0.3
       rou3:
-        specifier: 0.6.2
-        version: 0.6.2
+        specifier: 0.6.3
+        version: 0.6.3
       srvx:
         specifier: 0.7.3
         version: 0.7.3
@@ -3308,8 +3308,8 @@ packages:
     engines: {node: '>=18.0.0', npm: '>=8.0.0'}
     hasBin: true
 
-  rou3@0.6.2:
-    resolution: {integrity: sha512-LsyoUbBo+/RRBM3C3RpQ9U73j7ZtEj8n8NlV9LT6+wL7rDVVjc0O2hlwUcJZFfW642qfzCn9Ft4E8UdTrax/UA==}
+  rou3@0.6.3:
+    resolution: {integrity: sha512-1HSG1ENTj7Kkm5muMnXuzzfdDOf7CFnbSYFA+H3Fp/rB9lOCxCPgy1jlZxTKyFoC5jJay8Mmc+VbPLYRjzYLrA==}
 
   run-parallel@1.2.0:
     resolution: {integrity: sha512-5l4VyZR86LZ/lDxZTR6jqL8AFE2S0IFLMP26AbjsLVADxHdhB/c0GUsH+y39UfCi3dzz8OlQuPmnaJOMoDHQBA==}
@@ -5941,7 +5941,7 @@ snapshots:
   h3-nightly@2.0.0-20250428-102154-f1115f3:
     dependencies:
       cookie-es: 2.0.0
-      rou3: 0.6.2
+      rou3: 0.6.3
       srvx: 0.5.2
 
   has-flag@4.0.0: {}
@@ -6820,7 +6820,7 @@ snapshots:
       '@rollup/rollup-win32-x64-msvc': 4.41.1
       fsevents: 2.3.3
 
-  rou3@0.6.2: {}
+  rou3@0.6.3: {}
 
   run-parallel@1.2.0:
     dependencies:
