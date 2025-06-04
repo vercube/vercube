@@ -1,5 +1,35 @@
 # Changelog
 
+## v0.0.3...v0.0.4
+
+[compare changes](https://github.com/vercube/vercube/compare/v0.0.3...v0.0.4)
+
+### 🚀 Enhancements
+
+- **tsdown:** Move to tsdown ([a4d9f99](https://github.com/vercube/vercube/commit/a4d9f99))
+
+### 🩹 Fixes
+
+- **logger:** Fix export types for logger ([91e3059](https://github.com/vercube/vercube/commit/91e3059))
+- **deps:** Bump zod from 3.25.47 to 3.25.49 ([f57d21a](https://github.com/vercube/vercube/commit/f57d21a))
+- **core:** Middleware response ([a20968b](https://github.com/vercube/vercube/commit/a20968b))
+- **core:** Types error ([3b40bda](https://github.com/vercube/vercube/commit/3b40bda))
+- **core:** Fix release ([8979169](https://github.com/vercube/vercube/commit/8979169))
+
+### 📦 Build
+
+- **packages:** Bump packages ([b02083c](https://github.com/vercube/vercube/commit/b02083c))
+
+### 🏡 Chore
+
+- **release:** V0.0.3 ([7966564](https://github.com/vercube/vercube/commit/7966564))
+- **deps-dev:** Bump typescript-eslint from 8.33.0 to 8.33.1 ([0ec0c43](https://github.com/vercube/vercube/commit/0ec0c43))
+- Release v0.0.4 [no ci] ([729181b](https://github.com/vercube/vercube/commit/729181b))
+
+### ❤️ Contributors
+
+- Oskar Lebuda
+
 ## v0.0.3
 
 [compare changes](https://github.com/vercube/vercube/compare/v0.0.2...v0.0.3)
