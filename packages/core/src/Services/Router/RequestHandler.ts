@@ -114,11 +114,16 @@ export class RequestHandler {
         },
       });
 
-      // 1. Call before route middlewares
+      // 1. Resolve all args
+      const resolvedArgs = args.length > 0
+        ? await this.gMetadataResolver.resolveArgs(args, { ...route, request, response: fakeResponse })
+        : [];
+
+      // 2. Call before route middlewares
       if (middlewares.beforeMiddlewares.length > 0) {
         for await (const hook of middlewares.beforeMiddlewares) {
           try {
-            const hookResponse = await hook.middleware.onRequest?.(request, fakeResponse, { middlewareArgs: hook.args, methodArgs: args });
+            const hookResponse = await hook.middleware.onRequest?.(request, fakeResponse, { middlewareArgs: hook.args, methodArgs: resolvedArgs });
 
             if (hookResponse instanceof Response) {
               return hookResponse;
@@ -133,7 +138,7 @@ export class RequestHandler {
         }
       }
 
-      // 2. Call every actions
+      // 3. Call every actions
       for (const action of actions) {
         const actionResponse = action.handler(request, fakeResponse);
 
@@ -141,11 +146,6 @@ export class RequestHandler {
           fakeResponse = this.processOverrideResponse(actionResponse!, fakeResponse);
         }
       }
-
-      // 3. Resolve all args
-      const resolvedArgs = args.length > 0
-        ? await this.gMetadataResolver.resolveArgs(args, { ...route, request, response: fakeResponse })
-        : [];
 
       // 4. Call current route handler
       let handlerResponse = instance[propertyName].call(instance, ...resolvedArgs?.map((a) => a.resolved) ?? []);
