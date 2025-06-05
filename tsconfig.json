@@ -35,9 +35,6 @@
       ],
       "@vercube/logger/providers/*": [
         "packages/logger/src/Providers/*"
-      ],
-      "nx": [
-        "packages/nx/src/index.ts"
       ]
     }
   },

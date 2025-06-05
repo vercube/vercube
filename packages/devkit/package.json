@@ -7,8 +7,11 @@
   "license": "MIT",
   "sideEffects": false,
   "type": "module",
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
   "exports": {
-    ".": "./dist/index.mjs"
+    ".": "./dist/index.mjs",
+    "./package.json": "./package.json"
   },
   "types": "./dist/index.d.mts",
   "files": [

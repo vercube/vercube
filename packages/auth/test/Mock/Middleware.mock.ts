@@ -1,7 +1,7 @@
 import { AuthProvider } from '@vercube/auth';
 
 // Mock AuthProvider that returns an error
-export class ErrorAuthProvider extends AuthProvider<unknown, { id: number; name: string }> {
+export class ErrorAuthProvider extends AuthProvider<unknown> {
   public async validate(request: Request, params: unknown): Promise<string | null> {
     return 'Authentication failed'; // Always returns an error
   }

@@ -7,17 +7,16 @@
   "license": "MIT",
   "sideEffects": false,
   "type": "module",
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs"
-    },
-    "./providers": {
-      "types": "./dist/Providers/index.d.ts",
-      "import": "./dist/Providers/index.mjs"
-    }
+    ".": "./dist/index.mjs",
+    "./providers": "./dist/Providers/index.mjs",
+    "./providers/ConsoleProvider": "./dist/Providers/ConsoleProvider.mjs",
+    "./providers/JsonProvider": "./dist/Providers/JsonProvider.mjs",
+    "./package.json": "./package.json"
   },
-  "types": "./dist/index.d.ts",
+  "types": "./dist/index.d.mts",
   "files": [
     "dist",
     "README.md"
