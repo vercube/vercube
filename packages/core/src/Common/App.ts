@@ -5,7 +5,7 @@ import { ConfigTypes } from '../Types/ConfigTypes';
 import { HttpServer } from '../Services/HttpServer/HttpServer';
 import { Router } from '../Services/Router/Router';
 import { StaticRequestHandler } from '../Services/Router/StaticRequestHandler';
-import { Logger, colors } from '@vercube/logger';
+import { Logger } from '@vercube/logger';
 
 /**
  * Represents the main application class.
@@ -99,12 +99,6 @@ export class App {
 
     // listen for incoming requests
     await this.gHttpServer.listen();
-
-    this.gLogger?.info(
-      `\n${colors.green('➜')} App listening on port ${colors.bold(
-        this.fConfig.server?.port?.toString() ?? '3000',
-      )}`,
-    );
 
     this.fIsInitialized = true;
   }
