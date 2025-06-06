@@ -1,5 +1,27 @@
 # Changelog
 
+## v0.0.5...v0.0.6
+
+[compare changes](https://github.com/vercube/vercube/compare/v0.0.5...v0.0.6)
+
+### 🩹 Fixes
+
+- **all:** Fix types and clean package.json for each package ([3483fe6](https://github.com/vercube/vercube/commit/3483fe6))
+- Remove doubled listen log ([19a0071](https://github.com/vercube/vercube/commit/19a0071))
+
+### 📦 Build
+
+- Bump packages ([adedca1](https://github.com/vercube/vercube/commit/adedca1))
+
+### 🏡 Chore
+
+- **release:** V0.0.5 ([10aa820](https://github.com/vercube/vercube/commit/10aa820))
+- Release v0.0.6 [no ci] ([112dd5f](https://github.com/vercube/vercube/commit/112dd5f))
+
+### ❤️ Contributors
+
+- Oskar Lebuda
+
 ## v0.0.4...v0.0.5
 
 [compare changes](https://github.com/vercube/vercube/compare/v0.0.4...v0.0.5)
