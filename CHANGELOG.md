@@ -13,11 +13,6 @@
 
 - Bump packages ([adedca1](https://github.com/vercube/vercube/commit/adedca1))
 
-### 🏡 Chore
-
-- **release:** V0.0.5 ([10aa820](https://github.com/vercube/vercube/commit/10aa820))
-- Release v0.0.6 [no ci] ([112dd5f](https://github.com/vercube/vercube/commit/112dd5f))
-
 ### ❤️ Contributors
 
 - Oskar Lebuda
