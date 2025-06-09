@@ -28,11 +28,6 @@ export namespace ConfigTypes {
        */
       duration?: number;
     }
-
-    /**
-     * Additional user configuration
-     */
-    [key: string]: unknown;
   }
 
   /**
@@ -131,7 +126,7 @@ export namespace ConfigTypes {
   /**
    * Main configuration interface for the Vercube application.
    */
-  export interface Config {
+  export interface Config<RuntimeUserConfig = Record<string, unknown>> {
     /**
      * Flag indicating if the application is running in production mode.
      */
@@ -155,7 +150,7 @@ export namespace ConfigTypes {
     /**
      * Runtime configuration for the application.
      */
-    runtime?: RuntimeConfig;
+    runtime?: RuntimeConfig & RuntimeUserConfig;
 
     /**
      * Experimental features configuration.
