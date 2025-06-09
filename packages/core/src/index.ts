@@ -50,6 +50,7 @@ export * from './Services/HttpServer/HttpServer';
 export * from './Services/Metadata/MetadataResolver';
 export * from './Services/ErrorHandler/ErrorHandlerProvider';
 export * from './Services/Router/Router';
+export * from './Services/Config/RuntimeConfig';
 
 // Errors
 export * from './Errors/HttpError';
