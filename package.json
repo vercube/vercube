@@ -21,7 +21,10 @@
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs",
     "playground": "cd playground && pnpm dev",
-    "bench": "node .bench/_run.mjs"
+    "bench": "node .bench/_run.mjs",
+    "release": "pnpm release:nx && pnpm release:changelog",
+    "release:nx": "pnpm nx release --yes",
+    "release:changelog": "changelogen --output CHANGELOG.md"
   },
   "lint-staged": {
     "*.{js,ts}": [
@@ -36,6 +39,7 @@
     "@types/node": "22.15.30",
     "@vitest/coverage-v8": "3.2.2",
     "@vitest/ui": "3.2.2",
+    "changelogen": "0.6.1",
     "eslint": "9.28.0",
     "eslint-config-unjs": "0.4.2",
     "lint-staged": "16.1.0",
