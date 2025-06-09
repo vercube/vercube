@@ -22,9 +22,8 @@
     "docs:preview": "vitepress preview docs",
     "playground": "cd playground && pnpm dev",
     "bench": "node .bench/_run.mjs",
-    "release": "pnpm release:nx && pnpm release:changelog",
-    "release:nx": "pnpm nx release --yes",
-    "release:changelog": "changelogen --output CHANGELOG.md"
+    "release": "pnpm release:nx",
+    "release:nx": "pnpm nx release --yes"
   },
   "lint-staged": {
     "*.{js,ts}": [
