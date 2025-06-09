@@ -9,13 +9,13 @@ export class RuntimeConfig {
    * Private field to store the runtime configuration object.
    * @private
    */
-  private fRuntimeConfig: ConfigTypes.RuntimeConfig;
+  private fRuntimeConfig: ConfigTypes.Config['runtime'];
   
   /**
    * Gets the current runtime configuration.
-   * @returns {ConfigTypes.RuntimeConfig} The current runtime configuration object.
+   * @returns {ConfigTypes.Config['runtime']} The current runtime configuration object.
    */
-  public get runtimeConfig(): ConfigTypes.RuntimeConfig {
+  public get runtimeConfig(): ConfigTypes.Config['runtime'] {
     return this.fRuntimeConfig;
   }
 
@@ -23,7 +23,7 @@ export class RuntimeConfig {
    * Sets the runtime configuration.
    * @param {ConfigTypes.RuntimeConfig} value - The new runtime configuration object to set.
    */
-  public set runtimeConfig(value: ConfigTypes.RuntimeConfig) {
+  public set runtimeConfig(value: ConfigTypes.Config['runtime']) {
     this.fRuntimeConfig = value;
   }
 }
