@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.0.9...v0.0.10
+
+[compare changes](https://github.com/vercube/vercube/compare/v0.0.9...v0.0.10)
+
+### 🩹 Fixes
+
+- **core:** Fix RuntimeConfig types ([fe9a0b3](https://github.com/vercube/vercube/commit/fe9a0b3))
+- **core:** Remove unused package scripts ([0372155](https://github.com/vercube/vercube/commit/0372155))
+
+### ❤️ Contributors
+
+- Oskar Lebuda
+
 ## v0.0.8...v0.0.9
 
 [compare changes](https://github.com/vercube/vercube/compare/v0.0.8...v0.0.9)
