@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.0.6...v0.0.7
+
+[compare changes](https://github.com/vercube/vercube/compare/v0.0.6...v0.0.7)
+
+### 🚀 Enhancements
+
+- Add runtime user config ([3be200d](https://github.com/vercube/vercube/commit/3be200d)) ([4c68d48](https://github.com/vercube/vercube/commit/4c68d48))
+
+### ❤️ Contributors
+
+- Oskar Lebuda
+
 ## v0.0.5...v0.0.6
 
 [compare changes](https://github.com/vercube/vercube/compare/v0.0.5...v0.0.6)
