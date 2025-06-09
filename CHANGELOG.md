@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.0.8...v0.0.9
+
+[compare changes](https://github.com/vercube/vercube/compare/v0.0.8...v0.0.9)
+
+### 🩹 Fixes
+
+- **core:** Expose RuntimeConfig service ([377a74b](https://github.com/vercube/vercube/commit/377a74b))
+
+### ❤️ Contributors
+
+- Oskar Lebuda
+
 ## v0.0.7...v0.0.8
 
 [compare changes](https://github.com/vercube/vercube/compare/v0.0.7...v0.0.8)
