@@ -1,11 +1,11 @@
-import { type Container, initializeContainer, Inject, InjectOptional } from '@vercube/di';
+import { type Container, initializeContainer, Inject } from '@vercube/di';
 import { PluginsRegistry } from '../Services/Plugins/PluginsRegistry';
 import type { BasePlugin } from '../Services/Plugins/BasePlugin';
 import { ConfigTypes } from '../Types/ConfigTypes';
 import { HttpServer } from '../Services/HttpServer/HttpServer';
 import { Router } from '../Services/Router/Router';
 import { StaticRequestHandler } from '../Services/Router/StaticRequestHandler';
-import { Logger } from '@vercube/logger';
+import { RuntimeConfig } from '../Services/Config/RuntimeConfig';
 
 /**
  * Represents the main application class.
@@ -24,8 +24,8 @@ export class App {
   @Inject(StaticRequestHandler)
   private gStaticRequestHandler: StaticRequestHandler;
 
-  @InjectOptional(Logger)
-  private gLogger: Logger | null;
+  @Inject(RuntimeConfig)
+  private gRuntimeConfig: RuntimeConfig;
 
   /** Holds the initialization status of the application */
   private fIsInitialized: boolean = false;
@@ -65,6 +65,10 @@ export class App {
 
     if (this.fConfig.server?.static) {
       this.gStaticRequestHandler.initialize(this.fConfig.server?.static);
+    }
+
+    if (this.fConfig.runtime) {
+      this.gRuntimeConfig.runtimeConfig = this.fConfig.runtime;
     }
     
     this.gRouter.initialize();
