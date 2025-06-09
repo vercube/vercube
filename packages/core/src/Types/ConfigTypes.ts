@@ -28,6 +28,11 @@ export namespace ConfigTypes {
        */
       duration?: number;
     }
+
+    /**
+     * Additional user configuration
+     */
+    [key: string]: unknown;
   }
 
   /**
