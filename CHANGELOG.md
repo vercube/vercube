@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.0.7...v0.0.8
+
+[compare changes](https://github.com/vercube/vercube/compare/v0.0.7...v0.0.8)
+
+### 🚀 Enhancements
+
+- Change runtime config types ([868c037](https://github.com/vercube/vercube/commit/868c037))
+
+### ❤️ Contributors
+
+- Oskar Lebuda
+
 ## v0.0.6...v0.0.7
 
 [compare changes](https://github.com/vercube/vercube/compare/v0.0.6...v0.0.7)
