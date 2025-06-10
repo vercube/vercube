@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.0.10...v0.0.11
+
+[compare changes](https://github.com/vercube/vercube/compare/v0.0.10...v0.0.11)
+
+### 🚀 Enhancements
+
+- **core:** Add c12 config options ([3b72e8c](https://github.com/vercube/vercube/commit/3b72e8c))
+
+### 📦 Build
+
+- Bump packages ([9d543c8](https://github.com/vercube/vercube/commit/9d543c8))
+
+### ❤️ Contributors
+
+- Oskar Lebuda
+
 ## v0.0.9...v0.0.10
 
 [compare changes](https://github.com/vercube/vercube/compare/v0.0.9...v0.0.10)
