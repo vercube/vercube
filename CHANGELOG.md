@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.0.11...v0.0.12
+
+[compare changes](https://github.com/vercube/vercube/compare/v0.0.11...v0.0.12)
+
+### 🩹 Fixes
+
+- **core:** Fix dotenv loading ([fca46da](https://github.com/vercube/vercube/commit/fca46da))
+
+### ❤️ Contributors
+
+- Oskar Lebuda
+
 ## v0.0.10...v0.0.11
 
 [compare changes](https://github.com/vercube/vercube/compare/v0.0.10...v0.0.11)
