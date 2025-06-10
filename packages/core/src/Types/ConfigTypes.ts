@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 import type { LoggerTypes } from '@vercube/logger'; 
+import type { DotenvOptions } from 'c12';
 /**
  * Namespace containing configuration type definitions for the Vercube framework.
  */
@@ -162,5 +163,15 @@ export namespace ConfigTypes {
      * This property is only used when using vercube cli.
      */
     build?: BuildOptions;
+
+    /**
+     * Additional configuration for c12.
+     */
+    c12?: {
+      /**
+       * Configuration for dotenv.
+       */
+      dotenv?: boolean | DotenvOptions;
+    }
   }
 }

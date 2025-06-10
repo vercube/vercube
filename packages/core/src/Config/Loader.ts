@@ -11,7 +11,7 @@ import { defaultConfig } from './DefaultConfig';
 export async function loadVercubeConfig(overrides?: ConfigTypes.Config): Promise<ConfigTypes.Config> {
   const config = await loadConfig<ConfigTypes.Config>({
     name: 'vercube',
-    dotenv: true,
+    dotenv: overrides?.c12?.dotenv ?? true,
     rcFile: false,
     globalRc: false,
     defaults: defaultConfig,
