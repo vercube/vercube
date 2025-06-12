@@ -27,7 +27,7 @@
     "oxc-parser": "0.72.3",
     "oxc-transform": "0.72.3",
     "pathe": "2.0.3",
-    "rolldown": "1.0.0-beta.14",
+    "rolldown": "1.0.0-beta.15",
     "unplugin-isolated-decl": "0.14.3"
   },
   "publishConfig": {
