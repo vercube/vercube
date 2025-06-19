@@ -126,8 +126,8 @@ importers:
         specifier: 2.0.3
         version: 2.0.3
       rou3:
-        specifier: 0.7.0
-        version: 0.7.0
+        specifier: 0.7.1
+        version: 0.7.1
       srvx:
         specifier: 0.8.0
         version: 0.8.0
@@ -4205,8 +4205,8 @@ packages:
   rou3@0.6.3:
     resolution: {integrity: sha512-1HSG1ENTj7Kkm5muMnXuzzfdDOf7CFnbSYFA+H3Fp/rB9lOCxCPgy1jlZxTKyFoC5jJay8Mmc+VbPLYRjzYLrA==}
 
-  rou3@0.7.0:
-    resolution: {integrity: sha512-iuliR0PgQvH8M1R5f85Vo1bIx+26rDdFHZgHmLwVXvxkuTTPOhWicLXcAywAtOiRPAWHtJ3OAwLCFjNBNh8h5A==}
+  rou3@0.7.1:
+    resolution: {integrity: sha512-uxflA2/4LtpKJ5lZ5sfdA6sILVQj428dezT1PfNdDM1l5OuUG3ogEPsL8fZeoJHHFXrpZKQwcTzyIbq5X3e7Ig==}
 
   run-applescript@7.0.0:
     resolution: {integrity: sha512-9by4Ij99JUr/MCFBUkDKLWK3G9HVXmabKz9U5MlIAIuvuzkiOicRYs8XJLxX+xahD+mLiiCYDqF9dKAgtzKP1A==}
@@ -8857,7 +8857,7 @@ snapshots:
 
   rou3@0.6.3: {}
 
-  rou3@0.7.0: {}
+  rou3@0.7.1: {}
 
   run-applescript@7.0.0: {}
 
