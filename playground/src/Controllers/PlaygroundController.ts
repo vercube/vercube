@@ -10,6 +10,7 @@ import {
   Body,
   QueryParams,
   Param,
+  RuntimeConfig,
 } from '@vercube/core';
 import { Auth } from '@vercube/auth';
 import { FirstMiddleware } from '../Middlewares/FirstMiddleware';
@@ -19,7 +20,8 @@ import { StorageManager } from '@vercube/storage';
 import { Logger } from '@vercube/logger';
 import { BasicAuthenticationProvider } from '../Services/BasicAuthenticationProvider';
 import { DummyAuthorizationProvider } from '../Services/DummyAuthorizationProvider';
-import { SecondMiddleware } from 'src/Middlewares/SecondMiddleware';
+import { SecondMiddleware } from '../Middlewares/SecondMiddleware';
+import type { AppTypes } from '../Types/AppTypes';
 
 const schema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -45,6 +47,9 @@ export default class PlaygroundController {
 
   @Inject(Logger)
   private gLogger: Logger;
+
+  @Inject(RuntimeConfig)
+  private gRuntimeConfig: RuntimeConfig<AppTypes.Config>;
 
   /**
    * Handles GET requests to the / endpoint.
@@ -183,6 +188,17 @@ export default class PlaygroundController {
   @Get('/error-throw')
   public async errorThrow(): Promise<{ message: string }> {
     throw new Error('Test error');
+  }
+
+  /**
+   * Handles GET requests to the /runtime-config endpoint.
+   * @returns {Promise<{ message: string }>} A promise that resolves to an object containing a greeting message.
+   */
+  @Get('/runtime-config')
+  public async runtimeConfig(): Promise<{ message: string }> {
+    const something = this.gRuntimeConfig.runtimeConfig?.something?.enabled;
+
+    return { message: `Something is ${something ? 'enabled' : 'disabled'}` };
   }
 
 }

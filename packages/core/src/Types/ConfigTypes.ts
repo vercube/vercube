@@ -32,6 +32,13 @@ export namespace ConfigTypes {
   }
 
   /**
+   * Helper type to create a fully typed runtime configuration.
+   * This allows users to define their own runtime configuration structure
+   * while maintaining type safety.
+   */
+  export type CreateRuntimeConfig<T = Record<string, unknown>> = RuntimeConfig & T;
+
+  /**
    * Configuration options for experimental features.
    * These options may change or be removed in future versions.
    */
@@ -151,7 +158,7 @@ export namespace ConfigTypes {
     /**
      * Runtime configuration for the application.
      */
-    runtime?: RuntimeConfig & RuntimeUserConfig;
+    runtime?: CreateRuntimeConfig<RuntimeUserConfig>;
 
     /**
      * Experimental features configuration.
