@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.0.13...v0.0.14
+
+[compare changes](https://github.com/vercube/vercube/compare/v0.0.13...v0.0.14)
+
+### 🚀 Enhancements
+
+- Add generic runtime config ([3f07373](https://github.com/vercube/vercube/commit/3f07373))
+
+### ❤️ Contributors
+
+- Oskar Lebuda
+
 ## v0.0.12...v0.0.13
 
 [compare changes](https://github.com/vercube/vercube/compare/v0.0.12...v0.0.13)
