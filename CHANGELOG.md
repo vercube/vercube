@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.0.12...v0.0.13
+
+[compare changes](https://github.com/vercube/vercube/compare/v0.0.12...v0.0.13)
+
+### 🚀 Enhancements
+
+- Expose app config ([64204b2](https://github.com/vercube/vercube/commit/64204b2))
+
+### 📦 Build
+
+- Bump packages ([c293342](https://github.com/vercube/vercube/commit/c293342)) ([d552499](https://github.com/vercube/vercube/commit/d552499)) ([94cc5c2](https://github.com/vercube/vercube/commit/94cc5c2))
+
+
+### ❤️ Contributors
+
+- Oskar Lebuda
+
 ## v0.0.11...v0.0.12
 
 [compare changes](https://github.com/vercube/vercube/compare/v0.0.11...v0.0.12)
