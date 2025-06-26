@@ -55,6 +55,18 @@ export class App {
   }
 
   /**
+   * Gets the application config.
+   * This method is used to get the application config without runtime config.
+   * @returns {ConfigTypes.Config} The application config.
+   */
+  public get config(): ConfigTypes.Config {
+    return {
+      ...this.fConfig,
+      runtime: undefined,
+    };
+  }
+
+  /**
    * Initializes the application.
    *
    * @returns {Promise<void>} A promise that resolves when the application is initialized.

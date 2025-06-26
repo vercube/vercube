@@ -14,12 +14,12 @@ export const defaultConfig: ConfigTypes.Config = {
   /**
    * Production mode disabled by default
    */
-  production: false,
+  production: (process.env.NODE_ENV === 'production'),
 
   /**
    * Development mode disabled by default
    */
-  dev: false,
+  dev: (process.env.NODE_ENV !== 'production'),
 
   /**
    * Build configuration settings
