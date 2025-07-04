@@ -18,8 +18,8 @@ importers:
         specifier: 21.2.2
         version: 21.2.2(@babel/traverse@7.28.0)(@swc/core@1.11.29)(nx@21.2.2(@swc/core@1.11.29))
       '@oxc-project/runtime':
-        specifier: 0.75.0
-        version: 0.75.0
+        specifier: 0.75.1
+        version: 0.75.1
       '@types/node':
         specifier: 24.0.10
         version: 24.0.10
@@ -141,8 +141,8 @@ importers:
   packages/devkit:
     dependencies:
       '@oxc-project/runtime':
-        specifier: 0.75.0
-        version: 0.75.0
+        specifier: 0.75.1
+        version: 0.75.1
       '@vercube/core':
         specifier: workspace:*
         version: link:../core
@@ -1549,6 +1549,10 @@ packages:
 
   '@oxc-project/runtime@0.75.0':
     resolution: {integrity: sha512-gzRmVI/vorsPmbDXt7GD4Uh2lD3rCOku/1xWPB4Yx48k0EP4TZmzQudWapjN4+7Vv+rgXr0RqCHQadeaMvdBuw==}
+    engines: {node: '>=6.9.0'}
+
+  '@oxc-project/runtime@0.75.1':
+    resolution: {integrity: sha512-UH07DRi7xXqAsJ/sFbJJg0liIXnapB6P5uADXIiF1s6WQjZzcTIkKHca0s522QVxmijPxVX5ijCYxSr7eSq5CQ==}
     engines: {node: '>=6.9.0'}
 
   '@oxc-project/types@0.75.0':
@@ -5919,6 +5923,8 @@ snapshots:
     optional: true
 
   '@oxc-project/runtime@0.75.0': {}
+
+  '@oxc-project/runtime@0.75.1': {}
 
   '@oxc-project/types@0.75.0': {}
 

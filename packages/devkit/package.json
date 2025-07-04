@@ -19,7 +19,7 @@
     "README.md"
   ],
   "dependencies": {
-    "@oxc-project/runtime": "0.75.0",
+    "@oxc-project/runtime": "0.75.1",
     "@vercube/core": "workspace:*",
     "consola": "3.4.2",
     "dotenv": "17.0.1",
