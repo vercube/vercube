@@ -19,6 +19,7 @@
     "README.md"
   ],
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.842.0",
     "@vercube/di": "workspace:*",
     "@vercube/logger": "workspace:*"
   },
