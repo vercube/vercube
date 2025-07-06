@@ -8,3 +8,4 @@ export * from './Storages/S3Storage';
 
 // Types
 export * from './Types/StorageTypes';
+export * from './Types/S3StorageTypes';
