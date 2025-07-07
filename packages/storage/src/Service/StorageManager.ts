@@ -28,7 +28,7 @@ export class StorageManager {
    * @param {IOC.Newable<Storage>} params.storage - Storage implementation to mount
    * @returns {Promise<void>} A promise that resolves when mounting is complete
    */
-  public async mount<T extends Storage<any>>({ name, storage, initOptions }: StorageTypes.Mount<T>): Promise<void> {
+  public async mount<T extends Storage<unknown>>({ name, storage, initOptions }: StorageTypes.Mount<T>): Promise<void> {
     this.fStorages.set(name ?? 'default', {
       storage: this.gContainer.resolve(storage),
       initOptions,
@@ -137,11 +137,10 @@ export class StorageManager {
   private async init(): Promise<void> {
     for (const { storage, initOptions } of this.fStorages.values()) {
       try {
-        await storage?.initialize(initOptions as any);
+        await storage?.initialize(initOptions);
       } catch (error) {
         this.gLogger?.error('Vercube/StorageManager::init', error);
       }
     }
   }
-
 }

@@ -8,7 +8,7 @@ export namespace StorageTypes {
     storage?: string;
   }
 
-  export type Mount<T extends Storage<any>> = {
+  export type Mount<T extends Storage<unknown>> = {
     name?: string;
     storage: IOC.Newable<T>;
   } & (T extends Storage<undefined>
@@ -18,7 +18,7 @@ export namespace StorageTypes {
     : never);
 
   export interface Storages<T = unknown> {
-    storage: Storage;
+    storage: Storage<T>;
     initOptions?: T;
   }
 
