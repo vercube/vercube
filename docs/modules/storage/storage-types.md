@@ -16,14 +16,17 @@ export interface BaseOptions {
 
 ### Mount
 
-Interface for mounting a new storage instance.
+Interface for mounting a new storage instance. The `initOptions` type is inferred by the adapter, making it conditionally optional or required.
 
 ```typescript
-export interface Mount {
+export type Mount<T extends Storage<any>> = {
   name?: string;
-  storage: IOC.Newable<Storage>;
-  initOptions?: unknown;
-}
+  storage: IOC.Newable<Storage<any>>;
+} & (T extends Storage<undefined>
+  ? { initOptions?: unknown }
+  : T extends Storage<infer U>
+  ? { initOptions: U }
+  : never);
 ```
 
 ### Storages

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Container } from '@vercube/di';
 import { Logger } from '@vercube/logger';
-import { StorageManager, MemoryStorage, Storage } from '../src';
+import { StorageManager, MemoryStorage, Storage, S3Storage } from '../src';
 import { initializeContainer } from '@vercube/di';
 import { TestStorage, ErrorStorage } from './Utils/Mock.mock';
 
@@ -65,12 +65,24 @@ describe('StorageManager', () => {
         storage: MemoryStorage,
       });
 
+      await storageManager.mount({
+        name: 'storage3',
+        storage: S3Storage,
+        initOptions: {
+          region: 'us-east-1',
+          bucket: 'test-bucket',
+        },
+      });
+
       const storage1 = storageManager.getStorage('storage1');
       const storage2 = storageManager.getStorage('storage2');
+      const storage3 = storageManager.getStorage('storage3');
 
       expect(storage1).toBeDefined();
       expect(storage2).toBeDefined();
+      expect(storage3).toBeDefined();
       expect(storage1).not.toBe(storage2);
+      expect(storage2).not.toBe(storage3);
     });
   });
 

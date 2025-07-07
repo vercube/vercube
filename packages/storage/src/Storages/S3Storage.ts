@@ -9,7 +9,7 @@ import {
 } from '@aws-sdk/client-s3';
 import { Storage } from '../Service/Storage';
 import { Readable } from 'node:stream';
-import { S3StorageTypes } from '../Types/S3StorageTypes';
+import { StorageTypes } from '../Types/StorageTypes';
 
 /**
 * S3 storage implementation of the Storage interface.
@@ -17,14 +17,17 @@ import { S3StorageTypes } from '../Types/S3StorageTypes';
 * 
 * @implements {Storage}
 */
-export class S3Storage implements Storage {
+export class S3Storage implements Storage<StorageTypes.S3BaseOptions> {
   private s3: S3Client;
   private bucket: string;
 
   /**
   * Initializes the S3 storage client.
+  * 
+  * @param {StorageTypes.S3BaseOptions} options - Configuration options for the S3 client.
+  * @returns {Promise<void>} A promise that resolves when initialization is complete.
   */
-  public async initialize(options: S3StorageTypes.BaseOptions): Promise<void> {
+  public async initialize(options: StorageTypes.S3BaseOptions): Promise<void> {
     this.s3 = new S3Client({ ...options });
     this.bucket = options.bucket;
   }
