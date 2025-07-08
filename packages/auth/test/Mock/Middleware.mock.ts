@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { AuthProvider } from '@vercube/auth';
 
 // Mock AuthProvider that returns an error

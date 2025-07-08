@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createApp } from '../../src/Common/CreateApp';
 import { App } from '../../src/Common/App';
 import { RuntimeConfig } from '../../src/Services/Config/RuntimeConfig';
-import { loadVercubeConfig } from '../../src/Config/Loader';
 import type { ConfigTypes } from '../../src/Types/ConfigTypes';
 import { defaultConfig } from '../../src/Config/DefaultConfig';
 

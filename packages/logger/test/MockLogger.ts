@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Logger } from '../src/Common/Logger';
 import type { LoggerTypes } from '../src/Types/LoggerTypes';
 

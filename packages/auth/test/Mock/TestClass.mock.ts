@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Auth, User } from '../../src';
 import { AuthProvider } from '../../src/Services/AuthProvider';
 

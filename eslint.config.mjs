@@ -1,7 +1,15 @@
 import unjs from 'eslint-config-unjs';
 
 export default unjs({
-  ignores: ['**/.output', '**/*.gen.*', '**/dist'],
+  ignores: [
+    '**/.output',
+    '**/*.gen.*',
+    '**/dist',
+    'docs',
+    'bench',
+    'node_modules',
+    'pnpm-lock.yaml',
+  ],
   rules: {
     quotes: ['error', 'single'],
     semi: ['error', 'always'],

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
-import { IOC } from '@vercube/di';
-import { Storage } from '../Service/Storage';
-import { type S3ClientConfig } from '@aws-sdk/client-s3';
+import type { Storage } from '../Service/Storage';
+import type { IOC } from '@vercube/di';
+import type { S3ClientConfig } from '@aws-sdk/client-s3';
 
 export namespace StorageTypes {
   export interface BaseOptions {

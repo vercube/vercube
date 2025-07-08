@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { App, BasePlugin } from '@vercube/core';
 
 export interface CustomPluginOptions {

@@ -7,7 +7,7 @@ describe('Storage', () => {
     class ConcreteStorage extends Storage {
       public initialize(): void {}
       public getItem<T = unknown>(): T { return {} as T; }
-      public setItem<T = unknown, U = unknown>(): void {}
+      public setItem(): void {}
       public deleteItem(): void {}
       public hasItem(): boolean { return false; }
       public getKeys(): string[] { return []; }
@@ -24,7 +24,7 @@ describe('Storage', () => {
     class ConcreteStorage extends Storage {
       public initialize(): void {}
       public getItem<T = unknown>(): T { return {} as T; }
-      public setItem<T = unknown, U = unknown>(): void {}
+      public setItem(): void {}
       public deleteItem(): void {}
       public hasItem(): boolean { return false; }
       public getKeys(): string[] { return []; }

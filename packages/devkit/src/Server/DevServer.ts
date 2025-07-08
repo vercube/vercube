@@ -1,7 +1,6 @@
 import { resolve } from 'node:path';
 import { fork, type ChildProcess } from 'node:child_process';
 import consola from 'consola';
-import { colors } from 'consola/utils';
 import type { DevKitTypes } from '../Types/DevKitTypes';
 
 /**
