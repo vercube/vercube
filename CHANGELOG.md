@@ -1,5 +1,26 @@
 # Changelog
 
+## v0.0.14...v0.0.15
+
+[compare changes](https://github.com/vercube/vercube/compare/v0.0.14...v0.0.15)
+
+### 🚀 Enhancements
+
+- Added s3 storage strategy to the storage package ([#475](https://github.com/vercube/vercube/pull/475))
+
+### 💅 Refactors
+
+- Remove unused imports and add type imports ([a8eb1b7](https://github.com/vercube/vercube/commit/a8eb1b7))
+
+### 📦 Build
+
+- Bump packages ([4533b41](https://github.com/vercube/vercube/commit/4533b41)) ([bf10f8a](https://github.com/vercube/vercube/commit/bf10f8a)) ([1b12c96](https://github.com/vercube/vercube/commit/1b12c96)) ([e03fdb5](https://github.com/vercube/vercube/commit/e03fdb5))
+
+### ❤️ Contributors
+
+- Oskar Lebuda ([@OskarLebuda](https://github.com/OskarLebuda))
+- Jhoni ([@jhnxrs](https://github.com/jhnxrs))
+
 ## v0.0.13...v0.0.14
 
 [compare changes](https://github.com/vercube/vercube/compare/v0.0.13...v0.0.14)
