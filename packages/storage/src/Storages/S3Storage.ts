@@ -7,9 +7,9 @@ import {
   ListObjectsV2Command,
   type ListObjectsV2CommandOutput,
 } from '@aws-sdk/client-s3';
-import { Storage } from '../Service/Storage';
-import { Readable } from 'node:stream';
-import { StorageTypes } from '../Types/StorageTypes';
+import type { Storage } from '../Service/Storage';
+import type { Readable } from 'node:stream';
+import type { StorageTypes } from '../Types/StorageTypes';
 
 /**
 * S3 storage implementation of the Storage interface.
