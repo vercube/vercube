@@ -63,6 +63,94 @@ export function useContainer(container: Container): Container {
 - In-memory data storage
 - Performance-critical operations
 
+---
+
+### S3Storage
+
+The `S3Storage` class enables key-value operations using AWS S3 as the underlying storage. To use this class, make sure to install the `@aws-sdk/client-s3` package as a dependency.
+
+```typescript
+import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
+import { Storage } from '@vercube/storage';
+import { S3Storage } from '@vercube/storage';
+
+// S3Storage implements the Storage interface
+class S3Storage implements Storage<StorageTypes.S3BaseOptions> {
+  private s3: S3Client;
+  private bucket: string;
+  
+  // Implementation of Storage methods
+  public async initialize(options: StorageTypes.S3BaseOptions): Promise<void> {
+    this.s3 = new S3Client({ ...options });
+    this.bucket = options.bucket;
+  }
+
+  private async streamToString(stream: Readable): Promise<string> {
+    const chunks: Uint8Array[] = [];
+    for await (const chunk of stream) {
+      chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+    }
+    return Buffer.concat(chunks).toString('utf8');
+  }
+  
+  public async getItem<T = unknown>(key: string): Promise<T> {
+    try {
+      const result = await this.s3.send(
+        new GetObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+        }),
+      );
+
+      if (!result.Body) {
+        return undefined as T;
+      }
+
+      const body = await this.streamToString(result.Body as Readable);
+      return JSON.parse(body) as T;
+    } catch (error_: any) {
+      if (error_.name === 'NoSuchKey') {
+        return undefined as T;
+      }
+      throw error_;
+    }
+  }
+  
+  // Other methods...
+}
+```
+
+#### Usage
+
+```typescript
+import { Container } from '@vercube/di';
+import { StorageManager, S3Storage } from '@vercube/storage';
+
+export function useContainer(container: Container): Container {
+  // Bind the StorageManager to the container
+  container.bind(StorageManager);
+  
+  // Get the StorageManager instance
+  const storageManager = container.get(StorageManager);
+  
+  // Mount a S3 storage instance
+  storageManager.mount({
+    name: 's3',
+    storage: S3Storage,
+    initOptions: {
+      region: 'us-east-1',
+      bucket: 'test-bucket',
+      credentials: {
+        accessKeyId: process.env.S3_ACCESS_KEY_ID,
+        secretAccessKey: process.env.SECRET_ACCESS_KEY
+      }
+    }
+  });
+  
+  return container;
+}
+```
+
 ## Creating Custom Implementations
 
 You can create custom storage implementations by extending the `Storage` abstract class. Here are some examples:

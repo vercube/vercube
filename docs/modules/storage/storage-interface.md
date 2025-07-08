@@ -24,10 +24,10 @@ abstract class Storage {
 
 ### initialize
 
-Initializes the storage implementation with optional configuration.
+Initializes the storage implementation using the strategy's configuration. This configuration may be optional depending on the storage type.
 
 ```typescript
-public abstract initialize(options?: unknown): void | Promise<void>;
+public abstract initialize(options: T): void | Promise<void>;
 ```
 
 ### getItem

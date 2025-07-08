@@ -7,7 +7,7 @@ The `StorageManager` class is the central service for managing multiple storage 
 ```typescript
 class StorageManager {
   // Mount a new storage instance
-  public async mount({ name, storage, initOptions }: StorageTypes.Mount): Promise<void>;
+  public async mount<T extends Storage<unknown>>({ name, storage, initOptions }: StorageTypes.Mount<T>): Promise<void>;
   
   // Get a storage instance by name
   public getStorage(name: string = 'default'): Storage | undefined;
