@@ -67,7 +67,7 @@ export function useContainer(container: Container): Container {
 
 ### S3Storage
 
-The `S3Storage` class provides key-value operations backed by AWS S3.
+The `S3Storage` class enables key-value operations using AWS S3 as the underlying storage. To use this class, make sure to install the `@aws-sdk/client-s3` package as a dependency.
 
 ```typescript
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
