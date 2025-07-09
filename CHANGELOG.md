@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.0.16...v0.0.17
+
+[compare changes](https://github.com/vercube/vercube/compare/v0.0.16...v0.0.17)
+
+### 🩹 Fixes
+
+- Release script ([7cbc50f](https://github.com/vercube/vercube/commit/7cbc50f))
+
+### 🏡 Chore
+
+- Release v0.0.17 [no ci] ([b08bb7f](https://github.com/vercube/vercube/commit/b08bb7f))
+
+### ❤️ Contributors
+
+- Oskar Lebuda
+
 ## v0.0.14...v0.0.15
 
 [compare changes](https://github.com/vercube/vercube/compare/v0.0.14...v0.0.15)
