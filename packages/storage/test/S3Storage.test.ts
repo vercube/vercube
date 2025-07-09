@@ -6,7 +6,7 @@ import {
   ListObjectsV2Command,
 } from '@aws-sdk/client-s3';
 import { Readable } from 'node:stream';
-import { S3Storage } from '../src';
+import { S3Storage } from '../src/Storages/S3Storage';
 
 function ReadableFromString(str: string): Readable {
   const stream = new Readable();

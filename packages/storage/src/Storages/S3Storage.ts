@@ -6,10 +6,15 @@ import {
   DeleteObjectCommand,
   ListObjectsV2Command,
   type ListObjectsV2CommandOutput,
+  type S3ClientConfig,
 } from '@aws-sdk/client-s3';
 import type { Storage } from '../Service/Storage';
 import type { Readable } from 'node:stream';
 import type { StorageTypes } from '../Types/StorageTypes';
+
+export interface S3BaseOptions extends S3ClientConfig {
+  bucket: string;
+}
 
 /**
 * S3 storage implementation of the Storage interface.
@@ -17,17 +22,17 @@ import type { StorageTypes } from '../Types/StorageTypes';
 * 
 * @implements {Storage}
 */
-export class S3Storage implements Storage<StorageTypes.S3BaseOptions> {
+export class S3Storage implements Storage<S3BaseOptions> {
   private s3: S3Client;
   private bucket: string;
 
   /**
   * Initializes the S3 storage client.
   * 
-  * @param {StorageTypes.S3BaseOptions} options - Configuration options for the S3 client.
+  * @param {S3BaseOptions} options - Configuration options for the S3 client.
   * @returns {Promise<void>} A promise that resolves when initialization is complete.
   */
-  public async initialize(options: StorageTypes.S3BaseOptions): Promise<void> {
+  public async initialize(options: S3BaseOptions): Promise<void> {
     this.s3 = new S3Client({ ...options });
     this.bucket = options.bucket;
   }

@@ -11,10 +11,12 @@
   "module": "./dist/index.mjs",
   "exports": {
     ".": "./dist/index.mjs",
-    "./providers": "./dist/Providers/index.mjs",
     "./providers/ConsoleProvider": "./dist/Providers/ConsoleProvider.mjs",
     "./providers/JsonProvider": "./dist/Providers/JsonProvider.mjs",
     "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "tsdown --config tsdown.config.ts"
   },
   "types": "./dist/index.d.mts",
   "files": [
