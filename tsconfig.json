@@ -34,7 +34,7 @@
         "packages/*/src"
       ],
       "@vercube/logger/providers/*": [
-        "packages/logger/src/Providers/*"
+        "packages/logger/src/Drivers/*"
       ]
     }
   },

@@ -11,6 +11,8 @@
   "module": "./dist/index.mjs",
   "exports": {
     ".": "./dist/index.mjs",
+    "./drivers/MemoryStorage": "./dist/Drivers/MemoryStorage.mjs",
+    "./drivers/S3Storage": "./dist/Drivers/S3Storage.mjs",
     "./package.json": "./package.json"
   },
   "types": "./dist/index.d.mts",
@@ -18,12 +20,18 @@
     "dist",
     "README.md"
   ],
+  "scripts": {
+    "build": "tsdown --config tsdown.config.ts"
+  },
   "dependencies": {
     "@vercube/di": "workspace:*",
     "@vercube/logger": "workspace:*"
   },
   "optionalDependencies": {
     "@aws-sdk/client-s3": "3.842.0"
+  },
+  "resolutions": {
+    "@vercube/storage": "workspace:*"
   },
   "publishConfig": {
     "access": "public"

@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Container } from '@vercube/di';
 import { BaseLogger, Logger, type LoggerTypes } from '../src';
-import { ConsoleProvider, JSONProvider } from '../src/Providers';
+import { JSONProvider } from '../src/Drivers/JsonProvider';
+import { ConsoleProvider } from '../src/Drivers/ConsoleProvider';
 
 describe('BaseLogger', () => {
   let logger: Logger;
