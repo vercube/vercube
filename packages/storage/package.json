@@ -11,8 +11,8 @@
   "module": "./dist/index.mjs",
   "exports": {
     ".": "./dist/index.mjs",
-    "./storages/MemoryStorage": "./dist/Storages/MemoryStorage.mjs",
-    "./storages/S3Storage": "./dist/Storages/S3Storage.mjs",
+    "./drivers/MemoryStorage": "./dist/Drivers/MemoryStorage.mjs",
+    "./drivers/S3Storage": "./dist/Drivers/S3Storage.mjs",
     "./package.json": "./package.json"
   },
   "types": "./dist/index.d.mts",

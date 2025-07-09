@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { MemoryStorage } from '../src/Storages/MemoryStorage';
+import { MemoryStorage } from '../src/Drivers/MemoryStorage';
 
 describe('MemoryStorage', () => {
   let storage: MemoryStorage;

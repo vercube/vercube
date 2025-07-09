@@ -1,6 +1,6 @@
 import { Container } from '@vercube/di';
 import { BaseLogger, Logger } from '@vercube/logger';
-import { ConsoleProvider } from '@vercube/logger/providers/ConsoleProvider';
+import { ConsoleProvider } from '@vercube/logger/drivers/ConsoleProvider';
 import { HooksService } from '../Services/Hooks/HooksService';
 import { MetadataResolver } from '../Services/Metadata/MetadataResolver';
 import { PluginsRegistry } from '../Services/Plugins/PluginsRegistry';

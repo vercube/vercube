@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Container } from '@vercube/di';
 import { Logger } from '@vercube/logger';
 import { StorageManager, Storage } from '../src';
-import { MemoryStorage } from '../src/Storages/MemoryStorage';
-import { S3Storage } from '../src/Storages/S3Storage';
+import { MemoryStorage } from '../src/Drivers/MemoryStorage';
+import { S3Storage } from '../src/Drivers/S3Storage';
 import { initializeContainer } from '@vercube/di';
 import { TestStorage, ErrorStorage } from './Utils/Mock.mock';
 

@@ -6,6 +6,6 @@ export default defineConfig({
   ...defaultConfig,
   entry: [
     './src/index.ts',
-    './src/Storages/**/*.ts',
+    './src/Drivers/**/*.ts',
   ],
 });

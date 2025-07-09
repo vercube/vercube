@@ -1,9 +1,9 @@
 import { Container } from '@vercube/di';
 import { ErrorHandlerProvider } from '@vercube/core';
 import { Logger } from '@vercube/logger';
-import { ConsoleProvider } from '@vercube/logger/providers/ConsoleProvider';
+import { ConsoleProvider } from '@vercube/logger/drivers/ConsoleProvider';
 import { StorageManager } from '@vercube/storage';
-import { MemoryStorage } from '@vercube/storage/storages/MemoryStorage';
+import { MemoryStorage } from '@vercube/storage/drivers/MemoryStorage';
 import PlaygroundController from '../Controllers/PlaygroundController';
 import { BasicAuthenticationProvider } from '../Services/BasicAuthenticationProvider';
 import { DummyAuthorizationProvider } from '../Services/DummyAuthorizationProvider';
