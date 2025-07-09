@@ -10,9 +10,9 @@ class MyClassWithDep {
   public myClass: MyClass;
 }
 
-let singletonId: number = 0;
+let _singletonId: number = 0;
 class MySingletonClass {
-  public value: number = (singletonId++);
+  public value: number = (_singletonId++);
 }
 
 class MySubClassWithDep extends MyClassWithDep {}
@@ -40,7 +40,7 @@ describe('[Framework][IOC] Container', () => {
 
   beforeEach(() => {
     container = new Container();
-    singletonId = 0;
+    _singletonId = 0;
   });
 
   it('should create new container', () => {

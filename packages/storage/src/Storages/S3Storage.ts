@@ -55,11 +55,11 @@ export class S3Storage implements Storage<StorageTypes.S3BaseOptions> {
 
       const body = await this.streamToString(result.Body as Readable);
       return JSON.parse(body) as T;
-    } catch (error_: any) {
-      if (error_.name === 'NoSuchKey') {
+    } catch (error: any) {
+      if (error.name === 'NoSuchKey') {
         return undefined as T;
       }
-      throw error_;
+      throw error;
     }
   }
 
@@ -119,11 +119,11 @@ export class S3Storage implements Storage<StorageTypes.S3BaseOptions> {
         }),
       );
       return true;
-    } catch (error_: any) {
-      if (error_.name === 'NoSuchKey') {
+    } catch (error: any) {
+      if (error.name === 'NoSuchKey') {
         return false;
       }
-      throw error_;
+      throw error;
     }
   }
 

@@ -18,9 +18,9 @@ class MyClassWithDep {
 
 }
 
-let singletonId: number = 0;
+let _singletonId: number = 0;
 class MySingletonClass {
-  public value: number = (singletonId++);
+  public value: number = (_singletonId++);
 }
 
 class MySubClassWithDep extends MyClassWithDep {}
