@@ -11,11 +11,10 @@
   "scripts": {
     "build": "nx run-many -t build --exclude=playground",
     "dev": "nx watch --all -- nx run \\$NX_PROJECT_NAME:build",
-    "lint": "eslint --cache --fix .",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:tscheck": "tsc --noEmit",
-    "test:lint": "eslint .",
+    "test:lint": "oxlint .",
     "pre-commit": "lint-staged",
     "postinstall": "simple-git-hooks",
     "docs:dev": "vitepress dev docs",
@@ -28,7 +27,7 @@
   },
   "lint-staged": {
     "*.{js,ts}": [
-      "eslint --fix"
+      "oxlint --fix"
     ]
   },
   "devDependencies": {
@@ -40,20 +39,18 @@
     "@vitest/coverage-v8": "3.2.4",
     "@vitest/ui": "3.2.4",
     "changelogen": "0.6.2",
-    "eslint": "9.30.1",
-    "eslint-config-unjs": "0.5.0",
     "lint-staged": "16.1.2",
     "nx": "21.2.2",
+    "oxlint": "1.6.0",
     "simple-git-hooks": "2.13.0",
     "tsdown": "0.12.9",
     "tslib": "2.8.1",
     "typescript": "5.8.3",
-    "typescript-eslint": "8.36.0",
     "vitepress": "1.6.3",
     "vitest": "3.2.4"
   },
   "simple-git-hooks": {
     "pre-commit": "pnpm pre-commit",
-    "commit-msg": "pnpm dlx commitlint --edit $1"
+    "commit-msg": "pnpm commitlint --edit $1"
   }
 }

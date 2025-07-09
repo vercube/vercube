@@ -125,11 +125,11 @@ export const initCommand: CommandDef = defineCommand({
         preferOffline: Boolean(ctx.args.preferOffline),
         registry: DEFAULT_REGISTRY,
       });
-    } catch (error_) {
+    } catch (error) {
       if (process.env.DEBUG) {
-        throw error_;
+        throw error;
       }
-      logger.error((error_ as Error).toString());
+      logger.error((error as Error).toString());
       process.exit(1);
     }
 
@@ -160,11 +160,11 @@ export const initCommand: CommandDef = defineCommand({
           },
         });
       }
-      catch (error_) {
+      catch (error) {
         if (process.env.DEBUG) {
-          throw error_;
+          throw error;
         }
-        logger.error((error_ as Error).toString());
+        logger.error((error as Error).toString());
         process.exit(1);
       }
 
@@ -187,8 +187,8 @@ export const initCommand: CommandDef = defineCommand({
           },
         });
       }
-      catch (error_) {
-        logger.warn(`Failed to initialize git repository: ${error_}`);
+      catch (error) {
+        logger.warn(`Failed to initialize git repository: ${error}`);
       }
     }
 
