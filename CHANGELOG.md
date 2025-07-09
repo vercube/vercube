@@ -1,16 +1,25 @@
 # Changelog
 
-## v0.0.16...v0.0.17
+## v0.0.17
 
-[compare changes](https://github.com/vercube/vercube/compare/v0.0.16...v0.0.17)
+[compare changes](https://github.com/vercube/vercube/compare/v0.0.15...v0.0.17)
+
+> [!CAUTION]
+> This release contains breaking changes. See [#489](https://github.com/vercube/vercube/pull/489) for more details.
+
+### 🚀 Enhancements
+
+- Move to oxlint [#488](https://github.com/vercube/vercube/pull/48)
+- ⚠️ Split storage providers and logger providers as independent [#489](https://github.com/vercube/vercube/pull/489)
+- Add new release scripts ([de4edc3](https://github.com/vercube/vercube/commit/de4edc3))
 
 ### 🩹 Fixes
 
 - Release script ([7cbc50f](https://github.com/vercube/vercube/commit/7cbc50f))
 
-### 🏡 Chore
+### 📦 Build
 
-- Release v0.0.17 [no ci] ([b08bb7f](https://github.com/vercube/vercube/commit/b08bb7f))
+- Bump packages ([9dd3a8d](https://github.com/vercube/vercube/commit/9dd3a8d))
 
 ### ❤️ Contributors
 
