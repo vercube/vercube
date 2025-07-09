@@ -51,6 +51,6 @@
   },
   "simple-git-hooks": {
     "pre-commit": "pnpm pre-commit",
-    "commit-msg": "pnpm dlx commitlint --edit $1"
+    "commit-msg": "pnpm commitlint --edit $1"
   }
 }
