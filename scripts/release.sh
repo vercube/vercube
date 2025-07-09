@@ -12,14 +12,14 @@ LATEST_TAG=$(git tag --sort=-creatordate | sed -n '1p')
 PREV_TAG=$(git tag --sort=-creatordate | sed -n '2p')
 
 # Generate changelog
-pnpm changelogen --output CHANGELOG.md --from=v$PREV_TAG --to=v$LATEST_TAG
+pnpm changelogen --output CHANGELOG.md --from=$PREV_TAG --to=$LATEST_TAG
 
 # Wait for user to review and edit changelog
 echo "Press ENTER when ready to commit changes..."
 read
 
 # Commit and push changelog
-git add CHANGELOG.md && git commit -m "chore(release): v$LATEST_TAG" && git push
+git add CHANGELOG.md && git commit -m "chore(release): $LATEST_TAG" && git push
 
 # Sync github releases with changelog
 pnpm changelogen gh release
