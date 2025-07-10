@@ -22,7 +22,7 @@
     "@oxc-project/runtime": "0.76.0",
     "@vercube/core": "workspace:*",
     "consola": "3.4.2",
-    "dotenv": "17.1.0",
+    "dotenv": "17.2.0",
     "hookable": "5.5.3",
     "oxc-parser": "0.76.0",
     "oxc-transform": "0.76.0",
