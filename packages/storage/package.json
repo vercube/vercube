@@ -28,7 +28,7 @@
     "@vercube/logger": "workspace:*"
   },
   "optionalDependencies": {
-    "@aws-sdk/client-s3": "3.842.0"
+    "@aws-sdk/client-s3": "3.844.0"
   },
   "resolutions": {
     "@vercube/storage": "workspace:*"
