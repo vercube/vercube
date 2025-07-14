@@ -22,7 +22,7 @@
     "@standard-schema/spec": "1.0.0",
     "@vercube/di": "workspace:*",
     "@vercube/logger": "workspace:*",
-    "c12": "3.0.4",
+    "c12": "3.1.0",
     "defu": "6.1.4",
     "pathe": "2.0.3",
     "rou3": "0.7.3",
