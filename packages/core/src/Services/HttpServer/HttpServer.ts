@@ -76,7 +76,7 @@ export class HttpServer {
       hostname: host,
       port,
       fetch: this.handleRequest.bind(this),
-      plugins: (hasWebsocketsEnabled ? [this.gWebsocketService.serverPlugin] : []).flat()
+      plugins: hasWebsocketsEnabled ? [this.gWebsocketService.serverPlugin] : []
     });
   }
 

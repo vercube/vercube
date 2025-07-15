@@ -13,7 +13,7 @@ import {
   RuntimeConfig,
 } from '@vercube/core';
 import { Auth } from '@vercube/auth';
-import { Message, Namespace } from '@vercube/ws';
+import { Broadcast, BroadcastOthers, Emit, Message, Namespace } from '@vercube/ws';
 import { FirstMiddleware } from '../Middlewares/FirstMiddleware';
 import { z } from 'zod';
 import { Inject } from '@vercube/di';
@@ -28,6 +28,10 @@ const schema = z.object({
   name: z.string().min(1, 'Name is required'),
   email: z.string().email('Invalid email format'),
   age: z.number().int().min(0, 'Age must be a non-negative integer'),
+});
+
+const messageSchema = z.object({
+  foo: z.string().min(1, 'Foo is required'),
 });
 
 const schemaQueryParams = z.object({
@@ -53,9 +57,11 @@ export default class PlaygroundController {
   @Inject(RuntimeConfig)
   private gRuntimeConfig: RuntimeConfig<AppTypes.Config>;
 
-  @Message('test')
-  public async onMessage(message: any): Promise<void> {
+  @Message({ event: 'message' })
+  @BroadcastOthers()
+  public async onMessage(message: unknown): Promise<Record<string, string>> {
     console.log('message xxd', message);
+    return { foo: 'bar' };
   }
 
   /**

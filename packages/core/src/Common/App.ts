@@ -77,11 +77,12 @@ export class App {
    */
   public async init(cfg: ConfigTypes.Config): Promise<void> {
     this.fConfig = cfg;
-    await this.gHttpServer.initialize(this.fConfig);
 
     if (this.fConfig.websockets) {
       this.gWebsocketService.initialize();
     }
+
+    await this.gHttpServer.initialize(this.fConfig);
 
     if (this.fConfig.server?.static) {
       this.gStaticRequestHandler.initialize(this.fConfig.server?.static);

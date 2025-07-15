@@ -1,23 +1,20 @@
 import { plugin } from 'crossws/server';
-import { defineHooks, type Message, type WSError, type Hooks, type Peer } from 'crossws';
+import { defineHooks, type Message, type WSError, type Peer } from 'crossws';
 import { type ServerPlugin } from 'srvx';
-
-type MessageHandler = (peer: Peer, data: any) => void;
+import { WebsocketTypes } from '../Types/WebsocketTypes';
 
 export class WebsocketService {
   private fServerPlugin: ServerPlugin;
-
   private namespaces: Record<string, Peer[]> = {};
-  private eventHandlers: Record<string, Record<string, MessageHandler>> = {};
+  private eventHandlers: Record<string, Record<string, WebsocketTypes.MessageHandler>> = {};
 
   public registerNamespace(path: string) {
-    console.log('registering namespace');
     if (!this?.namespaces?.[path.toLowerCase()]) {
       this.namespaces[path.toLowerCase()] = [];
     }
   }
 
-  public registerMessageHandler(namespace: string, event: string, handler: MessageHandler) {
+  public registerMessageHandler(namespace: string, event: string, handler: WebsocketTypes.MessageHandler) {
     const lowerNamespace = namespace.toLowerCase();
     if (!this.eventHandlers[lowerNamespace]) {
       this.eventHandlers[lowerNamespace] = {};
@@ -35,76 +32,79 @@ export class WebsocketService {
 
       const handler = this.eventHandlers?.[namespace]?.[event];
       if (handler) {
-        await handler(peer, data); // 👈 injects message into handler
+        await handler(peer, data);
       } else {
-        console.warn(`[ws] No handler for event "${event}" in namespace "${namespace}"`);
+        console.warn(`[WS] No handler for event "${event}" in namespace "${namespace}"`);
       }
     } catch (error) {
-      console.error(`[ws] Failed to process message:`, error);
+      console.error(`[WS] Failed to process message:`, error);
     }
   }
 
-  public initialize(hooksOpts?: Partial<Hooks>) {
+  public broadcast(peer: Peer, message: unknown): void {
+    const namespace = peer.namespace?.toLowerCase();
+    if (!namespace) return;
+
+    const peers = this.namespaces[namespace];
+    if (!peers || peers.length === 0) return;
+
+    for (const p of peers) {
+      p.send(message);
+    }
+  }
+
+  public broadcastOthers(peer: Peer, message: unknown): void {
+    const namespace = peer.namespace?.toLowerCase();
+    if (!namespace) return;
+
+    const peers = this.namespaces[namespace];
+    if (!peers || peers.length === 0) return;
+
+    for (const p of peers) {
+      if (p.id !== peer.id) {
+        p.send(message);
+      }
+    }
+  }
+
+  public initialize() {
     const hooks = defineHooks({
       upgrade: async (request: Request) => {
-        if (hooksOpts?.upgrade) {
-          return await hooksOpts.upgrade(request);
-        } else {
-          const namespace = new URL(request.url).pathname;
-          const isNamespaceRegistered = !!this.namespaces?.[namespace?.toLowerCase()] as boolean;
+        const namespace = new URL(request.url).pathname;
+        const isNamespaceRegistered = !!this.namespaces?.[namespace?.toLowerCase()] as boolean;
 
-          console.log(`[ws] upgrading ${request.url}...`, namespace);
-
-          if (!isNamespaceRegistered) {
-            console.warn(`[ws] namespace "${namespace}" is not registered. Connection rejected.`);
-            return new Response("Namespace not registered", { status: 403 });
-          }
-
-          return {
-            namespace,
-            headers: {},
-          };
+        if (!isNamespaceRegistered) {
+          console.warn(`[WS] Namespace "${namespace}" is not registered. Connection rejected.`);
+          return new Response("Namespace not registered", { status: 403 });
         }
+
+        return {
+          namespace,
+          headers: {},
+        };
       },
       open: async (peer) => {
-        if (hooksOpts?.open) {
-          return await hooksOpts.open(peer);
-        } else {
-          console.log("[ws] open", peer);
-          peer.send({ user: "server", message: `Welcome ${peer}!` });
+        const namespace = peer.namespace?.toLowerCase();
+        if (namespace && this.namespaces[namespace]) {
+          this.namespaces[namespace].push(peer);
         }
       },
       message: async (peer: Peer, message: Message) => {
-        if (hooksOpts?.message) {
-          return await hooksOpts.message(peer, message);
-        } else {
-          await this.handleMessage(peer, message);
-          console.log("[ws] message", message);
-          if (message.text().includes("ping")) {
-            peer.send({ user: "server", message: "pong" });
-          } else {
-            peer.send({ user: peer.toString(), message: message.toString() });
-          }
-        }
+        await this.handleMessage(peer, message);
       },
       close: async (peer: Peer, details: { code?: number; reason?: string; }) => {
-        if (hooksOpts?.close) {
-          return await hooksOpts.close(peer, details);
-        } else {
-          console.log("[ws] close", peer, details);
+        const namespace = peer.namespace?.toLowerCase();
+        if (namespace && this.namespaces[namespace]) {
+          const peers = this.namespaces[namespace];
+          this.namespaces[namespace] = peers.filter(p => p.id !== peer.id);
         }
       },
       error: async (peer: Peer, error: WSError) => {
-        if (hooksOpts?.error) {
-          return await hooksOpts.error(peer, error);
-        } else {
-          console.log("[ws] error", peer, error);
-        }
+        console.error('[WS] Error', peer, error);
       }
-    })
+    });
 
-    const httpPlugin = plugin(hooks);
-    this.fServerPlugin = httpPlugin;
+    this.fServerPlugin = plugin(hooks);
   }
 
   get serverPlugin(): ServerPlugin {

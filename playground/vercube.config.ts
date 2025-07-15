@@ -8,6 +8,8 @@ export default defineConfig<AppTypes.Config>({
     port: 3001,
   },
 
+  websockets: true,
+
   runtime: {
     something: {
       enabled: true,
