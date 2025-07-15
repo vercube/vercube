@@ -13,6 +13,7 @@ import {
   RuntimeConfig,
 } from '@vercube/core';
 import { Auth } from '@vercube/auth';
+import { Message, Namespace } from '@vercube/ws';
 import { FirstMiddleware } from '../Middlewares/FirstMiddleware';
 import { z } from 'zod';
 import { Inject } from '@vercube/di';
@@ -38,6 +39,7 @@ const schemaQueryParams = z.object({
  * Playground controller.
  * This is a sample controller that demonstrates how to create a controller using the @vercube/core package.
  */
+@Namespace('/foo')
 @Controller('/api/playground')
 @Middleware(FirstMiddleware)
 export default class PlaygroundController {
@@ -50,6 +52,11 @@ export default class PlaygroundController {
 
   @Inject(RuntimeConfig)
   private gRuntimeConfig: RuntimeConfig<AppTypes.Config>;
+
+  @Message('test')
+  public async onMessage(message: any): Promise<void> {
+    console.log('message xxd', message);
+  }
 
   /**
    * Handles GET requests to the / endpoint.

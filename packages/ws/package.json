@@ -1,0 +1,31 @@
+{
+  "name": "@vercube/ws",
+  "version": "0.0.17",
+  "description": "Websocket module for Vercube framework",
+  "packageManager": "pnpm@9.10.0",
+  "repository": "@vercube/ws",
+  "license": "MIT",
+  "sideEffects": false,
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "exports": {
+    ".": "./dist/index.mjs",
+    "./package.json": "./package.json"
+  },
+  "types": "./dist/index.d.mts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "dependencies": {
+    "@vercube/core": "workspace:*",
+    "@vercube/di": "workspace:*",
+    "@vercube/logger": "workspace:*",
+    "crossws": "0.4.1",
+    "srvx": "0.8.2"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

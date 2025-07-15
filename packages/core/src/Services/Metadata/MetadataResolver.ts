@@ -27,6 +27,13 @@ export class MetadataResolver {
     return url;
   }
 
+  public resolveNamespace(params: MetadataTypes.ResolveNamespaceParams): string {
+    const { instance } = params;
+    const metadata = instance.__metadata as MetadataTypes.Ctx;
+    const basePath = (metadata?.__namespace?.path ?? '').replace(/\/$/, '');
+    return basePath;
+  }
+
   public resolveMethod(ctx: MetadataTypes.Metadata, propertyName: string): MetadataTypes.Method {
     return ctx.__metadata.__methods[propertyName];
   }
@@ -93,11 +100,11 @@ export class MetadataResolver {
         return event.response;
       }
       case 'custom': {
-        return arg.data?.resolve(event);
+        return arg.resolver?.(event);
       }
       case 'session': {
         // TODO: add support for session
-        return null; 
+        return null;
         // return useSession(event, {
         //   name: arg?.data?.name,
         //   password: arg?.data?.secret,

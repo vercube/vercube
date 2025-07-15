@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
-import type { LoggerTypes } from '@vercube/logger'; 
+import type { LoggerTypes } from '@vercube/logger';
 import type { DotenvOptions } from 'c12';
 /**
  * Namespace containing configuration type definitions for the Vercube framework.
@@ -99,12 +99,12 @@ export namespace ConfigTypes {
      * The hostname to bind the server to.
      */
     host?: string;
-    
+
     /**
      * The port number to listen on.
      */
     port?: number;
-    
+
     /**
      * HTTPS configuration options.
      */
@@ -113,7 +113,7 @@ export namespace ConfigTypes {
        * Path to the SSL key file.
        */
       key: string;
-      
+
       /**
        * Path to the SSL certificate file.
        */
@@ -130,7 +130,7 @@ export namespace ConfigTypes {
       etag?: boolean;
     }
   }
- 
+
   /**
    * Main configuration interface for the Vercube application.
    */
@@ -144,6 +144,11 @@ export namespace ConfigTypes {
      * Flag indicating if the application is running in development mode.
      */
     dev?: boolean;
+
+    /**
+     * Flag indicating if the application should have websockets enabled.
+     */
+    websockets?: boolean;
 
     /**
      * The logging level for the application.

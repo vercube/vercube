@@ -1,10 +1,11 @@
 import { Container, Inject } from '@vercube/di';
 import { ConfigTypes, NotFoundError } from '@vercube/core';
-import { serve, type Server} from 'srvx';
+import { serve, type Server } from 'srvx';
 import { Router } from '../Router/Router';
 import { RequestHandler } from '../Router/RequestHandler';
 import { ErrorHandlerProvider } from '../ErrorHandler/ErrorHandlerProvider';
 import { StaticRequestHandler } from '../Router/StaticRequestHandler';
+import { WebsocketService, WebsocketServiceKey } from '@vercube/ws';
 /**
  * HTTP server implementation for handling incoming web requests
  * 
@@ -40,10 +41,16 @@ export class HttpServer {
   private gStaticRequestHandler: StaticRequestHandler;
 
   /**
+   * Websocket service for enabled websocket connections
+   */
+  @Inject(WebsocketServiceKey)
+  private gWebsocketService: WebsocketService;
+
+  /**
    * Underlying server instance
    * @private
    */
-  private fServer: Server;
+  public fServer: Server;
 
   /**
    * Initializes the HTTP server and starts listening for requests
@@ -52,6 +59,8 @@ export class HttpServer {
    */
   public async initialize(config: ConfigTypes.Config): Promise<void> {
     const { port, host } = config.server ?? {};
+
+    const hasWebsocketsEnabled = !!config.websockets;
 
     this.fServer = serve({
       bun: {
@@ -67,6 +76,7 @@ export class HttpServer {
       hostname: host,
       port,
       fetch: this.handleRequest.bind(this),
+      plugins: (hasWebsocketsEnabled ? [this.gWebsocketService.serverPlugin] : []).flat()
     });
   }
 
@@ -94,7 +104,7 @@ export class HttpServer {
   public async handleRequest(request: Request): Promise<Response> {
     try {
       const route = this.gRouter.resolve({ path: request.url, method: request.method });
-      
+
       // if no route is found, try to serve static file
       if (!route) {
         const response = await this.gStaticRequestHandler.handleRequest(request);
@@ -105,11 +115,11 @@ export class HttpServer {
           throw new NotFoundError('Route not found');
         }
       }
-  
+
       return this.gRequestHandler.handleRequest(request, route);
     } catch (error) {
       return this.gContainer.get(ErrorHandlerProvider).handleError(error);
     }
-    
+
   }
 }

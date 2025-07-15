@@ -12,6 +12,9 @@ export namespace MetadataTypes {
     __controller: {
       path: string;
     };
+    __namespace: {
+      path: string;
+    };
     __middlewares: Middleware[];
     __methods: Record<string, Method>;
   }
@@ -60,4 +63,7 @@ export namespace MetadataTypes {
     propertyName: string;
   }
 
+  export interface ResolveNamespaceParams {
+    instance: any;
+  }
 }
