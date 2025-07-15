@@ -50,7 +50,7 @@ export class HttpServer {
    * Underlying server instance
    * @private
    */
-  public fServer: Server;
+  private fServer: Server;
 
   /**
    * Initializes the HTTP server and starts listening for requests
