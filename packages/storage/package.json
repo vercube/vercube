@@ -2,8 +2,12 @@
   "name": "@vercube/storage",
   "version": "0.0.17",
   "description": "Storage module for Vercube framework",
-  "packageManager": "pnpm@9.10.0",
-  "repository": "@vercube/storage",
+  "packageManager": "pnpm@10.13.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vercube/vercube.git",
+    "directory": "packages/storage"
+  },
   "license": "MIT",
   "sideEffects": false,
   "type": "module",
@@ -29,9 +33,6 @@
   },
   "optionalDependencies": {
     "@aws-sdk/client-s3": "3.845.0"
-  },
-  "resolutions": {
-    "@vercube/storage": "workspace:*"
   },
   "publishConfig": {
     "access": "public"

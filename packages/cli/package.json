@@ -2,8 +2,12 @@
   "name": "@vercube/cli",
   "version": "0.0.17",
   "description": "CLI module for Vercube framework",
-  "packageManager": "pnpm@9.10.0",
-  "repository": "@vercube/cli",
+  "packageManager": "pnpm@10.13.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vercube/vercube.git",
+    "directory": "packages/cli"
+  },
   "license": "MIT",
   "sideEffects": false,
   "type": "module",

@@ -2,8 +2,12 @@
   "name": "@vercube/devkit",
   "version": "0.0.17",
   "description": "Devkit  module for Vercube framework",
-  "packageManager": "pnpm@9.10.0",
-  "repository": "@vercube/devkit",
+  "packageManager": "pnpm@10.13.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vercube/vercube.git",
+    "directory": "packages/devkit"
+  },
   "license": "MIT",
   "sideEffects": false,
   "type": "module",
