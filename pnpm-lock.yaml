@@ -215,6 +215,10 @@ importers:
       srvx:
         specifier: 0.8.2
         version: 0.8.2
+    devDependencies:
+      zod:
+        specifier: 4.0.5
+        version: 4.0.5
 
   playground:
     dependencies:

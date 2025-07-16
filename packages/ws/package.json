@@ -18,6 +18,9 @@
     "dist",
     "README.md"
   ],
+  "devDependencies": {
+    "zod": "4.0.5"
+  },
   "dependencies": {
     "@vercube/core": "workspace:*",
     "@vercube/di": "workspace:*",
