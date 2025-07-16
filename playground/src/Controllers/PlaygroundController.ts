@@ -13,6 +13,7 @@ import {
   RuntimeConfig,
 } from '@vercube/core';
 import { Auth } from '@vercube/auth';
+import { Schema } from '@vercube/schema';
 import { FirstMiddleware } from '../Middlewares/FirstMiddleware';
 import { z } from 'zod';
 import { Inject } from '@vercube/di';
@@ -29,10 +30,19 @@ const schema = z.object({
   age: z.number().int().min(0, 'Age must be a non-negative integer'),
 });
 
+const UserSchema = z
+  .object({
+    id: z.string().openapi({ example: '1212121' }),
+    name: z.string().openapi({ example: 'John Doe' }),
+    age: z.number().openapi({ example: 42 }),
+  })
+  .openapi('User');
+
 const schemaQueryParams = z.object({
   foo: z.string().min(1, 'Foo is required'),
   bar: z.string().min(1, 'Bar is required'),
 });
+
 
 /**
  * Playground controller.
@@ -69,8 +79,8 @@ export default class PlaygroundController {
    * Handles GET requests to the /authenticate endpoint.
    * @returns {Promise<{ message: string }>} A promise that resolves to an object containing a greeting message.
    */
-  @Get('/authenticate')
   @Auth()
+  @Get('/authenticate')
   public async authenticate(): Promise<{ message: string }> {
     return { message: 'Hello, world!' };
   }
@@ -141,6 +151,27 @@ export default class PlaygroundController {
    * @returns {Promise<{ message: string }>} A promise that resolves to an object containing a greeting message.
    */
   @Post('/')
+  @Schema({
+    request: {
+      body: {
+        content: {
+          'application/json': {
+            schema: schema,
+          },
+        },
+      }
+    },
+    responses: {
+      200: {
+        description: 'Object with user data.',
+        content: {
+          'application/json': {
+            schema: UserSchema,
+          },
+        },
+      },
+    },
+  })
   public async post(
     @Body({ validationSchema: schema }) body: unknown,
     @QueryParams({ validationSchema: schemaQueryParams }) query: string,

@@ -22,6 +22,7 @@ export namespace MetadataTypes {
     url: string | null;
     args: Arg[];
     actions: Action[];
+    meta: Record<string, unknown>;
   }
 
   export interface ResolvedData {

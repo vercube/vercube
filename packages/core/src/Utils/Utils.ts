@@ -25,6 +25,7 @@ export function createMetadataMethod(): MetadataTypes.Method {
     url: null,
     args: [],
     actions: [],
+    meta: {},
   };
 }
 

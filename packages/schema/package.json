@@ -1,9 +1,9 @@
 {
-  "name": "@vercube/storage",
+  "name": "@vercube/schema",
   "version": "0.0.17",
-  "description": "Storage module for Vercube framework",
+  "description": "Schema (swagger) module for Vercube framework",
   "packageManager": "pnpm@9.10.0",
-  "repository": "@vercube/storage",
+  "repository": "@vercube/schema",
   "license": "MIT",
   "sideEffects": false,
   "type": "module",
@@ -11,8 +11,6 @@
   "module": "./dist/index.mjs",
   "exports": {
     ".": "./dist/index.mjs",
-    "./drivers/MemoryStorage": "./dist/Drivers/MemoryStorage.mjs",
-    "./drivers/S3Storage": "./dist/Drivers/S3Storage.mjs",
     "./package.json": "./package.json"
   },
   "types": "./dist/index.d.mts",
@@ -20,15 +18,17 @@
     "dist",
     "README.md"
   ],
-  "scripts": {
-    "build": "tsdown --config tsdown.config.ts"
-  },
+  "keywords": [
+    "vercube",
+    "schema",
+    "swagger"
+  ],
   "dependencies": {
+    "@asteasolutions/zod-to-openapi": "8.0.0-beta.4",
+    "@standard-schema/spec": "1.0.0",
+    "@vercube/core": "workspace:*",
     "@vercube/di": "workspace:*",
-    "@vercube/logger": "workspace:*"
-  },
-  "optionalDependencies": {
-    "@aws-sdk/client-s3": "3.844.0"
+    "defu": "6.1.4"
   },
   "publishConfig": {
     "access": "public"

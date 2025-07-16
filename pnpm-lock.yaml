@@ -182,6 +182,24 @@ importers:
         specifier: workspace:*
         version: link:../di
 
+  packages/schema:
+    dependencies:
+      '@asteasolutions/zod-to-openapi':
+        specifier: 8.0.0-beta.4
+        version: 8.0.0-beta.4(zod@4.0.2)
+      '@standard-schema/spec':
+        specifier: 1.0.0
+        version: 1.0.0
+      '@vercube/core':
+        specifier: workspace:*
+        version: link:../core
+      '@vercube/di':
+        specifier: workspace:*
+        version: link:../di
+      defu:
+        specifier: 6.1.4
+        version: 6.1.4
+
   packages/storage:
     dependencies:
       '@vercube/di':
@@ -212,6 +230,9 @@ importers:
       '@vercube/logger':
         specifier: workspace:*
         version: link:../packages/logger
+      '@vercube/schema':
+        specifier: workspace:*
+        version: link:../packages/schema
       '@vercube/storage':
         specifier: workspace:*
         version: link:../packages/storage
@@ -303,6 +324,11 @@ packages:
   '@ampproject/remapping@2.3.0':
     resolution: {integrity: sha512-30iZtAPgz+LTIYoeivqYo853f02jBYSd5uGnGpkFV0M3xOt9aN73erkgYAmZU43x4VfqcnLxW9Kpg3R5LC4YYw==}
     engines: {node: '>=6.0.0'}
+
+  '@asteasolutions/zod-to-openapi@8.0.0-beta.4':
+    resolution: {integrity: sha512-om7KH4B6/Rd/jjrxUjV3yC7vUwKKQcM1m7R8jd12uZyBqYd4ihqa1mMHp9MG3Hau8M/ha6teNJLouDUvwZXpNg==}
+    peerDependencies:
+      zod: ~3.25.1
 
   '@aws-crypto/crc32@5.2.0':
     resolution: {integrity: sha512-nLbCWqQNgUiwwtFsen1AdzAtvuLRsQS8rYgMuxCrdKf9kOssamGLuPwyTY9wyYblNr9+1XM8v6zoDTPPSIeANg==}
@@ -3905,6 +3931,9 @@ packages:
     resolution: {integrity: sha512-7x81NCL719oNbsq/3mh+hVrAWmFuEYUqrq/Iw3kUzH8ReypT9QQ0BLoJS7/G9k6N81XjW4qHWtjWwe/9eLy1EQ==}
     engines: {node: '>=12'}
 
+  openapi3-ts@4.5.0:
+    resolution: {integrity: sha512-jaL+HgTq2Gj5jRcfdutgRGLosCy/hT8sQf6VOy+P+g36cZOjI1iukdPnijC+4CmeRzg/jEllJUboEic2FhxhtQ==}
+
   ora@5.3.0:
     resolution: {integrity: sha512-zAKMgGXUim0Jyd6CXK9lraBnD3H5yPGBPPOkC23a2BG6hsm4Zu6OQSjQuEtV0BHDf4aKHcUFvJiGRrFuW3MG8g==}
     engines: {node: '>=10'}
@@ -4777,6 +4806,11 @@ snapshots:
     dependencies:
       '@jridgewell/gen-mapping': 0.3.8
       '@jridgewell/trace-mapping': 0.3.25
+
+  '@asteasolutions/zod-to-openapi@8.0.0-beta.4(zod@4.0.2)':
+    dependencies:
+      openapi3-ts: 4.5.0
+      zod: 4.0.2
 
   '@aws-crypto/crc32@5.2.0':
     dependencies:
@@ -8803,6 +8837,10 @@ snapshots:
       define-lazy-prop: 2.0.0
       is-docker: 2.2.1
       is-wsl: 2.2.0
+
+  openapi3-ts@4.5.0:
+    dependencies:
+      yaml: 2.8.0
 
   ora@5.3.0:
     dependencies:
