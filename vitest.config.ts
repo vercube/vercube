@@ -5,7 +5,7 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['packages/**/test/**/*.test.ts'],
-    workspace: ['packages/*'],
+    projects: ['packages/*'],
     coverage: {
       reporter: ['text', 'json', 'html'],
       include: ['packages/**/src/**/*.ts'],
