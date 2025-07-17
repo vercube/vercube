@@ -58,9 +58,15 @@ export default class PlaygroundController {
   private gRuntimeConfig: RuntimeConfig<AppTypes.Config>;
 
   @Message({ event: 'message' })
-  @BroadcastOthers()
-  public async onMessage(message: unknown): Promise<Record<string, string>> {
-    console.log('message xxd', message);
+  @Emit()
+  public async onMessage(incomingMessage: unknown, peer: { id: string; ip: string; }): Promise<Record<string, string>> {
+    console.log(incomingMessage, peer);
+    return { foo: 'bar' };
+  }
+
+  @Message({ event: 'action' })
+  @Emit()
+  public async onAction(message: unknown): Promise<Record<string, string>> {
     return { foo: 'bar' };
   }
 

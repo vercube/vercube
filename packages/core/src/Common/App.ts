@@ -6,7 +6,6 @@ import { HttpServer } from '../Services/HttpServer/HttpServer';
 import { Router } from '../Services/Router/Router';
 import { StaticRequestHandler } from '../Services/Router/StaticRequestHandler';
 import { RuntimeConfig } from '../Services/Config/RuntimeConfig';
-import { WebsocketService, WebsocketServiceKey } from '@vercube/ws';
 
 /**
  * Represents the main application class.
@@ -21,9 +20,6 @@ export class App {
 
   @Inject(HttpServer)
   private gHttpServer: HttpServer;
-
-  @Inject(WebsocketServiceKey)
-  private gWebsocketService: WebsocketService;
 
   @Inject(StaticRequestHandler)
   private gStaticRequestHandler: StaticRequestHandler;
@@ -77,10 +73,6 @@ export class App {
    */
   public async init(cfg: ConfigTypes.Config): Promise<void> {
     this.fConfig = cfg;
-
-    if (this.fConfig.websockets) {
-      this.gWebsocketService.initialize();
-    }
 
     await this.gHttpServer.initialize(this.fConfig);
 

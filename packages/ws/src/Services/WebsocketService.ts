@@ -1,10 +1,28 @@
 import { plugin } from 'crossws/server';
 import { defineHooks, type Message, type WSError, type Peer } from 'crossws';
-import { type ServerPlugin } from 'srvx';
+import { BadRequestError, ServerPlugins, ValidationProvider } from '@vercube/core';
+import { Inject, InjectOptional } from '@vercube/di';
 import { WebsocketTypes } from '../Types/WebsocketTypes';
 
+/**
+ * WebsocketService class responsible for dealing with
+ * Websocket connections.
+ * 
+ * This class is responsible for:
+ * - Registering namespaces and accepting websocket connections for them
+ * - Registering event handlers and handling them
+ */
 export class WebsocketService {
-  private fServerPlugin: ServerPlugin;
+
+  /**
+  * Server Plugins for registering the server plugin
+  */
+  @Inject(ServerPlugins)
+  private gServerPlugins: ServerPlugins;
+
+  @InjectOptional(ValidationProvider)
+  private gValidationProvider: ValidationProvider | null;
+
   private namespaces: Record<string, Peer[]> = {};
   private eventHandlers: Record<string, Record<string, WebsocketTypes.MessageHandler>> = {};
 
@@ -32,7 +50,20 @@ export class WebsocketService {
 
       const handler = this.eventHandlers?.[namespace]?.[event];
       if (handler) {
-        await handler(peer, data);
+        if (handler.schema) {
+          if (!this.gValidationProvider) {
+            console.warn('WebsocketService::ValidationProvider is not registered');
+            return;
+          }
+
+          const result = await this.gValidationProvider.validate(handler.schema, data);
+
+          if (result?.issues?.length) {
+            throw new BadRequestError('Websocket message validation error', result.issues);
+          }
+        }
+
+        await handler.fn(data, peer);
       } else {
         console.warn(`[WS] No handler for event "${event}" in namespace "${namespace}"`);
       }
@@ -51,6 +82,10 @@ export class WebsocketService {
     for (const p of peers) {
       p.send(message);
     }
+  }
+
+  public emit(peer: Peer, message: unknown): void {
+    peer.send(message);
   }
 
   public broadcastOthers(peer: Peer, message: unknown): void {
@@ -104,10 +139,7 @@ export class WebsocketService {
       }
     });
 
-    this.fServerPlugin = plugin(hooks);
-  }
-
-  get serverPlugin(): ServerPlugin {
-    return this.fServerPlugin;
+    const serverPlugin = plugin(hooks);
+    this.gServerPlugins.registerPlugin(serverPlugin);
   }
 }

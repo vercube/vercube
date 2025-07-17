@@ -1,47 +1,45 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Container, initializeContainer } from '@vercube/di';
-import { initializeMetadata, initializeMetadataMethod } from '@vercube/core';
+import { MetadataResolver, ServerPlugins, StandardSchemaValidationProvider, ValidationProvider } from '@vercube/core';
+import { Namespace } from '../../src/Decorators/Namespace';
+import { Message } from '../../src/Decorators/Message';
+import { WebsocketService } from '../../src/Services/WebsocketService';
+import { WebsocketServiceKey } from '../../src/Utils/WebsocketServiceKey';
 import { Emit } from '../../src/Decorators/Emit';
 
-class EmitService {
+@Namespace('/bar')
+class BroadcastTestService {
+  @Message({ event: 'hello' })
   @Emit()
-  public sendMessage(content: string) {
-    return { content };
-  }
-}
-
-class NoEmitService {
-  public sendMessage(content: string) {
-    return { content };
+  public sayHello(data: any, peer: any) {
+    return { greet: 'world' };
   }
 }
 
 describe('@Emit() decorator', () => {
   let container: Container;
-  let emitService: EmitService;
-  let noEmitService: NoEmitService;
+  let websocketService: WebsocketService;
 
-  beforeAll(() => {
+  beforeEach(() => {
     container = new Container();
-    container.bind(EmitService);
-    container.bind(NoEmitService);
+    container.bind(MetadataResolver);
+    container.bind(ServerPlugins);
+    container.bind(BroadcastTestService);
+    container.bind(WebsocketServiceKey, WebsocketService);
+    container.bind(ValidationProvider, StandardSchemaValidationProvider);
+
     initializeContainer(container);
-
-    emitService = container.get(EmitService);
-    noEmitService = container.get(NoEmitService);
+    websocketService = container.get(WebsocketServiceKey);
   });
 
-  it('should have emit arg if method is decorated with @Emit()', async () => {
-    initializeMetadata(emitService);
-    const methodMeta = initializeMetadataMethod(emitService, 'sendMessage');
-    const shouldEmit = methodMeta.args.some(arg => arg.type === 'emit');
-    expect(shouldEmit).toBe(true);
-  });
+  it('broadcasts method return value to namespace', async () => {
+    const spy = vi.spyOn(websocketService, 'emit');
+    const peer = { send: vi.fn(), namespace: '/bar' } as any;
+    const handler = websocketService['eventHandlers']['/bar']['hello'];
 
-  it('should not have emit arg if no @Emit() decorator is used', async () => {
-    initializeMetadata(noEmitService);
-    const methodMeta = initializeMetadataMethod(noEmitService, 'sendMessage');
-    const shouldEmit = methodMeta.args.some(arg => arg.type === 'emit');
-    expect(shouldEmit).toBe(false);
+    const result = await handler.fn({}, peer);
+
+    expect(result).toEqual({ greet: 'world' });
+    expect(spy).toHaveBeenCalledWith(peer, { event: 'hello', data: { greet: 'world' } });
   });
 });

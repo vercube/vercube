@@ -1,47 +1,45 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Container, initializeContainer } from '@vercube/di';
-import { initializeMetadata, initializeMetadataMethod } from '@vercube/core';
+import { MetadataResolver, ServerPlugins, StandardSchemaValidationProvider, ValidationProvider } from '@vercube/core';
+import { Namespace } from '../../src/Decorators/Namespace';
+import { Message } from '../../src/Decorators/Message';
 import { Broadcast } from '../../src/Decorators/Broadcast';
+import { WebsocketService } from '../../src/Services/WebsocketService';
+import { WebsocketServiceKey } from '../../src/Utils/WebsocketServiceKey';
 
-class BroadcastService {
+@Namespace('/bar')
+class BroadcastTestService {
+  @Message({ event: 'hello' })
   @Broadcast()
-  public sendMessage(content: string) {
-    return { content };
-  }
-}
-
-class NoBroadcastService {
-  public sendMessage(content: string) {
-    return { content };
+  public sayHello(data: any, peer: any) {
+    return { greet: 'world' };
   }
 }
 
 describe('@Broadcast() decorator', () => {
   let container: Container;
-  let broadcastService: BroadcastService;
-  let noBroadcastService: NoBroadcastService;
+  let websocketService: WebsocketService;
 
-  beforeAll(() => {
+  beforeEach(() => {
     container = new Container();
-    container.bind(BroadcastService);
-    container.bind(NoBroadcastService);
+    container.bind(MetadataResolver);
+    container.bind(ServerPlugins);
+    container.bind(BroadcastTestService);
+    container.bind(WebsocketServiceKey, WebsocketService);
+    container.bind(ValidationProvider, StandardSchemaValidationProvider);
+
     initializeContainer(container);
-
-    broadcastService = container.get(BroadcastService);
-    noBroadcastService = container.get(NoBroadcastService);
+    websocketService = container.get(WebsocketServiceKey);
   });
 
-  it('should have broadcast arg if method is decorated with @Broadcast()', async () => {
-    initializeMetadata(broadcastService);
-    const methodMeta = initializeMetadataMethod(broadcastService, 'sendMessage');
-    const shouldBroadcast = methodMeta.args.some(arg => arg.type === 'broadcast');
-    expect(shouldBroadcast).toBe(true);
-  });
+  it('broadcasts method return value to namespace', async () => {
+    const spy = vi.spyOn(websocketService, 'broadcast');
+    const peer = { send: vi.fn(), namespace: '/bar' } as any;
+    const handler = websocketService['eventHandlers']['/bar']['hello'];
 
-  it('should not have broadcast arg if no @Broadcast() decorator is used', async () => {
-    initializeMetadata(noBroadcastService);
-    const methodMeta = initializeMetadataMethod(noBroadcastService, 'sendMessage');
-    const shouldBroadcast = methodMeta.args.some(arg => arg.type === 'broadcast');
-    expect(shouldBroadcast).toBe(false);
+    const result = await handler.fn({}, peer);
+
+    expect(result).toEqual({ greet: 'world' });
+    expect(spy).toHaveBeenCalledWith(peer, { event: 'hello', data: { greet: 'world' } });
   });
 });

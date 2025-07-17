@@ -27,13 +27,6 @@ export class MetadataResolver {
     return url;
   }
 
-  public resolveNamespace(params: MetadataTypes.ResolveNamespaceParams): string {
-    const { instance } = params;
-    const metadata = instance.__metadata as MetadataTypes.Ctx;
-    const basePath = (metadata?.__namespace?.path ?? '').replace(/\/$/, '');
-    return basePath;
-  }
-
   public resolveMethod(ctx: MetadataTypes.Metadata, propertyName: string): MetadataTypes.Method {
     return ctx.__metadata.__methods[propertyName];
   }

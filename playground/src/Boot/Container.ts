@@ -8,6 +8,7 @@ import PlaygroundController from '../Controllers/PlaygroundController';
 import { BasicAuthenticationProvider } from '../Services/BasicAuthenticationProvider';
 import { DummyAuthorizationProvider } from '../Services/DummyAuthorizationProvider';
 import { CustomErrorHandler } from 'src/Error/CustomErrorHandler';
+import { WebsocketService, WebsocketServiceKey } from '@vercube/ws';
 
 export function useContainer(container: Container): void {
   container.bind(BasicAuthenticationProvider);
@@ -18,10 +19,13 @@ export function useContainer(container: Container): void {
   container.get(StorageManager).mount({ storage: MemoryStorage });
 
   container.bind(ErrorHandlerProvider, CustomErrorHandler);
+  container.bind(WebsocketServiceKey, WebsocketService);
 
   container.get(Logger).configure({
     providers: [
       { name: 'console', provider: ConsoleProvider, logLevel: 'error' },
     ],
   });
+
+  container.get<WebsocketService>(WebsocketServiceKey).initialize();
 }

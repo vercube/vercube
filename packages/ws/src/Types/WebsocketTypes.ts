@@ -1,5 +1,8 @@
-import { type Peer } from "crossws";
+import { type ValidationTypes } from "@vercube/core";
 
 export namespace WebsocketTypes {
-  export type MessageHandler = (peer: Peer, data: any) => Promise<void>;
+  export type MessageHandler = {
+    fn: Function;
+    schema?: ValidationTypes.Schema;
+  }
 }

@@ -1,47 +1,45 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Container, initializeContainer } from '@vercube/di';
-import { initializeMetadata, initializeMetadataMethod } from '@vercube/core';
+import { MetadataResolver, ServerPlugins, StandardSchemaValidationProvider, ValidationProvider } from '@vercube/core';
+import { Namespace } from '../../src/Decorators/Namespace';
+import { Message } from '../../src/Decorators/Message';
+import { WebsocketService } from '../../src/Services/WebsocketService';
+import { WebsocketServiceKey } from '../../src/Utils/WebsocketServiceKey';
 import { BroadcastOthers } from '../../src/Decorators/BroadcastOthers';
 
-class BroadcastOthersService {
+@Namespace('/bar')
+class BroadcastTestService {
+  @Message({ event: 'hello' })
   @BroadcastOthers()
-  public sendMessage(content: string) {
-    return { content };
-  }
-}
-
-class NoBroadcastOthersService {
-  public sendMessage(content: string) {
-    return { content };
+  public sayHello(data: any, peer: any) {
+    return { greet: 'world' };
   }
 }
 
 describe('@BroadcastOthers() decorator', () => {
   let container: Container;
-  let broadcastOthersService: BroadcastOthersService;
-  let noBroadcastOthersService: NoBroadcastOthersService;
+  let websocketService: WebsocketService;
 
-  beforeAll(() => {
+  beforeEach(() => {
     container = new Container();
-    container.bind(BroadcastOthersService);
-    container.bind(NoBroadcastOthersService);
+    container.bind(MetadataResolver);
+    container.bind(ServerPlugins);
+    container.bind(BroadcastTestService);
+    container.bind(WebsocketServiceKey, WebsocketService);
+    container.bind(ValidationProvider, StandardSchemaValidationProvider);
+
     initializeContainer(container);
-
-    broadcastOthersService = container.get(BroadcastOthersService);
-    noBroadcastOthersService = container.get(NoBroadcastOthersService);
+    websocketService = container.get(WebsocketServiceKey);
   });
 
-  it('should have broadcast_others arg if method is decorated with @BroadcastOthers()', async () => {
-    initializeMetadata(broadcastOthersService);
-    const methodMeta = initializeMetadataMethod(broadcastOthersService, 'sendMessage');
-    const shouldBroadcastOthers = methodMeta.args.some(arg => arg.type === 'broadcast_others');
-    expect(shouldBroadcastOthers).toBe(true);
-  });
+  it('broadcasts method return value to namespace', async () => {
+    const spy = vi.spyOn(websocketService, 'broadcastOthers');
+    const peer = { send: vi.fn(), namespace: '/bar' } as any;
+    const handler = websocketService['eventHandlers']['/bar']['hello'];
 
-  it('should not have broadcast_others arg if no @BroadcastOthers() decorator is used', async () => {
-    initializeMetadata(noBroadcastOthersService);
-    const methodMeta = initializeMetadataMethod(noBroadcastOthersService, 'sendMessage');
-    const shouldBroadcastOthers = methodMeta.args.some(arg => arg.type === 'broadcast_others');
-    expect(shouldBroadcastOthers).toBe(false);
+    const result = await handler.fn({}, peer);
+
+    expect(result).toEqual({ greet: 'world' });
+    expect(spy).toHaveBeenCalledWith(peer, { event: 'hello', data: { greet: 'world' } });
   });
 });

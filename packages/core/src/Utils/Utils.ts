@@ -9,9 +9,6 @@ export function createMetadataCtx(): MetadataTypes.Ctx {
     __controller: {
       path: '',
     },
-    __namespace: {
-      path: '',
-    },
     __middlewares: [],
     __methods: {},
   };

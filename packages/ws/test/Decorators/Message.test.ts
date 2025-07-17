@@ -1,9 +1,13 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Container, initializeContainer } from '@vercube/di';
-import { BadRequestError, MetadataResolver, StandardSchemaValidationProvider, ValidationProvider } from '@vercube/core';
+import {
+  MetadataResolver,
+  ServerPlugins,
+  StandardSchemaValidationProvider,
+  ValidationProvider,
+  BadRequestError
+} from '@vercube/core';
 import { Message } from '../../src/Decorators/Message';
-import { Broadcast } from '../../src/Decorators/Broadcast';
-import { BroadcastOthers } from '../../src/Decorators/BroadcastOthers';
 import { Emit } from '../../src/Decorators/Emit';
 import { Namespace } from '../../src/Decorators/Namespace';
 import { WebsocketService } from '../../src/Services/WebsocketService';
@@ -18,18 +22,6 @@ class TestService {
     return { pong: true };
   }
 
-  @Message({ event: 'broadcast' })
-  @Broadcast()
-  public handleBroadcast(data: any, peer: any, broadcast: any) {
-    return { everyone: true };
-  }
-
-  @Message({ event: 'broadcastOthers' })
-  @BroadcastOthers()
-  public handleOthers(data: any, peer: any, broadcast_others: any) {
-    return { notMe: true };
-  }
-
   @Message({
     event: 'validate',
     validationSchema: z.object({ foo: z.string() }),
@@ -38,82 +30,72 @@ class TestService {
   public validateMsg(data: any, peer: any) {
     return { ok: true };
   }
-
-  @Message({ event: 'emit' })
-  @Emit()
-  public handleEmit(data: any, peer: any, emit: any) {
-    return { echo: data };
-  }
 }
 
 describe('@Message() decorator', () => {
   let container: Container;
   let websocketService: WebsocketService;
+  let peer: any;
 
   beforeEach(() => {
     container = new Container();
     container.bind(MetadataResolver);
     container.bind(TestService);
+    container.bind(ServerPlugins);
     container.bind(WebsocketServiceKey, WebsocketService);
     container.bind(ValidationProvider, StandardSchemaValidationProvider);
 
-
     initializeContainer(container);
     websocketService = container.get(WebsocketServiceKey);
+
+    peer = {
+      id: '123',
+      namespace: '/foo',
+      send: vi.fn()
+    };
   });
 
   it('registers message handler on websocket service', () => {
     const handler = websocketService['eventHandlers']['/foo']['ping'];
-    expect(typeof handler).toBe('function');
-  });
-
-  it('emits result to sender if method returns value', async () => {
-    const peer = { send: vi.fn(), namespace: '/' } as any;
-    const handler = websocketService['eventHandlers']['/foo']['ping'];
-
-    await handler(peer, {});
-
-    expect(peer.send).toHaveBeenCalledWith({ event: 'ping', data: { pong: true } });
+    expect(handler).toBeDefined();
+    expect(typeof handler.fn).toBe('function');
   });
 
   it('validates incoming message if schema is provided', async () => {
-    const peer = { send: vi.fn(), namespace: '/' } as any;
-    const handler = websocketService['eventHandlers']['/foo']['validate'];
+    const msg = {
+      event: 'validate',
+      data: { foo: 'bar' }
+    };
 
-    await handler(peer, { foo: 'bar' });
+    const message = {
+      text: () => JSON.stringify(msg)
+    };
+
+    await websocketService['handleMessage'](peer, message as any);
+
     expect(peer.send).toHaveBeenCalledWith({ event: 'validate', data: { ok: true } });
   });
 
   it('throws BadRequestError on validation failure', async () => {
-    const peer = { send: vi.fn(), namespace: '/' } as any;
-    const handler = websocketService['eventHandlers']['/foo']['validate'];
+    const msg = {
+      event: 'validate',
+      data: {} // invalid: missing "foo"
+    };
 
-    await expect(() => handler(peer, {})).rejects.toThrow(BadRequestError);
-  });
+    const message = {
+      text: () => JSON.stringify(msg)
+    };
 
-  it('broadcasts to all when broadcast arg is used', async () => {
-    const spy = vi.spyOn(websocketService, 'broadcast');
-    const peer = { send: vi.fn(), namespace: '/' } as any;
-    const handler = websocketService['eventHandlers']['/foo']['broadcast'];
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    await handler(peer, {});
-    expect(spy).toHaveBeenCalledWith(peer, { everyone: true });
-  });
+    await websocketService['handleMessage'](peer, message as any);
 
-  it('broadcasts to others when broadcast_others arg is used', async () => {
-    const spy = vi.spyOn(websocketService, 'broadcastOthers');
-    const peer = { send: vi.fn(), namespace: '/' } as any;
-    const handler = websocketService['eventHandlers']['/foo']['broadcastOthers'];
+    // Even though we throw internally, we catch inside handleMessage and log it
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[WS] Failed to process message:'),
+      expect.any(BadRequestError)
+    );
 
-    await handler(peer, {});
-    expect(spy).toHaveBeenCalledWith(peer, { notMe: true });
-  });
-
-  it('emits back if emit arg is present and not broadcast', async () => {
-    const peer = { send: vi.fn(), namespace: '/' } as any;
-    const handler = websocketService['eventHandlers']['/foo']['emit'];
-
-    await handler(peer, { hello: 'world' });
-    expect(peer.send).toHaveBeenCalledWith({ event: 'emit', data: { echo: { hello: 'world' } } });
+    errorSpy.mockRestore();
   });
 });

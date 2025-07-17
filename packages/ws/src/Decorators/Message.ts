@@ -1,5 +1,5 @@
-import { BadRequestError, initializeMetadata, initializeMetadataMethod, MetadataResolver, ValidationProvider, ValidationTypes } from '@vercube/core';
-import { BaseDecorator, createDecorator, Inject, InjectOptional } from '@vercube/di';
+import { initializeMetadata, initializeMetadataMethod, ValidationTypes } from '@vercube/core';
+import { BaseDecorator, createDecorator, InjectOptional } from '@vercube/di';
 import { WebsocketService } from '../Services/WebsocketService';
 import { WebsocketServiceKey } from '../Utils/WebsocketServiceKey';
 
@@ -8,69 +8,51 @@ interface MessageDecoratorOptions {
   validationSchema?: ValidationTypes.Schema;
 }
 
+/**
+ * A decorator class for listening to websocket messages under
+ * a specific event.
+ * 
+ * This class extends the BaseDecorator and is used to listen
+ * to websocket messages under a specific event.
+ *
+ * @extends {BaseDecorator<MessageDecoratorOptions>}
+ */
 class MessageDecorator extends BaseDecorator<MessageDecoratorOptions> {
 
-  @Inject(MetadataResolver)
-  private gMetadataResolver!: MetadataResolver;
-
-  @Inject(WebsocketServiceKey)
-  private gWebsocketService!: WebsocketService;
-
-  @InjectOptional(ValidationProvider)
-  private gValidationProvider: ValidationProvider | null;
+  @InjectOptional(WebsocketServiceKey)
+  private gWebsocketService: WebsocketService;
 
   public override created(): void {
-    initializeMetadata(this.prototype);
+    if (!this.gWebsocketService) {
+      console.warn('BroadcastDecorator::WebsocketService is not registered');
+      return;
+    }
+
+    const meta = initializeMetadata(this.prototype);
     const method = initializeMetadataMethod(this.prototype, this.propertyName);
 
-    const namespace = this.gMetadataResolver.resolveNamespace({
-      instance: this.instance
-    });
+    const namespace = meta?.__extra?.namespace as string;
+    if (!namespace) {
+      console.warn('MessageDecorator::Unable to find namespace. Did you use @Namespace()?');
+      return;
+    }
 
-    const shouldBroadcast = method.args.find(e => e.type === 'broadcast');
-    const shouldBroadcastOthers = method.args.find(e => e.type === 'broadcast_others');
-    const shouldEmit = method.args.find(e => e.type === 'emit') && !shouldBroadcast;
+    method.metadata = {
+      ...method.metadata,
+      event: this.options.event,
+    }
+
+    const originalMethod = this.instance[this.propertyName].bind(this.instance);
 
     this.gWebsocketService.registerMessageHandler(
       namespace,
       this.options.event,
-      async (peer, data) => {
-        if (this.options.validationSchema) {
-          if (!this.gValidationProvider) {
-            console.warn('ValidationMiddleware::ValidationProvider is not registered');
-            return;
-          }
-
-          const result = await this.gValidationProvider.validate(this.options.validationSchema!, data);
-
-          if (result.issues?.length) {
-            throw new BadRequestError(`Websocket message validation error`, result.issues);
-          }
-        }
-
-        const method = this.instance[this.propertyName];
-        const result = await method.call(this.instance, data, peer);
-
-        if (result !== undefined) {
-          if (shouldEmit) {
-            peer.send({
-              event: this.options.event,
-              data: result
-            });
-          }
-
-          if (shouldBroadcast) {
-            this.gWebsocketService.broadcast(peer, result);
-          }
-
-          if (shouldBroadcastOthers) {
-            this.gWebsocketService.broadcastOthers(peer, result);
-          }
-        }
+      {
+        schema: this.options.validationSchema,
+        fn: originalMethod
       }
     );
   }
-
 }
 
 export function Message(params: MessageDecoratorOptions): Function {

@@ -146,11 +146,6 @@ export namespace ConfigTypes {
     dev?: boolean;
 
     /**
-     * Flag indicating if the application should have websockets enabled.
-     */
-    websockets?: boolean;
-
-    /**
      * The logging level for the application.
      */
     logLevel?: LoggerTypes.Level;

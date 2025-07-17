@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { type Peer, type Message, type defineHooks } from 'crossws';
+import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
+import { type Peer, type Message, defineHooks } from 'crossws';
 import { WebsocketService } from '../../src/Services/WebsocketService';
 import { type ServerPlugin } from 'srvx';
 
@@ -35,10 +35,17 @@ function createMockMessage(data: any): Message {
 
 describe('WebsocketService', () => {
   let service: WebsocketService;
+  let registerPlugin: Mock;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    registerPlugin = vi.fn();
+
     service = new WebsocketService();
+    // Manually inject the ServerPlugins mock
+    (service as any).gServerPlugins = {
+      registerPlugin,
+    };
   });
 
   it('registers namespaces correctly', () => {
@@ -47,21 +54,21 @@ describe('WebsocketService', () => {
   });
 
   it('registers message handlers and namespaces', () => {
-    const handler = vi.fn();
+    const handler = { fn: vi.fn() };
     service.registerMessageHandler('/chat', 'message', handler);
     expect(service['eventHandlers']['/chat']['message']).toBe(handler);
     expect(service['namespaces']['/chat']).toEqual([]);
   });
 
   it('handles messages by calling correct handler', async () => {
-    const handler = vi.fn();
+    const handler = { fn: vi.fn() };
     const peer = createMockPeer('123', '/room');
     const message = createMockMessage({ event: 'say', data: { text: 'hello' } });
 
     service.registerMessageHandler('/room', 'say', handler);
     await service['handleMessage'](peer, message);
 
-    expect(handler).toHaveBeenCalledWith(peer, { text: 'hello' });
+    expect(handler.fn).toHaveBeenCalledWith({ text: 'hello' }, peer);
   });
 
   it('logs warning if no handler found', async () => {
@@ -100,22 +107,20 @@ describe('WebsocketService', () => {
   });
 
   it('initializes and rejects unknown namespace', async () => {
-    const service = new WebsocketService();
     service.registerNamespace('/chat');
     service.initialize();
 
-    const hooks = (service.serverPlugin as MockedServerPlugin).__hooks;
+    const hooks = (registerPlugin.mock.calls[0][0] as MockedServerPlugin).__hooks;
     const response = await hooks?.upgrade?.(new Request('http://localhost/unknown'));
 
     expect((response as Response).status).toBe(403);
   });
 
   it('allows known namespace on upgrade', async () => {
-    const service = new WebsocketService();
     service.registerNamespace('/chat');
     service.initialize();
 
-    const hooks = (service.serverPlugin as MockedServerPlugin).__hooks;
+    const hooks = (registerPlugin.mock.calls[0][0] as MockedServerPlugin).__hooks;
     const result = await hooks?.upgrade?.(new Request('http://localhost/chat'));
 
     expect(result).toMatchObject({ namespace: '/chat' });
@@ -126,7 +131,7 @@ describe('WebsocketService', () => {
     service.registerNamespace('/lobby');
     service.initialize();
 
-    const hooks = (service.serverPlugin as MockedServerPlugin).__hooks;
+    const hooks = (registerPlugin.mock.calls[0][0] as MockedServerPlugin).__hooks;
     await hooks?.open?.(peer);
 
     expect(service['namespaces']['/lobby']).toContain(peer);
@@ -137,7 +142,7 @@ describe('WebsocketService', () => {
     service['namespaces']['/room'] = [peer];
     service.initialize();
 
-    const hooks = (service.serverPlugin as MockedServerPlugin).__hooks;
+    const hooks = (registerPlugin.mock.calls[0][0] as MockedServerPlugin).__hooks;
     await hooks?.close?.(peer, { code: 1000 });
 
     expect(service['namespaces']['/room']).toEqual([]);
@@ -149,7 +154,7 @@ describe('WebsocketService', () => {
     const err = new Error('Boom');
 
     service.initialize();
-    const hooks = (service.serverPlugin as MockedServerPlugin).__hooks;
+    const hooks = (registerPlugin.mock.calls[0][0] as MockedServerPlugin).__hooks;
 
     await hooks?.error?.(peer, err as any);
 

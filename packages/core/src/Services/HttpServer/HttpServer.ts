@@ -1,11 +1,11 @@
 import { Container, Inject } from '@vercube/di';
 import { ConfigTypes, NotFoundError } from '@vercube/core';
-import { serve, type Server } from 'srvx';
+import { serve, type ServerPlugin, type Server } from 'srvx';
 import { Router } from '../Router/Router';
 import { RequestHandler } from '../Router/RequestHandler';
 import { ErrorHandlerProvider } from '../ErrorHandler/ErrorHandlerProvider';
 import { StaticRequestHandler } from '../Router/StaticRequestHandler';
-import { WebsocketService, WebsocketServiceKey } from '@vercube/ws';
+import { ServerPlugins } from './ServerPlugins';
 /**
  * HTTP server implementation for handling incoming web requests
  * 
@@ -41,16 +41,19 @@ export class HttpServer {
   private gStaticRequestHandler: StaticRequestHandler;
 
   /**
-   * Websocket service for enabled websocket connections
+   * Server Plugins for getting the plugins for the HTTP server
    */
-  @Inject(WebsocketServiceKey)
-  private gWebsocketService: WebsocketService;
+  @Inject(ServerPlugins)
+  private gServerPlugins: ServerPlugins;
 
   /**
    * Underlying server instance
    * @private
    */
   private fServer: Server;
+
+  private fPort: number | undefined;
+  private fHost: string | undefined;
 
   /**
    * Initializes the HTTP server and starts listening for requests
@@ -60,8 +63,16 @@ export class HttpServer {
   public async initialize(config: ConfigTypes.Config): Promise<void> {
     const { port, host } = config.server ?? {};
 
-    const hasWebsocketsEnabled = !!config.websockets;
+    this.fPort = port;
+    this.fHost = host;
+  }
 
+  /**
+   * Listens for incoming requests on the HTTP server
+   * 
+   * @returns {Promise<void>} A promise that resolves when the server is ready to listen
+   */
+  public async listen(): Promise<void> {
     this.fServer = serve({
       bun: {
         error: (error: Error) => {
@@ -73,19 +84,12 @@ export class HttpServer {
           return this.gContainer.get(ErrorHandlerProvider).handleError(error);
         },
       },
-      hostname: host,
-      port,
+      hostname: this.fHost,
+      port: this.fPort,
       fetch: this.handleRequest.bind(this),
-      plugins: hasWebsocketsEnabled ? [this.gWebsocketService.serverPlugin] : []
+      plugins: this.gServerPlugins.serverPlugins,
     });
-  }
 
-  /**
-   * Listens for incoming requests on the HTTP server
-   * 
-   * @returns {Promise<void>} A promise that resolves when the server is ready to listen
-   */
-  public async listen(): Promise<void> {
     await this.fServer.ready();
   }
 
