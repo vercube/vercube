@@ -4,10 +4,11 @@ import { createContainer } from '../Common/Container';
 import { ConfigTypes } from '../Types/ConfigTypes';
 import { RuntimeConfig } from '../Services/Config/RuntimeConfig';
 import { loadVercubeConfig } from '../Config/Loader';
+import type { MaybePromise } from '../Types/CommonTypes';
 
 export interface CreateAppOptions {
   cfg?: ConfigTypes.Config;
-  setup?: (app: App) => Promise<void>;
+  setup?: (app: App) => MaybePromise<void>;
 }
 
 /**

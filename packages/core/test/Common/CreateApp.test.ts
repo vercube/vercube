@@ -35,20 +35,20 @@ describe('createApp', () => {
   });
 
   it('should create and initialize an App instance', async () => {
-    const app = await createApp(mockConfig);
+    const app = await createApp({ cfg: mockConfig });
 
     expect(app).toBeInstanceOf(App);
   });
 
   it('should set runtime config correctly', async () => {
-    const app = await createApp(mockConfig);
+    const app = await createApp({ cfg: mockConfig });
     const runtimeConfig = app.container.get(RuntimeConfig);
 
     expect(runtimeConfig.runtimeConfig).toEqual(mockConfig.runtime);
   });
 
   it('should initialize app with loaded config', async () => {
-    const app = await createApp(mockConfig);
+    const app = await createApp({ cfg: mockConfig });
     const runtimeConfig = app.container.get(RuntimeConfig);
 
     expect(runtimeConfig.runtimeConfig).toEqual(mockConfig.runtime);
@@ -59,4 +59,16 @@ describe('createApp', () => {
 
     expect(app).toBeInstanceOf(App);
   });
+
+  it('should work with setup function', async () => {
+    let setupCalled = false;
+    const setup = () => {
+      setupCalled = true;
+    };
+
+    await createApp({ setup });
+
+    expect(setupCalled).toBe(true);
+  });
+
 }); 
