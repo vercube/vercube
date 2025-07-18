@@ -69,6 +69,7 @@ export * from './Types/HttpTypes';
 export * from './Types/MetadataTypes';
 export * from './Types/ConfigTypes';
 export * from './Types/RouterTypes';
+export * from './Types/HttpCodes';
 
 // Utils
 export * from './Utils/Utils';

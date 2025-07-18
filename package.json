@@ -10,7 +10,7 @@
   },
   "scripts": {
     "build": "nx run-many -t build --exclude=playground",
-    "dev": "nx watch --all -- nx run \\$NX_PROJECT_NAME:build",
+    "dev": "nx watch --all --exclude=playground -- nx run \\$NX_PROJECT_NAME:build",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:tscheck": "tsc --noEmit",

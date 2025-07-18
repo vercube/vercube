@@ -36,7 +36,8 @@ class GetDecorator extends BaseDecorator<GetDecoratorOptions> {
    */
   public override created(): void {
     initializeMetadata(this.prototype);
-    initializeMetadataMethod(this.prototype, this.propertyName);
+    const method = initializeMetadataMethod(this.prototype, this.propertyName);
+    method.method = 'GET';
 
     this.options.path = this.gMetadataResolver.resolveUrl({
       instance: this.instance,
