@@ -1,9 +1,13 @@
 {
   "name": "@vercube/logger",
-  "version": "0.0.17",
+  "version": "0.0.18",
   "description": "Logger module for Vercube framework",
-  "packageManager": "pnpm@9.10.0",
-  "repository": "@vercube/logger",
+  "packageManager": "pnpm@10.13.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vercube/vercube.git",
+    "directory": "packages/logger"
+  },
   "license": "MIT",
   "sideEffects": false,
   "type": "module",

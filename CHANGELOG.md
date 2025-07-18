@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.0.18
+
+[compare changes](https://github.com/vercube/vercube/compare/v0.0.17...v0.0.18)
+
+### 🩹 Fixes
+
+- **deps:** Bump @aws-sdk/client-s3 from 3.844.0 to 3.845.0 ([92e5daf](https://github.com/vercube/vercube/commit/92e5daf))
+- **deps:** Bump @aws-sdk/client-s3 in /packages/storage ([4da9234](https://github.com/vercube/vercube/commit/4da9234))
+- **core**: Packages repository ([64d3cfc](https://github.com/vercube/vercube/commit/64d3cfc))
+
+### 📦 Build
+
+- Bump packages ([82604c9](https://github.com/vercube/vercube/commit/82604c9)) ([7a01f6d](https://github.com/vercube/vercube/commit/7a01f6d))
+
+### ❤️ Contributors
+
+- Oskar Lebuda
+
 ## v0.0.17
 
 [compare changes](https://github.com/vercube/vercube/compare/v0.0.15...v0.0.17)
