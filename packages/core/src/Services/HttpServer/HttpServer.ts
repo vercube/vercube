@@ -93,19 +93,6 @@ export class HttpServer {
    * @returns {Promise<void>} A promise that resolves when the server is ready to listen
    */
   public async listen(): Promise<void> {
-
-    this.fServer.options.plugins = [
-      (server) => {
-        // @ts-expect-error
-        const originalServe = server.serve;
-        // @ts-expect-error
-        server.serve = () => {
-          console.log('serve2');
-          return originalServe.call(server);
-        };
-      },
-    ];
-
     await this.fServer.ready();
   }
 

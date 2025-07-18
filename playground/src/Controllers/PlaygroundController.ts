@@ -154,7 +154,14 @@ export default class PlaygroundController {
   @Post('/')
   @Schema({
     responses: {
-      [HttpStatusCode.OK]: UserSchema
+      200: {
+        description: 'User schema object',
+        content: {
+          'application/json': {
+            schema: UserSchema,
+          },
+        },
+      },
     },
   })
   public async post(
@@ -174,7 +181,7 @@ export default class PlaygroundController {
   @Get('/redirect')
   @Redirect('/api/playground/redirected')
   public async redirect(): Promise<{ message: string }> {
-    return { message: 'Hello, I perform redirection!' };
+    return { message: 'Hello, i perform redirection!' };
   }
 
   /**
@@ -184,7 +191,7 @@ export default class PlaygroundController {
   @Get('/redirected')
   @Status(HTTPStatus.OK)
   public async redirected(): Promise<{ message: string }> {
-    return { message: 'Hello, I am redirected!' };
+    return { message: 'Hello, im redirected!' };
   }
 
   /**

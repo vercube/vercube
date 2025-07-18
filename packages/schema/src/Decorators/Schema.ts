@@ -4,12 +4,9 @@ import type { RouteConfig } from '@asteasolutions/zod-to-openapi'
 import { SchemaRegistry } from '../Services/SchemaRegistry';
 import { SchemaBodyResolver } from '../Resolvers/SchemaBodyResolver';
 import { SchemaQueryParamsResolver } from '../Resolvers/SchemaQueryParamsResolver';
-import { SchemaResponseResolver } from '../Resolvers/SchemaResponseResolver';
-import { SchemaTypes } from '../Types/SchemaTypes';
 
 // oxlint-disable-next-line no-empty-object-type
-interface SchemaDecoratorOptions extends Omit<RouteConfig, 'method' | 'path' | 'responses'> {
-  responses?: SchemaTypes.Response;
+interface SchemaDecoratorOptions extends Omit<RouteConfig, 'method' | 'path'> {
 };
 
 /**
@@ -41,7 +38,6 @@ class SchemaDecorator extends BaseDecorator<SchemaDecoratorOptions> {
     };
 
     // Use resolvers
-    SchemaResponseResolver(this.options.responses, _schema);
     SchemaBodyResolver(_methodMeta, _schema);
     SchemaQueryParamsResolver(_methodMeta, _schema);
 
