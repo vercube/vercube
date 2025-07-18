@@ -28,7 +28,8 @@
     "@standard-schema/spec": "1.0.0",
     "@vercube/core": "workspace:*",
     "@vercube/di": "workspace:*",
-    "defu": "6.1.4"
+    "defu": "6.1.4",
+    "zod": "4.0.2"
   },
   "publishConfig": {
     "access": "public"

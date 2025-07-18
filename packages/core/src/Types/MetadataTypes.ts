@@ -20,6 +20,7 @@ export namespace MetadataTypes {
     req: Request | null;
     res: Response | null;
     url: string | null;
+    method: string | null;
     args: Arg[];
     actions: Action[];
     meta: Record<string, unknown>;

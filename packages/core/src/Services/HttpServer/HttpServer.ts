@@ -1,6 +1,6 @@
 import { Container, Inject } from '@vercube/di';
 import { ConfigTypes, NotFoundError } from '@vercube/core';
-import { serve, type Server} from 'srvx';
+import { serve, type Server, type ServerPlugin } from 'srvx';
 import { Router } from '../Router/Router';
 import { RequestHandler } from '../Router/RequestHandler';
 import { ErrorHandlerProvider } from '../ErrorHandler/ErrorHandlerProvider';
@@ -46,6 +46,22 @@ export class HttpServer {
   private fServer: Server;
 
   /**
+   * List of plugins to be applied to the HTTP server
+   * @private
+   */
+  private fPlugins: ServerPlugin[] = [];
+
+  /**
+   * Adds a plugin to the HTTP server
+   * 
+   * @param {ServerPlugin} plugin - The plugin to add
+   * @returns {void}
+   */
+  public addPlugin(plugin: ServerPlugin): void {
+    this.fPlugins.push(plugin);
+  }
+
+  /**
    * Initializes the HTTP server and starts listening for requests
    * 
    * @returns {Promise<void>} A promise that resolves when the server is ready
@@ -66,6 +82,7 @@ export class HttpServer {
       },
       hostname: host,
       port,
+      plugins: this.fPlugins,
       fetch: this.handleRequest.bind(this),
     });
   }
@@ -76,6 +93,19 @@ export class HttpServer {
    * @returns {Promise<void>} A promise that resolves when the server is ready to listen
    */
   public async listen(): Promise<void> {
+
+    this.fServer.options.plugins = [
+      (server) => {
+        // @ts-expect-error
+        const originalServe = server.serve;
+        // @ts-expect-error
+        server.serve = () => {
+          console.log('serve2');
+          return originalServe.call(server);
+        };
+      },
+    ];
+
     await this.fServer.ready();
   }
 

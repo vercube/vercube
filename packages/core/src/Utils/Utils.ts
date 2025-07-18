@@ -23,6 +23,7 @@ export function createMetadataMethod(): MetadataTypes.Method {
     req: null,
     res: null,
     url: null,
+    method: null,
     args: [],
     actions: [],
     meta: {},

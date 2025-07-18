@@ -3,6 +3,7 @@ import { MetadataResolver } from '../../Services/Metadata/MetadataResolver';
 import { RequestHandler } from '../../Services/Router/RequestHandler';
 import { MetadataTypes } from '../../Types/MetadataTypes';
 import { Router } from '../../Services/Router/Router';
+import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
 
 interface ConnectDecoratorOptions {
   path: string;
@@ -35,6 +36,10 @@ class ConnectDecorator extends BaseDecorator<ConnectDecoratorOptions, MetadataTy
    * with the Router, and sets up the event handler for the CONNECT request.
    */
   public override created(): void {
+    initializeMetadata(this.prototype);
+    const method = initializeMetadataMethod(this.prototype, this.propertyName);
+    method.method = 'CONNECT';
+
     this.options.path = this.gMetadataResolver.resolveUrl({
       instance: this.instance,
       path: this.options.path,

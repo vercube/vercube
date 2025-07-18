@@ -11,6 +11,7 @@ import {
   QueryParams,
   Param,
   RuntimeConfig,
+  HttpStatusCode,
 } from '@vercube/core';
 import { Auth } from '@vercube/auth';
 import { Schema } from '@vercube/schema';
@@ -152,24 +153,8 @@ export default class PlaygroundController {
    */
   @Post('/')
   @Schema({
-    request: {
-      body: {
-        content: {
-          'application/json': {
-            schema: schema,
-          },
-        },
-      }
-    },
     responses: {
-      200: {
-        description: 'Object with user data.',
-        content: {
-          'application/json': {
-            schema: UserSchema,
-          },
-        },
-      },
+      [HttpStatusCode.OK]: UserSchema
     },
   })
   public async post(
@@ -189,7 +174,7 @@ export default class PlaygroundController {
   @Get('/redirect')
   @Redirect('/api/playground/redirected')
   public async redirect(): Promise<{ message: string }> {
-    return { message: 'Hello, i perform redirection!' };
+    return { message: 'Hello, I perform redirection!' };
   }
 
   /**
@@ -199,7 +184,7 @@ export default class PlaygroundController {
   @Get('/redirected')
   @Status(HTTPStatus.OK)
   public async redirected(): Promise<{ message: string }> {
-    return { message: 'Hello, im redirected!' };
+    return { message: 'Hello, I am redirected!' };
   }
 
   /**
