@@ -69,8 +69,6 @@ export class HttpServer {
   public async initialize(config: ConfigTypes.Config): Promise<void> {
     const { port, host } = config.server ?? {};
 
-    console.log('initializing plugins', this.fPlugins);
-
     this.fServer = serve({
       bun: {
         error: (error: Error) => {

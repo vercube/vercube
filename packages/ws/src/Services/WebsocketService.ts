@@ -143,7 +143,6 @@ export class WebsocketService {
     });
 
     const serverPlugin = plugin(hooks);
-    console.log('adding plugin');
     this.gHttpServer.addPlugin(serverPlugin);
   }
 }
