@@ -31,7 +31,7 @@ class EmitDecorator extends BaseDecorator {
 
     this.instance[this.propertyName] = async (incomingMessage: Record<string, unknown>, peer: Peer) => {
       const result = await originalMethod.call(this.instance, incomingMessage, peer);
-      const event = method?.metadata?.event as string;
+      const event = method?.meta?.event as string;
 
       if (!event) {
         console.warn('EmitDecorator::@Message() event not found for @Emit()');

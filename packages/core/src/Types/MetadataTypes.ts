@@ -14,7 +14,7 @@ export namespace MetadataTypes {
     };
     __middlewares: Middleware[];
     __methods: Record<string, Method>;
-    __extra?: Record<string, unknown>;
+    __meta?: Record<string, unknown>;
   }
 
   export interface Method {
@@ -24,7 +24,6 @@ export namespace MetadataTypes {
     method: string | null;
     args: Arg[];
     actions: Action[];
-    metadata?: Record<string, unknown>;
     meta: Record<string, unknown>;
   }
 

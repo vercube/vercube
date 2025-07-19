@@ -31,14 +31,14 @@ class MessageDecorator extends BaseDecorator<MessageDecoratorOptions> {
     const meta = initializeMetadata(this.prototype);
     const method = initializeMetadataMethod(this.prototype, this.propertyName);
 
-    const namespace = meta?.__extra?.namespace as string;
+    const namespace = meta?.__meta?.namespace as string;
     if (!namespace) {
       console.warn('MessageDecorator::Unable to find namespace. Did you use @Namespace()?');
       return;
     }
 
-    method.metadata = {
-      ...method.metadata,
+    method.meta = {
+      ...method.meta,
       event: this.options.event,
     }
 
