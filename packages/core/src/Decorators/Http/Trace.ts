@@ -36,7 +36,8 @@ class TraceDecorator extends BaseDecorator<TraceDecoratorOptions> {
    */
   public override created(): void {
     initializeMetadata(this.prototype);
-    initializeMetadataMethod(this.prototype, this.propertyName);
+    const method = initializeMetadataMethod(this.prototype, this.propertyName);
+    method.method = 'TRACE';
 
     this.options.path = this.gMetadataResolver.resolveUrl({
       instance: this.instance,

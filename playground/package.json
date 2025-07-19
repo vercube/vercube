@@ -18,6 +18,7 @@
     "@vercube/di": "workspace:*",
     "@vercube/h3": "workspace:*",
     "@vercube/logger": "workspace:*",
+    "@vercube/schema": "workspace:*",
     "@vercube/storage": "workspace:*",
     "@vercube/ws": "workspace:*",
     "tslib": "2.8.1",

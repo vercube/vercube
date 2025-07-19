@@ -1,9 +1,13 @@
 {
   "name": "create-vercube",
-  "version": "0.0.17",
+  "version": "0.0.18",
   "description": "Create a Vercube app in seconds",
   "license": "MIT",
-  "repository": "@vercube/create-app",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vercube/vercube.git",
+    "directory": "packages/create-app"
+  },
   "main": "bin/create-vercube.js",
   "bin": {
     "create-vercube": "bin/create-vercube.js"

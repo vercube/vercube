@@ -74,6 +74,9 @@ export class App {
   public async init(cfg: ConfigTypes.Config): Promise<void> {
     this.fConfig = cfg;
 
+    // resolve plugins
+    await this.resolvePlugins();
+
     await this.gHttpServer.initialize(this.fConfig);
 
     if (this.fConfig.server?.static) {
@@ -88,12 +91,12 @@ export class App {
   }
 
   /**
-   * Registers a plugin.
+   * Add new plugin to the application.
    *
-   * @param {typeof Plugin} plugin - The plugin to register.
+   * @param {typeof Plugin} plugin - The plugin to add.
    * @param {unknown} options - The options to pass to the plugin.
    */
-  public registerPlugin<T>(plugin: typeof BasePlugin<T>, options?: T): void {
+  public addPlugin<T>(plugin: typeof BasePlugin<T>, options?: T): void {
     this.gPluginsRegistry.register(plugin, options);
   }
 
@@ -107,9 +110,6 @@ export class App {
     if (this.fIsInitialized) {
       throw new Error('App is already initialized');
     }
-
-    // resolve plugins
-    await this.resolvePlugins();
 
     // initialize container with all decorators
     initializeContainer(this.container);

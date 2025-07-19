@@ -1,6 +1,6 @@
 import { Container, Inject } from '@vercube/di';
 import { ConfigTypes, NotFoundError } from '@vercube/core';
-import { serve, type ServerPlugin, type Server } from 'srvx';
+import { serve, type Server, type ServerPlugin } from 'srvx';
 import { Router } from '../Router/Router';
 import { RequestHandler } from '../Router/RequestHandler';
 import { ErrorHandlerProvider } from '../ErrorHandler/ErrorHandlerProvider';
@@ -52,8 +52,21 @@ export class HttpServer {
    */
   private fServer: Server;
 
-  private fPort: number | undefined;
-  private fHost: string | undefined;
+  /**
+   * List of plugins to be applied to the HTTP server
+   * @private
+   */
+  private fPlugins: ServerPlugin[] = [];
+
+  /**
+   * Adds a plugin to the HTTP server
+   * 
+   * @param {ServerPlugin} plugin - The plugin to add
+   * @returns {void}
+   */
+  public addPlugin(plugin: ServerPlugin): void {
+    this.fPlugins.push(plugin);
+  }
 
   /**
    * Initializes the HTTP server and starts listening for requests
@@ -63,16 +76,6 @@ export class HttpServer {
   public async initialize(config: ConfigTypes.Config): Promise<void> {
     const { port, host } = config.server ?? {};
 
-    this.fPort = port;
-    this.fHost = host;
-  }
-
-  /**
-   * Listens for incoming requests on the HTTP server
-   * 
-   * @returns {Promise<void>} A promise that resolves when the server is ready to listen
-   */
-  public async listen(): Promise<void> {
     this.fServer = serve({
       bun: {
         error: (error: Error) => {
@@ -84,12 +87,19 @@ export class HttpServer {
           return this.gContainer.get(ErrorHandlerProvider).handleError(error);
         },
       },
-      hostname: this.fHost,
-      port: this.fPort,
+      hostname: host,
+      port,
       fetch: this.handleRequest.bind(this),
       plugins: this.gServerPlugins.serverPlugins,
     });
+  }
 
+  /**
+   * Listens for incoming requests on the HTTP server
+   * 
+   * @returns {Promise<void>} A promise that resolves when the server is ready to listen
+   */
+  public async listen(): Promise<void> {
     await this.fServer.ready();
   }
 

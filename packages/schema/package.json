@@ -1,12 +1,12 @@
 {
-  "name": "@vercube/cli",
+  "name": "@vercube/schema",
   "version": "0.0.18",
-  "description": "CLI module for Vercube framework",
+  "description": "Schema (swagger) module for Vercube framework",
   "packageManager": "pnpm@10.13.1",
   "repository": {
     "type": "git",
     "url": "https://github.com/vercube/vercube.git",
-    "directory": "packages/cli"
+    "directory": "packages/schema"
   },
   "license": "MIT",
   "sideEffects": false,
@@ -22,18 +22,18 @@
     "dist",
     "README.md"
   ],
-  "bin": {
-    "vercube": "./dist/index.mjs"
-  },
+  "keywords": [
+    "vercube",
+    "schema",
+    "swagger"
+  ],
   "dependencies": {
-    "@vercube/devkit": "workspace:*",
-    "citty": "0.1.6",
-    "consola": "3.4.2",
-    "giget": "2.0.0",
-    "nypm": "0.6.0",
-    "pathe": "2.0.3",
-    "std-env": "3.9.0",
-    "tinyexec": "1.0.1"
+    "@asteasolutions/zod-to-openapi": "8.0.0-beta.4",
+    "@standard-schema/spec": "1.0.0",
+    "@vercube/core": "workspace:*",
+    "@vercube/di": "workspace:*",
+    "defu": "6.1.4",
+    "zod": "4.0.2"
   },
   "publishConfig": {
     "access": "public"

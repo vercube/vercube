@@ -11,9 +11,11 @@ import {
   QueryParams,
   Param,
   RuntimeConfig,
+  HttpStatusCode,
 } from '@vercube/core';
 import { Auth } from '@vercube/auth';
 import { Broadcast, BroadcastOthers, Emit, Message, Namespace } from '@vercube/ws';
+import { Schema } from '@vercube/schema';
 import { FirstMiddleware } from '../Middlewares/FirstMiddleware';
 import { z } from 'zod';
 import { Inject } from '@vercube/di';
@@ -33,11 +35,19 @@ const schema = z.object({
 const messageSchema = z.object({
   foo: z.string().min(1, 'Foo is required'),
 });
+const UserSchema = z
+  .object({
+    id: z.string().openapi({ example: '1212121' }),
+    name: z.string().openapi({ example: 'John Doe' }),
+    age: z.number().openapi({ example: 42 }),
+  })
+  .openapi('User');
 
 const schemaQueryParams = z.object({
   foo: z.string().min(1, 'Foo is required'),
   bar: z.string().min(1, 'Bar is required'),
 });
+
 
 /**
  * Playground controller.
@@ -88,8 +98,8 @@ export default class PlaygroundController {
    * Handles GET requests to the /authenticate endpoint.
    * @returns {Promise<{ message: string }>} A promise that resolves to an object containing a greeting message.
    */
-  @Get('/authenticate')
   @Auth()
+  @Get('/authenticate')
   public async authenticate(): Promise<{ message: string }> {
     return { message: 'Hello, world!' };
   }
@@ -160,6 +170,18 @@ export default class PlaygroundController {
    * @returns {Promise<{ message: string }>} A promise that resolves to an object containing a greeting message.
    */
   @Post('/')
+  @Schema({
+    responses: {
+      200: {
+        description: 'User schema object',
+        content: {
+          'application/json': {
+            schema: UserSchema,
+          },
+        },
+      },
+    },
+  })
   public async post(
     @Body({ validationSchema: schema }) body: unknown,
     @QueryParams({ validationSchema: schemaQueryParams }) query: string,
