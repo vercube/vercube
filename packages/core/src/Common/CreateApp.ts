@@ -17,7 +17,7 @@ export interface CreateAppOptions {
  * @returns {Promise<App>} A promise that resolves to an instance of the App.
  */
 export async function createApp({ cfg = {}, setup = undefined }: CreateAppOptions = {}): Promise<App> {
-// load config
+  // load config
   const config = await loadVercubeConfig(cfg);
 
   // create base app container

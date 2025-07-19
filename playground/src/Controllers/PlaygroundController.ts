@@ -11,10 +11,9 @@ import {
   QueryParams,
   Param,
   RuntimeConfig,
-  HttpStatusCode,
 } from '@vercube/core';
 import { Auth } from '@vercube/auth';
-import { Broadcast, BroadcastOthers, Emit, Message, Namespace } from '@vercube/ws';
+import { Emit, Message, Namespace } from '@vercube/ws';
 import { Schema } from '@vercube/schema';
 import { FirstMiddleware } from '../Middlewares/FirstMiddleware';
 import { z } from 'zod';
@@ -35,6 +34,7 @@ const schema = z.object({
 const messageSchema = z.object({
   foo: z.string().min(1, 'Foo is required'),
 });
+
 const UserSchema = z
   .object({
     id: z.string().openapi({ example: '1212121' }),

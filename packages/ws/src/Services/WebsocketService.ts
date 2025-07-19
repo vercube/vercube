@@ -1,6 +1,6 @@
 import { plugin } from 'crossws/server';
 import { defineHooks, type Message, type WSError, type Peer } from 'crossws';
-import { BadRequestError, ServerPlugins, ValidationProvider } from '@vercube/core';
+import { BadRequestError, HttpServer, ValidationProvider } from '@vercube/core';
 import { Inject, InjectOptional } from '@vercube/di';
 import { WebsocketTypes } from '../Types/WebsocketTypes';
 
@@ -15,11 +15,14 @@ import { WebsocketTypes } from '../Types/WebsocketTypes';
 export class WebsocketService {
 
   /**
-  * Server Plugins for registering the server plugin
+  * Http Server for injecting the server plugin
   */
-  @Inject(ServerPlugins)
-  private gServerPlugins: ServerPlugins;
+  @Inject(HttpServer)
+  private gHttpServer: HttpServer;
 
+  /**
+  * Validation provider for running the schema validation
+  */
   @InjectOptional(ValidationProvider)
   private gValidationProvider: ValidationProvider | null;
 
@@ -140,6 +143,7 @@ export class WebsocketService {
     });
 
     const serverPlugin = plugin(hooks);
-    this.gServerPlugins.registerPlugin(serverPlugin);
+    console.log('adding plugin');
+    this.gHttpServer.addPlugin(serverPlugin);
   }
 }

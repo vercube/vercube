@@ -1,7 +1,16 @@
-import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { type Peer, type Message, defineHooks } from 'crossws';
-import { WebsocketService } from '../../src/Services/WebsocketService';
 import { type ServerPlugin } from 'srvx';
+import { Container, initializeContainer } from '@vercube/di';
+import { type App, type ConfigTypes, createApp, HttpServer } from '@vercube/core';
+import { WebsocketServiceKey } from '@vercube/ws';
+import { WebsocketService } from '../../src/Services/WebsocketService';
+
+vi.mock('srvx', () => ({
+  serve: vi.fn().mockReturnValue({
+    ready: vi.fn().mockResolvedValue(undefined),
+  }),
+}));
 
 interface MockedServerPlugin extends ServerPlugin {
   __hooks: ReturnType<typeof defineHooks>;
@@ -35,18 +44,48 @@ function createMockMessage(data: any): Message {
 
 describe('WebsocketService', () => {
   let service: WebsocketService;
-  let registerPlugin: Mock;
+  let container: Container;
+  let peer: any;
+  let app: App;
 
-  beforeEach(() => {
+  const config: ConfigTypes.Config = {
+    logLevel: 'debug',
+    server: {
+      static: {
+        dirs: ['./public'],
+        maxAge: 3600,
+        immutable: true,
+        etag: true,
+      },
+    },
+  };
+
+  beforeEach(async () => {
     vi.clearAllMocks();
-    registerPlugin = vi.fn();
 
-    service = new WebsocketService();
-    // Manually inject the ServerPlugins mock
-    (service as any).gServerPlugins = {
-      registerPlugin,
+    app = await createApp(config as any);
+    container = app.container;
+    container.bind(WebsocketServiceKey, WebsocketService);
+
+    service = container.get(WebsocketServiceKey);
+    const httpServer = container.get(HttpServer);
+    vi.spyOn(httpServer, 'addPlugin');
+
+    peer = {
+      id: '123',
+      namespace: '/foo',
+      send: vi.fn()
     };
+
+    initializeContainer(container);
   });
+
+  // beforeEach(() => {
+  // vi.clearAllMocks();
+  // registerPlugin = vi.fn();
+
+  //   service = new WebsocketService();
+  // });
 
   it('registers namespaces correctly', () => {
     service.registerNamespace('/test');
@@ -110,7 +149,9 @@ describe('WebsocketService', () => {
     service.registerNamespace('/chat');
     service.initialize();
 
-    const hooks = (registerPlugin.mock.calls[0][0] as MockedServerPlugin).__hooks;
+    const pluginSpy = vi.mocked(container.get(HttpServer).addPlugin);
+    const serverPlugin = pluginSpy.mock.calls[0][0] as MockedServerPlugin;
+    const hooks = serverPlugin.__hooks;
     const response = await hooks?.upgrade?.(new Request('http://localhost/unknown'));
 
     expect((response as Response).status).toBe(403);
@@ -120,7 +161,9 @@ describe('WebsocketService', () => {
     service.registerNamespace('/chat');
     service.initialize();
 
-    const hooks = (registerPlugin.mock.calls[0][0] as MockedServerPlugin).__hooks;
+    const pluginSpy = vi.mocked(container.get(HttpServer).addPlugin);
+    const serverPlugin = pluginSpy.mock.calls[0][0] as MockedServerPlugin;
+    const hooks = serverPlugin.__hooks;
     const result = await hooks?.upgrade?.(new Request('http://localhost/chat'));
 
     expect(result).toMatchObject({ namespace: '/chat' });
@@ -131,7 +174,9 @@ describe('WebsocketService', () => {
     service.registerNamespace('/lobby');
     service.initialize();
 
-    const hooks = (registerPlugin.mock.calls[0][0] as MockedServerPlugin).__hooks;
+    const pluginSpy = vi.mocked(container.get(HttpServer).addPlugin);
+    const serverPlugin = pluginSpy.mock.calls[0][0] as MockedServerPlugin;
+    const hooks = serverPlugin.__hooks;
     await hooks?.open?.(peer);
 
     expect(service['namespaces']['/lobby']).toContain(peer);
@@ -142,7 +187,9 @@ describe('WebsocketService', () => {
     service['namespaces']['/room'] = [peer];
     service.initialize();
 
-    const hooks = (registerPlugin.mock.calls[0][0] as MockedServerPlugin).__hooks;
+    const pluginSpy = vi.mocked(container.get(HttpServer).addPlugin);
+    const serverPlugin = pluginSpy.mock.calls[0][0] as MockedServerPlugin;
+    const hooks = serverPlugin.__hooks;
     await hooks?.close?.(peer, { code: 1000 });
 
     expect(service['namespaces']['/room']).toEqual([]);
@@ -154,7 +201,9 @@ describe('WebsocketService', () => {
     const err = new Error('Boom');
 
     service.initialize();
-    const hooks = (registerPlugin.mock.calls[0][0] as MockedServerPlugin).__hooks;
+    const pluginSpy = vi.mocked(container.get(HttpServer).addPlugin);
+    const serverPlugin = pluginSpy.mock.calls[0][0] as MockedServerPlugin;
+    const hooks = serverPlugin.__hooks;
 
     await hooks?.error?.(peer, err as any);
 

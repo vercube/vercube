@@ -5,7 +5,6 @@ import { Router } from '../Router/Router';
 import { RequestHandler } from '../Router/RequestHandler';
 import { ErrorHandlerProvider } from '../ErrorHandler/ErrorHandlerProvider';
 import { StaticRequestHandler } from '../Router/StaticRequestHandler';
-import { ServerPlugins } from './ServerPlugins';
 /**
  * HTTP server implementation for handling incoming web requests
  * 
@@ -41,12 +40,6 @@ export class HttpServer {
   private gStaticRequestHandler: StaticRequestHandler;
 
   /**
-   * Server Plugins for getting the plugins for the HTTP server
-   */
-  @Inject(ServerPlugins)
-  private gServerPlugins: ServerPlugins;
-
-  /**
    * Underlying server instance
    * @private
    */
@@ -76,6 +69,8 @@ export class HttpServer {
   public async initialize(config: ConfigTypes.Config): Promise<void> {
     const { port, host } = config.server ?? {};
 
+    console.log('initializing plugins', this.fPlugins);
+
     this.fServer = serve({
       bun: {
         error: (error: Error) => {
@@ -90,7 +85,7 @@ export class HttpServer {
       hostname: host,
       port,
       fetch: this.handleRequest.bind(this),
-      plugins: this.gServerPlugins.serverPlugins,
+      plugins: this.fPlugins,
     });
   }
 

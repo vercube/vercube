@@ -1,11 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Container, initializeContainer } from '@vercube/di';
-import { MetadataResolver, ServerPlugins, StandardSchemaValidationProvider, ValidationProvider } from '@vercube/core';
+import { type App, type ConfigTypes, createApp } from '@vercube/core';
 import { Namespace } from '../../src/Decorators/Namespace';
 import { Message } from '../../src/Decorators/Message';
 import { Broadcast } from '../../src/Decorators/Broadcast';
 import { WebsocketService } from '../../src/Services/WebsocketService';
 import { WebsocketServiceKey } from '../../src/Utils/WebsocketServiceKey';
+
+vi.mock('srvx', () => ({
+  serve: vi.fn().mockReturnValue({
+    ready: vi.fn().mockResolvedValue(undefined),
+  }),
+}));
 
 @Namespace('/bar')
 class BroadcastTestService {
@@ -19,17 +25,36 @@ class BroadcastTestService {
 describe('@Broadcast() decorator', () => {
   let container: Container;
   let websocketService: WebsocketService;
+  let peer: any;
+  let app: App;
 
-  beforeEach(() => {
-    container = new Container();
-    container.bind(MetadataResolver);
-    container.bind(ServerPlugins);
+  const config: ConfigTypes.Config = {
+    logLevel: 'debug',
+    server: {
+      static: {
+        dirs: ['./public'],
+        maxAge: 3600,
+        immutable: true,
+        etag: true,
+      },
+    },
+  };
+
+  beforeEach(async () => {
+    app = await createApp(config as any);
+    container = app.container;
     container.bind(BroadcastTestService);
     container.bind(WebsocketServiceKey, WebsocketService);
-    container.bind(ValidationProvider, StandardSchemaValidationProvider);
+
+    websocketService = container.get(WebsocketServiceKey);
+
+    peer = {
+      id: '123',
+      namespace: '/foo',
+      send: vi.fn()
+    };
 
     initializeContainer(container);
-    websocketService = container.get(WebsocketServiceKey);
   });
 
   it('broadcasts method return value to namespace', async () => {

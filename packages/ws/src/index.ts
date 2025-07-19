@@ -5,6 +5,9 @@ export * from './Decorators/Emit';
 export * from './Decorators/Broadcast';
 export * from './Decorators/BroadcastOthers';
 
+// Plugins
+export * from './Plugins/WebsocketPlugin';
+
 // Services
 export * from './Services/WebsocketService';
 

@@ -15,7 +15,6 @@ import { HttpServer } from '../Services/HttpServer/HttpServer';
 import { Router } from '../Services/Router/Router';
 import { GlobalMiddlewareRegistry } from '../Services/Middleware/GlobalMiddlewareRegistry';
 import { StaticRequestHandler } from '../Services/Router/StaticRequestHandler';
-import { ServerPlugins } from '../Services/HttpServer/ServerPlugins';
 
 /**
  * Creates and configures a new dependency injection container for the application.
@@ -46,7 +45,6 @@ export function createContainer(config: ConfigTypes.Config): Container {
   container.bind(HooksService);
   container.bind(MetadataResolver);
   container.bind(PluginsRegistry);
-  container.bind(ServerPlugins);
   container.bind(RequestHandler);
   container.bind(RuntimeConfig);
   container.bind(GlobalMiddlewareRegistry);

@@ -1,18 +1,18 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Container, initializeContainer } from '@vercube/di';
-import {
-  MetadataResolver,
-  ServerPlugins,
-  StandardSchemaValidationProvider,
-  ValidationProvider,
-  BadRequestError
-} from '@vercube/core';
+import { BadRequestError, createApp, type ConfigTypes, type App } from '@vercube/core';
 import { Message } from '../../src/Decorators/Message';
 import { Emit } from '../../src/Decorators/Emit';
 import { Namespace } from '../../src/Decorators/Namespace';
 import { WebsocketService } from '../../src/Services/WebsocketService';
 import { WebsocketServiceKey } from '../../src/Utils/WebsocketServiceKey';
 import { z } from 'zod';
+
+vi.mock('srvx', () => ({
+  serve: vi.fn().mockReturnValue({
+    ready: vi.fn().mockResolvedValue(undefined),
+  }),
+}));
 
 @Namespace('/foo')
 class TestService {
@@ -36,16 +36,26 @@ describe('@Message() decorator', () => {
   let container: Container;
   let websocketService: WebsocketService;
   let peer: any;
+  let app: App;
 
-  beforeEach(() => {
-    container = new Container();
-    container.bind(MetadataResolver);
+  const config: ConfigTypes.Config = {
+    logLevel: 'debug',
+    server: {
+      static: {
+        dirs: ['./public'],
+        maxAge: 3600,
+        immutable: true,
+        etag: true,
+      },
+    },
+  };
+
+  beforeEach(async () => {
+    app = await createApp(config as any);
+    container = app.container;
     container.bind(TestService);
-    container.bind(ServerPlugins);
     container.bind(WebsocketServiceKey, WebsocketService);
-    container.bind(ValidationProvider, StandardSchemaValidationProvider);
 
-    initializeContainer(container);
     websocketService = container.get(WebsocketServiceKey);
 
     peer = {
@@ -53,6 +63,8 @@ describe('@Message() decorator', () => {
       namespace: '/foo',
       send: vi.fn()
     };
+
+    initializeContainer(container);
   });
 
   it('registers message handler on websocket service', () => {
