@@ -1,5 +1,6 @@
 import { type App } from '@vercube/core';
 import { SchemaPlugin } from '@vercube/schema';
+import { WebsocketPlugin } from '@vercube/ws';
 
 /**
  * Setup the application.
@@ -8,4 +9,5 @@ import { SchemaPlugin } from '@vercube/schema';
 export async function setup(app: App): Promise<void> {
   // register plugins
   app.addPlugin(SchemaPlugin);
+  app.addPlugin(WebsocketPlugin);
 }

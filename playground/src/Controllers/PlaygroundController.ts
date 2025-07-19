@@ -11,9 +11,9 @@ import {
   QueryParams,
   Param,
   RuntimeConfig,
-  HttpStatusCode,
 } from '@vercube/core';
 import { Auth } from '@vercube/auth';
+import { Emit, Message, Namespace } from '@vercube/ws';
 import { Schema } from '@vercube/schema';
 import { FirstMiddleware } from '../Middlewares/FirstMiddleware';
 import { z } from 'zod';
@@ -29,6 +29,10 @@ const schema = z.object({
   name: z.string().min(1, 'Name is required'),
   email: z.string().email('Invalid email format'),
   age: z.number().int().min(0, 'Age must be a non-negative integer'),
+});
+
+const messageSchema = z.object({
+  foo: z.string().min(1, 'Foo is required'),
 });
 
 const UserSchema = z
@@ -49,6 +53,7 @@ const schemaQueryParams = z.object({
  * Playground controller.
  * This is a sample controller that demonstrates how to create a controller using the @vercube/core package.
  */
+@Namespace('/foo')
 @Controller('/api/playground')
 @Middleware(FirstMiddleware)
 export default class PlaygroundController {
@@ -61,6 +66,19 @@ export default class PlaygroundController {
 
   @Inject(RuntimeConfig)
   private gRuntimeConfig: RuntimeConfig<AppTypes.Config>;
+
+  @Message({ event: 'message' })
+  @Emit()
+  public async onMessage(incomingMessage: unknown, peer: { id: string; ip: string; }): Promise<Record<string, string>> {
+    console.log(incomingMessage, peer);
+    return { foo: 'bar' };
+  }
+
+  @Message({ event: 'action' })
+  @Emit()
+  public async onAction(message: unknown): Promise<Record<string, string>> {
+    return { foo: 'bar' };
+  }
 
   /**
    * Handles GET requests to the / endpoint.

@@ -51,6 +51,8 @@ export * from './Services/Metadata/MetadataResolver';
 export * from './Services/ErrorHandler/ErrorHandlerProvider';
 export * from './Services/Router/Router';
 export * from './Services/Config/RuntimeConfig';
+export * from './Services/Validation/ValidationProvider';
+export * from './Services/Validation/StandardSchemaValidationProvider';
 
 // Errors
 export * from './Errors/HttpError';
@@ -69,6 +71,7 @@ export * from './Types/HttpTypes';
 export * from './Types/MetadataTypes';
 export * from './Types/ConfigTypes';
 export * from './Types/RouterTypes';
+export * from './Types/ValidationTypes';
 export * from './Types/HttpCodes';
 
 // Utils

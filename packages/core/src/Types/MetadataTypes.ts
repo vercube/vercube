@@ -14,6 +14,7 @@ export namespace MetadataTypes {
     };
     __middlewares: Middleware[];
     __methods: Record<string, Method>;
+    __meta?: Record<string, unknown>;
   }
 
   export interface Method {
@@ -61,5 +62,4 @@ export namespace MetadataTypes {
     path: string;
     propertyName: string;
   }
-
 }

@@ -86,7 +86,7 @@ export class App {
     if (this.fConfig.runtime) {
       this.gRuntimeConfig.runtimeConfig = this.fConfig.runtime;
     }
-    
+
     this.gRouter.initialize();
   }
 
