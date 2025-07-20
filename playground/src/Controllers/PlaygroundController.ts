@@ -14,9 +14,8 @@ import {
 } from '@vercube/core';
 import { Auth } from '@vercube/auth';
 import { Emit, Message, Namespace } from '@vercube/ws';
-import { Schema } from '@vercube/schema';
+import { Schema, z } from '@vercube/schema';
 import { FirstMiddleware } from '../Middlewares/FirstMiddleware';
-import { z } from 'zod';
 import { Inject } from '@vercube/di';
 import { StorageManager } from '@vercube/storage';
 import { Logger } from '@vercube/logger';
