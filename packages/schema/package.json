@@ -28,7 +28,7 @@
     "swagger"
   ],
   "dependencies": {
-    "@asteasolutions/zod-to-openapi": "8.0.0-beta.4",
+    "@asteasolutions/zod-to-openapi": "8.0.0",
     "@standard-schema/spec": "1.0.0",
     "@vercube/core": "workspace:*",
     "@vercube/di": "workspace:*",

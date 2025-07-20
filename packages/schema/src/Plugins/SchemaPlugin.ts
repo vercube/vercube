@@ -1,11 +1,6 @@
-import { z } from 'zod';
-import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi';
 import { type App, BasePlugin } from '@vercube/core';
 import { SchemaRegistry } from '../Services/SchemaRegistry';
 import { SchemaController } from '../Controllers/SchameController';
-
-// extends ZOD schema
-extendZodWithOpenApi(z);
 
 /**
  * Schema Plugin for Vercube framework
