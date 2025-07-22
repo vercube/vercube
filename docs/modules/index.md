@@ -19,8 +19,11 @@ The Logger module provides a flexible and extensible logging system for your app
 ### [Storage](./storage/index.md)
 The Storage module provides a flexible and extensible storage system for Vercube applications. It offers a unified interface for different storage implementations through a dependency injection-based architecture.
 
-### [Auth](./auth//index.md)
+### [Auth](./auth/index.md)
 The Auth module provides a flexible and extensible authentication and authorization system for Vercube applications. It offers a unified interface for different authentication implementations through a dependency injection-based architecture.
+
+### [Websocket](./ws/index.md)
+The Websocket module enables you to set up websocket connections, listen to messages, emit/broadcast messages and more.
 
 ### [H3](./h3/index.md)
 The H3 module provides integration between Vercube applications and the H3 HTTP framework. 

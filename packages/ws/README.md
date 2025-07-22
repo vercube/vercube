@@ -22,8 +22,8 @@
 
 An ultra-efficient JavaScript server framework that runs anywhere - Node.js, Bun, or Deno - with unmatched flexibility and complete configurability for developers who refuse to sacrifice speed or control.
 
-## <a name="module">Auth module</a>
-The Auth module provides a flexible and extensible authentication and authorization system for Vercube applications. It offers a unified interface for different authentication implementations through a dependency injection-based architecture.
+## <a name="module">Websocket module</a>
+The Websocket module enables you to set up websocket connections on your application. It offers a collection of decorators that enable you to listen to incoming messages, emit/broadcast messages and more. It works based on namespaces.
 
 ## <a name="documentation">📖 Documentation</a>
 Comprehensive documentation is available at [vercube.dev](https://vercube.dev). There you'll find detailed module descriptions, project information, guides, and everything else you need to know about Vercube.
