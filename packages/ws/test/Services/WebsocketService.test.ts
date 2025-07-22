@@ -5,6 +5,7 @@ import { Container, initializeContainer } from '@vercube/di';
 import { type App, type ConfigTypes, createApp, HttpServer } from '@vercube/core';
 import { WebsocketServiceKey } from '@vercube/ws';
 import { WebsocketService } from '../../src/Services/WebsocketService';
+import { WebsocketTypes } from '../../src/Types/WebsocketTypes';
 
 vi.mock('srvx', () => ({
   serve: vi.fn().mockReturnValue({
@@ -80,34 +81,30 @@ describe('WebsocketService', () => {
     initializeContainer(container);
   });
 
-  // beforeEach(() => {
-  // vi.clearAllMocks();
-  // registerPlugin = vi.fn();
-
-  //   service = new WebsocketService();
-  // });
-
   it('registers namespaces correctly', () => {
     service.registerNamespace('/test');
     expect(service['namespaces']['/test']).toEqual([]);
   });
 
   it('registers message handlers and namespaces', () => {
-    const handler = { fn: vi.fn() };
-    service.registerMessageHandler('/chat', 'message', handler);
-    expect(service['eventHandlers']['/chat']['message']).toBe(handler);
+    const handler = { callback: vi.fn() };
+    service.registerHandler(WebsocketTypes.HandlerAction.MESSAGE, '/chat', { callback: handler.callback, event: 'message' });
+    expect(service['handlers'][WebsocketTypes.HandlerAction.MESSAGE]['/chat']['message']).toStrictEqual({
+      callback: handler.callback,
+      event: 'message'
+    });
     expect(service['namespaces']['/chat']).toEqual([]);
   });
 
   it('handles messages by calling correct handler', async () => {
-    const handler = { fn: vi.fn() };
+    const handler = { callback: vi.fn() };
     const peer = createMockPeer('123', '/room');
     const message = createMockMessage({ event: 'say', data: { text: 'hello' } });
 
-    service.registerMessageHandler('/room', 'say', handler);
+    service.registerHandler(WebsocketTypes.HandlerAction.MESSAGE, '/room', { callback: handler.callback, event: 'say' });
     await service['handleMessage'](peer, message);
 
-    expect(handler.fn).toHaveBeenCalledWith({ text: 'hello' }, peer);
+    expect(handler.callback).toHaveBeenCalledWith({ text: 'hello' }, peer);
   });
 
   it('logs warning if no handler found', async () => {
@@ -118,7 +115,7 @@ describe('WebsocketService', () => {
     service.registerNamespace('/nohandler');
     await service['handleMessage'](peer, message);
 
-    expect(warn).toHaveBeenCalledWith('[WS] No handler for event "ghost" in namespace "/nohandler"');
+    expect(warn).toHaveBeenCalledWith('[WS] No message handler for event "ghost" in namespace "/nohandler"');
   });
 
   it('broadcasts messages to all peers in a namespace', () => {

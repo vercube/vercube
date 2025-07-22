@@ -2,6 +2,7 @@ import { initializeMetadata, initializeMetadataMethod, ValidationTypes } from '@
 import { BaseDecorator, createDecorator, InjectOptional } from '@vercube/di';
 import { WebsocketService } from '../Services/WebsocketService';
 import { WebsocketServiceKey } from '../Utils/WebsocketServiceKey';
+import { WebsocketTypes } from '../Types/WebsocketTypes';
 
 interface MessageDecoratorOptions {
   event: string;
@@ -24,7 +25,7 @@ class MessageDecorator extends BaseDecorator<MessageDecoratorOptions> {
 
   public override created(): void {
     if (!this.gWebsocketService) {
-      console.warn('BroadcastDecorator::WebsocketService is not registered');
+      console.warn('MessageDecorator::WebsocketService is not registered');
       return;
     }
 
@@ -44,12 +45,13 @@ class MessageDecorator extends BaseDecorator<MessageDecoratorOptions> {
 
     const originalMethod = this.instance[this.propertyName].bind(this.instance);
 
-    this.gWebsocketService.registerMessageHandler(
+    this.gWebsocketService.registerHandler(
+      WebsocketTypes.HandlerAction.MESSAGE,
       namespace,
-      this.options.event,
       {
+        callback: originalMethod,
+        event: this.options.event,
         schema: this.options.validationSchema,
-        fn: originalMethod
       }
     );
   }

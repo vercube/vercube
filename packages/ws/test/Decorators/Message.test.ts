@@ -7,6 +7,7 @@ import { Namespace } from '../../src/Decorators/Namespace';
 import { WebsocketService } from '../../src/Services/WebsocketService';
 import { WebsocketServiceKey } from '../../src/Utils/WebsocketServiceKey';
 import { z } from 'zod';
+import { WebsocketTypes } from '../../src/Types/WebsocketTypes';
 
 vi.mock('srvx', () => ({
   serve: vi.fn().mockReturnValue({
@@ -68,9 +69,9 @@ describe('@Message() decorator', () => {
   });
 
   it('registers message handler on websocket service', () => {
-    const handler = websocketService['eventHandlers']['/foo']['ping'];
+    const handler = websocketService['handlers'][WebsocketTypes.HandlerAction.MESSAGE]['/foo']['ping'];
     expect(handler).toBeDefined();
-    expect(typeof handler.fn).toBe('function');
+    expect(typeof handler.callback).toBe('function');
   });
 
   it('validates incoming message if schema is provided', async () => {
@@ -91,7 +92,7 @@ describe('@Message() decorator', () => {
   it('throws BadRequestError on validation failure', async () => {
     const msg = {
       event: 'validate',
-      data: {} // invalid: missing "foo"
+      data: {}
     };
 
     const message = {
@@ -102,7 +103,6 @@ describe('@Message() decorator', () => {
 
     await websocketService['handleMessage'](peer, message as any);
 
-    // Even though we throw internally, we catch inside handleMessage and log it
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining('[WS] Failed to process message:'),
       expect.any(BadRequestError)

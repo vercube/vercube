@@ -13,7 +13,7 @@ import {
   RuntimeConfig,
 } from '@vercube/core';
 import { Auth } from '@vercube/auth';
-import { Emit, Message, Namespace } from '@vercube/ws';
+import { Emit, Message, Namespace, OnConnectionAttempt } from '@vercube/ws';
 import { Schema, z } from '@vercube/schema';
 import { FirstMiddleware } from '../Middlewares/FirstMiddleware';
 import { Inject } from '@vercube/di';
@@ -65,6 +65,12 @@ export default class PlaygroundController {
 
   @Inject(RuntimeConfig)
   private gRuntimeConfig: RuntimeConfig<AppTypes.Config>;
+
+  @OnConnectionAttempt()
+  public async onConnectionAttempt(params: Record<string, unknown>, request: Request): Promise<boolean> {
+    console.log(params);
+    return true;
+  }
 
   @Message({ event: 'message' })
   @Emit()

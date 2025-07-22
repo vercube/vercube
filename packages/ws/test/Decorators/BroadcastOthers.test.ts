@@ -6,6 +6,7 @@ import { Message } from '../../src/Decorators/Message';
 import { WebsocketService } from '../../src/Services/WebsocketService';
 import { WebsocketServiceKey } from '../../src/Utils/WebsocketServiceKey';
 import { BroadcastOthers } from '../../src/Decorators/BroadcastOthers';
+import { WebsocketTypes } from '../../src/Types/WebsocketTypes';
 
 vi.mock('srvx', () => ({
   serve: vi.fn().mockReturnValue({
@@ -60,9 +61,9 @@ describe('@BroadcastOthers() decorator', () => {
   it('broadcasts method return value to namespace', async () => {
     const spy = vi.spyOn(websocketService, 'broadcastOthers');
     const peer = { send: vi.fn(), namespace: '/bar' } as any;
-    const handler = websocketService['eventHandlers']['/bar']['hello'];
+    const handler = websocketService['handlers'][WebsocketTypes.HandlerAction.MESSAGE]['/bar']['hello'];
 
-    const result = await handler.fn({}, peer);
+    const result = await handler.callback({}, peer);
 
     expect(result).toEqual({ greet: 'world' });
     expect(spy).toHaveBeenCalledWith(peer, { event: 'hello', data: { greet: 'world' } });

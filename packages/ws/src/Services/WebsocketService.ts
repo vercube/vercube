@@ -26,22 +26,60 @@ export class WebsocketService {
   @InjectOptional(ValidationProvider)
   private gValidationProvider: ValidationProvider | null;
 
+  /**
+  * Internal namespace registry
+  */
   private namespaces: Record<string, Peer[]> = {};
-  private eventHandlers: Record<string, Record<string, WebsocketTypes.MessageHandler>> = {};
 
+  /**
+  * Internal handlers registry
+  */
+  private handlers: {
+    [WebsocketTypes.HandlerAction.CONNECTION]: Record<string, WebsocketTypes.HandlerAttributes>;
+    [WebsocketTypes.HandlerAction.MESSAGE]: Record<string, Record<string, WebsocketTypes.HandlerAttributes>>;
+  } = {
+      [WebsocketTypes.HandlerAction.CONNECTION]: {},  // namespace -> handler
+      [WebsocketTypes.HandlerAction.MESSAGE]: {},     // namespace -> event -> handler
+    };
+
+  /**
+  * Register a new namespace
+  */
   public registerNamespace(path: string) {
     if (!this?.namespaces?.[path.toLowerCase()]) {
       this.namespaces[path.toLowerCase()] = [];
     }
   }
 
-  public registerMessageHandler(namespace: string, event: string, handler: WebsocketTypes.MessageHandler) {
-    const lowerNamespace = namespace.toLowerCase();
-    if (!this.eventHandlers[lowerNamespace]) {
-      this.eventHandlers[lowerNamespace] = {};
+  /**
+  * Register a new handler
+  */
+  public registerHandler(
+    action: WebsocketTypes.HandlerAction,
+    namespace: string,
+    handler: WebsocketTypes.HandlerAttributes
+  ) {
+    const normalizedNamespace = namespace.toLowerCase();
+
+    if (action === WebsocketTypes.HandlerAction.CONNECTION) {
+      this.handlers[action][normalizedNamespace] = handler;
     }
-    this.eventHandlers[lowerNamespace][event] = handler;
-    this.registerNamespace(lowerNamespace);
+
+    if (action === WebsocketTypes.HandlerAction.MESSAGE) {
+      const event = handler.event;
+      if (!event) {
+        console.warn(`WebsocketService::Cannot register message handler without an event name for namespace "${normalizedNamespace}".`);
+        return;
+      }
+
+      if (!this.handlers[action][normalizedNamespace]) {
+        this.handlers[action][normalizedNamespace] = {};
+      }
+
+      this.handlers[action][normalizedNamespace][event] = handler;
+    }
+
+    this.registerNamespace(normalizedNamespace);
   }
 
   private async handleMessage(peer: Peer, rawMessage: Message) {
@@ -51,25 +89,27 @@ export class WebsocketService {
       const event = msg.event;
       const data = msg.data;
 
-      const handler = this.eventHandlers?.[namespace]?.[event];
-      if (handler) {
-        if (handler.schema) {
-          if (!this.gValidationProvider) {
-            console.warn('WebsocketService::ValidationProvider is not registered');
-            return;
-          }
+      const handler = this.handlers[WebsocketTypes.HandlerAction.MESSAGE]?.[namespace]?.[event];
 
-          const result = await this.gValidationProvider.validate(handler.schema, data);
+      if (!handler) {
+        console.warn(`[WS] No message handler for event "${event}" in namespace "${namespace}"`);
+        return;
+      }
 
-          if (result?.issues?.length) {
-            throw new BadRequestError('Websocket message validation error', result.issues);
-          }
+      if (handler.schema) {
+        if (!this.gValidationProvider) {
+          console.warn('WebsocketService::ValidationProvider is not registered');
+          return;
         }
 
-        await handler.fn(data, peer);
-      } else {
-        console.warn(`[WS] No handler for event "${event}" in namespace "${namespace}"`);
+        const result = await this.gValidationProvider.validate(handler.schema, data);
+
+        if (result?.issues?.length) {
+          throw new BadRequestError('Websocket message validation error', result.issues);
+        }
       }
+
+      await handler.callback(data, peer);
     } catch (error) {
       console.error(`[WS] Failed to process message:`, error);
     }
@@ -108,12 +148,32 @@ export class WebsocketService {
   public initialize() {
     const hooks = defineHooks({
       upgrade: async (request: Request) => {
-        const namespace = new URL(request.url).pathname;
+        const url = new URL(request.url);
+        const namespace = url.pathname;
+        const parameters = Object.fromEntries(url.searchParams.entries());
         const isNamespaceRegistered = !!this.namespaces?.[namespace?.toLowerCase()] as boolean;
 
         if (!isNamespaceRegistered) {
           console.warn(`[WS] Namespace "${namespace}" is not registered. Connection rejected.`);
           return new Response("Namespace not registered", { status: 403 });
+        }
+
+        const handler = this.handlers[WebsocketTypes.HandlerAction.CONNECTION]?.[namespace];
+
+        if (handler) {
+          try {
+            const result = await handler.callback(parameters, request);
+
+            if (result === false) {
+              return new Response("Unauthorized", { status: 403 });
+            }
+          } catch (error) {
+            if (error instanceof Error) {
+              return new Response(error.message, { status: 403 });
+            }
+
+            return new Response("Unknown error", { status: 403 });
+          }
         }
 
         return {
