@@ -66,15 +66,22 @@ export default class PlaygroundController {
   @Inject(RuntimeConfig)
   private gRuntimeConfig: RuntimeConfig<AppTypes.Config>;
 
+  @OnConnectionAttempt()
+  public async onConnectionAttempt(params: Record<string, unknown>, request: Request): Promise<boolean> {
+    if (!params?.token) return false;
+
+    return true;
+  }
+
   @Message({ event: 'message' })
-  @Emit()
+  @Emit('message')
   public async onMessage(incomingMessage: unknown, peer: { id: string; ip: string; }): Promise<Record<string, string>> {
     console.log(incomingMessage, peer);
     return { foo: 'bar' };
   }
 
-  @Message({ event: 'action' })
-  @Emit()
+  @Message({ event: 'foo' })
+  @Emit('testing')
   public async onAction(message: unknown): Promise<Record<string, string>> {
     return { foo: 'bar' };
   }

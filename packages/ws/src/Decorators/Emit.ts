@@ -4,16 +4,19 @@ import { type Peer } from 'crossws';
 import { WebsocketService } from '../Services/WebsocketService';
 import { WebsocketServiceKey } from '../Utils/WebsocketServiceKey';
 
+interface EmitDecoratorOptions {
+  event: string;
+}
+
 /**
  * A decorator class for emitting websocket messages to the peer.
  *
  * This class extends the BaseDecorator and is used to emit the result of
- * your function as a websocket message to the peer. Needs to be used along with
- * the @Message() decorator.
+ * your function as a websocket message to the peer.
  *
- * @extends {BaseDecorator}
+ * @extends {BaseDecorator<EmitDecoratorOptions>}
  */
-class EmitDecorator extends BaseDecorator {
+class EmitDecorator extends BaseDecorator<EmitDecoratorOptions> {
 
   @InjectOptional(WebsocketServiceKey)
   private gWebsocketService: WebsocketService;
@@ -25,20 +28,20 @@ class EmitDecorator extends BaseDecorator {
     }
 
     initializeMetadata(this.prototype);
-    const method = initializeMetadataMethod(this.prototype, this.propertyName);
+    initializeMetadataMethod(this.prototype, this.propertyName);
 
     const originalMethod = this.instance[this.propertyName];
 
     this.instance[this.propertyName] = async (incomingMessage: Record<string, unknown>, peer: Peer) => {
       const result = await originalMethod.call(this.instance, incomingMessage, peer);
-      const event = method?.meta?.event as string;
 
-      if (!event) {
-        console.warn('EmitDecorator::@Message() event not found for @Emit()');
-        return;
-      }
-
-      this.gWebsocketService.emit(peer, { event, data: result });
+      this.gWebsocketService.emit(
+        peer,
+        {
+          event: this.options.event,
+          data: result
+        }
+      );
 
       return result;
     }
@@ -46,6 +49,6 @@ class EmitDecorator extends BaseDecorator {
 
 }
 
-export function Emit(): Function {
-  return createDecorator(EmitDecorator, undefined);
+export function Emit(event: string): Function {
+  return createDecorator(EmitDecorator, { event });
 }

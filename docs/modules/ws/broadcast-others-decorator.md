@@ -2,19 +2,15 @@
 
 The broadcastOthers decorator enables you to broadcast a message to every peer on your namespace (excluding the peer).
 
+The decorator accepts a string `event` - This is the event that will be sent back to the client along with the data.
+
 ## Usage
 
 ```typescript
-const messageSchema = z.object({
-  foo: z.string().min(1, 'Foo is required'),
-});
-
 @Namespace('/foo') // register the namespace
 @Controller('/api/playground')
-@Middleware(FirstMiddleware)
 export default class DummyController {
-  @Message({ event: 'foo' })
-  @BroadcastOthers()
+  @BroadcastOthers('test')
   public async onMessage(incomingMessage: unknown, peer: { id: string; ip: string; }): Promise<Record<string, string>> {
     // { foo: 'bar' } will be emitted to every peer on the namespace
     // excluding the sender
@@ -27,8 +23,8 @@ On your client side, messages will be received with the following pattern:
 
 ```typescript
 { 
-  event: string, // the event you are listening to using @Message()
-  data: unknown // the data returning from your function
+  event: 'test', // the event you specified when using the decorator
+  data: { foo: 'bar' } // the data returning from your function
 };
 ```
 

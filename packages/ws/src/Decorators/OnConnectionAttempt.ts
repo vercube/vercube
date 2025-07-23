@@ -5,7 +5,7 @@ import { WebsocketServiceKey } from '../Utils/WebsocketServiceKey';
 import { WebsocketTypes } from '../Types/WebsocketTypes';
 
 /**
- * A decorator class for handling websocket connection attemps.
+ * A decorator class for handling websocket connection attempts.
  *
  * This class extends the BaseDecorator and is used to handle a
  * websocket connection attempt to a namespace.
@@ -13,7 +13,10 @@ import { WebsocketTypes } from '../Types/WebsocketTypes';
  * If your function throws, or returns false, the connection
  * will not be accepted.
  * 
- * Adds connection parameters to the function.
+ * The decorated function will receive the following parameters:
+ * 
+ * @param {Record<string, unknown>} params - The connection query parameters.
+ * @param {Request} request - The original HTTP request.
  *
  * @extends {BaseDecorator}
  */

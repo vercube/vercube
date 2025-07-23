@@ -2,19 +2,15 @@
 
 Using the emit decorator, you can send a message back to the peer by returning anything on your function.
 
+The decorator accepts a string `event` - This is the event that will be sent back to the client along with the data.
+
 ## Usage
 
 ```typescript
-const messageSchema = z.object({
-  foo: z.string().min(1, 'Foo is required'),
-});
-
 @Namespace('/foo') // register the namespace
 @Controller('/api/playground')
-@Middleware(FirstMiddleware)
 export default class DummyController {
-  @Message({ event: 'message' })
-  @Emit()
+  @Emit('test')
   public async onMessage(incomingMessage: unknown, peer: { id: string; ip: string; }): Promise<Record<string, string>> {
     // { foo: 'bar' } will be emitted back to the peer
     return { foo: 'bar' };
@@ -26,8 +22,8 @@ On your client side, messages will be received with the following pattern:
 
 ```typescript
 { 
-  event: string, // the event you are listening to using @Message()
-  data: unknown // the data returning from your function
+  event: 'test', // the event you specified when using the decorator
+  data: { foo: 'bar' } // the data returning from your function
 };
 ```
 

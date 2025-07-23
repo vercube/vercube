@@ -1,12 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { createApp, type App, type ConfigTypes } from '@vercube/core';
 import { Container, initializeContainer } from '@vercube/di';
-import { type App, type ConfigTypes, createApp } from '@vercube/core';
-import { Namespace } from '../../src/Decorators/Namespace';
-import { Message } from '../../src/Decorators/Message';
-import { Broadcast } from '../../src/Decorators/Broadcast';
 import { WebsocketService } from '../../src/Services/WebsocketService';
 import { WebsocketServiceKey } from '../../src/Utils/WebsocketServiceKey';
-import { WebsocketTypes } from '../../src/Types/WebsocketTypes';
+import { Broadcast } from '../../src/Decorators/Broadcast';
+import { Message } from '../../src/Decorators/Message';
+import { Namespace } from '../../src/Decorators/Namespace';
 
 vi.mock('srvx', () => ({
   serve: vi.fn().mockReturnValue({
@@ -14,58 +13,54 @@ vi.mock('srvx', () => ({
   }),
 }));
 
-@Namespace('/bar')
+@Namespace('/broadcast')
 class BroadcastTestService {
-  @Message({ event: 'hello' })
-  @Broadcast()
-  public sayHello(data: any, peer: any) {
-    return { greet: 'world' };
+  @Message({ event: 'echo' })
+  @Broadcast('echoed')
+  public echoMessage(data: any, peer: any) {
+    return { echoed: data };
   }
 }
 
 describe('@Broadcast() decorator', () => {
   let container: Container;
-  let websocketService: WebsocketService;
-  let peer: any;
   let app: App;
+  let websocketService: WebsocketService;
+  const broadcastSpy = vi.fn();
 
   const config: ConfigTypes.Config = {
-    logLevel: 'debug',
-    server: {
-      static: {
-        dirs: ['./public'],
-        maxAge: 3600,
-        immutable: true,
-        etag: true,
-      },
-    },
+    logLevel: 'info',
+    server: { static: { dirs: ['./public'] } }
   };
 
   beforeEach(async () => {
+    vi.restoreAllMocks();
     app = await createApp(config as any);
     container = app.container;
-    container.bind(BroadcastTestService);
+
     container.bind(WebsocketServiceKey, WebsocketService);
+    container.bind(BroadcastTestService);
 
     websocketService = container.get(WebsocketServiceKey);
 
-    peer = {
-      id: '123',
-      namespace: '/foo',
-      send: vi.fn()
-    };
+    vi.spyOn(websocketService, 'broadcast').mockImplementation(broadcastSpy);
 
     initializeContainer(container);
   });
 
-  it('broadcasts method return value to namespace', async () => {
-    const spy = vi.spyOn(websocketService, 'broadcast');
-    const peer = { send: vi.fn(), namespace: '/bar' } as any;
-    const handler = websocketService['handlers'][WebsocketTypes.HandlerAction.MESSAGE]['/bar']['hello'];
+  it('should call broadcast with the result of the method', async () => {
+    const peer = { id: 'peer-1', namespace: '/broadcast' };
+    const testService = container.get(BroadcastTestService);
 
-    const result = await handler.callback({}, peer);
+    const message = { text: 'hello' };
+    const result = await testService.echoMessage(message, peer);
 
-    expect(result).toEqual({ greet: 'world' });
-    expect(spy).toHaveBeenCalledWith(peer, { event: 'hello', data: { greet: 'world' } });
+    expect(result).toEqual({ echoed: message });
+
+    expect(broadcastSpy).toHaveBeenCalledTimes(1);
+    expect(broadcastSpy).toHaveBeenCalledWith(peer, {
+      event: 'echoed',
+      data: { echoed: message },
+    });
   });
 });

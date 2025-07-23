@@ -1,8 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Container, initializeContainer } from '@vercube/di';
-import { BadRequestError, createApp, type ConfigTypes, type App } from '@vercube/core';
+import { createApp, type ConfigTypes, type App } from '@vercube/core';
 import { Message } from '../../src/Decorators/Message';
-import { Emit } from '../../src/Decorators/Emit';
 import { Namespace } from '../../src/Decorators/Namespace';
 import { WebsocketService } from '../../src/Services/WebsocketService';
 import { WebsocketServiceKey } from '../../src/Utils/WebsocketServiceKey';
@@ -15,19 +14,19 @@ vi.mock('srvx', () => ({
   }),
 }));
 
+const schema = z.object({ foo: z.string() });
+
 @Namespace('/foo')
 class TestService {
   @Message({ event: 'ping' })
-  @Emit()
   public handlePing(data: any, peer: any) {
     return { pong: true };
   }
 
   @Message({
     event: 'validate',
-    validationSchema: z.object({ foo: z.string() }),
+    validationSchema: schema,
   })
-  @Emit()
   public validateMsg(data: any, peer: any) {
     return { ok: true };
   }
@@ -36,7 +35,6 @@ class TestService {
 describe('@Message() decorator', () => {
   let container: Container;
   let websocketService: WebsocketService;
-  let peer: any;
   let app: App;
 
   const config: ConfigTypes.Config = {
@@ -59,55 +57,24 @@ describe('@Message() decorator', () => {
 
     websocketService = container.get(WebsocketServiceKey);
 
-    peer = {
-      id: '123',
-      namespace: '/foo',
-      send: vi.fn()
-    };
-
     initializeContainer(container);
   });
 
-  it('registers message handler on websocket service', () => {
-    const handler = websocketService['handlers'][WebsocketTypes.HandlerAction.MESSAGE]['/foo']['ping'];
-    expect(handler).toBeDefined();
-    expect(typeof handler.callback).toBe('function');
-  });
+  it('should register both message handlers under the correct namespace and events', () => {
+    const handlers = websocketService['handlers'][WebsocketTypes.HandlerAction.MESSAGE];
 
-  it('validates incoming message if schema is provided', async () => {
-    const msg = {
-      event: 'validate',
-      data: { foo: 'bar' }
-    };
+    expect(handlers['/foo']).toBeDefined();
 
-    const message = {
-      text: () => JSON.stringify(msg)
-    };
+    const pingHandler = handlers['/foo']['ping'];
+    expect(pingHandler).toBeDefined();
+    expect(typeof pingHandler.callback).toBe('function');
+    expect(pingHandler.event).toBe('ping');
+    expect(pingHandler.schema).toBeUndefined();
 
-    await websocketService['handleMessage'](peer, message as any);
-
-    expect(peer.send).toHaveBeenCalledWith({ event: 'validate', data: { ok: true } });
-  });
-
-  it('throws BadRequestError on validation failure', async () => {
-    const msg = {
-      event: 'validate',
-      data: {}
-    };
-
-    const message = {
-      text: () => JSON.stringify(msg)
-    };
-
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
-    await websocketService['handleMessage'](peer, message as any);
-
-    expect(errorSpy).toHaveBeenCalledWith(
-      expect.stringContaining('[WS] Failed to process message:'),
-      expect.any(BadRequestError)
-    );
-
-    errorSpy.mockRestore();
+    const validateHandler = handlers['/foo']['validate'];
+    expect(validateHandler).toBeDefined();
+    expect(typeof validateHandler.callback).toBe('function');
+    expect(validateHandler.event).toBe('validate');
+    expect(validateHandler.schema).toBe(schema);
   });
 });

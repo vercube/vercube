@@ -4,17 +4,20 @@ import { type Peer } from 'crossws';
 import { WebsocketService } from '../Services/WebsocketService';
 import { WebsocketServiceKey } from '../Utils/WebsocketServiceKey';
 
+interface BroadcastDecoratorOptions {
+  event: string;
+}
+
 /**
  * A decorator class for broadcasting websocket messages to everyone 
  * on the namespace (including the peer).
  * 
  * This class extends the BaseDecorator and is used to emit the result of
  * your function as a websocket message to everyone on the namespace.
- * Needs to be used along with the @Message() decorator.
  *
- * @extends {BaseDecorator}
+ * @extends {BaseDecorator<BroadcastDecoratorOptions>}
  */
-class BroadcastDecorator extends BaseDecorator {
+class BroadcastDecorator extends BaseDecorator<BroadcastDecoratorOptions> {
 
   @InjectOptional(WebsocketServiceKey)
   private gWebsocketService: WebsocketService;
@@ -26,20 +29,20 @@ class BroadcastDecorator extends BaseDecorator {
     }
 
     initializeMetadata(this.prototype);
-    const method = initializeMetadataMethod(this.prototype, this.propertyName);
+    initializeMetadataMethod(this.prototype, this.propertyName);
 
     const originalMethod = this.instance[this.propertyName];
 
     this.instance[this.propertyName] = async (incomingMessage: Record<string, unknown>, peer: Peer) => {
       const result = await originalMethod.call(this.instance, incomingMessage, peer);
-      const event = method?.meta?.event as string;
 
-      if (!event) {
-        console.warn('BroadcastDecorator::@Message() event not found for @Broadcast()');
-        return;
-      }
-
-      this.gWebsocketService.broadcast(peer, { event, data: result });
+      this.gWebsocketService.broadcast(
+        peer,
+        {
+          event: this.options.event,
+          data: result
+        }
+      );
 
       return result;
     }
@@ -47,6 +50,6 @@ class BroadcastDecorator extends BaseDecorator {
 
 }
 
-export function Broadcast(): Function {
-  return createDecorator(BroadcastDecorator, undefined);
+export function Broadcast(event: string): Function {
+  return createDecorator(BroadcastDecorator, { event });
 }
