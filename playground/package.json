@@ -7,7 +7,8 @@
   "packageManager": "pnpm@9.15.0",
   "scripts": {
     "build": "vercube build",
-    "dev": "vercube dev"
+    "dev": "vercube dev",
+    "start": "node ./dist/index.mjs"
   },
   "devDependencies": {
     "@vercube/cli": "workspace:*"

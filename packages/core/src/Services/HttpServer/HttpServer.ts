@@ -81,6 +81,7 @@ export class HttpServer {
         },
       },
       hostname: host,
+      reusePort: true,
       port,
       plugins: this.fPlugins,
       fetch: this.handleRequest.bind(this),
