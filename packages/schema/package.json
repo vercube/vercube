@@ -33,7 +33,7 @@
     "@vercube/core": "workspace:*",
     "@vercube/di": "workspace:*",
     "defu": "6.1.4",
-    "zod": "4.0.5"
+    "zod": "4.0.7"
   },
   "publishConfig": {
     "access": "public"
