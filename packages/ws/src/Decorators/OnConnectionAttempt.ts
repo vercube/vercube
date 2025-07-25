@@ -1,8 +1,8 @@
 import { initializeMetadata, initializeMetadataMethod } from '@vercube/core';
 import { BaseDecorator, createDecorator, InjectOptional } from '@vercube/di';
-import { WebsocketService } from '../Services/WebsocketService';
-import { WebsocketServiceKey } from '../Utils/WebsocketServiceKey';
+import { $WebsocketService } from '../Symbols/WebsocketSymbols';
 import { WebsocketTypes } from '../Types/WebsocketTypes';
+import { type WebsocketService } from '../Services/WebsocketService';
 
 /**
  * A decorator class for handling websocket connection attempts.
@@ -22,7 +22,7 @@ import { WebsocketTypes } from '../Types/WebsocketTypes';
  */
 class OnConnectionAttemptDecorator extends BaseDecorator {
 
-  @InjectOptional(WebsocketServiceKey)
+  @InjectOptional($WebsocketService)
   private gWebsocketService: WebsocketService;
 
   public override created(): void {
@@ -52,6 +52,19 @@ class OnConnectionAttemptDecorator extends BaseDecorator {
   }
 }
 
+/**
+ * A decorator function for handling websocket connection attempts to a namespace.
+ *
+ * This function creates an instance of the OnConnectionAttemptDecorator class and registers a handler for websocket
+ * connection attempts under the namespace. If the decorated function throws or returns false, the connection will not
+ * be accepted.
+ *
+ * The decorated function will receive the following parameters:
+ *   - params: {Record<string, unknown>} The connection query parameters.
+ *   - request: {Request} The original HTTP request.
+ *
+ * @returns {Function} - The decorator function.
+ */
 export function OnConnectionAttempt(): Function {
   return createDecorator(OnConnectionAttemptDecorator, undefined);
 }

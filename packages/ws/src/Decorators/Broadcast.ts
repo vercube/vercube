@@ -1,8 +1,8 @@
 import { initializeMetadata, initializeMetadataMethod } from '@vercube/core';
 import { BaseDecorator, createDecorator, InjectOptional } from '@vercube/di';
+import { $WebsocketService } from '../Symbols/WebsocketSymbols';
 import { type Peer } from 'crossws';
-import { WebsocketService } from '../Services/WebsocketService';
-import { WebsocketServiceKey } from '../Utils/WebsocketServiceKey';
+import { type WebsocketService } from '../Services/WebsocketService';
 
 interface BroadcastDecoratorOptions {
   event: string;
@@ -19,7 +19,7 @@ interface BroadcastDecoratorOptions {
  */
 class BroadcastDecorator extends BaseDecorator<BroadcastDecoratorOptions> {
 
-  @InjectOptional(WebsocketServiceKey)
+  @InjectOptional($WebsocketService)
   private gWebsocketService: WebsocketService;
 
   public override created(): void {
@@ -50,6 +50,15 @@ class BroadcastDecorator extends BaseDecorator<BroadcastDecoratorOptions> {
 
 }
 
+/**
+ * A decorator function for broadcasting websocket messages to everyone on the namespace (including the peer).
+ *
+ * This function creates an instance of the BroadcastDecorator class and emits the result of the decorated method as a
+ * websocket message to everyone on the namespace under the specified event.
+ *
+ * @param {string} event - The event name for the broadcasted websocket message.
+ * @returns {Function} - The decorator function.
+ */
 export function Broadcast(event: string): Function {
   return createDecorator(BroadcastDecorator, { event });
 }

@@ -4,7 +4,7 @@ import { createApp, type ConfigTypes, type App } from '@vercube/core';
 import { Message } from '../../src/Decorators/Message';
 import { Namespace } from '../../src/Decorators/Namespace';
 import { WebsocketService } from '../../src/Services/WebsocketService';
-import { WebsocketServiceKey } from '../../src/Utils/WebsocketServiceKey';
+import { $WebsocketService } from '../../src/Symbols/WebsocketSymbols';
 import { z } from 'zod';
 import { WebsocketTypes } from '../../src/Types/WebsocketTypes';
 
@@ -53,15 +53,15 @@ describe('@Message() decorator', () => {
     app = await createApp(config as any);
     container = app.container;
     container.bind(TestService);
-    container.bind(WebsocketServiceKey, WebsocketService);
+    container.bind($WebsocketService, WebsocketService);
 
-    websocketService = container.get(WebsocketServiceKey);
+    websocketService = container.get($WebsocketService);
 
     initializeContainer(container);
   });
 
   it('should register both message handlers under the correct namespace and events', () => {
-    const handlers = websocketService['handlers'][WebsocketTypes.HandlerAction.MESSAGE];
+    const handlers = websocketService['fHandlers'][WebsocketTypes.HandlerAction.MESSAGE];
 
     expect(handlers['/foo']).toBeDefined();
 

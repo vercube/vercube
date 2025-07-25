@@ -1,8 +1,8 @@
 import { initializeMetadata, initializeMetadataMethod } from '@vercube/core';
 import { BaseDecorator, createDecorator, InjectOptional } from '@vercube/di';
+import { $WebsocketService } from '../Symbols/WebsocketSymbols';
 import { type Peer } from 'crossws';
-import { WebsocketService } from '../Services/WebsocketService';
-import { WebsocketServiceKey } from '../Utils/WebsocketServiceKey';
+import { type WebsocketService } from '../Services/WebsocketService';
 
 interface EmitDecoratorOptions {
   event: string;
@@ -18,7 +18,7 @@ interface EmitDecoratorOptions {
  */
 class EmitDecorator extends BaseDecorator<EmitDecoratorOptions> {
 
-  @InjectOptional(WebsocketServiceKey)
+  @InjectOptional($WebsocketService)
   private gWebsocketService: WebsocketService;
 
   public override created(): void {
@@ -49,6 +49,15 @@ class EmitDecorator extends BaseDecorator<EmitDecoratorOptions> {
 
 }
 
+/**
+ * A decorator function for emitting websocket messages to the peer.
+ *
+ * This function creates an instance of the EmitDecorator class and emits the result of the decorated method as a
+ * websocket message to the peer under the specified event.
+ *
+ * @param {string} event - The event name for the emitted websocket message.
+ * @returns {Function} - The decorator function.
+ */
 export function Emit(event: string): Function {
   return createDecorator(EmitDecorator, { event });
 }

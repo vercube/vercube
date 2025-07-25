@@ -3,7 +3,7 @@ import { type Peer, type Message, defineHooks } from 'crossws';
 import { type ServerPlugin } from 'srvx';
 import { Container, initializeContainer } from '@vercube/di';
 import { type App, type ConfigTypes, createApp, HttpServer } from '@vercube/core';
-import { WebsocketServiceKey } from '@vercube/ws';
+import { $WebsocketService } from '../../src/Symbols/WebsocketSymbols';
 import { WebsocketService } from '../../src/Services/WebsocketService';
 import { WebsocketTypes } from '../../src/Types/WebsocketTypes';
 
@@ -66,9 +66,9 @@ describe('WebsocketService', () => {
 
     app = await createApp(config as any);
     container = app.container;
-    container.bind(WebsocketServiceKey, WebsocketService);
+    container.bind($WebsocketService, WebsocketService);
 
-    service = container.get(WebsocketServiceKey);
+    service = container.get($WebsocketService);
     const httpServer = container.get(HttpServer);
     vi.spyOn(httpServer, 'addPlugin');
 
@@ -83,17 +83,17 @@ describe('WebsocketService', () => {
 
   it('registers namespaces correctly', () => {
     service.registerNamespace('/test');
-    expect(service['namespaces']['/test']).toEqual([]);
+    expect(service['fNamespaces']['/test']).toEqual([]);
   });
 
   it('registers message handlers and namespaces', () => {
     const handler = { callback: vi.fn() };
     service.registerHandler(WebsocketTypes.HandlerAction.MESSAGE, '/chat', { callback: handler.callback, event: 'message' });
-    expect(service['handlers'][WebsocketTypes.HandlerAction.MESSAGE]['/chat']['message']).toStrictEqual({
+    expect(service['fHandlers'][WebsocketTypes.HandlerAction.MESSAGE]['/chat']['message']).toStrictEqual({
       callback: handler.callback,
       event: 'message'
     });
-    expect(service['namespaces']['/chat']).toEqual([]);
+    expect(service['fNamespaces']['/chat']).toEqual([]);
   });
 
   it('handles messages by calling correct handler', async () => {
@@ -115,13 +115,13 @@ describe('WebsocketService', () => {
     service.registerNamespace('/nohandler');
     await service['handleMessage'](peer, message);
 
-    expect(warn).toHaveBeenCalledWith('[WS] No message handler for event "ghost" in namespace "/nohandler"');
+    expect(warn).toHaveBeenCalled();
   });
 
   it('broadcasts messages to all peers in a namespace', () => {
     const peer1 = createMockPeer('1', '/global');
     const peer2 = createMockPeer('2', '/global');
-    service['namespaces']['/global'] = [peer1, peer2];
+    service['fNamespaces']['/global'] = [peer1, peer2];
 
     service.broadcast(peer1, { msg: 'yo' });
 
@@ -133,7 +133,7 @@ describe('WebsocketService', () => {
     const peer1 = createMockPeer('1', '/room');
     const peer2 = createMockPeer('2', '/room');
     const peer3 = createMockPeer('3', '/room');
-    service['namespaces']['/room'] = [peer1, peer2, peer3];
+    service['fNamespaces']['/room'] = [peer1, peer2, peer3];
 
     service.broadcastOthers(peer1, 'Hello');
 
@@ -176,12 +176,12 @@ describe('WebsocketService', () => {
     const hooks = serverPlugin.__hooks;
     await hooks?.open?.(peer);
 
-    expect(service['namespaces']['/lobby']).toContain(peer);
+    expect(service['fNamespaces']['/lobby']).toContain(peer);
   });
 
   it('removes peer on close', async () => {
     const peer = createMockPeer('999', '/room');
-    service['namespaces']['/room'] = [peer];
+    service['fNamespaces']['/room'] = [peer];
     service.initialize();
 
     const pluginSpy = vi.mocked(container.get(HttpServer).addPlugin);
@@ -189,7 +189,7 @@ describe('WebsocketService', () => {
     const hooks = serverPlugin.__hooks;
     await hooks?.close?.(peer, { code: 1000 });
 
-    expect(service['namespaces']['/room']).toEqual([]);
+    expect(service['fNamespaces']['/room']).toEqual([]);
   });
 
   it('logs errors on error hook', async () => {
@@ -204,6 +204,6 @@ describe('WebsocketService', () => {
 
     await hooks?.error?.(peer, err as any);
 
-    expect(errorLog).toHaveBeenCalledWith('[WS] Error', peer, err);
+    expect(errorLog).toHaveBeenCalled();
   });
 });

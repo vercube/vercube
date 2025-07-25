@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createApp, type App, type ConfigTypes } from '@vercube/core';
 import { Container, initializeContainer } from '@vercube/di';
 import { WebsocketService } from '../../src/Services/WebsocketService';
-import { WebsocketServiceKey } from '../../src/Utils/WebsocketServiceKey';
+import { $WebsocketService } from '../../src/Symbols/WebsocketSymbols';
 import { BroadcastOthers } from '../../src/Decorators/BroadcastOthers';
 import { Message } from '../../src/Decorators/Message';
 import { Namespace } from '../../src/Decorators/Namespace';
@@ -38,10 +38,10 @@ describe('@BroadcastOthers() decorator', () => {
     app = await createApp(config as any);
     container = app.container;
 
-    container.bind(WebsocketServiceKey, WebsocketService);
+    container.bind($WebsocketService, WebsocketService);
     container.bind(BroadcastOthersTestService);
 
-    websocketService = container.get(WebsocketServiceKey);
+    websocketService = container.get($WebsocketService);
 
     vi.spyOn(websocketService, 'broadcastOthers').mockImplementation(broadcastSpy);
 

@@ -1,8 +1,8 @@
 import { initializeMetadata, initializeMetadataMethod, ValidationTypes } from '@vercube/core';
 import { BaseDecorator, createDecorator, InjectOptional } from '@vercube/di';
-import { WebsocketService } from '../Services/WebsocketService';
-import { WebsocketServiceKey } from '../Utils/WebsocketServiceKey';
 import { WebsocketTypes } from '../Types/WebsocketTypes';
+import { $WebsocketService } from '../Symbols/WebsocketSymbols';
+import { type WebsocketService } from '../Services/WebsocketService';
 
 interface MessageDecoratorOptions {
   event: string;
@@ -20,7 +20,7 @@ interface MessageDecoratorOptions {
  */
 class MessageDecorator extends BaseDecorator<MessageDecoratorOptions> {
 
-  @InjectOptional(WebsocketServiceKey)
+  @InjectOptional($WebsocketService)
   private gWebsocketService: WebsocketService;
 
   public override created(): void {
@@ -57,6 +57,15 @@ class MessageDecorator extends BaseDecorator<MessageDecoratorOptions> {
   }
 }
 
+/**
+ * A decorator function for listening to websocket messages under a specific event.
+ *
+ * This function creates an instance of the MessageDecorator class and registers a handler for websocket messages under
+ * the specified event and optional validation schema.
+ *
+ * @param {MessageDecoratorOptions} params - The options for the message handler, including event and optional validation schema.
+ * @returns {Function} - The decorator function.
+ */
 export function Message(params: MessageDecoratorOptions): Function {
   return createDecorator(MessageDecorator, params);
 }

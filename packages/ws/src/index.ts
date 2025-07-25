@@ -12,5 +12,8 @@ export * from './Plugins/WebsocketPlugin';
 // Services
 export * from './Services/WebsocketService';
 
-// Utils
-export * from './Utils/WebsocketServiceKey';
+// Symbols
+export * from './Symbols/WebsocketSymbols';
+
+// Types
+export * from './Types/WebsocketTypes';

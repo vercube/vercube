@@ -2,7 +2,7 @@ import { describe, it, beforeEach, expect, vi } from 'vitest';
 import { Container, initializeContainer } from '@vercube/di';
 import { createApp, type App, type ConfigTypes } from '@vercube/core';
 import { WebsocketService } from '../../src/Services/WebsocketService';
-import { WebsocketServiceKey } from '../../src/Utils/WebsocketServiceKey';
+import { $WebsocketService } from '../../src/Symbols/WebsocketSymbols';
 import { WebsocketTypes } from '../../src/Types/WebsocketTypes';
 import { Namespace } from '../../src/Decorators/Namespace';
 import { OnConnectionAttempt } from '../../src/Decorators/OnConnectionAttempt';
@@ -44,15 +44,15 @@ describe('@OnConnectionAttempt() decorator', () => {
     container = app.container;
 
     container.bind(TestConnectionService);
-    container.bind(WebsocketServiceKey, WebsocketService);
+    container.bind($WebsocketService, WebsocketService);
 
-    websocketService = container.get(WebsocketServiceKey);
+    websocketService = container.get($WebsocketService);
 
     initializeContainer(container);
   });
 
   it('registers connection handler on WebsocketService', async () => {
-    const handler = websocketService['handlers'][WebsocketTypes.HandlerAction.CONNECTION]['/auth'];
+    const handler = websocketService['fHandlers'][WebsocketTypes.HandlerAction.CONNECTION]['/auth'];
 
     expect(handler).toBeDefined();
     expect(typeof handler.callback).toBe('function');

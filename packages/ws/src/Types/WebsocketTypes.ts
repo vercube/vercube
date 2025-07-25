@@ -1,6 +1,7 @@
 import { type ValidationTypes } from "@vercube/core";
 
 export namespace WebsocketTypes {
+
   export enum HandlerAction {
     CONNECTION = 'connection',
     MESSAGE = 'message'
@@ -11,4 +12,5 @@ export namespace WebsocketTypes {
     event?: string; // message event to listen to
     schema?: ValidationTypes.Schema;
   }
+  
 }

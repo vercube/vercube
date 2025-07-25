@@ -1,1 +1,0 @@
-export const WebsocketServiceKey = Symbol.for('WebsocketService');

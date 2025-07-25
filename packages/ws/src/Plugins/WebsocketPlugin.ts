@@ -1,6 +1,6 @@
 import { type App, BasePlugin } from '@vercube/core';
 import { WebsocketService } from '../Services/WebsocketService';
-import { WebsocketServiceKey } from '../Utils/WebsocketServiceKey';
+import { $WebsocketService } from '../Symbols/WebsocketSymbols';
 
 /**
  * Websocket Plugin for Vercube framework
@@ -38,8 +38,8 @@ export class WebsocketPlugin<T = unknown> extends BasePlugin<T> {
    */
   public override use(app: App, options: T): void | Promise<void> {
     // bind and initialize the websocket service
-    app.container.bind(WebsocketServiceKey, WebsocketService);
-    app.container.get<WebsocketService>(WebsocketServiceKey).initialize();
+    app.container.bind($WebsocketService, WebsocketService);
+    app.container.get<WebsocketService>($WebsocketService).initialize();
   }
 
 }
