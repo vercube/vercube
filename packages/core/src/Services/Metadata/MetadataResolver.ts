@@ -93,11 +93,11 @@ export class MetadataResolver {
         return event.response;
       }
       case 'custom': {
-        return arg.data?.resolve(event);
+        return arg.resolver?.(event);
       }
       case 'session': {
         // TODO: add support for session
-        return null; 
+        return null;
         // return useSession(event, {
         //   name: arg?.data?.name,
         //   password: arg?.data?.secret,

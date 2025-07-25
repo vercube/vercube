@@ -83,8 +83,8 @@ export class HttpServer {
       hostname: host,
       reusePort: true,
       port,
-      plugins: this.fPlugins,
       fetch: this.handleRequest.bind(this),
+      plugins: this.fPlugins,
     });
   }
 
@@ -112,7 +112,7 @@ export class HttpServer {
   public async handleRequest(request: Request): Promise<Response> {
     try {
       const route = this.gRouter.resolve({ path: request.url, method: request.method });
-      
+
       // if no route is found, try to serve static file
       if (!route) {
         const response = await this.gStaticRequestHandler.handleRequest(request);
@@ -123,11 +123,11 @@ export class HttpServer {
           throw new NotFoundError('Route not found');
         }
       }
-  
+
       return this.gRequestHandler.handleRequest(request, route);
     } catch (error) {
       return this.gContainer.get(ErrorHandlerProvider).handleError(error);
     }
-    
+
   }
 }
