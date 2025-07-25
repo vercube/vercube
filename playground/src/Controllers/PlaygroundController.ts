@@ -13,7 +13,7 @@ import {
   RuntimeConfig,
 } from '@vercube/core';
 import { Auth } from '@vercube/auth';
-import { Emit, Message, Namespace, OnConnectionAttempt } from '@vercube/ws';
+import { Emit, Message, Namespace } from '@vercube/ws';
 import { Schema, z } from '@vercube/schema';
 import { FirstMiddleware } from '../Middlewares/FirstMiddleware';
 import { Inject } from '@vercube/di';
@@ -28,10 +28,6 @@ const schema = z.object({
   name: z.string().min(1, 'Name is required'),
   email: z.string().email('Invalid email format'),
   age: z.number().int().min(0, 'Age must be a non-negative integer'),
-});
-
-const messageSchema = z.object({
-  foo: z.string().min(1, 'Foo is required'),
 });
 
 const UserSchema = z
@@ -65,13 +61,6 @@ export default class PlaygroundController {
 
   @Inject(RuntimeConfig)
   private gRuntimeConfig: RuntimeConfig<AppTypes.Config>;
-
-  @OnConnectionAttempt()
-  public async onConnectionAttempt(params: Record<string, unknown>, request: Request): Promise<boolean> {
-    if (!params?.token) return false;
-
-    return true;
-  }
 
   @Message({ event: 'message' })
   @Emit('message')
