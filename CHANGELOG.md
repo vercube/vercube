@@ -1,5 +1,31 @@
 # Changelog
 
+## v0.0.19
+
+[compare changes](https://github.com/vercube/vercube/compare/v0.0.18...v0.0.19)
+
+> [!CAUTION]
+> This release contains breaking changes. See [#522](https://github.com/vercube/vercube/pull/522) for more details.
+
+### 🚀 Enhancements
+
+- Add `@vercube/websocket` package ([#508](https://github.com/vercube/vercube/pull/508))
+- Add `@vercube/schema` package ([#522](https://github.com/vercube/vercube/pull/522))
+- Add `reusePort` for http-server ([fc4ec36](https://github.com/vercube/vercube/commit/fc4ec36))
+
+### 🩹 Fixes
+
+- Fix zod types ([dca7b65](https://github.com/vercube/vercube/commit/dca7b65))
+
+### 📦 Build
+
+- Bump packages ([296e8c0](https://github.com/vercube/vercube/commit/296e8c0) [bd1a3a2](https://github.com/vercube/vercube/commit/bd1a3a2) [468b89a](https://github.com/vercube/vercube/commit/468b89a) [fd440a9](https://github.com/vercube/vercube/commit/fd440a9) [2e1c5c4](https://github.com/vercube/vercube/commit/2e1c5c4) [1eaacdd](https://github.com/vercube/vercube/commit/1eaacdd))
+
+### ❤️ Contributors
+
+- Oskar Lebuda
+- Jhoni (@jhnxrs)
+
 ## v0.0.18
 
 [compare changes](https://github.com/vercube/vercube/compare/v0.0.17...v0.0.18)
