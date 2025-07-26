@@ -1,6 +1,6 @@
 {
   "name": "@vercube/devkit",
-  "version": "0.0.18",
+  "version": "0.0.19",
   "description": "Devkit  module for Vercube framework",
   "packageManager": "pnpm@10.13.1",
   "repository": {
