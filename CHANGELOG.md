@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.0.21
+
+[compare changes](https://github.com/vercube/vercube/compare/v0.0.20...v0.0.21)
+
+### 🩹 Fixes
+
+- **schema:** Remove basic schemas ([aa3d5a9](https://github.com/vercube/vercube/commit/aa3d5a9))
+
+### ❤️ Contributors
+
+- Oskar Lebuda
+
 ## v0.0.20
 
 [compare changes](https://github.com/vercube/vercube/compare/v0.0.19...v0.0.20)
