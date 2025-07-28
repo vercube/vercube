@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.0.20
+
+[compare changes](https://github.com/vercube/vercube/compare/v0.0.19...v0.0.20)
+
+### 🚀 Enhancements
+
+- **schema:** Add basic zod schemas for http errors ([8dba9fe](https://github.com/vercube/vercube/commit/8dba9fe) [3f708c8](https://github.com/vercube/vercube/commit/3f708c8) [1cf211e](https://github.com/vercube/vercube/commit/1cf211e))
+
+### ❤️ Contributors
+
+- Oskar Lebuda
+
 ## v0.0.19
 
 [compare changes](https://github.com/vercube/vercube/compare/v0.0.18...v0.0.19)
