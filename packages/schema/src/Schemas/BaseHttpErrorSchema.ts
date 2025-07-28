@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const BaseHttpErrorSchema = z.object({
+export const BaseHttpErrorSchema: z.ZodType = z.object({
   status: z.number().openapi({
     description: 'The HTTP status code of the error',
   }),
