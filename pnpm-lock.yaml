@@ -186,7 +186,7 @@ importers:
     dependencies:
       '@asteasolutions/zod-to-openapi':
         specifier: 8.0.0
-        version: 8.0.0(zod@4.0.10)
+        version: 8.0.0(zod@4.0.13)
       '@standard-schema/spec':
         specifier: 1.0.0
         version: 1.0.0
@@ -200,8 +200,8 @@ importers:
         specifier: 6.1.4
         version: 6.1.4
       zod:
-        specifier: 4.0.10
-        version: 4.0.10
+        specifier: 4.0.13
+        version: 4.0.13
 
   packages/storage:
     dependencies:
@@ -235,8 +235,8 @@ importers:
         version: 0.8.2
     devDependencies:
       zod:
-        specifier: 4.0.10
-        version: 4.0.10
+        specifier: 4.0.13
+        version: 4.0.13
 
   playground:
     dependencies:
@@ -268,8 +268,8 @@ importers:
         specifier: 2.8.1
         version: 2.8.1
       zod:
-        specifier: 4.0.10
-        version: 4.0.10
+        specifier: 4.0.13
+        version: 4.0.13
     devDependencies:
       '@vercube/cli':
         specifier: workspace:*
@@ -4870,8 +4870,8 @@ packages:
     resolution: {integrity: sha512-AyeEbWOu/TAXdxlV9wmGcR0+yh2j3vYPGOECcIj2S7MkrLyC7ne+oye2BKTItt0ii2PHk4cDy+95+LshzbXnGg==}
     engines: {node: '>=12.20'}
 
-  zod@4.0.10:
-    resolution: {integrity: sha512-3vB+UU3/VmLL2lvwcY/4RV2i9z/YU0DTV/tDuYjrwmx5WeJ7hwy+rGEEx8glHp6Yxw7ibRbKSaIFBgReRPe5KA==}
+  zod@4.0.13:
+    resolution: {integrity: sha512-jv+zRxuZQxTrFHzxZ46ezL2FtnE+M4HIJHJEwLsZ7UjrXHltdG6HrxvqM0twoVCWxJiYf8WqKjAcjztegpkB+Q==}
 
   zwitch@2.0.4:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
@@ -4988,10 +4988,10 @@ snapshots:
       '@jridgewell/gen-mapping': 0.3.8
       '@jridgewell/trace-mapping': 0.3.25
 
-  '@asteasolutions/zod-to-openapi@8.0.0(zod@4.0.10)':
+  '@asteasolutions/zod-to-openapi@8.0.0(zod@4.0.13)':
     dependencies:
       openapi3-ts: 4.5.0
-      zod: 4.0.10
+      zod: 4.0.13
 
   '@aws-crypto/crc32@5.2.0':
     dependencies:
@@ -10024,6 +10024,6 @@ snapshots:
 
   yocto-queue@1.2.1: {}
 
-  zod@4.0.10: {}
+  zod@4.0.13: {}
 
   zwitch@2.0.4: {}
