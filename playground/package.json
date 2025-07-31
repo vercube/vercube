@@ -4,7 +4,7 @@
   "type": "module",
   "version": "0.0.0",
   "description": "Playground for Vercube framework",
-  "packageManager": "pnpm@9.15.0",
+  "packageManager": "pnpm@10.13.1",
   "scripts": {
     "build": "vercube build",
     "dev": "vercube dev",
