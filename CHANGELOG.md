@@ -1,5 +1,27 @@
 # Changelog
 
+## v0.0.22
+
+[compare changes](https://github.com/vercube/vercube/compare/v0.0.21...v0.0.22)
+
+### 🚀 Enhancements
+
+- Move to renovate ([e81801f](https://github.com/vercube/vercube/commit/e81801f))
+- **serverless:** Add serverless package ([#567](https://github.com/vercube/vercube/pull/567))
+
+### 🩹 Fixes
+
+- Fix release script ([47e3561](https://github.com/vercube/vercube/commit/47e3561) [b0d2a88](https://github.com/vercube/vercube/commit/b0d2a88))
+
+### 📦 Build
+
+- Bump packages ([5f5ddfb](https://github.com/vercube/vercube/commit/5f5ddfb) [6d21076](https://github.com/vercube/vercube/commit/6d21076) [ba6ec8e](https://github.com/vercube/vercube/commit/ba6ec8e) [f067809](https://github.com/vercube/vercube/commit/f067809) [7aa5e95](https://github.com/vercube/vercube/commit/7aa5e95) [5030b2d](https://github.com/vercube/vercube/commit/5030b2d))
+
+
+### ❤️ Contributors
+
+- Oskar Lebuda ([@OskarLebuda](https://github.com/OskarLebuda))
+
 ## v0.0.21
 
 [compare changes](https://github.com/vercube/vercube/compare/v0.0.20...v0.0.21)
