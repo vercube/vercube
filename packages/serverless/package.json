@@ -1,6 +1,6 @@
 {
   "name": "@vercube/serverless",
-  "version": "0.0.21",
+  "version": "0.0.22",
   "description": "Serverless module for Vercube framework",
   "packageManager": "pnpm@10.13.1",
   "repository": {

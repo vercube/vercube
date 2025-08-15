@@ -1,6 +1,6 @@
 {
   "name": "@vercube/cli",
-  "version": "0.0.21",
+  "version": "0.0.22",
   "description": "CLI module for Vercube framework",
   "packageManager": "pnpm@10.13.1",
   "repository": {
