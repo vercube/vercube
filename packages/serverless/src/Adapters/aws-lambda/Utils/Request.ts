@@ -33,7 +33,11 @@ function isV1Event(event: APIGatewayProxyEvent | APIGatewayProxyEventV2): event 
 /**
  * Safely gets a header value with case-insensitive fallback
  */
-function getHeaderValue(headers: Record<string, string | undefined>, keys: readonly string[]): string | undefined {
+function getHeaderValue(headers: Record<string, string | undefined> | null | undefined, keys: readonly string[]): string | undefined {
+  if (!headers) {
+    return undefined;
+  }
+  
   for (const key of keys) {
     const value = headers[key];
     if (value !== undefined) {
@@ -192,7 +196,7 @@ function getEventHeaders(event: APIGatewayProxyEvent | APIGatewayProxyEventV2): 
  * @returns The request body as BodyInit (string, Buffer, or undefined)
  */
 function getEventBody(event: APIGatewayProxyEvent | APIGatewayProxyEventV2): BodyInit | undefined {
-  if (!event.body) {
+  if (!event.body || event.body === null) {
     return undefined;
   }
 

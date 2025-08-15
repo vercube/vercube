@@ -30,6 +30,8 @@ import { convertResponseToAWSResponse, convertBodyToAWSResponse } from './Utils/
  * @see {@link convertBodyToAWSResponse} For details on response body conversion
  */
 export function toServerlessHandler(app: App): ServerlessHandler<APIGatewayProxyEvent | APIGatewayProxyEventV2> {
+  console.log(app.container.getAllServices());
+
   return async (event: APIGatewayProxyEvent | APIGatewayProxyEventV2) => {
     const request = convertEventToRequest(event);
     const response = await app.fetch(request);

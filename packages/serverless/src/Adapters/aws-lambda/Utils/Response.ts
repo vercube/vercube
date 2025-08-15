@@ -8,7 +8,9 @@ const BASE64_ENCODING = 'base64';
 // Content type patterns for text detection
 const TEXT_CONTENT_TYPE_PATTERNS = [
   /^text\//,
-  /\/(javascript|json|xml)/,
+  /^application\/(json|javascript|xml|xml\+text|x-www-form-urlencoded)$/,
+  /^application\/.*\+json$/,
+  /^application\/.*\+xml$/,
   /utf-?8/
 ] as const;
 
@@ -57,11 +59,17 @@ export function convertResponseToAWSResponse(response: Response): AWSResponseHea
     if (value !== undefined && value !== null) {
       // Handle arrays by joining with commas, otherwise convert to string
       headers[key] = Array.isArray(value) ? value.join(',') : String(value);
+    } else if (value === null) {
+      headers[key] = 'null';
+    } else if (value === undefined) {
+      headers[key] = 'undefined';
     }
   });
 
   // Extract cookies for API Gateway compatibility
-  const cookies = response.headers.getSetCookie?.() || [];
+  const cookies = typeof response.headers.getSetCookie === 'function' 
+    ? response.headers.getSetCookie() 
+    : [];
 
   // Return appropriate format based on whether cookies exist
   if (cookies.length > 0) {
