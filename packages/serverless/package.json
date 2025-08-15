@@ -1,0 +1,52 @@
+{
+  "name": "@vercube/serverless",
+  "version": "0.0.21",
+  "description": "Serverless module for Vercube framework",
+  "packageManager": "pnpm@10.13.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vercube/vercube.git",
+    "directory": "packages/serverless"
+  },
+  "license": "MIT",
+  "sideEffects": false,
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "exports": {
+    ".": "./dist/index.mjs",
+    "./package.json": "./package.json",
+    "./aws-lambda": "./dist/Adapters/aws-lambda/index.mjs"
+  },
+  "types": "./dist/index.d.mts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "keywords": [
+    "vercube",
+    "serverless",
+    "aws",
+    "lambda",
+    "aws-lambda",
+    "aws-serverless",
+    "aws-api-gateway",
+    "aws-apigw",
+    "aws-apigw-lambda"
+  ],
+  "scripts": {
+    "build": "tsdown --config tsdown.config.ts"
+  },
+  "dependencies": {
+    "@vercube/core": "workspace:*",
+    "@vercube/di": "workspace:*",
+    "ufo": "1.6.1"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "8.10.152",
+    "@azure/functions": "4.7.2-preview"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

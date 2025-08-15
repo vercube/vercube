@@ -6,9 +6,20 @@ export const buildCommand: CommandDef = defineCommand({
     name: 'build',
     description: 'Build the project',
   },
-  run: async () => {
+  args: {
+    entry: {
+      type: 'string',
+      description: 'Entry file',
+      default: './src/index.ts',
+    },
+  },
+  run: async (ctx) => {
     // create new app
-    const app = await createVercube();
+    const app = await createVercube({
+      build: {
+        entry: ctx.args.entry,
+      },
+    });
 
     // run build
     await build(app);

@@ -8,6 +8,7 @@ import type { ConfigTypes } from '../../src/Types/ConfigTypes';
 
 vi.mock('srvx', () => ({
   serve: vi.fn().mockReturnValue({
+    serve: vi.fn(),
     ready: vi.fn().mockResolvedValue(undefined),
   }),
 }));
@@ -28,7 +29,7 @@ describe('App', () => {
   };
 
   beforeEach(async () => {  
-    app = await createApp(config);
+    app = await createApp({ cfg: config });
     container = app.container;
   });
 
