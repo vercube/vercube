@@ -1,13 +1,12 @@
 # Changelog
 
 ## v0.0.22
-
 [compare changes](https://github.com/vercube/vercube/compare/v0.0.21...v0.0.22)
 
 ### 🚀 Enhancements
 
-- Move to renovate ([e81801f](https://github.com/vercube/vercube/commit/e81801f))
-- **serverless:** Add serverless package ([#567](https://github.com/vercube/vercube/pull/567))
+- **AWS Lambda support** – Vercube now runs seamlessly on AWS Lambda! ([#567](https://github.com/vercube/vercube/pull/567)) 🎉  
+  Deploy fully serverless apps, scale automatically, and keep the same smooth Node.js development flow without managing servers.
 
 ### 🩹 Fixes
 
@@ -20,7 +19,7 @@
 
 ### ❤️ Contributors
 
-- Oskar Lebuda ([@OskarLebuda](https://github.com/OskarLebuda))
+- Oskar Lebuda (@OskarLebuda)
 
 ## v0.0.21
 
