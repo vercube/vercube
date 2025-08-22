@@ -16,6 +16,9 @@ Serverless deployment adapters for Vercube applications
   <a href="https://github.com/vercube/vercube/blob/main/LICENSE" target="_blank">
     <img src="https://img.shields.io/npm/l/%40vercube%2Fserverless?style=for-the-badge&color=%23767eff" alt="License"/>
   </a>
+  <a href="https://codecov.io/gh/vercube/vercube" target="_blank">
+    <img src="https://img.shields.io/codecov/c/github/vercube/vercube?style=for-the-badge&color=%23767eff" alt="Coverage"/>
+  </a>
   <br/>
   <br/>
 </div>
