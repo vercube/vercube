@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { build } from '../src/Build/Build';
 import { getBuildFunc } from '../src/Utils/Utils';
 
@@ -73,4 +73,4 @@ describe('Build', () => {
 
     await expect(build(mockApp as any)).rejects.toThrow(mockError);
   });
-}); 
+});

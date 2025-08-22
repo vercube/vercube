@@ -1,36 +1,35 @@
 // oxlint-disable no-unused-vars
 import { z } from 'zod';
 import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Delete,
-  Patch,
-  Trace,
-  Head,
-  Connect,
-  Options,
   Body,
-  QueryParam,
-  QueryParams,
-  Param,
+  Connect,
+  Controller,
+  Delete,
+  Get,
+  Head,
   Header,
   Headers,
+  Middleware,
   MultipartFormData,
+  Options,
+  Param,
+  Patch,
+  Post,
+  Put,
+  QueryParam,
+  QueryParams,
   Redirect,
   Request,
   Response,
-  Status,
   SetHeader,
-  Middleware,
-} from "../../src";
-import { TestMiddleware } from "./Middleware.mock";
+  Status,
+  Trace,
+} from '../../src';
+import { TestMiddleware } from './Middleware.mock';
 
 @Controller('/mock')
 @Middleware(TestMiddleware)
 export class MockController {
-
   @Get('/get')
   public get(): void {}
 
@@ -62,31 +61,40 @@ export class MockController {
   public body(@Body() body: any): void {}
 
   @Post('/body-validation')
-  public bodyValidation(@Body({
-    validationSchema: z.object({
-      name: z.string(),
-      age: z.number(),
-    }),
-  }) body: any): void {}
+  public bodyValidation(
+    @Body({
+      validationSchema: z.object({
+        name: z.string(),
+        age: z.number(),
+      }),
+    })
+    body: any,
+  ): void {}
 
   @Get('/query')
   public query(@QueryParam({ name: 'age' }) age: number): void {}
 
   @Get('/query-validation')
-  public queryValidation(@QueryParam({
-    name: 'age',
-    validationSchema: z.number(),
-  }) age: number): void {}
+  public queryValidation(
+    @QueryParam({
+      name: 'age',
+      validationSchema: z.number(),
+    })
+    age: number,
+  ): void {}
 
   @Get('/query-params')
   public queryParams(@QueryParams() query: any): void {}
 
   @Get('/query-params-validation')
-  public queryParamsValidation(@QueryParams({
-    validationSchema: z.object({
-      age: z.number(),
-    }),
-  }) query: any): void {}
+  public queryParamsValidation(
+    @QueryParams({
+      validationSchema: z.object({
+        age: z.number(),
+      }),
+    })
+    query: any,
+  ): void {}
 
   @Get('/:param')
   public param(@Param('param') param: string): void {}
@@ -121,5 +129,4 @@ export class MockController {
   @Get('/middleware')
   @Middleware(TestMiddleware, { priority: 1 })
   public middleware(): void {}
-
 }

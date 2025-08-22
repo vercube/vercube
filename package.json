@@ -14,7 +14,8 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:tscheck": "tsc --noEmit",
-    "test:lint": "oxlint .",
+    "test:lint": "oxlint . && prettier --check .",
+    "lint:fix": "oxlint --fix . && prettier --write .",
     "pre-commit": "lint-staged",
     "postinstall": "simple-git-hooks",
     "docs:dev": "vitepress dev docs",
@@ -27,7 +28,8 @@
   },
   "lint-staged": {
     "*.{js,ts}": [
-      "oxlint --fix"
+      "oxlint --fix",
+      "prettier --write"
     ]
   },
   "devDependencies": {
@@ -35,6 +37,7 @@
     "@commitlint/config-conventional": "19.8.1",
     "@nx/js": "21.4.0",
     "@oxc-project/runtime": "0.82.3",
+    "@trivago/prettier-plugin-sort-imports": "^5.2.2",
     "@types/node": "24.3.0",
     "@vitest/coverage-v8": "3.2.4",
     "@vitest/ui": "3.2.4",
@@ -42,6 +45,8 @@
     "lint-staged": "16.1.5",
     "nx": "21.4.0",
     "oxlint": "1.12.0",
+    "prettier": "3.6.2",
+    "prettier-plugin-imports": "^4.3.3",
     "simple-git-hooks": "2.13.1",
     "tsdown": "0.14.1",
     "tslib": "2.8.1",
@@ -51,6 +56,7 @@
   },
   "simple-git-hooks": {
     "pre-commit": "pnpm pre-commit",
-    "commit-msg": "pnpm commitlint --edit $1"
+    "commit-msg": "pnpm commitlint --edit $1",
+    "pre-push": "pnpm test"
   }
 }

@@ -1,8 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Container } from '@vercube/di';
-import { BaseLogger, Logger, type LoggerTypes } from '../src';
-import { JSONProvider } from '../src/Drivers/JsonProvider';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { BaseLogger, Logger } from '../src';
 import { ConsoleProvider } from '../src/Drivers/ConsoleProvider';
+import { JSONProvider } from '../src/Drivers/JsonProvider';
+import type { LoggerTypes } from '../src';
 
 describe('BaseLogger', () => {
   let logger: Logger;
@@ -273,7 +274,7 @@ describe('BaseLogger', () => {
   it('should handle async provider initialization', async () => {
     class AsyncProvider extends ConsoleProvider {
       public async initialize(): Promise<void> {
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 10));
       }
     }
 
@@ -365,4 +366,4 @@ describe('BaseLogger', () => {
     expect(consoleSpy).not.toHaveBeenCalled();
     vi.restoreAllMocks();
   });
-}); 
+});

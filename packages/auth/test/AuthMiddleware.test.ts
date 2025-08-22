@@ -1,11 +1,11 @@
-import { describe, it, expect, vi } from 'vitest';
-import { Container, initializeContainer } from '@vercube/di';
 import { UnauthorizedError } from '@vercube/core';
+import { Container, initializeContainer } from '@vercube/di';
 import { Logger } from '@vercube/logger';
+import { describe, expect, it, vi } from 'vitest';
 import { AuthMiddleware } from '../src/Middleware/AuthMiddleware';
 import { AuthProvider } from '../src/Services/AuthProvider';
-import { MockAuthProvider } from './Mock/TestClass.mock';
 import { ErrorAuthProvider } from './Mock/Middleware.mock';
+import { MockAuthProvider } from './Mock/TestClass.mock';
 
 describe('[auth] AuthMiddleware', () => {
   // Create a mock logger
@@ -24,16 +24,12 @@ describe('[auth] AuthMiddleware', () => {
     testContainer.bind(AuthProvider, MockAuthProvider);
 
     initializeContainer(testContainer);
-    
+
     const testMiddleware = testContainer.get(AuthMiddleware);
-    
+
     // Call the middleware with a mock request
-    await testMiddleware.onRequest(
-      new Request('http://localhost'),
-      new Response(),
-      { middlewareArgs: {} },
-    );
-    
+    await testMiddleware.onRequest(new Request('http://localhost'), new Response(), { middlewareArgs: {} });
+
     // No error should be thrown
     expect(true).toBe(true);
   });
@@ -45,17 +41,17 @@ describe('[auth] AuthMiddleware', () => {
     testContainer.bind(ErrorAuthProvider);
     testContainer.bindMock(Logger, mockLogger);
     initializeContainer(testContainer);
-    
+
     const testMiddleware = testContainer.get(AuthMiddleware);
-    
+
     // Call the middleware with a mock request and custom provider
     try {
-      await testMiddleware.onRequest(
-        {} as Request,
-        {} as Response,
-        { middlewareArgs: { provider: ErrorAuthProvider as unknown as typeof AuthProvider } },
-      );
-      
+      await testMiddleware.onRequest({} as Request, {} as Response, {
+        middlewareArgs: {
+          provider: ErrorAuthProvider as unknown as typeof AuthProvider,
+        },
+      });
+
       // Should not reach here
       expect(true).toBe(false);
     } catch (error) {
@@ -71,17 +67,15 @@ describe('[auth] AuthMiddleware', () => {
     testContainer.bind(AuthMiddleware);
     testContainer.bindMock(Logger, mockLogger);
     initializeContainer(testContainer);
-    
+
     const testMiddleware = testContainer.get(AuthMiddleware);
-    
+
     // Call the middleware with a mock request
-    await testMiddleware.onRequest(
-      {} as Request,
-      {} as Response,
-      { middlewareArgs: {} },
-    );
-    
+    await testMiddleware.onRequest({} as Request, {} as Response, {
+      middlewareArgs: {},
+    });
+
     // Should log a warning
     expect(mockLogger.warn).toHaveBeenCalledWith('AuthMiddleware::AuthProvider is not registered');
   });
-}); 
+});

@@ -1,4 +1,4 @@
-import { RouterTypes } from '../Types/RouterTypes';
+import type { RouterTypes } from '../Types/RouterTypes';
 
 /**
  * Resolves a single query parameter from the URL of a router event
@@ -23,6 +23,6 @@ export function resolveQueryParams(event: RouterTypes.RouterEvent): Record<strin
   for (const [key, value] of url.searchParams) {
     params[key] = value;
   }
-  
+
   return params;
 }

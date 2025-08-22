@@ -1,4 +1,4 @@
-import { describe, it, beforeEach, expect, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Container, Identity, Inject, InjectOptional } from '../src';
 import TestClass, { ATestClass } from './utils/TestClass';
 
@@ -12,7 +12,7 @@ class MyClassWithDep {
 
 let _singletonId: number = 0;
 class MySingletonClass {
-  public value: number = (_singletonId++);
+  public value: number = _singletonId++;
 }
 
 class MySubClassWithDep extends MyClassWithDep {}
@@ -47,12 +47,7 @@ class TestInstanceClass {
   public value = 'instance';
 }
 
-class TestInvalidFactoryType {
-  public value = 'invalid';
-}
-
 describe('[Framework][IOC] Container', () => {
-
   let container: Container;
 
   beforeEach(() => {
@@ -110,7 +105,9 @@ describe('[Framework][IOC] Container', () => {
   });
 
   it('should allow new container to be created', () => {
-    expect(() => { new Container(); }).not.toThrow();
+    expect(() => {
+      new Container();
+    }).not.toThrow();
   });
 
   it('should allow to get keys', () => {
@@ -325,33 +322,33 @@ describe('[Framework][IOC] Container', () => {
   it('should handle disposal through rebinding', () => {
     const instance = new TestInstanceClass();
     container.bindInstance(TestInstanceClass, instance);
-    
+
     // Rebinding should trigger internal disposal
     const newInstance = new TestInstanceClass();
     container.bindInstance(TestInstanceClass, newInstance);
-    
+
     expect(container.get(TestInstanceClass)).toBe(newInstance);
   });
 
   it('should handle disposal of singleton services through rebinding', () => {
     container.bind(TestSingletonClass);
     const instance1 = container.get(TestSingletonClass);
-    
+
     // Rebinding should trigger internal disposal
     container.bind(TestSingletonClass);
     const instance2 = container.get(TestSingletonClass);
-    
+
     expect(instance1).toStrictEqual(instance2); // Should still be singleton
   });
 
   it('should handle disposal of transient services through rebinding', () => {
     container.bindTransient(TestTransientClass);
     const instance1 = container.get(TestTransientClass);
-    
+
     // Rebinding should trigger internal disposal
     container.bindTransient(TestTransientClass);
     const instance2 = container.get(TestTransientClass);
-    
+
     expect(instance1).not.toBe(instance2); // Should be different instances
   });
 
@@ -450,7 +447,7 @@ describe('[Framework][IOC] Container', () => {
     // This test covers the early return when queue is empty
     // We need to ensure the queue is actually empty and the early return is triggered
     expect(() => container.flushQueue()).not.toThrow();
-    
+
     // Call it again to make sure the early return path is covered
     expect(() => container.flushQueue()).not.toThrow();
   });
@@ -460,16 +457,16 @@ describe('[Framework][IOC] Container', () => {
     const invalidServiceDef = {
       serviceKey: Symbol('InvalidService'),
       serviceValue: class InvalidClass {},
-      type: 'INVALID_TYPE' as any
+      type: 'INVALID_TYPE' as any,
     };
 
     // We need to access the protected method, so we'll use a different approach
     // Let's test this by creating a service that would cause an invalid factory type
     const key = Identity('InvalidFactoryTest');
-    
+
     // Mock the internal services map to inject an invalid service definition
     (container as any).fServices.set(key, invalidServiceDef);
-    
+
     expect(() => container.get(key)).toThrow('Container - invalid factory type: INVALID_TYPE');
   });
 
@@ -478,18 +475,20 @@ describe('[Framework][IOC] Container', () => {
     const invalidServiceDef = {
       serviceKey: Symbol('InvalidDisposeService'),
       serviceValue: class InvalidDisposeClass {},
-      type: 'INVALID_DISPOSE_TYPE' as any
+      type: 'INVALID_DISPOSE_TYPE' as any,
     };
 
     // We need to trigger internalDispose by rebinding a service
     const key = Identity('DisposeTest');
     container.bind(key, class TestClass {});
-    
+
     // Mock the service definition to be invalid
     (container as any).fServices.set(key, invalidServiceDef);
-    
+
     // Rebinding should trigger internalDispose
-    expect(() => container.bind(key, class TestClass2 {})).toThrow('Container::internalDispose() - invalid def type: INVALID_DISPOSE_TYPE');
+    expect(() => container.bind(key, class TestClass2 {})).toThrow(
+      'Container::internalDispose() - invalid def type: INVALID_DISPOSE_TYPE',
+    );
   });
 
   it('should handle getKeyDescription for object keys (lines 493-496)', () => {
@@ -515,10 +514,10 @@ describe('[Framework][IOC] Container', () => {
   it('should handle flushQueue with singleton services that need initialization', () => {
     // Create a singleton service that will be in the queue
     container.bind(TestSingletonClass);
-    
+
     // This should trigger the singleton initialization in flushQueue
     expect(() => container.flushQueue()).not.toThrow();
-    
+
     // Verify the service is properly initialized
     const instance = container.get(TestSingletonClass);
     expect(instance).toBeInstanceOf(TestSingletonClass);
@@ -527,10 +526,10 @@ describe('[Framework][IOC] Container', () => {
   it('should handle flushQueue with non-singleton services in queue', () => {
     // Create a transient service that will be in the queue
     container.bindTransient(TestTransientClass);
-    
+
     // This should skip singleton initialization but still clear the queue
     expect(() => container.flushQueue()).not.toThrow();
-    
+
     // Verify the service is properly registered
     const instance = container.get(TestTransientClass);
     expect(instance).toBeInstanceOf(TestTransientClass);
@@ -539,12 +538,11 @@ describe('[Framework][IOC] Container', () => {
   it('should handle flushQueue with empty queue after clearing', () => {
     // First, add something to the queue
     container.bind(TestSingletonClass);
-    
+
     // Clear the queue
     container.flushQueue();
-    
+
     // Now the queue should be empty, triggering the early return
     expect(() => container.flushQueue()).not.toThrow();
   });
-
 });

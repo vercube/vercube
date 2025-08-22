@@ -1,4 +1,7 @@
-import { BasePlugin, type App } from "../../src";
+import { BasePlugin } from '../../src';
+import type { App } from '../../src';
+
+// oxlint-disable no-unused-vars
 
 export class MockPlugin extends BasePlugin {
   public name = 'mock';
@@ -9,9 +12,7 @@ export class MockPlugin extends BasePlugin {
 }
 
 export class MockPlugin2 extends BasePlugin {
-
   public async use(app: App, options?: unknown): Promise<void> {
     //
   }
-  
 }

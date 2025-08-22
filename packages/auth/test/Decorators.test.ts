@@ -1,9 +1,19 @@
+import { MetadataResolver } from '@vercube/core';
 import { Container, initializeContainer } from '@vercube/di';
-import { MetadataResolver, type RouterTypes } from '@vercube/core';
-import { describe, it, expect, beforeAll, vi } from 'vitest';
-import { TestClass, TestClass2, TestClass3, TestClass4, TestClass5, TestClass6, TestClass7, MockAuthProvider } from './Mock/TestClass.mock';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { AuthMiddleware } from '../src/Middleware/AuthMiddleware';
 import { AuthProvider } from '../src/Services/AuthProvider';
+import {
+  MockAuthProvider,
+  TestClass,
+  TestClass2,
+  TestClass3,
+  TestClass4,
+  TestClass5,
+  TestClass6,
+  TestClass7,
+} from './Mock/TestClass.mock';
+import type { RouterTypes } from '@vercube/core';
 
 describe('[auth] Decorators', () => {
   let container: Container;
@@ -28,14 +38,13 @@ describe('[auth] Decorators', () => {
     const instance = container.get(TestClass);
     const middlewares = service.resolveMiddlewares(Object.getPrototypeOf(instance), 'testMethod');
 
-
     expect(middlewares).toBeDefined();
     expect(middlewares).toHaveLength(1);
 
     expect(middlewares[0].middleware).toBe(AuthMiddleware);
     expect(middlewares[0].target).toBe('testMethod');
     expect(middlewares[0].priority).toBe(-999);
-    expect((middlewares[0].args as any)).toEqual({});
+    expect(middlewares[0].args as any).toEqual({});
   });
 
   it('should define metadata for the class', () => {
@@ -131,16 +140,16 @@ describe('[auth] Decorators', () => {
     const service = testContainer.get(MetadataResolver);
     const instance = testContainer.get(TestClass5);
     const method = service.resolveMethod(Object.getPrototypeOf(instance), 'testMethod');
-    
+
     // Get the resolver function
     const resolver = method.args[0]?.resolver;
-    
+
     // Ensure resolver exists
     expect(resolver).toBeDefined();
-    
+
     // Call the resolver with a mock event
     const result = await resolver!({ request: {} } as RouterTypes.RouterEvent);
-    
+
     // Should return null when provider is not found
     expect(result).toBeNull();
   });
@@ -152,7 +161,7 @@ describe('[auth] Decorators', () => {
       getCurrentUser: vi.fn().mockResolvedValue(mockUser),
       validate: vi.fn().mockResolvedValue(null),
     };
-    
+
     // Create a new container with a mock provider
     const testContainer = new Container();
     container.bindInstance(Container, testContainer);
@@ -165,16 +174,16 @@ describe('[auth] Decorators', () => {
     const service = testContainer.get(MetadataResolver);
     const instance = testContainer.get(TestClass5);
     const method = service.resolveMethod(Object.getPrototypeOf(instance), 'testMethod');
-    
+
     // Get the resolver function
     const resolver = method.args[0]?.resolver;
-    
+
     // Ensure resolver exists
     expect(resolver).toBeDefined();
-    
+
     // Call the resolver with a mock event
     const result = await resolver!({ request: {} } as RouterTypes.RouterEvent);
-    
+
     // Should return the user from the provider
     expect(result).toEqual(mockUser);
     expect(mockProvider.getCurrentUser).toHaveBeenCalledWith({});
@@ -186,32 +195,32 @@ describe('[auth] Decorators', () => {
     container.bindInstance(Container, testContainer);
     testContainer.bind(TestClass7);
     testContainer.bind(MetadataResolver);
-    
+
     // Create a mock provider that returns a user
     const mockUser = { id: 2, name: 'Custom User' };
     const mockProvider = {
       getCurrentUser: vi.fn().mockResolvedValue(mockUser),
       validate: vi.fn().mockResolvedValue(null),
     };
-    
+
     // Bind the mock provider to MockAuthProvider
     testContainer.bindMock(MockAuthProvider, mockProvider);
-    
+
     initializeContainer(testContainer);
 
     const service = testContainer.get(MetadataResolver);
     const instance = testContainer.get(TestClass7);
     const method = service.resolveMethod(Object.getPrototypeOf(instance), 'testMethod');
-    
+
     // Get the resolver function
     const resolver = method.args[0]?.resolver;
-    
+
     // Ensure resolver exists
     expect(resolver).toBeDefined();
-    
+
     // Call the resolver with a mock event
     const result = await resolver!({ request: {} } as RouterTypes.RouterEvent);
-    
+
     // Should return the user from the custom provider
     expect(result).toEqual(mockUser);
     expect(mockProvider.getCurrentUser).toHaveBeenCalledWith({});

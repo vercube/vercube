@@ -1,9 +1,8 @@
-import { ConfigTypes } from '@vercube/core';
-import type { Hookable } from 'hookable';
 import { type Worker as _Worker } from 'node:worker_threads';
+import type { ConfigTypes } from '@vercube/core';
+import type { Hookable } from 'hookable';
 
 export namespace DevKitTypes {
-
   export type BuildFunc = (ctx?: ConfigTypes.BuildOptions) => void | Promise<void>;
   export type WatchFunc = (app?: App) => void | Promise<void>;
 
@@ -63,8 +62,7 @@ export namespace DevKitTypes {
     address: {
       host: string;
       port: number;
-      socketPath?: string
+      socketPath?: string;
     };
   }
-
 }

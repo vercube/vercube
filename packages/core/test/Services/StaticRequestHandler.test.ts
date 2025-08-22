@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { StaticRequestHandler } from '../../src/Services/Router/StaticRequestHandler';
 import type { ConfigTypes } from '../../src/Types/ConfigTypes';
 
@@ -49,14 +49,14 @@ describe('StaticRequestHandler', () => {
 
   beforeEach(async () => {
     staticHandler = new StaticRequestHandler();
-    
+
     // Get mocked functions
     const { stat } = await import('node:fs/promises');
     const { createReadStream } = await import('node:fs');
-    
+
     mockStat = vi.mocked(stat);
     mockCreateReadStream = vi.mocked(createReadStream);
-    
+
     vi.clearAllMocks();
   });
 
@@ -101,7 +101,7 @@ describe('StaticRequestHandler', () => {
     });
 
     it('should return undefined when dirs is undefined', async () => {
-      staticHandler.initialize({ dirs: undefined });
+      staticHandler.initialize({ dirs: undefined as any });
       const request = new Request('http://localhost/public/test.html');
 
       const result = await staticHandler.handleRequest(request);
@@ -170,8 +170,7 @@ describe('StaticRequestHandler', () => {
         mtime: new Date('2023-01-01'),
       };
 
-      mockStat.mockRejectedValueOnce(new Error('Not found in first dir'))
-              .mockResolvedValue(mockStats);
+      mockStat.mockRejectedValueOnce(new Error('Not found in first dir')).mockResolvedValue(mockStats);
       mockCreateReadStream.mockReturnValue({
         pipe: vi.fn(),
         on: vi.fn(),

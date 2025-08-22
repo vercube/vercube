@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { Container, Init, Destroy, BaseDecorator, initializeContainer, destroyContainer, Inject, InjectOptional } from '../src';
+import { BaseDecorator, Container, Destroy, destroyContainer, Init, initializeContainer, Inject, InjectOptional } from '../src';
 
 describe('[Framework][IOC] Decorators', () => {
   let container: Container;
@@ -31,7 +31,7 @@ describe('[Framework][IOC] Decorators', () => {
         @Init()
         notAFunction: string = 'test';
       }
-      
+
       container.bind(InvalidInitClass);
       const instance = container.get(InvalidInitClass);
       expect(instance.notAFunction).toBe('test');
@@ -56,7 +56,7 @@ describe('[Framework][IOC] Decorators', () => {
       destroyContainer(container);
 
       expect(instance.destroyed).toBe(true);
-      
+
       // Simulate container destruction by calling destroy on the instance
       instance.cleanup();
       expect(instance.destroyed).toBe(true);
@@ -67,7 +67,7 @@ describe('[Framework][IOC] Decorators', () => {
         @Destroy()
         notAFunction: string = 'test';
       }
-      
+
       container.bind(InvalidDestroyClass);
       const instance = container.get(InvalidDestroyClass);
       expect(instance.notAFunction).toBe('test');
@@ -140,7 +140,6 @@ describe('[Framework][IOC] Decorators', () => {
     it('should throw an error if the class is not bound', () => {
       expect(() => container.get(MyInjectClass)).toThrow();
     });
-
   });
 
   describe('@InjectOptional decorator', () => {
@@ -177,7 +176,7 @@ describe('[Framework][IOC] Decorators', () => {
       decorator.options = { test: 'test value' };
       decorator.instance = {};
       decorator.created();
-      
+
       expect(decorator.instance.testValue).toBe('test value');
     });
 
@@ -190,7 +189,7 @@ describe('[Framework][IOC] Decorators', () => {
         enumerable: true,
         configurable: true,
       };
-      
+
       expect(decorator.propertyName).toBe('test');
       expect(decorator.descriptor.value).toBe('test');
     });
@@ -206,4 +205,4 @@ describe('[Framework][IOC] Decorators', () => {
       expect(decorator.propertyIndex).toBe(1);
     });
   });
-}); 
+});

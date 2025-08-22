@@ -1,8 +1,9 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { type App, createApp } from '@vercube/core';
+import { createApp } from '@vercube/core';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { SchemaPlugin } from '../../src';
-import { MockController } from '../Utils/Schema.mock';
 import { SchemaRegistry } from '../../src/Services/SchemaRegistry';
+import { MockController } from '../Utils/Schema.mock';
+import type { App } from '@vercube/core';
 
 describe('SchemaDecorator', () => {
   let app: App;
@@ -11,7 +12,7 @@ describe('SchemaDecorator', () => {
     app = await createApp({
       setup: async (app) => {
         app.addPlugin(SchemaPlugin);
-      }
+      },
     });
 
     app.container.expand((container) => {
@@ -22,7 +23,7 @@ describe('SchemaDecorator', () => {
   });
 
   it('Should register schema correctly', async () => {
-    const registry = app.container.get(SchemaRegistry);    
+    const registry = app.container.get(SchemaRegistry);
     const schema = await registry.generateSchema();
 
     const path = schema.paths['/mock/'];
@@ -36,11 +37,9 @@ describe('SchemaDecorator', () => {
   });
 
   it('should generate schema correctly', async () => {
-    const registry = app.container.get(SchemaRegistry);    
+    const registry = app.container.get(SchemaRegistry);
     const schema = await registry.generateSchema();
 
     expect(schema).toMatchSnapshot();
-  })
-
-
+  });
 });

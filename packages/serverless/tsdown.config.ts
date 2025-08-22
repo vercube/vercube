@@ -1,6 +1,6 @@
 import { defineConfig } from 'tsdown';
-import defaultConfig from '../../tsdown.config';
 import { transformExports } from '../../scripts/utils';
+import defaultConfig from '../../tsdown.config';
 
 // return config for tsdown
 export default defineConfig({
@@ -19,8 +19,5 @@ export default defineConfig({
       return transformed;
     },
   },
-  entry: [
-    './src/index.ts',
-    './src/Adapters/**/index.ts',
-  ],
+  entry: ['./src/index.ts', './src/Adapters/**/index.ts'],
 });

@@ -4,7 +4,6 @@
   "projectType": "library",
   "sourceRoot": "{projectRoot}/src",
   "targets": {
-    "build": {
-    }
+    "build": {}
   }
 }

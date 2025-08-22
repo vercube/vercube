@@ -1,4 +1,4 @@
-import { ConfigTypes } from '../../Types/ConfigTypes';
+import type { ConfigTypes } from '../../Types/ConfigTypes';
 
 /**
  * RuntimeConfig class manages the runtime configuration for the Vercube application.
@@ -10,7 +10,7 @@ export class RuntimeConfig<T = Record<string, unknown>> {
    * @private
    */
   private fRuntimeConfig: ConfigTypes.CreateRuntimeConfig<T> | undefined;
-  
+
   /**
    * Gets the current runtime configuration.
    * @returns {ConfigTypes.CreateRuntimeConfig<T> | undefined} The current runtime configuration object.

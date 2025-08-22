@@ -1,21 +1,21 @@
 import { BadRequestError } from '../Errors/Http/BadRequestError';
-import { RouterTypes } from '../Types/RouterTypes';
+import type { RouterTypes } from '../Types/RouterTypes';
 
 /**
  * Resolves and parses the request body from a RouterEvent.
- * 
+ *
  * @param {RouterTypes.RouterEvent} event - The router event containing the request to process
  * @returns {Promise<unknown>} A promise that resolves to:
  *   - The parsed JSON body if the request contains valid JSON
  *   - undefined if the request body is empty
  * @throws {BadRequestError} If the request body contains invalid JSON
- * 
+ *
  * @example
  * const body = await resolveRequestBody(event);
  * if (body) {
  *   // Process the parsed body
  * }
- * 
+ *
  * @remarks
  * - Currently only supports JSON content type
  * - Returns undefined for empty request bodies

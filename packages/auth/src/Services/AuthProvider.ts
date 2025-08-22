@@ -5,11 +5,9 @@
  * @abstract
  * @class AuthorizationProvider
  */
-
-import { AuthTypes } from '../Types/AuthTypes';
+import type { AuthTypes } from '../Types/AuthTypes';
 
 export abstract class AuthProvider<U = unknown> {
-
   /**
    * Validate authentication
    * @param {Request} request - The request object
@@ -24,6 +22,4 @@ export abstract class AuthProvider<U = unknown> {
    * @returns A promise of the current user or null if no user is authenticated
    */
   public abstract getCurrentUser(request: Request): Promise<U | null> | U | null;
-
 }
- 

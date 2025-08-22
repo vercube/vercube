@@ -1,14 +1,13 @@
-import type { App } from '../../Common/App';
 import { Container, Inject } from '@vercube/di';
 import { BasePlugin } from './BasePlugin';
+import type { App } from '../../Common/App';
 
 export class PluginsRegistry {
-
   @Inject(Container)
   private gContainer!: Container;
 
   /** Holds the list of plugins */
-  private fPlugins: Map<string, { instance: BasePlugin, options?: unknown }> = new Map();
+  private fPlugins: Map<string, { instance: BasePlugin; options?: unknown }> = new Map();
 
   /**
    * Registers a plugin.
@@ -45,5 +44,4 @@ export class PluginsRegistry {
       await instance.use(app, options);
     }
   }
-
 }

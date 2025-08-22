@@ -36,3 +36,9 @@ jobs:
  
       - name: Test
         run: pnpm test
+
+      - name: Lint
+        run: pnpm test:lint
+
+      - name: Type check
+        run: pnpm test:tscheck

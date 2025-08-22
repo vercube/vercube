@@ -1,11 +1,9 @@
-
 import type { MaybePromise, MiddlewareOptions } from '../../Types/CommonTypes';
 
 /**
  * BaseMiddleware class that serves as a base for all middleware implementations.
  */
 export class BaseMiddleware<T = any, U = any> {
-
   /**
    * Middleware function that processes the HTTP event.
    * This method should be overridden by subclasses to implement specific middleware logic.
@@ -29,5 +27,4 @@ export class BaseMiddleware<T = any, U = any> {
    * @returns {void | Promise<void>} - A void or a promise that resolves when the processing is complete.
    */
   onResponse?(request: Request, response: Response, payload: U): MaybePromise<void | Response>;
-
 }

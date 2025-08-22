@@ -1,6 +1,7 @@
 import { initializeMetadata, initializeMetadataMethod } from '@vercube/core';
 import { AuthMiddleware } from '../Middleware/AuthMiddleware';
 import type { AuthTypes } from '../Types/AuthTypes';
+
 /**
  * Authentication decorator that adds middleware to protect routes or controllers
  * @param options Optional options for the authentication middleware
@@ -8,7 +9,7 @@ import type { AuthTypes } from '../Types/AuthTypes';
  */
 export function Auth(options?: AuthTypes.MiddlewareOptions): Function {
   return function internalDecorator(target: Function, propertyName?: string) {
-    const meta = initializeMetadata((propertyName) ? target : target.prototype);
+    const meta = initializeMetadata(propertyName ? target : target.prototype);
 
     if (propertyName) {
       initializeMetadataMethod(target, propertyName);

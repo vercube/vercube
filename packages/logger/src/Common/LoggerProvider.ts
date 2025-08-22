@@ -8,7 +8,6 @@ import type { LoggerTypes } from '../Types/LoggerTypes';
  * @template T - The type of options used to initialize the appender
  */
 export abstract class LoggerProvider<T = unknown> {
-
   /**
    * Initializes the appender with the provided options.
    * This method should be called before using the appender to process messages.
@@ -26,5 +25,4 @@ export abstract class LoggerProvider<T = unknown> {
    * @returns void or Promise<void> if processing is asynchronous
    */
   public abstract processMessage(message: LoggerTypes.Message): void | Promise<void>;
-
 }

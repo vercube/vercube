@@ -1,7 +1,7 @@
 import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
 import { MetadataResolver } from '../../Services/Metadata/MetadataResolver';
-import { MetadataTypes } from '../../Types/MetadataTypes';
 import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
+import type { MetadataTypes } from '../../Types/MetadataTypes';
 
 interface ParamDecoratorOptions {
   // name of the route parameter
@@ -18,7 +18,6 @@ interface ParamDecoratorOptions {
  * @extends {BaseDecorator<ParamDecoratorOptions>}
  */
 class ParamDecorator extends BaseDecorator<ParamDecoratorOptions, MetadataTypes.Metadata> {
-
   @Inject(MetadataResolver)
   private gMetadataResolver!: MetadataResolver;
 
@@ -40,9 +39,7 @@ class ParamDecorator extends BaseDecorator<ParamDecoratorOptions, MetadataTypes.
         name: this.options.name,
       },
     });
-
   }
-
 }
 
 /**

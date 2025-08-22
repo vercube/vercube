@@ -22,4 +22,4 @@ export class MockLogger extends Logger {
   public error(...args: LoggerTypes.Arg[]): void {
     // Mock implementation
   }
-} 
+}

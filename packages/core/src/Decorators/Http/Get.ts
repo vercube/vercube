@@ -1,8 +1,8 @@
 import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
 import { MetadataResolver } from '../../Services/Metadata/MetadataResolver';
 import { RequestHandler } from '../../Services/Router/RequestHandler';
-import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
 import { Router } from '../../Services/Router/Router';
+import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
 
 interface GetDecoratorOptions {
   path: string;
@@ -18,7 +18,6 @@ interface GetDecoratorOptions {
  * @extends {BaseDecorator<GetDecoratorOptions>}
  */
 class GetDecorator extends BaseDecorator<GetDecoratorOptions> {
-
   @Inject(Router)
   private gRouter!: Router;
 
@@ -34,7 +33,7 @@ class GetDecorator extends BaseDecorator<GetDecoratorOptions> {
    * This method constructs the full path for the route, registers the route
    * with the Router, and sets up the event handler for the GET request.
    */
-  public override created(): void {    
+  public override created(): void {
     initializeMetadata(this.prototype);
     const method = initializeMetadataMethod(this.prototype, this.propertyName);
     method.method = 'GET';
@@ -48,11 +47,12 @@ class GetDecorator extends BaseDecorator<GetDecoratorOptions> {
     this.gRouter.addRoute({
       path: this.options.path,
       method: 'GET',
-      handler: this.gRequestHandler.prepareHandler({ instance: this.instance, propertyName: this.propertyName }),
+      handler: this.gRequestHandler.prepareHandler({
+        instance: this.instance,
+        propertyName: this.propertyName,
+      }),
     });
-
   }
-
 }
 
 /**

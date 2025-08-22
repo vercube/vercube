@@ -1,5 +1,5 @@
-import { Worker } from 'node:worker_threads';
 import { execSync } from 'node:child_process';
+import { Worker } from 'node:worker_threads';
 
 let ohaVersion;
 try {
@@ -16,10 +16,7 @@ OHA:\t\t ${ohaVersion}
 
 const results = [];
 
-for (const name of [
-  'node',
-  'vercube',
-].filter(Boolean)) {
+for (const name of ['node', 'vercube'].filter(Boolean)) {
   // Wait for the closest server to start
   await new Promise((resolve) => setTimeout(resolve, 5000));
   process.stdout.write(`${name}...`);

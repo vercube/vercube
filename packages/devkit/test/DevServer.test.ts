@@ -1,8 +1,8 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { createDevServer, createVercube } from '../src';
-import { resolve } from 'node:path';
 import { fork } from 'node:child_process';
+import { resolve } from 'node:path';
 import consola from 'consola';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createDevServer, createVercube } from '../src';
 
 // Mock dependencies
 vi.mock('node:child_process', () => ({
@@ -67,4 +67,4 @@ describe('DevServer', async () => {
       error: mockError,
     });
   });
-}); 
+});

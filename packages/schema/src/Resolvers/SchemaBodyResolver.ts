@@ -1,6 +1,6 @@
+import defu from 'defu';
 import type { RouteConfig } from '@asteasolutions/zod-to-openapi';
 import type { DeepPartial, MetadataTypes } from '@vercube/core';
-import defu from 'defu';
 
 /**
  * Resolves the body schema for a given method.
@@ -9,7 +9,6 @@ import defu from 'defu';
  * @returns void
  */
 export function SchemaBodyResolver(metadata: MetadataTypes.Method, schema: DeepPartial<RouteConfig>): void {
-  
   // check if method has body
   const body = metadata.args.find((arg) => arg.type === 'body');
 
@@ -26,5 +25,4 @@ export function SchemaBodyResolver(metadata: MetadataTypes.Method, schema: DeepP
       },
     },
   });
-
 }

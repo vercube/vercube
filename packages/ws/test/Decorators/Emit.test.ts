@@ -1,11 +1,13 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { createApp, type App, type ConfigTypes } from '@vercube/core';
+// oxlint-disable no-unused-vars
+import { createApp } from '@vercube/core';
 import { Container, initializeContainer } from '@vercube/di';
-import { WebsocketService } from '../../src/Services/WebsocketService';
-import { $WebsocketService } from '../../src/Symbols/WebsocketSymbols';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Emit } from '../../src/Decorators/Emit';
 import { Message } from '../../src/Decorators/Message';
 import { Namespace } from '../../src/Decorators/Namespace';
+import { WebsocketService } from '../../src/Services/WebsocketService';
+import { $WebsocketService } from '../../src/Symbols/WebsocketSymbols';
+import type { App, ConfigTypes } from '@vercube/core';
 
 vi.mock('srvx', () => ({
   serve: vi.fn().mockReturnValue({
@@ -30,7 +32,7 @@ describe('@Emit() decorator', () => {
 
   const config: ConfigTypes.Config = {
     logLevel: 'info',
-    server: { static: { dirs: ['./public'] } }
+    server: { static: { dirs: ['./public'] } },
   };
 
   beforeEach(async () => {

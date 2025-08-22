@@ -27,7 +27,6 @@ import type { HooksTypes } from '../../Types/HooksTypes';
  * This class is responsible for managing events.
  */
 export class HooksService {
-
   // holds last assigned id
   private fLastId: number = 0;
 
@@ -44,7 +43,6 @@ export class HooksService {
    * @returns unique ID for event listener, can be used to disable this listener
    */
   public on<T>(type: HooksTypes.HookType<T>, callback: HooksTypes.HookCallback<T>): HooksTypes.HookID {
-
     // get all handlers for particular event type and create empty array there is no events for this yet
     let handlersOfType: HooksTypes.HookHandler<T>[] | undefined = this.fHandlers.get(type);
     if (!handlersOfType) {
@@ -64,7 +62,6 @@ export class HooksService {
     // push handler and return event metadata
     handlersOfType.push(handler);
     return { __id: genId, __type: type };
-
   }
 
   /**
@@ -81,7 +78,6 @@ export class HooksService {
    */
   public waitFor<T>(type: HooksTypes.HookType<T>, timeout: number | null = 10 * 1000): Promise<T> {
     return new Promise((resolve, reject) => {
-
       // define setTimeout variable
       let waitTimeout: any;
 
@@ -103,7 +99,6 @@ export class HooksService {
           reject(new Error(`Waiting for event timeout - ${type.name}`));
         }, timeout);
       }
-
     });
   }
 
@@ -113,7 +108,6 @@ export class HooksService {
    * @throws Error if event was not registered
    */
   public off<T>(eventId: HooksTypes.HookID): void {
-
     const type: HooksTypes.HookType<T> = eventId.__type;
     const handlersOfType: HooksTypes.HookHandler<T>[] | undefined = this.fHandlers.get(type);
 
@@ -121,7 +115,7 @@ export class HooksService {
       throw new Error('Trying to unbind event that was not bound.');
     }
 
-    const index = handlersOfType.findIndex(handler => handler.id === eventId.__id);
+    const index = handlersOfType.findIndex((handler) => handler.id === eventId.__id);
 
     if (index === -1) {
       throw new Error('Trying to unbind event that was not bound.');
@@ -138,7 +132,6 @@ export class HooksService {
    * @return number of listeners that were notified
    */
   public async trigger<T>(type: HooksTypes.HookType<T>, data?: HooksTypes.HookData<T>): Promise<number> {
-
     const handlersOfType: HooksTypes.HookHandler<T>[] | undefined = this.fHandlers.get(type);
     if (!handlersOfType) {
       return 0;
@@ -155,7 +148,6 @@ export class HooksService {
 
     await Promise.all(promises);
     return toProcessHandlers.length;
-
   }
 
   /**
@@ -167,25 +159,19 @@ export class HooksService {
    * @return class type of event
    */
   private objectToClass<T>(ClassConstructor: HooksTypes.HookType<T>, data: HooksTypes.HookData<T>): T {
-
     const instance: T = new ClassConstructor();
 
     // rewrite data keys to instance
     if (data) {
       for (const key of Object.keys(data)) {
-
         // copy all properties to convert it to class instance
-
 
         const rawInstance: any = instance;
         const rawData: any = data;
         rawInstance[key] = rawData[key];
-
-
       }
     }
 
     return instance;
   }
-
 }

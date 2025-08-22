@@ -44,7 +44,6 @@ function registerInject(
   dependency: IOC.ServiceKey,
   type: IOC.DependencyType,
 ): void {
-
   // find entry for this class, create new one if not found
   let entry: IClassMapEntry | undefined = classMap.get(prototype);
   if (!entry) {
@@ -79,7 +78,6 @@ function getEntryForClass(classType: IOC.Newable<unknown>): IClassMapEntry | nul
  * @returns array of @Inject dependencies defined for this class
  */
 function getDeps(instance: IOC.Instance): IClassDep[] {
-
   // get info for classmap, fallback to empty array if its not defined
   const prototype: IOC.Prototype | null = Object.getPrototypeOf(instance);
   if (!prototype) {
@@ -99,7 +97,6 @@ function getDeps(instance: IOC.Instance): IClassDep[] {
  * @param method inject method, "lazy" queries dep during property access while "static" injects during class creation
  */
 function injectDeps(container: Container, instance: IOC.Instance, method: IOC.InjectMethod): void {
-
   // get class metadata, if there are no @Injects for this class, just skip
   let prototype: IOC.Prototype | null = Object.getPrototypeOf(instance);
   if (!prototype) {
@@ -113,11 +110,9 @@ function injectDeps(container: Container, instance: IOC.Instance, method: IOC.In
    * So we will use "do" loop to iterate full prototype chain.
    */
   do {
-
     // get entry for "current prototype"
     const entry: IClassMapEntry | undefined = classMap.get(prototype);
     if (entry) {
-
       // iterate over all dependencies for this class..
       for (const iter of entry.deps) {
         const propertyName: string = iter.propertyName;
@@ -133,7 +128,9 @@ function injectDeps(container: Container, instance: IOC.Instance, method: IOC.In
         // for optional dependencies, we simply inject it as lazy dep but we allow for null to be passed
         if (type === IOC.DependencyType.OPTIONAL) {
           Object.defineProperty(instance, propertyName, {
-            get: function(): any { return container.getOptional(dependency); },
+            get: function (): any {
+              return container.getOptional(dependency);
+            },
           });
           continue;
         }
@@ -142,7 +139,9 @@ function injectDeps(container: Container, instance: IOC.Instance, method: IOC.In
         switch (method) {
           case IOC.InjectMethod.LAZY: {
             Object.defineProperty(instance, propertyName, {
-              get: function(): any { return container.get(dependency); },
+              get: function (): any {
+                return container.get(dependency);
+              },
             });
             break;
           }
@@ -162,7 +161,7 @@ function injectDeps(container: Container, instance: IOC.Instance, method: IOC.In
     // walk up to parent class & collect deps again...
     prototype = Object.getPrototypeOf(prototype);
 
-  // repeat until we walk through whole proto chain..
+    // repeat until we walk through whole proto chain..
   } while (prototype && prototype !== ROOT_PROTO);
 }
 

@@ -1,6 +1,6 @@
- import consola from 'consola';
-import type { DevKitTypes } from '../Types/DevKitTypes';
+import consola from 'consola';
 import { getWatchFunc } from '../Utils/Utils';
+import type { DevKitTypes } from '../Types/DevKitTypes';
 
 /**
  * Creates a watcher for the given application.
@@ -22,7 +22,10 @@ export async function watch(app: DevKitTypes.App): Promise<void> {
   });
 
   app.hooks.hook('bundler-watch:end', () => {
-    consola.success({ tag: 'build', message: `Built in ${Date.now() - start}ms`});
+    consola.success({
+      tag: 'build',
+      message: `Built in ${Date.now() - start}ms`,
+    });
     app.hooks.callHook('dev:reload');
   });
 
@@ -31,4 +34,4 @@ export async function watch(app: DevKitTypes.App): Promise<void> {
   });
 
   await watcher(app);
-};
+}

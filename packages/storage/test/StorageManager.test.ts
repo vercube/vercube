@@ -1,11 +1,10 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { Container } from '@vercube/di';
+import { Container, initializeContainer } from '@vercube/di';
 import { Logger } from '@vercube/logger';
-import { StorageManager, Storage } from '../src';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { Storage, StorageManager } from '../src';
 import { MemoryStorage } from '../src/Drivers/MemoryStorage';
 import { S3Storage } from '../src/Drivers/S3Storage';
-import { initializeContainer } from '@vercube/di';
-import { TestStorage, ErrorStorage } from './Utils/Mock.mock';
+import { ErrorStorage, TestStorage } from './Utils/Mock.mock';
 
 describe('StorageManager', () => {
   let container: Container;
@@ -187,9 +186,11 @@ describe('StorageManager', () => {
       });
 
       it('should not throw when deleting non-existent item', async () => {
-        await expect(storageManager.deleteItem({
-          key: 'nonExistent',
-        })).resolves.not.toThrow();
+        await expect(
+          storageManager.deleteItem({
+            key: 'nonExistent',
+          }),
+        ).resolves.not.toThrow();
       });
     });
 
@@ -276,9 +277,11 @@ describe('StorageManager', () => {
       });
 
       it('should not throw when storage is undefined', async () => {
-        await expect(storageManager.clear({
-          storage: 'nonExistentStorage',
-        })).resolves.not.toThrow();
+        await expect(
+          storageManager.clear({
+            storage: 'nonExistentStorage',
+          }),
+        ).resolves.not.toThrow();
       });
     });
 
@@ -355,4 +358,4 @@ describe('StorageManager', () => {
       expect(logger.error).toHaveBeenCalled();
     });
   });
-}); 
+});

@@ -7,10 +7,9 @@ import { BaseDecorator, createDecorator } from '@vercube/di';
  * during the destruction phase.
  */
 class DestroyDecorator extends BaseDecorator<{}> {
-
   /**
    * Called when decorator is destroyed. Executes the decorated method if it exists
-   * as a function on the instance. Used for cleanup tasks like unregistering 
+   * as a function on the instance. Used for cleanup tasks like unregistering
    * listeners or clearing timers.
    */
   public override destroyed(): void {
@@ -18,14 +17,13 @@ class DestroyDecorator extends BaseDecorator<{}> {
       this.instance[this.propertyName]();
     }
   }
-
 }
 
 /**
  * Decorator that automatically executes the decorated method when the service or component
  * is destroyed. Use this decorator to run cleanup logic like unregistering event listeners
  * or clearing timers.
- * 
+ *
  * @example
  * ```typescript
  * class MyService {

@@ -1,11 +1,12 @@
-import { describe, it, beforeEach, expect, vi } from 'vitest';
+import { createApp } from '@vercube/core';
 import { Container, initializeContainer } from '@vercube/di';
-import { createApp, type App, type ConfigTypes } from '@vercube/core';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { Namespace } from '../../src/Decorators/Namespace';
+import { OnConnectionAttempt } from '../../src/Decorators/OnConnectionAttempt';
 import { WebsocketService } from '../../src/Services/WebsocketService';
 import { $WebsocketService } from '../../src/Symbols/WebsocketSymbols';
 import { WebsocketTypes } from '../../src/Types/WebsocketTypes';
-import { Namespace } from '../../src/Decorators/Namespace';
-import { OnConnectionAttempt } from '../../src/Decorators/OnConnectionAttempt';
+import type { App, ConfigTypes } from '@vercube/core';
 
 vi.mock('srvx', () => ({
   serve: vi.fn().mockReturnValue({

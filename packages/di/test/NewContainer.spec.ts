@@ -4,23 +4,20 @@
  *
  * The old Container.spec.ts measures backward compatiblity between new & old container.
  */
-
 import { beforeEach, describe, expect, it } from 'vitest';
-import { Container, IOC, Identity, Inject, InjectOptional } from '../src';
+import { Container, Identity, Inject, InjectOptional, IOC } from '../src';
 
 class MyClass {}
 class MySubclass extends MyClass {}
 
 class MyClassWithDep {
-
   @Inject(MyClass)
   public myClass: MyClass;
-
 }
 
 let _singletonId: number = 0;
 class MySingletonClass {
-  public value: number = (_singletonId++);
+  public value: number = _singletonId++;
 }
 
 class MySubClassWithDep extends MyClassWithDep {}
@@ -41,16 +38,13 @@ class MyIdentityClass {
 
 class MyOptionalDependency {}
 class MyClassWithOptionalDependency {
-
   @InjectOptional(MyOptionalDependency)
   public gMyOptionalDependecny: MyOptionalDependency | null;
-
 }
 
 class MyClassWithDeprecatedDecorator {}
 
 describe('[Framework][IOC] Container', () => {
-
   let container: Container;
 
   beforeEach(() => {
@@ -58,8 +52,9 @@ describe('[Framework][IOC] Container', () => {
   });
 
   it('should allow new container to be created', () => {
-     
-    expect(() => { new Container(); }).not.toThrow();
+    expect(() => {
+      new Container();
+    }).not.toThrow();
   });
 
   it('should allow to get keys', () => {
@@ -99,7 +94,6 @@ describe('[Framework][IOC] Container', () => {
     const myClassWithDep = container.resolve(MyClassWithDep);
     expect(myClassWithDep).toBeInstanceOf(MyClassWithDep);
     expect(myClassWithDep.myClass).toBeInstanceOf(MyClass);
-
   });
 
   it('should register class as singleton instance', () => {
@@ -164,5 +158,4 @@ describe('[Framework][IOC] Container', () => {
     expect(instance.gMyOptionalDependecny).not.toBeNull();
     expect(instance.gMyOptionalDependecny).toBeInstanceOf(MyOptionalDependency);
   });
-
 });

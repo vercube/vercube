@@ -1,8 +1,7 @@
-import { MetadataTypes } from './MetadataTypes';
-import { BaseMiddleware } from '../Services/Middleware/BaseMiddleware';
+import type { BaseMiddleware } from '../Services/Middleware/BaseMiddleware';
+import type { MetadataTypes } from './MetadataTypes';
 
 export namespace RouterTypes {
-
   export interface Route {
     path: string;
     method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'OPTIONS' | 'HEAD' | 'CONNECT' | 'TRACE';
@@ -14,7 +13,7 @@ export namespace RouterTypes {
     method: string;
   }
 
-  export interface MiddlewareDefinition{
+  export interface MiddlewareDefinition {
     middleware: BaseMiddleware<unknown, unknown>;
     target: string;
     priority?: number;
@@ -40,6 +39,5 @@ export namespace RouterTypes {
   export type RouterEvent = RouterTypes.RouteMatched<RouterTypes.RouterHandler> & {
     request: Request;
     response: Response;
-  }
-
+  };
 }

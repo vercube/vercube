@@ -1,11 +1,11 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { createTestApp } from '../Utils/App.mock';
-import { ErrorHandlerProvider, type App, BadRequestError } from '../../src';
-import { DefaultErrorHandlerProvider } from '../../src/Services/ErrorHandler/DefaultErrorHandlerProvider';
 import { Logger } from '@vercube/logger';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { BadRequestError, ErrorHandlerProvider } from '../../src';
+import { DefaultErrorHandlerProvider } from '../../src/Services/ErrorHandler/DefaultErrorHandlerProvider';
+import { createTestApp } from '../Utils/App.mock';
+import type { App } from '../../src';
 
 describe('DefaultErrorHandlerProvider', () => {
-
   let app: App;
   let errorHandler: DefaultErrorHandlerProvider;
   let logger: Logger;
@@ -13,7 +13,7 @@ describe('DefaultErrorHandlerProvider', () => {
   beforeEach(async () => {
     app = await createTestApp();
     app.container.bind(ErrorHandlerProvider, DefaultErrorHandlerProvider);
-    
+
     errorHandler = app.container.get(ErrorHandlerProvider) as DefaultErrorHandlerProvider;
     logger = app.container.get(Logger);
   });
@@ -33,7 +33,7 @@ describe('DefaultErrorHandlerProvider', () => {
   it('should handle HttpError with custom status', async () => {
     const httpError = new BadRequestError('Bad request');
     (httpError as any).status = 422; // Custom status
-    
+
     const response = errorHandler.handleError(httpError);
 
     expect(response.status).toBe(422);
@@ -56,7 +56,7 @@ describe('DefaultErrorHandlerProvider', () => {
   it('should handle non-HttpError with custom status', async () => {
     const regularError = new Error('Regular error');
     (regularError as any).status = 503; // Custom status
-    
+
     const response = errorHandler.handleError(regularError);
 
     expect(response.status).toBe(503);
@@ -65,7 +65,7 @@ describe('DefaultErrorHandlerProvider', () => {
   it('should handle error with cause', async () => {
     const causeError = new Error('Cause error');
     const regularError = new Error('Regular error', { cause: causeError });
-    
+
     const response = errorHandler.handleError(regularError);
 
     expect(response.status).toBe(500);
@@ -78,7 +78,7 @@ describe('DefaultErrorHandlerProvider', () => {
   it('should handle error with null message', async () => {
     const errorWithNullMessage = new Error('Original message');
     errorWithNullMessage.message = null as any;
-    
+
     const response = errorHandler.handleError(errorWithNullMessage);
 
     expect(response.status).toBe(500);
@@ -90,7 +90,7 @@ describe('DefaultErrorHandlerProvider', () => {
   it('should handle error with undefined message', async () => {
     const errorWithUndefinedMessage = new Error('Original message');
     errorWithUndefinedMessage.message = undefined as any;
-    
+
     const response = errorHandler.handleError(errorWithUndefinedMessage);
 
     expect(response.status).toBe(500);
@@ -101,7 +101,7 @@ describe('DefaultErrorHandlerProvider', () => {
 
   it('should handle null error', async () => {
     const nullError = null as any;
-    
+
     const response = errorHandler.handleError(nullError);
 
     expect(response.status).toBe(500);
@@ -112,7 +112,7 @@ describe('DefaultErrorHandlerProvider', () => {
 
   it('should handle undefined error', async () => {
     const undefinedError = undefined as any;
-    
+
     const response = errorHandler.handleError(undefinedError);
 
     expect(response.status).toBe(500);

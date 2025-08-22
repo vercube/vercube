@@ -1,11 +1,6 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import {
-  S3Client,
-  PutObjectCommand,
-  DeleteObjectCommand,
-  ListObjectsV2Command,
-} from '@aws-sdk/client-s3';
 import { Readable } from 'node:stream';
+import { DeleteObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { S3Storage } from '../src/Drivers/S3Storage';
 
 function ReadableFromString(str: string): Readable {
@@ -64,7 +59,9 @@ describe('S3Storage', () => {
 
     it('should throw for other errors', async () => {
       mockSend.mockRejectedValueOnce({ name: 'OtherError' });
-      await expect(storage.getItem('key')).rejects.toEqual({ name: 'OtherError' });
+      await expect(storage.getItem('key')).rejects.toEqual({
+        name: 'OtherError',
+      });
     });
   });
 
@@ -93,7 +90,9 @@ describe('S3Storage', () => {
 
     it('should throw on other errors', async () => {
       mockSend.mockRejectedValueOnce({ name: 'OtherError' });
-      await expect(storage.hasItem('key')).rejects.toEqual({ name: 'OtherError' });
+      await expect(storage.hasItem('key')).rejects.toEqual({
+        name: 'OtherError',
+      });
     });
   });
 

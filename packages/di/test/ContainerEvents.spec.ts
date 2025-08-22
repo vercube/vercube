@@ -12,7 +12,6 @@ class MyRuntimeClass {}
 class MyOtherRuntimeClass {}
 
 describe('[Framework][IOC] Container', () => {
-
   let container: Container;
 
   beforeEach(() => {
@@ -20,7 +19,6 @@ describe('[Framework][IOC] Container', () => {
   });
 
   it('should allow to register on "expanded" event', () => {
-
     const callbackFn = vi.fn();
 
     container.bind(MyClass);
@@ -33,7 +31,5 @@ describe('[Framework][IOC] Container', () => {
     });
 
     expect(callbackFn).toBeCalledWith([MyRuntimeClass, MyOtherRuntimeClass]);
-
   });
-
 });

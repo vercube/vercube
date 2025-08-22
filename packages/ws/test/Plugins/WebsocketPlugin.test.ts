@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { type App, createApp } from '@vercube/core';
+import { createApp } from '@vercube/core';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { $WebsocketService, WebsocketPlugin } from '../../src';
+import type { App } from '@vercube/core';
 
 describe('WebsocketPlugin', () => {
   let app: App;
@@ -9,13 +10,12 @@ describe('WebsocketPlugin', () => {
     app = await createApp({
       setup: async (app) => {
         app.addPlugin(WebsocketPlugin);
-      }
+      },
     });
   });
 
   it('should register plugin correctly', () => {
-    const plugin = app.container.get($WebsocketService)
+    const plugin = app.container.get($WebsocketService);
     expect(plugin).toBeDefined();
   });
-
 });

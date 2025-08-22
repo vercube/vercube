@@ -1,8 +1,9 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { type App, createApp } from '@vercube/core';
+import { createApp } from '@vercube/core';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { SchemaPlugin } from '../../src';
-import { SchemaRegistry } from '../../src/Services/SchemaRegistry';
 import { SchemaController } from '../../src/Controllers/SchameController';
+import { SchemaRegistry } from '../../src/Services/SchemaRegistry';
+import type { App } from '@vercube/core';
 
 describe('SchemaPlugin', () => {
   let app: App;
@@ -11,7 +12,7 @@ describe('SchemaPlugin', () => {
     app = await createApp({
       setup: async (app) => {
         app.addPlugin(SchemaPlugin);
-      }
+      },
     });
   });
 
@@ -21,5 +22,4 @@ describe('SchemaPlugin', () => {
     expect(plugin).toBeDefined();
     expect(controller).toBeDefined();
   });
-
 });

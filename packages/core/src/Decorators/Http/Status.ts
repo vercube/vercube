@@ -1,7 +1,7 @@
 import { BaseDecorator, createDecorator } from '@vercube/di';
-import type { MetadataTypes } from '../../Types/MetadataTypes';
 import { HTTPStatus } from '../../Types/HttpTypes';
 import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
+import type { MetadataTypes } from '../../Types/MetadataTypes';
 
 /**
  * Options for the StatusDecorator.
@@ -17,7 +17,6 @@ interface StatusDecoratorOptions {
  * @extends {BaseDecorator<StatusDecoratorOptions>}
  */
 class StatusDecorator extends BaseDecorator<StatusDecoratorOptions, MetadataTypes.Metadata> {
-
   /**
    * Called when the decorator is created.
    * Sets a status on the response
@@ -33,7 +32,6 @@ class StatusDecorator extends BaseDecorator<StatusDecoratorOptions, MetadataType
       }),
     });
   }
-
 }
 
 /**

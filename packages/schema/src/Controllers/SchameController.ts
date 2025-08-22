@@ -1,6 +1,6 @@
-import { Controller, Get } from "@vercube/core";
-import { Inject } from "@vercube/di";
-import { SchemaRegistry } from "../Services/SchemaRegistry";
+import { Controller, Get } from '@vercube/core';
+import { Inject } from '@vercube/di';
+import { SchemaRegistry } from '../Services/SchemaRegistry';
 
 /**
  * A controller for serving the generated OpenAPI schema.
@@ -12,7 +12,6 @@ import { SchemaRegistry } from "../Services/SchemaRegistry";
  */
 @Controller('/_schema')
 export class SchemaController {
-
   @Inject(SchemaRegistry)
   private readonly gSchemaRegistry: SchemaRegistry;
 
@@ -25,5 +24,4 @@ export class SchemaController {
   public async get(): Promise<unknown> {
     return this.gSchemaRegistry.generateSchema();
   }
-
 }

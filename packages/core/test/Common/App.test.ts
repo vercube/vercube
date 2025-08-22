@@ -1,13 +1,13 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Container } from '@vercube/di';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { type App } from '../../src';
 import { HttpServer } from '../../src/Services/HttpServer/HttpServer';
+import { PluginsRegistry } from '../../src/Services/Plugins/PluginsRegistry';
 import { Router } from '../../src/Services/Router/Router';
 import { StaticRequestHandler } from '../../src/Services/Router/StaticRequestHandler';
-import type { ConfigTypes } from '../../src/Types/ConfigTypes';
 import { createTestApp } from '../Utils/App.mock';
-import { PluginsRegistry } from '../../src/Services/Plugins/PluginsRegistry';
 import { MockPlugin } from '../Utils/Plugin.mock';
+import type { ConfigTypes } from '../../src/Types/ConfigTypes';
 
 vi.mock('srvx', () => ({
   serve: vi.fn().mockReturnValue({
@@ -35,7 +35,7 @@ describe('App', () => {
     },
   };
 
-  beforeEach(async () => {  
+  beforeEach(async () => {
     app = await createTestApp({ cfg: config });
     container = app.container;
   });
@@ -68,7 +68,7 @@ describe('App', () => {
 
     it('should throw an error if the app is already initialized', async () => {
       await app.listen();
-      
+
       await expect(app.listen()).rejects.toThrow('App is already initialized');
     });
   });
@@ -85,18 +85,17 @@ describe('App', () => {
   });
 
   describe('config', () => {
-    it ('should return config without runtime', () => {
+    it('should return config without runtime', () => {
       expect(app.config.runtime).toBeUndefined();
-    })
+    });
   });
 
   describe('plugins', () => {
-    it ('should add plugin', () => {
+    it('should add plugin', () => {
       const spyOnPluginsRegistry = vi.spyOn(container.get(PluginsRegistry), 'register');
       app.addPlugin(MockPlugin);
 
       expect(spyOnPluginsRegistry).toHaveBeenCalledWith(MockPlugin, undefined);
     });
   });
-
-}); 
+});

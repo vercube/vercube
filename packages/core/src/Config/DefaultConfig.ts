@@ -1,5 +1,5 @@
-import { ConfigTypes } from '../Types/ConfigTypes';
 import generateRandomHash from '../Utils/InternalUtils';
+import type { ConfigTypes } from '../Types/ConfigTypes';
 
 /**
  * Default configuration for the Vercube application.
@@ -14,12 +14,12 @@ export const defaultConfig: ConfigTypes.Config = {
   /**
    * Production mode disabled by default
    */
-  production: (process.env.NODE_ENV === 'production'),
+  production: process.env.NODE_ENV === 'production',
 
   /**
    * Development mode disabled by default
    */
-  dev: (process.env.NODE_ENV !== 'production'),
+  dev: process.env.NODE_ENV !== 'production',
 
   /**
    * Build configuration settings

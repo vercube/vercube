@@ -1,4 +1,4 @@
-import { RouterTypes } from '../Types/RouterTypes';
+import type { RouterTypes } from '../Types/RouterTypes';
 
 /**
  * Retrieves a specific header value from the request

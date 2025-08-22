@@ -1,4 +1,8 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { resolveRequestBody } from '../../src/Resolvers/Body';
+import { getRequestHeader, getRequestHeaders } from '../../src/Resolvers/Headers';
+import { resolveQueryParam, resolveQueryParams } from '../../src/Resolvers/Query';
+import { resolveRouterParam } from '../../src/Resolvers/RouterParam';
 import { MetadataResolver } from '../../src/Services/Metadata/MetadataResolver';
 import type { MetadataTypes } from '../../src/Types/MetadataTypes';
 import type { RouterTypes } from '../../src/Types/RouterTypes';
@@ -22,18 +26,13 @@ vi.mock('../../src/Resolvers/Headers', () => ({
   getRequestHeaders: vi.fn(),
 }));
 
-import { resolveRouterParam } from '../../src/Resolvers/RouterParam';
-import { resolveRequestBody } from '../../src/Resolvers/Body';
-import { resolveQueryParam, resolveQueryParams } from '../../src/Resolvers/Query';
-import { getRequestHeader, getRequestHeaders } from '../../src/Resolvers/Headers';
-
 describe('MetadataResolver', () => {
   let resolver: MetadataResolver;
   let mockEvent: RouterTypes.RouterEvent;
 
   beforeEach(() => {
     resolver = new MetadataResolver();
-    
+
     mockEvent = {
       request: new Request('http://localhost/test'),
       response: new Response(),
@@ -215,9 +214,7 @@ describe('MetadataResolver', () => {
 
   describe('resolveArg', () => {
     it('should resolve param type', async () => {
-      const args: MetadataTypes.Arg[] = [
-        { idx: 0, type: 'param', data: { name: 'id' } },
-      ];
+      const args: MetadataTypes.Arg[] = [{ idx: 0, type: 'param', data: { name: 'id' } }];
 
       vi.mocked(resolveRouterParam).mockResolvedValue('123');
 
@@ -228,9 +225,7 @@ describe('MetadataResolver', () => {
     });
 
     it('should resolve param type with empty name', async () => {
-      const args: MetadataTypes.Arg[] = [
-        { idx: 0, type: 'param', data: {} },
-      ];
+      const args: MetadataTypes.Arg[] = [{ idx: 0, type: 'param', data: {} }];
 
       vi.mocked(resolveRouterParam).mockResolvedValue('123');
 
@@ -241,9 +236,7 @@ describe('MetadataResolver', () => {
     });
 
     it('should resolve body type', async () => {
-      const args: MetadataTypes.Arg[] = [
-        { idx: 0, type: 'body' },
-      ];
+      const args: MetadataTypes.Arg[] = [{ idx: 0, type: 'body' }];
 
       vi.mocked(resolveRequestBody).mockResolvedValue({ data: 'test' });
 
@@ -254,9 +247,7 @@ describe('MetadataResolver', () => {
     });
 
     it('should resolve multipart-form-data type', async () => {
-      const args: MetadataTypes.Arg[] = [
-        { idx: 0, type: 'multipart-form-data' },
-      ];
+      const args: MetadataTypes.Arg[] = [{ idx: 0, type: 'multipart-form-data' }];
 
       const result = await resolver.resolveArgs(args, mockEvent);
 
@@ -264,9 +255,7 @@ describe('MetadataResolver', () => {
     });
 
     it('should resolve query-param type', async () => {
-      const args: MetadataTypes.Arg[] = [
-        { idx: 0, type: 'query-param', data: { name: 'page' } },
-      ];
+      const args: MetadataTypes.Arg[] = [{ idx: 0, type: 'query-param', data: { name: 'page' } }];
 
       vi.mocked(resolveQueryParam).mockResolvedValue('1');
 
@@ -277,9 +266,7 @@ describe('MetadataResolver', () => {
     });
 
     it('should resolve query-param type with empty name', async () => {
-      const args: MetadataTypes.Arg[] = [
-        { idx: 0, type: 'query-param', data: {} },
-      ];
+      const args: MetadataTypes.Arg[] = [{ idx: 0, type: 'query-param', data: {} }];
 
       vi.mocked(resolveQueryParam).mockResolvedValue('1');
 
@@ -290,11 +277,12 @@ describe('MetadataResolver', () => {
     });
 
     it('should resolve query-params type', async () => {
-      const args: MetadataTypes.Arg[] = [
-        { idx: 0, type: 'query-params' },
-      ];
+      const args: MetadataTypes.Arg[] = [{ idx: 0, type: 'query-params' }];
 
-      vi.mocked(resolveQueryParams).mockResolvedValue({ page: '1', limit: '10' });
+      vi.mocked(resolveQueryParams).mockResolvedValue({
+        page: '1',
+        limit: '10',
+      });
 
       const result = await resolver.resolveArgs(args, mockEvent);
 
@@ -303,9 +291,7 @@ describe('MetadataResolver', () => {
     });
 
     it('should resolve header type', async () => {
-      const args: MetadataTypes.Arg[] = [
-        { idx: 0, type: 'header', data: { name: 'authorization' } },
-      ];
+      const args: MetadataTypes.Arg[] = [{ idx: 0, type: 'header', data: { name: 'authorization' } }];
 
       vi.mocked(getRequestHeader).mockResolvedValue('Bearer token');
 
@@ -316,9 +302,7 @@ describe('MetadataResolver', () => {
     });
 
     it('should resolve header type with empty name', async () => {
-      const args: MetadataTypes.Arg[] = [
-        { idx: 0, type: 'header', data: {} },
-      ];
+      const args: MetadataTypes.Arg[] = [{ idx: 0, type: 'header', data: {} }];
 
       vi.mocked(getRequestHeader).mockResolvedValue('Bearer token');
 
@@ -329,22 +313,22 @@ describe('MetadataResolver', () => {
     });
 
     it('should resolve headers type', async () => {
-      const args: MetadataTypes.Arg[] = [
-        { idx: 0, type: 'headers' },
-      ];
+      const args: MetadataTypes.Arg[] = [{ idx: 0, type: 'headers' }];
 
-      vi.mocked(getRequestHeaders).mockResolvedValue({ 'content-type': 'application/json' } as any);
+      vi.mocked(getRequestHeaders).mockResolvedValue({
+        'content-type': 'application/json',
+      } as any);
 
       const result = await resolver.resolveArgs(args, mockEvent);
 
-      expect(result[0].resolved).toEqual({ 'content-type': 'application/json' });
+      expect(result[0].resolved).toEqual({
+        'content-type': 'application/json',
+      });
       expect(getRequestHeaders).toHaveBeenCalledWith(mockEvent);
     });
 
     it('should resolve request type', async () => {
-      const args: MetadataTypes.Arg[] = [
-        { idx: 0, type: 'request' },
-      ];
+      const args: MetadataTypes.Arg[] = [{ idx: 0, type: 'request' }];
 
       const result = await resolver.resolveArgs(args, mockEvent);
 
@@ -352,9 +336,7 @@ describe('MetadataResolver', () => {
     });
 
     it('should resolve response type', async () => {
-      const args: MetadataTypes.Arg[] = [
-        { idx: 0, type: 'response' },
-      ];
+      const args: MetadataTypes.Arg[] = [{ idx: 0, type: 'response' }];
 
       const result = await resolver.resolveArgs(args, mockEvent);
 
@@ -363,9 +345,7 @@ describe('MetadataResolver', () => {
 
     it('should resolve custom type with resolver', async () => {
       const customResolver = vi.fn().mockResolvedValue('custom value');
-      const args: MetadataTypes.Arg[] = [
-        { idx: 0, type: 'custom', resolver: customResolver },
-      ];
+      const args: MetadataTypes.Arg[] = [{ idx: 0, type: 'custom', resolver: customResolver }];
 
       const result = await resolver.resolveArgs(args, mockEvent);
 
@@ -374,9 +354,7 @@ describe('MetadataResolver', () => {
     });
 
     it('should resolve session type', async () => {
-      const args: MetadataTypes.Arg[] = [
-        { idx: 0, type: 'session' },
-      ];
+      const args: MetadataTypes.Arg[] = [{ idx: 0, type: 'session' }];
 
       const result = await resolver.resolveArgs(args, mockEvent);
 
@@ -384,9 +362,7 @@ describe('MetadataResolver', () => {
     });
 
     it('should throw error for unknown argument type', async () => {
-      const args: MetadataTypes.Arg[] = [
-        { idx: 0, type: 'unknown-type' as any },
-      ];
+      const args: MetadataTypes.Arg[] = [{ idx: 0, type: 'unknown-type' as any }];
 
       await expect(resolver.resolveArgs(args, mockEvent)).rejects.toThrow('Unknown argument type: unknown-type');
     });

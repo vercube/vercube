@@ -1,7 +1,8 @@
-import { Logger } from "@vercube/logger";
-import { createApp, ErrorHandlerProvider, type CreateAppOptions } from "../../src";
-import { MockController } from "./MockController.mock";
-import { vi } from "vitest";
+import { Logger } from '@vercube/logger';
+import { vi } from 'vitest';
+import { createApp, ErrorHandlerProvider } from '../../src';
+import { MockController } from './MockController.mock';
+import type { CreateAppOptions } from '../../src';
 
 export const createTestApp = async (params: CreateAppOptions = {}) => {
   const app = await createApp(params);
@@ -20,4 +21,4 @@ export const createTestApp = async (params: CreateAppOptions = {}) => {
   });
 
   return app;
-}
+};

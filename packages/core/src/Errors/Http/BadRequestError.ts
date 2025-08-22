@@ -5,7 +5,6 @@ import { HttpError } from '../HttpError';
  * @extends {HttpError}
  */
 export class BadRequestError extends HttpError {
-
   /**
    * The name of the error.
    * @type {string}
@@ -27,7 +26,5 @@ export class BadRequestError extends HttpError {
     if (errors) {
       (this as any).errors = errors;
     }
-
   }
-
 }

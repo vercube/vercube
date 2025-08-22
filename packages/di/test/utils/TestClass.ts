@@ -7,7 +7,6 @@ export abstract class ATestClass {}
  * Simple class for IOC tests
  */
 export default class TestClass extends ATestClass {
-
   /**
    * value
    */
@@ -26,5 +25,4 @@ export default class TestClass extends ATestClass {
   public increment(): void {
     this.fValue++;
   }
-
 }

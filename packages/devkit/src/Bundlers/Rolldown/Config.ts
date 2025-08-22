@@ -1,12 +1,12 @@
+import { builtinModules } from 'node:module';
+import { resolve } from 'pathe';
+import UnpluginIsolatedDecl from 'unplugin-isolated-decl/rolldown';
 import type { ConfigTypes } from '@vercube/core';
 import type { RolldownOptions } from 'rolldown';
-import { resolve } from 'pathe';
-import { builtinModules } from 'node:module';
-import UnpluginIsolatedDecl from 'unplugin-isolated-decl/rolldown';
 
 /**
  * Generates a Rolldown configuration based on the provided build options.
- * 
+ *
  * @param {ConfigTypes.BuildOptions} [ctx] - Build configuration options
  * @returns {Promise<RolldownOptions>} A promise that resolves to the Rolldown configuration
  */
@@ -60,4 +60,4 @@ export async function getRolldownConfig(ctx?: ConfigTypes.BuildOptions): Promise
       }),
     ],
   };
-};
+}

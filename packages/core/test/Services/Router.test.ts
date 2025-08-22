@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Container } from '@vercube/di';
-import { Router } from '../../src/Services/Router/Router';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { HooksService } from '../../src/Services/Hooks/HooksService';
+import { Router } from '../../src/Services/Router/Router';
 import type { RouterTypes } from '../../src/Types/RouterTypes';
 
 // Mock rou3
@@ -18,7 +18,7 @@ describe('Router', () => {
 
   beforeEach(() => {
     container = new Container();
-    
+
     mockHooksService = {
       trigger: vi.fn(),
     };
@@ -145,7 +145,7 @@ describe('Router', () => {
 
     it('should resolve route with different HTTP methods', () => {
       const methods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'];
-      
+
       for (const method of methods) {
         const routeFind: RouterTypes.RouteFind = {
           method: method as any,

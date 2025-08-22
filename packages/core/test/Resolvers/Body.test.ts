@@ -1,6 +1,5 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { resolveRequestBody } from '../../src/Resolvers/Body';
-import { BadRequestError } from '../../src/Errors/Http/BadRequestError';
 import type { RouterTypes } from '../../src/Types/RouterTypes';
 
 describe('resolveRequestBody', () => {

@@ -18,7 +18,6 @@ interface PatchDecoratorOptions {
  * @extends {BaseDecorator<PatchDecoratorOptions>}
  */
 class PatchDecorator extends BaseDecorator<PatchDecoratorOptions> {
-
   @Inject(Router)
   private gRouter!: Router;
 
@@ -48,11 +47,12 @@ class PatchDecorator extends BaseDecorator<PatchDecoratorOptions> {
     this.gRouter.addRoute({
       path: this.options.path,
       method: 'PATCH',
-      handler: this.gRequestHandler.prepareHandler({ instance: this.instance, propertyName: this.propertyName }),
+      handler: this.gRequestHandler.prepareHandler({
+        instance: this.instance,
+        propertyName: this.propertyName,
+      }),
     });
-
   }
-
 }
 
 /**

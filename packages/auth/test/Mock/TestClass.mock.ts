@@ -3,10 +3,8 @@ import { Auth, User } from '../../src';
 import { AuthProvider } from '../../src/Services/AuthProvider';
 
 export class TestClass {
-
   @Auth()
   public testMethod() {}
-
 }
 
 @Auth({ roles: ['admin'] })
@@ -16,10 +14,8 @@ export class TestClass2 {}
 export class TestClass3 {}
 
 export class TestClass4 {
-
   @Auth()
   public testMethod() {}
-
 }
 
 @Auth()

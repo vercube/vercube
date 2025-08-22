@@ -1,7 +1,8 @@
-import { describe, it, expect, beforeEach } from 'vitest';
 import { Container } from '@vercube/di';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { Logger } from '../src';
 import { MockLogger } from './MockLogger';
-import { Logger, type LoggerTypes } from '../src';
+import type { LoggerTypes } from '../src';
 
 describe('Logger', () => {
   let container: Container;
@@ -41,4 +42,4 @@ describe('Logger', () => {
     expect(() => logger.warn(...testArgs)).not.toThrow();
     expect(() => logger.error(...testArgs)).not.toThrow();
   });
-}); 
+});

@@ -1,7 +1,7 @@
 import { Container, Init, Inject, InjectOptional } from '@vercube/di';
-import { Storage } from './Storage';
-import { StorageTypes } from '../Types/StorageTypes';
 import { Logger } from '@vercube/logger';
+import { Storage } from './Storage';
+import type { StorageTypes } from '../Types/StorageTypes';
 
 /**
  * Manages multiple storage instances and provides a unified interface for storage operations.
@@ -9,7 +9,6 @@ import { Logger } from '@vercube/logger';
  * This class handles initialization, registration, and delegation of storage operations.
  */
 export class StorageManager {
-
   @Inject(Container)
   private gContainer: Container;
 

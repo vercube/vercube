@@ -1,27 +1,28 @@
+// oxlint-disable no-unused-vars
+import { Auth } from '@vercube/auth';
 import {
+  Body,
   Controller,
   Get,
+  HTTPStatus,
   Middleware,
+  Param,
+  Post,
+  QueryParams,
+  Redirect,
+  RuntimeConfig,
   SetHeader,
   Status,
-  HTTPStatus,
-  Redirect,
-  Post,
-  Body,
-  QueryParams,
-  Param,
-  RuntimeConfig,
 } from '@vercube/core';
-import { Auth } from '@vercube/auth';
-import { Emit, Message, Namespace } from '@vercube/ws';
-import { Schema, z } from '@vercube/schema';
-import { FirstMiddleware } from '../Middlewares/FirstMiddleware';
 import { Inject } from '@vercube/di';
-import { StorageManager } from '@vercube/storage';
 import { Logger } from '@vercube/logger';
+import { Schema, z } from '@vercube/schema';
+import { StorageManager } from '@vercube/storage';
+import { Emit, Message, Namespace } from '@vercube/ws';
+import { FirstMiddleware } from '../Middlewares/FirstMiddleware';
+import { SecondMiddleware } from '../Middlewares/SecondMiddleware';
 import { BasicAuthenticationProvider } from '../Services/BasicAuthenticationProvider';
 import { DummyAuthorizationProvider } from '../Services/DummyAuthorizationProvider';
-import { SecondMiddleware } from '../Middlewares/SecondMiddleware';
 import type { AppTypes } from '../Types/AppTypes';
 
 const schema = z.object({
@@ -43,7 +44,6 @@ const schemaQueryParams = z.object({
   bar: z.string().min(1, 'Bar is required'),
 });
 
-
 /**
  * Playground controller.
  * This is a sample controller that demonstrates how to create a controller using the @vercube/core package.
@@ -52,7 +52,6 @@ const schemaQueryParams = z.object({
 @Controller('/api/playground')
 @Middleware(FirstMiddleware)
 export default class PlaygroundController {
-
   @Inject(StorageManager)
   private gStorageManager: StorageManager;
 
@@ -64,7 +63,7 @@ export default class PlaygroundController {
 
   @Message({ event: 'message' })
   @Emit('message')
-  public async onMessage(incomingMessage: unknown, peer: { id: string; ip: string; }): Promise<Record<string, string>> {
+  public async onMessage(incomingMessage: unknown, peer: { id: string; ip: string }): Promise<Record<string, string>> {
     console.log(incomingMessage, peer);
     return { foo: 'bar' };
   }
@@ -236,5 +235,4 @@ export default class PlaygroundController {
 
     return { message: `Something is ${something ? 'enabled' : 'disabled'}` };
   }
-
 }

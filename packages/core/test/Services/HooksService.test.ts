@@ -1,11 +1,10 @@
 // oxlint-disable no-new-array
 // oxlint-disable no-array-for-each
-import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Container } from '@vercube/di';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { HooksService } from '../../src/';
 
 describe('HooksService', () => {
-
   let container: Container;
 
   beforeEach(() => {
@@ -14,7 +13,6 @@ describe('HooksService', () => {
   });
 
   it('should allow to listen on event, trigger it and have listener called', async () => {
-
     class TestEvent {}
     const testEventListener = vi.fn();
 
@@ -23,28 +21,20 @@ describe('HooksService', () => {
     await hooks.trigger(TestEvent);
 
     expect(testEventListener).toBeCalled();
-
   });
 
   it('should allow multiple listeners for event and have them called', async () => {
-
     class TestEvent {}
-    const testEventListeners = [
-      vi.fn(),
-      vi.fn(),
-      vi.fn(),
-    ];
+    const testEventListeners = [vi.fn(), vi.fn(), vi.fn()];
 
     const hooks = container.get(HooksService);
     testEventListeners.forEach((listener) => hooks.on(TestEvent, listener));
     await hooks.trigger(TestEvent);
 
     testEventListeners.forEach((listener) => expect(listener).toBeCalled());
-
   });
 
   it('should allow multiple triggering of single event', async () => {
-
     class TestEvent {}
     const testEventListener = vi.fn();
 
@@ -55,20 +45,18 @@ describe('HooksService', () => {
     await Promise.all(triggers);
 
     expect(testEventListener).toBeCalledTimes(5);
-
   });
 
   it('should allow to pass payload in event and receive it on listener', () => {
-
     class TestEventWithPayload {
-
-        public value: number;
-
+      public value: number;
     }
 
     let savedPayload: TestEventWithPayload = null!;
 
-    const testEventListener = vi.fn((payload) => { savedPayload = payload; });
+    const testEventListener = vi.fn((payload) => {
+      savedPayload = payload;
+    });
 
     const hooks = container.get(HooksService);
     hooks.on(TestEventWithPayload, testEventListener);
@@ -78,11 +66,9 @@ describe('HooksService', () => {
 
     expect(testEventListener).toBeCalledWith({ value: 42 });
     expect(savedPayload).toBeInstanceOf(TestEventWithPayload);
-
   });
 
   it('should allow to await until all async listeners are done', async () => {
-
     // expect  one assertion
     expect.assertions(2);
 
@@ -90,13 +76,14 @@ describe('HooksService', () => {
     let someValue: number = 0;
 
     // asynchronous event listener function that updates value after minor delay
-    const asyncListenerFunction = (): Promise<void> => new Promise((resolve) => {
-      // after 0.1s, set someValue as 10
-      setTimeout(() => {
-        someValue = 10;
-        resolve();
-      }, 10);
-    });
+    const asyncListenerFunction = (): Promise<void> =>
+      new Promise((resolve) => {
+        // after 0.1s, set someValue as 10
+        setTimeout(() => {
+          someValue = 10;
+          resolve();
+        }, 10);
+      });
 
     class TestEvent {}
     const testEventListener = vi.fn(asyncListenerFunction);
@@ -107,11 +94,9 @@ describe('HooksService', () => {
     expect(someValue).toEqual(0);
     await hooks.trigger(TestEvent); // await until all async listeners are triggered
     expect(someValue).toEqual(10); // it should wait minor timeout before leaving trigger()
-
   });
 
   it('should allow to remove event listener', async () => {
-
     expect.assertions(1);
 
     class TestEvent {}
@@ -123,11 +108,9 @@ describe('HooksService', () => {
 
     await hooks.trigger(TestEvent); // trigger the event
     expect(testEventListener).not.toBeCalled();
-
   });
 
   it('should throw error if try to remove non-existing event listener', () => {
-
     class TestEvent {}
 
     const hooks = container.get(HooksService);
@@ -140,30 +123,26 @@ describe('HooksService', () => {
     expect(() => {
       hooks.off(listenerId);
     }).toThrowError();
-
   });
 
   it('should throw error if try to remove listener with invalid ID', () => {
-
     class TestEvent {}
 
     const hooks = container.get(HooksService);
-    
+
     // Create a fake listener ID that doesn't exist
     const fakeListenerId = {
       __type: TestEvent,
-      __id: 'non-existent-id'
+      __id: 'non-existent-id',
     } as any;
 
     // Try to remove a listener that was never registered
     expect(() => {
       hooks.off(fakeListenerId);
     }).toThrowError('Trying to unbind event that was not bound.');
-
   });
 
   it('should allow waiting for event to be triggered', async () => {
-
     // expect two assertions
     expect.assertions(2);
 
@@ -190,34 +169,32 @@ describe('HooksService', () => {
 
     // if waitFor() really waited, then someValue will have value 10 instead of 0
     expect(someValue).toEqual(10);
-
   });
 
-  it('should throw when timeout is exceeded and event was not called', () => new Promise((resolve) => {
+  it('should throw when timeout is exceeded and event was not called', () =>
+    new Promise((resolve) => {
+      // expect 1 assertions
+      expect.assertions(1);
 
-    // expect 1 assertions
-    expect.assertions(1);
+      // test event class
+      class TestEvent {}
 
-    // test event class
-    class TestEvent {}
+      // get hooks from container
+      const hooks = container.get(HooksService);
 
-    // get hooks from container
-    const hooks = container.get(HooksService);
-
-    // make waitFor() call with timeout
-    hooks.waitFor(TestEvent, 10)
-      .then(() => {
-        resolve(1);
-      })
-      .catch((error) => {
-        expect(error).not.toBeNull();
-        resolve(1);
-      });
-
-  }));
+      // make waitFor() call with timeout
+      hooks
+        .waitFor(TestEvent, 10)
+        .then(() => {
+          resolve(1);
+        })
+        .catch((error) => {
+          expect(error).not.toBeNull();
+          resolve(1);
+        });
+    }));
 
   it('should call two triggers if two waitFor() are used on same event', async () => {
-
     class TestEvent {}
 
     // get hooks from container
@@ -242,7 +219,5 @@ describe('HooksService', () => {
 
     expect(method1Done).toBe(true);
     expect(method2Done).toBe(true);
-
   });
-
 });

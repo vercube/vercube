@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { resolveQueryParam, resolveQueryParams } from '../../src/Resolvers/Query';
 import type { RouterTypes } from '../../src/Types/RouterTypes';
 
@@ -198,8 +198,8 @@ describe('Query Resolvers', () => {
     it('should handle many query parameters', () => {
       const event = createMockEvent(
         'http://localhost/test?' +
-        'p1=value1&p2=value2&p3=value3&p4=value4&p5=value5&' +
-        'p6=value6&p7=value7&p8=value8&p9=value9&p10=value10'
+          'p1=value1&p2=value2&p3=value3&p4=value4&p5=value5&' +
+          'p6=value6&p7=value7&p8=value8&p9=value9&p10=value10',
       );
       const result = resolveQueryParams(event);
 

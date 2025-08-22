@@ -1,11 +1,10 @@
 import { Container, Inject } from '@vercube/di';
-import type { LoggerTypes } from '../Types/LoggerTypes';
-import { isLogLevelEnabled } from '../Utils/Utils';
 import { LoggerProvider } from '../Common/LoggerProvider';
+import { isLogLevelEnabled } from '../Utils/Utils';
 import type { Logger } from '../Common/Logger';
+import type { LoggerTypes } from '../Types/LoggerTypes';
 
 export class BaseLogger implements Logger {
-
   @Inject(Container)
   private gContainer: Container;
 
@@ -27,7 +26,7 @@ export class BaseLogger implements Logger {
 
   /**
    * Configure logger
-   * @param options 
+   * @param options
    */
   public configure(options: LoggerTypes.Options): void {
     this.fLogLevel = options?.logLevel ?? 'debug';
@@ -35,7 +34,7 @@ export class BaseLogger implements Logger {
     if (!options?.providers?.length) {
       return;
     }
-    
+
     // reset registerd providers
     this.fProviders.clear();
 
@@ -52,7 +51,7 @@ export class BaseLogger implements Logger {
         this.fProviders.set(logger.name, provider);
 
         // Set log level for provider. If not set, use global log level
-        this.fProvidersLevel.set(logger.name, logger.logLevel?? this.fLogLevel);
+        this.fProvidersLevel.set(logger.name, logger.logLevel ?? this.fLogLevel);
       } catch (error) {
         console.error(`Failed to initialize logger provider: ${logger.provider.name}`, error);
       }
@@ -113,5 +112,4 @@ export class BaseLogger implements Logger {
       provider.processMessage(message);
     }
   }
-
 }

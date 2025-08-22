@@ -5,11 +5,10 @@ import { Storage } from '../Service/Storage';
  * In-memory storage implementation of the Storage interface
  * Provides a simple key-value store that persists only for the duration of the application runtime
  * Useful for testing, caching, and scenarios where temporary storage is needed
- * 
+ *
  * @implements {Storage}
  */
 export class MemoryStorage implements Storage {
-
   /** Internal storage map to hold key-value pairs */
   private storage: Map<string, unknown> = new Map();
 
@@ -81,5 +80,4 @@ export class MemoryStorage implements Storage {
   public size(): number {
     return this.storage.size;
   }
-
 }

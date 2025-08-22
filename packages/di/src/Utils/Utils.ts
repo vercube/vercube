@@ -20,7 +20,7 @@ export function Identity(name: string): IOC.Identity {
  * A simple type of constructor for class "T"
  */
 export interface IClassType<T> {
-  new(): T;
+  new (): T;
 }
 
 /**
@@ -59,7 +59,6 @@ export interface IDecoratedInstance {
 export function createDecorator<P, T extends BaseDecorator<P>>(decoratorClass: IClassType<T>, params: P): Function {
   // standaard ES6 decorator code...
   return function internalDecorator(target: IDecoratedPrototype, propertyName: string, descriptor: PropertyDescriptor): any {
-
     // if target instance does not have __decorators magic array, create it
     if (!target.__decorators) {
       target.__decorators = [];
@@ -73,9 +72,7 @@ export function createDecorator<P, T extends BaseDecorator<P>>(decoratorClass: I
       propertyName,
       descriptor,
     });
-
   };
-
 }
 
 /**
@@ -116,32 +113,30 @@ export function initializeDecorators(target: IDecoratedInstance, container: Cont
   const prototype: IDecoratedPrototype = Object.getPrototypeOf(target);
 
   // iterate over __decorators magic field for class
-  if (prototype.__decorators) for (const entry of prototype.__decorators) {
+  if (prototype.__decorators)
+    for (const entry of prototype.__decorators) {
+      // create decorator class instance using container so all @Injects will work
+      const instance: BaseDecorator<unknown> = container.resolve(entry.classType);
 
-    // create decorator class instance using container so all @Injects will work
-    const instance: BaseDecorator<unknown> = container.resolve(entry.classType);
+      if (instance) {
+        // fill instance with data and call the callback
+        instance.options = entry.params;
+        instance.instance = target;
+        instance.prototype = prototype;
+        instance.propertyName = entry.propertyName;
+        instance.descriptor = entry.descriptor;
+        instance.propertyIndex = typeof entry.descriptor === 'number' ? entry.descriptor : -1;
+        instance.created();
+      }
 
-    if (instance) {
-      // fill instance with data and call the callback
-      instance.options = entry.params;
-      instance.instance = target;
-      instance.prototype = prototype;
-      instance.propertyName = entry.propertyName;
-      instance.descriptor = entry.descriptor;
-      instance.propertyIndex = (typeof entry.descriptor === 'number') ? entry.descriptor : -1;
-      instance.created();
+      // get container metadata from map
+      const { decoratedInstances } = getContainerMetadata(container);
+
+      // get instance list for this class (fallback to empty array) and add new instance
+      const instanceList = decoratedInstances.get(target) ?? [];
+      instanceList.push(instance);
+      decoratedInstances.set(target, instanceList); // save it to instance list
     }
-
-    // get container metadata from map
-    const { decoratedInstances } = getContainerMetadata(container);
-
-    // get instance list for this class (fallback to empty array) and add new instance
-    const instanceList = decoratedInstances.get(target) ?? [];
-    instanceList.push(instance);
-    decoratedInstances.set(target, instanceList); // save it to instance list
-
-  }
-
 }
 
 /**
@@ -152,7 +147,6 @@ export function initializeDecorators(target: IDecoratedInstance, container: Cont
  * @param container ioc container
  */
 export function destroyDecorators(target: IDecoratedInstance, container: Container): void {
-
   // get container metadata from map
   const { decoratedInstances } = getContainerMetadata(container);
 
@@ -162,7 +156,6 @@ export function destroyDecorators(target: IDecoratedInstance, container: Contain
 
   // cleanup entry in instance map
   decoratedInstances.delete(target);
-
 }
 
 /**
@@ -182,11 +175,9 @@ export function initializeContainer(container: Container): void {
  * @param container IOC container
  */
 export function destroyContainer(container: Container): void {
-
   // destroy all decorators in service
   container.getAllServices().forEach((service: IDecoratedInstance) => destroyDecorators(service, container));
 
   // destroy the decorator data itself
   containerMap.delete(container);
-
 }

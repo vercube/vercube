@@ -1,8 +1,9 @@
-import { type BaseMiddleware, type MiddlewareOptions, UnauthorizedError } from '@vercube/core';
+import { UnauthorizedError } from '@vercube/core';
 import { Container, Inject, InjectOptional } from '@vercube/di';
 import { Logger } from '@vercube/logger';
-import type { AuthTypes } from '../Types/AuthTypes';
 import { AuthProvider } from '../Services/AuthProvider';
+import type { AuthTypes } from '../Types/AuthTypes';
+import type { BaseMiddleware, MiddlewareOptions } from '@vercube/core';
 
 /**
  * Middleware for auth
@@ -13,7 +14,6 @@ import { AuthProvider } from '../Services/AuthProvider';
  * await middleware.use(event);
  */
 export class AuthMiddleware implements BaseMiddleware<AuthTypes.MiddlewareOptions> {
-
   @Inject(Container)
   private gContainer: Container;
 
@@ -53,5 +53,4 @@ export class AuthMiddleware implements BaseMiddleware<AuthTypes.MiddlewareOption
       throw new UnauthorizedError(authenticationError);
     }
   }
-
 }

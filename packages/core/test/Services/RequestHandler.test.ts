@@ -1,13 +1,13 @@
 // oxlint-disable no-unused-vars
-import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Container } from '@vercube/di';
-import { RequestHandler } from '../../src/Services/Router/RequestHandler';
-import { MetadataResolver } from '../../src/Services/Metadata/MetadataResolver';
-import { GlobalMiddlewareRegistry } from '../../src/Services/Middleware/GlobalMiddlewareRegistry';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ErrorHandlerProvider } from '../../src/Services/ErrorHandler/ErrorHandlerProvider';
+import { MetadataResolver } from '../../src/Services/Metadata/MetadataResolver';
 import { BaseMiddleware } from '../../src/Services/Middleware/BaseMiddleware';
-import type { RouterTypes } from '../../src/Types/RouterTypes';
+import { GlobalMiddlewareRegistry } from '../../src/Services/Middleware/GlobalMiddlewareRegistry';
+import { RequestHandler } from '../../src/Services/Router/RequestHandler';
 import type { MetadataTypes } from '../../src/Types/MetadataTypes';
+import type { RouterTypes } from '../../src/Types/RouterTypes';
 
 // Mock middleware classes
 class MockBeforeMiddleware extends BaseMiddleware {
@@ -279,7 +279,7 @@ describe('RequestHandler', () => {
 
     beforeEach(() => {
       mockRequest = new Request('http://localhost/test');
-      
+
       mockRoute = {
         data: {
           instance: mockInstance,
@@ -355,7 +355,7 @@ describe('RequestHandler', () => {
     it('should handle before middleware error', async () => {
       const mockMiddleware = new MockBeforeMiddlewareWithError();
       const errorResponse = new Response('Error', { status: 500 });
-      
+
       mockRoute.data.middlewares.beforeMiddlewares = [
         {
           middleware: mockMiddleware,
@@ -389,9 +389,7 @@ describe('RequestHandler', () => {
       mockRoute.data.propertyName = 'asyncTestMethod';
       mockRoute.data.args = [{ idx: 0, type: 'param', data: { name: 'name' } }];
 
-      const resolvedArgs = [
-        { idx: 0, type: 'param', resolved: 'world', data: { name: 'name' } },
-      ];
+      const resolvedArgs = [{ idx: 0, type: 'param', resolved: 'world', data: { name: 'name' } }];
 
       mockMetadataResolver.resolveArgs.mockResolvedValue(resolvedArgs);
 
@@ -431,7 +429,7 @@ describe('RequestHandler', () => {
     it('should handle after middleware error', async () => {
       const mockMiddleware = new MockAfterMiddlewareWithError();
       const errorResponse = new Response('Error', { status: 500 });
-      
+
       mockRoute.data.middlewares.afterMiddlewares = [
         {
           middleware: mockMiddleware,
@@ -568,10 +566,10 @@ describe('RequestHandler', () => {
       mockRoute.data.instance = mockInstanceWithCustomResponse;
       mockRoute.data.actions = [
         {
-          handler: vi.fn().mockReturnValue({ 
-            status: 201, 
+          handler: vi.fn().mockReturnValue({
+            status: 201,
             statusText: 'Created',
-            headers: { 'X-Custom-Header': 'test' }
+            headers: { 'X-Custom-Header': 'test' },
           }),
         },
       ];
@@ -653,10 +651,10 @@ describe('RequestHandler', () => {
 
     it('should handle partial ResponseInit override', () => {
       const responseInit = { status: 201 };
-      const baseResponse = new Response('Base Response', { 
-        status: 200, 
+      const baseResponse = new Response('Base Response', {
+        status: 200,
         statusText: 'OK',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
       });
 
       const result = (requestHandler as any).processOverrideResponse(responseInit, baseResponse);

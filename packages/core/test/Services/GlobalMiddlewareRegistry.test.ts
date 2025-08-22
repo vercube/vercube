@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { GlobalMiddlewareRegistry } from '../../src/Services/Middleware/GlobalMiddlewareRegistry';
 import { Container } from '@vercube/di';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { GlobalMiddlewareRegistry } from '../../src/Services/Middleware/GlobalMiddlewareRegistry';
 import { TestMiddleware } from '../Utils/Middleware.mock';
 
 describe('GlobalMiddlewareRegistry', () => {
@@ -19,5 +19,4 @@ describe('GlobalMiddlewareRegistry', () => {
     expect(registry.middlewares[0].middleware).toBe(TestMiddleware);
     expect(registry.middlewares[0].target).toBe('__global__');
   });
-
 });

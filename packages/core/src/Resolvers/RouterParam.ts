@@ -1,4 +1,4 @@
-import { RouterTypes } from '../Types/RouterTypes';
+import type { RouterTypes } from '../Types/RouterTypes';
 
 /**
  * Resolves a router parameter from the event object

@@ -1,10 +1,10 @@
-import type { ConfigTypes } from '@vercube/core';
 import { rolldown } from 'rolldown';
 import { getRolldownConfig } from './Config';
+import type { ConfigTypes } from '@vercube/core';
 
 /**
  * Builds the application using Rolldown bundler
- * 
+ *
  * @async
  * @function build
  * @param {ConfigTypes.BuildOptions} ctx - The build context and configuration options

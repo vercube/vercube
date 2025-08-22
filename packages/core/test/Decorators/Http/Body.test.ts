@@ -1,15 +1,12 @@
-import { describe, it, expect, beforeAll } from "vitest";
-import { createTestApp } from "../../Utils/App.mock";
-import { MockController } from "../../Utils/MockController.mock";
-import { initializeMetadata } from "../../../src";
-
+import { beforeAll, describe, expect, it } from 'vitest';
+import { initializeMetadata } from '../../../src';
+import { createTestApp } from '../../Utils/App.mock';
+import { MockController } from '../../Utils/MockController.mock';
 
 describe('Body Decorator', () => {
-
   beforeAll(async () => {
     await createTestApp();
   });
-
 
   it(`should add body to metadata`, () => {
     const meta = initializeMetadata(MockController.prototype);
@@ -28,6 +25,4 @@ describe('Body Decorator', () => {
     expect(meta.__methods['bodyValidation'].args[0].validate).toBe(true);
     expect(meta.__methods['bodyValidation'].args[0].validationSchema).toBeDefined();
   });
-
 });
-

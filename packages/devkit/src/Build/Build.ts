@@ -1,5 +1,5 @@
-import type { DevKitTypes } from '../Types/DevKitTypes';
 import { getBuildFunc } from '../Utils/Utils';
+import type { DevKitTypes } from '../Types/DevKitTypes';
 
 /**
  * Builds the application using the given application instance.

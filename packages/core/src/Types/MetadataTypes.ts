@@ -1,9 +1,8 @@
-
 import type { BaseMiddleware } from '../Services/Middleware/BaseMiddleware';
 import type { RouterTypes } from './RouterTypes';
 import type { ValidationTypes } from './ValidationTypes';
-export namespace MetadataTypes {
 
+export namespace MetadataTypes {
   export interface Metadata {
     __metadata: Ctx;
   }

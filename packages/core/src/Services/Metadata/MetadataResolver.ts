@@ -1,22 +1,21 @@
-import type { MetadataTypes } from '../../Types/MetadataTypes';
-import { RouterTypes } from '../../Types/RouterTypes';
-import { resolveRouterParam } from '../../Resolvers/RouterParam';
 import { resolveRequestBody } from '../../Resolvers/Body';
-import { resolveQueryParam, resolveQueryParams } from '../../Resolvers/Query';
 import { getRequestHeader, getRequestHeaders } from '../../Resolvers/Headers';
+import { resolveQueryParam, resolveQueryParams } from '../../Resolvers/Query';
+import { resolveRouterParam } from '../../Resolvers/RouterParam';
+import type { MetadataTypes } from '../../Types/MetadataTypes';
+import type { RouterTypes } from '../../Types/RouterTypes';
 
 /**
  * Class responsible for resolving metadata for route handlers.
  */
 export class MetadataResolver {
-
   /**
    * Resolves the URL for a given instance and path.
    *
    * @param {MetadataTypes.ResolveUrlParams} params - The parameters for resolving the URL.
    * @return {string} The resolved URL.
    */
-  public resolveUrl(params: MetadataTypes.ResolveUrlParams): string {    
+  public resolveUrl(params: MetadataTypes.ResolveUrlParams): string {
     const { instance, propertyName, path: rawPath } = params;
     const metadata = instance.__metadata as MetadataTypes.Ctx;
     const basePath = (metadata?.__controller?.path ?? '').replace(/\/$/, '');
@@ -57,7 +56,7 @@ export class MetadataResolver {
    * Resolves an argument for a given event.
    *
    * @param {MetadataTypes.Arg} arg - The argument to resolve.
-   * 
+   *
    * @return {unknown} The resolved argument.
    * @private
    */
@@ -123,10 +122,10 @@ export class MetadataResolver {
    * @public
    */
   public resolveMiddlewares(ctx: MetadataTypes.Metadata, propertyName: string): MetadataTypes.Middleware[] {
-    const middlewares = ctx?.__metadata?.__middlewares?.filter((m) => m.target === '__global__' || m.target === propertyName) ?? [];
+    const middlewares =
+      ctx?.__metadata?.__middlewares?.filter((m) => m.target === '__global__' || m.target === propertyName) ?? [];
 
     // return middlewares sorted by global first
     return middlewares.sort((a) => (a.target === '__global__' ? -1 : 1));
   }
-
 }

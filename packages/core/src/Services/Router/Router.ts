@@ -1,19 +1,19 @@
-import { createRouter, type RouterContext, addRoute, findRoute  } from 'rou3';
-import { RouterTypes } from '../../Types/RouterTypes';
 import { Inject } from '@vercube/di';
-import { HooksService } from '../Hooks/HooksService';
-import { RouterBeforeInitHook } from '../../Hooks/Router/RouterBeforeInitHook';
+import { addRoute, createRouter, findRoute } from 'rou3';
 import { RouterAfterInitHook } from '../../Hooks/Router/RouterAfterInitHook';
+import { RouterBeforeInitHook } from '../../Hooks/Router/RouterBeforeInitHook';
+import { HooksService } from '../Hooks/HooksService';
+import type { RouterTypes } from '../../Types/RouterTypes';
+import type { RouterContext } from 'rou3';
 
 /**
  * Router service responsible for managing application routes
- * 
+ *
  * This class provides functionality to initialize the router,
  * register routes, and resolve incoming requests to their
  * appropriate handlers.
  */
 export class Router {
-
   /**
    * Service for triggering application hooks
    */
@@ -28,7 +28,7 @@ export class Router {
 
   /**
    * Registers a new route in the router
-   * 
+   *
    * @param {RouterTypes.Route} route - The route configuration to add
    * @throws {Error} If router is not initialized
    */
@@ -36,13 +36,13 @@ export class Router {
     if (!this.fRouterContext) {
       throw new Error('Router not initialized. Please call init() before adding routes.');
     }
-    
+
     addRoute(this.fRouterContext, route.method.toUpperCase(), route.path, route.handler);
   }
 
   /**
    * Initializes the router and triggers related hooks
-   * 
+   *
    * This method creates a new router context and triggers
    * the before and after initialization hooks.
    */
@@ -58,7 +58,7 @@ export class Router {
 
   /**
    * Resolves a route based on the HTTP method and path
-   * 
+   *
    * @param {RouterTypes.RouteFind} route - The route to resolve
    * @returns {RouterTypes.RouteMatched<RouterTypes.RouterHandler> | undefined} The matched route or undefined if no match found
    */

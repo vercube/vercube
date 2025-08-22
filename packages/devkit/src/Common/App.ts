@@ -1,6 +1,7 @@
+import { loadVercubeConfig } from '@vercube/core';
 import { createHooks } from 'hookable';
 import type { DevKitTypes } from '../Types/DevKitTypes';
-import { loadVercubeConfig, type ConfigTypes, type DeepPartial } from '@vercube/core';
+import type { ConfigTypes, DeepPartial } from '@vercube/core';
 
 /**
  * Creates a development server application.

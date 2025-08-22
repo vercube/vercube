@@ -1,7 +1,8 @@
+import { fork } from 'node:child_process';
 import { resolve } from 'node:path';
-import { fork, type ChildProcess } from 'node:child_process';
 import consola from 'consola';
 import type { DevKitTypes } from '../Types/DevKitTypes';
+import type { ChildProcess } from 'node:child_process';
 
 /**
  * Creates a development server for the given application.
@@ -40,10 +41,17 @@ export function createDevServer(app: DevKitTypes.App): DevKitTypes.DevServer {
   const reload = () => {
     reloadPromise = _reload()
       .then(() => {
-        consola.success({ tag: 'worker', message: 'Worker reloaded successfully' });
+        consola.success({
+          tag: 'worker',
+          message: 'Worker reloaded successfully',
+        });
       })
       .catch((error) => {
-        consola.error({ tag: 'worker', message: 'Failed to reload worker', error });
+        consola.error({
+          tag: 'worker',
+          message: 'Failed to reload worker',
+          error,
+        });
       })
       .finally(() => {
         reloadPromise = undefined;

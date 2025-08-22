@@ -1,8 +1,9 @@
-import { initializeMetadata, initializeMetadataMethod, ValidationTypes } from '@vercube/core';
+import { initializeMetadata, initializeMetadataMethod } from '@vercube/core';
 import { BaseDecorator, createDecorator, InjectOptional } from '@vercube/di';
-import { WebsocketTypes } from '../Types/WebsocketTypes';
-import { $WebsocketService } from '../Symbols/WebsocketSymbols';
 import { type WebsocketService } from '../Services/WebsocketService';
+import { $WebsocketService } from '../Symbols/WebsocketSymbols';
+import { WebsocketTypes } from '../Types/WebsocketTypes';
+import type { ValidationTypes } from '@vercube/core';
 
 interface MessageDecoratorOptions {
   event: string;
@@ -12,14 +13,13 @@ interface MessageDecoratorOptions {
 /**
  * A decorator class for listening to websocket messages under
  * a specific event.
- * 
+ *
  * This class extends the BaseDecorator and is used to listen
  * to websocket messages under a specific event.
  *
  * @extends {BaseDecorator<MessageDecoratorOptions>}
  */
 class MessageDecorator extends BaseDecorator<MessageDecoratorOptions> {
-
   @InjectOptional($WebsocketService)
   private gWebsocketService: WebsocketService;
 
@@ -41,19 +41,15 @@ class MessageDecorator extends BaseDecorator<MessageDecoratorOptions> {
     method.meta = {
       ...method.meta,
       event: this.options.event,
-    }
+    };
 
     const originalMethod = this.instance[this.propertyName].bind(this.instance);
 
-    this.gWebsocketService.registerHandler(
-      WebsocketTypes.HandlerAction.MESSAGE,
-      namespace,
-      {
-        callback: originalMethod,
-        event: this.options.event,
-        schema: this.options.validationSchema,
-      }
-    );
+    this.gWebsocketService.registerHandler(WebsocketTypes.HandlerAction.MESSAGE, namespace, {
+      callback: originalMethod,
+      event: this.options.event,
+      schema: this.options.validationSchema,
+    });
   }
 }
 

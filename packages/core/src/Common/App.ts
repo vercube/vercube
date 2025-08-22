@@ -1,17 +1,17 @@
-import { type Container, initializeContainer, Inject } from '@vercube/di';
-import { PluginsRegistry } from '../Services/Plugins/PluginsRegistry';
-import type { BasePlugin } from '../Services/Plugins/BasePlugin';
-import { ConfigTypes } from '../Types/ConfigTypes';
+import { initializeContainer, Inject } from '@vercube/di';
+import { RuntimeConfig } from '../Services/Config/RuntimeConfig';
 import { HttpServer } from '../Services/HttpServer/HttpServer';
+import { PluginsRegistry } from '../Services/Plugins/PluginsRegistry';
 import { Router } from '../Services/Router/Router';
 import { StaticRequestHandler } from '../Services/Router/StaticRequestHandler';
-import { RuntimeConfig } from '../Services/Config/RuntimeConfig';
+import type { BasePlugin } from '../Services/Plugins/BasePlugin';
+import type { ConfigTypes } from '../Types/ConfigTypes';
+import type { Container } from '@vercube/di';
 
 /**
  * Represents the main application class.
  */
 export class App {
-
   @Inject(Router)
   private gRouter: Router;
 
@@ -123,7 +123,7 @@ export class App {
   /**
    * Handles an incoming HTTP request.
    * This method is an adapter for HttpServer.handleRequest method.
-   * 
+   *
    * @param {Request} request - The incoming HTTP request
    * @returns {Promise<Response>} The HTTP response
    */
@@ -139,5 +139,4 @@ export class App {
   private async resolvePlugins(): Promise<void> {
     await this.gPluginsRegistry.init(this);
   }
-
 }

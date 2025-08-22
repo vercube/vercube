@@ -1,6 +1,6 @@
 import { BaseDecorator, createDecorator } from '@vercube/di';
-import { MetadataTypes } from '../../Types/MetadataTypes';
 import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
+import type { MetadataTypes } from '../../Types/MetadataTypes';
 
 interface HeaderDecoratorOptions {
   name: string;
@@ -16,7 +16,6 @@ interface HeaderDecoratorOptions {
  * @extends {BaseDecorator<HeaderDecoratorOptions>}
  */
 class HeaderDecorator extends BaseDecorator<HeaderDecoratorOptions, MetadataTypes.Metadata> {
-
   /**
    * Called when the decorator is created.
    *
@@ -34,9 +33,7 @@ class HeaderDecorator extends BaseDecorator<HeaderDecoratorOptions, MetadataType
         name: this.options.name,
       },
     });
-
   }
-
 }
 
 /**

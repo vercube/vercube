@@ -1,9 +1,8 @@
-import { Controller, Get } from "@vercube/core";
-import { Schema, z } from "../../src";
+import { Controller, Get } from '@vercube/core';
+import { Schema, z } from '../../src';
 
 @Controller('/mock')
-export class MockController{
-
+export class MockController {
   @Get('/')
   @Schema({
     responses: {
@@ -12,8 +11,8 @@ export class MockController{
         content: {
           'application/json': {
             schema: z.object({
-              message: z.string()
-            })
+              message: z.string(),
+            }),
           },
         },
       },
@@ -21,8 +20,7 @@ export class MockController{
   })
   public async getMock() {
     return {
-      message: 'Hello, world!'
-    }
+      message: 'Hello, world!',
+    };
   }
-
 }

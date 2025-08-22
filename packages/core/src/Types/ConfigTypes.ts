@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 import type { LoggerTypes } from '@vercube/logger';
 import type { DotenvOptions } from 'c12';
+
 /**
  * Namespace containing configuration type definitions for the Vercube framework.
  */
 export namespace ConfigTypes {
-
   /**
    * Runtime configuration interface that can be modified during application execution.
    */
@@ -28,7 +28,7 @@ export namespace ConfigTypes {
        * The duration of time for the session to be active.
        */
       duration?: number;
-    }
+    };
   }
 
   /**
@@ -78,7 +78,7 @@ export namespace ConfigTypes {
        * The directory for public/client-side build artifacts.
        */
       publicDir?: string;
-    },
+    };
 
     /**
      * The bundler to use for the application build.
@@ -108,17 +108,19 @@ export namespace ConfigTypes {
     /**
      * HTTPS configuration options.
      */
-    https?: false | {
-      /**
-       * Path to the SSL key file.
-       */
-      key: string;
+    https?:
+      | false
+      | {
+          /**
+           * Path to the SSL key file.
+           */
+          key: string;
 
-      /**
-       * Path to the SSL certificate file.
-       */
-      cert: string;
-    };
+          /**
+           * Path to the SSL certificate file.
+           */
+          cert: string;
+        };
 
     /**
      * Static server options
@@ -128,7 +130,7 @@ export namespace ConfigTypes {
       maxAge?: number;
       immutable?: boolean;
       etag?: boolean;
-    }
+    };
   }
 
   /**
@@ -179,6 +181,6 @@ export namespace ConfigTypes {
        * Configuration for dotenv.
        */
       dotenv?: boolean | DotenvOptions;
-    }
+    };
   }
 }

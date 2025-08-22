@@ -1,8 +1,8 @@
 import { initializeMetadata, initializeMetadataMethod } from '@vercube/core';
 import { BaseDecorator, createDecorator, InjectOptional } from '@vercube/di';
-import { $WebsocketService } from '../Symbols/WebsocketSymbols';
 import { type Peer } from 'crossws';
 import { type WebsocketService } from '../Services/WebsocketService';
+import { $WebsocketService } from '../Symbols/WebsocketSymbols';
 
 interface EmitDecoratorOptions {
   event: string;
@@ -17,7 +17,6 @@ interface EmitDecoratorOptions {
  * @extends {BaseDecorator<EmitDecoratorOptions>}
  */
 class EmitDecorator extends BaseDecorator<EmitDecoratorOptions> {
-
   @InjectOptional($WebsocketService)
   private gWebsocketService: WebsocketService;
 
@@ -35,18 +34,14 @@ class EmitDecorator extends BaseDecorator<EmitDecoratorOptions> {
     this.instance[this.propertyName] = async (incomingMessage: Record<string, unknown>, peer: Peer) => {
       const result = await originalMethod.call(this.instance, incomingMessage, peer);
 
-      this.gWebsocketService.emit(
-        peer,
-        {
-          event: this.options.event,
-          data: result
-        }
-      );
+      this.gWebsocketService.emit(peer, {
+        event: this.options.event,
+        data: result,
+      });
 
       return result;
-    }
+    };
   }
-
 }
 
 /**

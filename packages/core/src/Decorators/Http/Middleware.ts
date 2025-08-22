@@ -1,10 +1,9 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 import { BaseMiddleware } from '../../Services/Middleware/BaseMiddleware';
-import { MetadataTypes } from '../../Types/MetadataTypes';
 import { initializeMetadata } from '../../Utils/Utils';
+import type { MetadataTypes } from '../../Types/MetadataTypes';
 
-interface MiddlewareDecoratorParams extends Omit<MetadataTypes.Middleware, 'middleware' | 'target'> {
-}
+interface MiddlewareDecoratorParams extends Omit<MetadataTypes.Middleware, 'middleware' | 'target'> {}
 
 /**
  * Decorator that applies middleware to a class or method
@@ -30,7 +29,7 @@ interface MiddlewareDecoratorParams extends Omit<MetadataTypes.Middleware, 'midd
  */
 export function Middleware(middleware: typeof BaseMiddleware, opts?: MiddlewareDecoratorParams): Function {
   return function internalDecorator(target: Function, propertyName?: string) {
-    const ctx = ((propertyName) ? target : target.prototype) as MetadataTypes.Metadata;
+    const ctx = (propertyName ? target : target.prototype) as MetadataTypes.Metadata;
     const meta = initializeMetadata(ctx);
 
     meta.__middlewares.push({

@@ -1,10 +1,9 @@
-
 import { InjectOptional } from '@vercube/di';
-import { BaseMiddleware } from '../Services/Middleware/BaseMiddleware';
-import type { MiddlewareOptions } from '../Types/CommonTypes';
-import { BadRequestError } from '../Errors/Http/BadRequestError';
-import { ValidationProvider } from '../Services/Validation/ValidationProvider';
 import { Logger } from '@vercube/logger';
+import { BadRequestError } from '../Errors/Http/BadRequestError';
+import { BaseMiddleware } from '../Services/Middleware/BaseMiddleware';
+import { ValidationProvider } from '../Services/Validation/ValidationProvider';
+import type { MiddlewareOptions } from '../Types/CommonTypes';
 
 /**
  * Middleware for validating request data against a schema
@@ -16,7 +15,6 @@ import { Logger } from '@vercube/logger';
  * await middleware.use(event, { schema: myValidationSchema });
  */
 export class ValidationMiddleware implements BaseMiddleware {
-
   @InjectOptional(Logger)
   private gLogger: Logger | null;
 
@@ -49,5 +47,4 @@ export class ValidationMiddleware implements BaseMiddleware {
       }
     }
   }
-
 }

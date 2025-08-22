@@ -1,8 +1,7 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
-
 import { BaseDecorator, createDecorator } from '@vercube/di';
-import { MetadataTypes } from '../../Types/MetadataTypes';
 import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
+import type { MetadataTypes } from '../../Types/MetadataTypes';
 
 /**
  * This class is responsible for managing headers decorator.
@@ -14,7 +13,6 @@ import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils'
  * @extends {BaseDecorator<{}>}
  */
 class HeadersDecorator extends BaseDecorator<{}, MetadataTypes.Metadata> {
-
   /**
    * Called when the decorator is created.
    *
@@ -29,9 +27,7 @@ class HeadersDecorator extends BaseDecorator<{}, MetadataTypes.Metadata> {
       idx: this.propertyIndex,
       type: 'headers',
     });
-
   }
-
 }
 
 /**

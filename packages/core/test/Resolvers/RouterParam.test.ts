@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { resolveRouterParam } from '../../src/Resolvers/RouterParam';
 import type { RouterTypes } from '../../src/Types/RouterTypes';
 
@@ -141,7 +141,7 @@ describe('RouterParam Resolver', () => {
     it('should handle parameter names with special characters', () => {
       const event = createMockEvent({
         'user-id': '123',
-        'post_title': 'My Post',
+        post_title: 'My Post',
         'category.name': 'technology',
         'meta:type': 'article',
       });
@@ -175,10 +175,10 @@ describe('RouterParam Resolver', () => {
 
     it('should handle parameter names with numbers', () => {
       const event = createMockEvent({
-        'user1': 'John',
-        'user2': 'Jane',
-        'post2023': 'My Post',
-        'category1': 'Tech',
+        user1: 'John',
+        user2: 'Jane',
+        post2023: 'My Post',
+        category1: 'Tech',
       });
 
       const result1 = resolveRouterParam('user1', event);

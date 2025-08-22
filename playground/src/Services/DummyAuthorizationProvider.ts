@@ -6,12 +6,12 @@ import type { MaybePromise } from '@vercube/core';
  * Example Dummy auth provider
  */
 export class DummyAuthorizationProvider extends AuthProvider {
-/**
-	* Authenticates based on the HTTP event
-	* @param request - The HTTP event containing the request
-  * @param params - The parameters to authorize
-	* @returns An error string or Promise of error string, null or Promise of null if authentication is successful
-	*/
+  /**
+   * Authenticates based on the HTTP event
+   * @param request - The HTTP event containing the request
+   * @param params - The parameters to authorize
+   * @returns An error string or Promise of error string, null or Promise of null if authentication is successful
+   */
   public validate(request: Request, params?: AuthTypes.MiddlewareOptions): MaybePromise<string | null> {
     if (params?.roles?.includes('admin')) {
       return 'Only available to admins';
@@ -28,5 +28,4 @@ export class DummyAuthorizationProvider extends AuthProvider {
   public getCurrentUser(request: Request): MaybePromise<any | null> {
     return null;
   }
-
 }

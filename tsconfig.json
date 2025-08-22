@@ -19,29 +19,14 @@
     "noEmit": false,
     "importHelpers": true,
     "skipLibCheck": true,
-    "lib": [
-      "dom",
-      "es6",
-      "es2017",
-      "es2019",
-      "ESNext"
-    ],
-    "typeRoots": [
-      "node_modules/@types"
-    ],
+    "verbatimModuleSyntax": true,
+    "lib": ["dom", "es6", "es2017", "es2019", "ESNext"],
+    "typeRoots": ["node_modules/@types"],
     "paths": {
-      "@vercube/*": [
-        "packages/*/src"
-      ],
-      "@vercube/logger/providers/*": [
-        "packages/logger/src/Drivers/*"
-      ]
+      "@vercube/*": ["packages/*/src"],
+      "@vercube/logger/providers/*": ["packages/logger/src/Drivers/*"]
     }
   },
-  "include": [
-    "packages/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+  "include": ["packages/**/*.ts"],
+  "exclude": ["node_modules"]
 }

@@ -1,4 +1,4 @@
-import { ConfigTypes } from '../Types/ConfigTypes';
+import type { ConfigTypes } from '../Types/ConfigTypes';
 
 /**
  * Defines a configuration object for the application
