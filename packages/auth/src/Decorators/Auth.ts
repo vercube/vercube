@@ -1,6 +1,7 @@
 import { initializeMetadata, initializeMetadataMethod } from '@vercube/core';
 import { AuthMiddleware } from '../Middleware/AuthMiddleware';
 import type { AuthTypes } from '../Types/AuthTypes';
+
 /**
  * Authentication decorator that adds middleware to protect routes or controllers
  * @param options Optional options for the authentication middleware

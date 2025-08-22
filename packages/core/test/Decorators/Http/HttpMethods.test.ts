@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
+import { type App, Router, initializeMetadata } from '../../../src';
 import { createTestApp } from '../../Utils/App.mock';
 import { MockController } from '../../Utils/MockController.mock';
-import { type App, initializeMetadata, Router } from '../../../src';
 
 const methods: string[] = ['connect', 'get', 'post', 'put', 'delete', 'patch', 'trace', 'head'];
 

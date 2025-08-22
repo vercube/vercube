@@ -1,4 +1,4 @@
-import { Controller, Get, Middleware, type MaybePromise, type MiddlewareOptions } from '../../src';
+import { Controller, Get, type MaybePromise, Middleware, type MiddlewareOptions } from '../../src';
 import { BaseMiddleware } from '../../src/Services/Middleware/BaseMiddleware';
 
 export class TestMiddleware extends BaseMiddleware {

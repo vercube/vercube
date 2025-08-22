@@ -1,7 +1,10 @@
-import { Container, initializeContainer } from '@vercube/di';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { MetadataResolver, type RouterTypes } from '@vercube/core';
-import { describe, it, expect, beforeAll, vi } from 'vitest';
+import { Container, initializeContainer } from '@vercube/di';
+import { AuthMiddleware } from '../src/Middleware/AuthMiddleware';
+import { AuthProvider } from '../src/Services/AuthProvider';
 import {
+  MockAuthProvider,
   TestClass,
   TestClass2,
   TestClass3,
@@ -9,10 +12,7 @@ import {
   TestClass5,
   TestClass6,
   TestClass7,
-  MockAuthProvider,
 } from './Mock/TestClass.mock';
-import { AuthMiddleware } from '../src/Middleware/AuthMiddleware';
-import { AuthProvider } from '../src/Services/AuthProvider';
 
 describe('[auth] Decorators', () => {
   let container: Container;

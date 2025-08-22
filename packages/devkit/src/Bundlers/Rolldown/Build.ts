@@ -1,5 +1,5 @@
-import type { ConfigTypes } from '@vercube/core';
 import { rolldown } from 'rolldown';
+import type { ConfigTypes } from '@vercube/core';
 import { getRolldownConfig } from './Config';
 
 /**

@@ -1,6 +1,6 @@
 import { type App, BasePlugin } from '@vercube/core';
-import { SchemaRegistry } from '../Services/SchemaRegistry';
 import { SchemaController } from '../Controllers/SchameController';
+import { SchemaRegistry } from '../Services/SchemaRegistry';
 
 /**
  * Schema Plugin for Vercube framework

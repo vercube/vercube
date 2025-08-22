@@ -1,7 +1,7 @@
 /**
  * Container dynamic expansion test functionality.
  */
-import { describe, it, expect, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { Container, Inject } from '../src';
 
 class MyClass {}

@@ -1,6 +1,6 @@
 import type { RouteConfig } from '@asteasolutions/zod-to-openapi';
-import type { DeepPartial, MetadataTypes } from '@vercube/core';
 import defu from 'defu';
+import type { DeepPartial, MetadataTypes } from '@vercube/core';
 
 /**
  * Resolves the query params schema for a given method.

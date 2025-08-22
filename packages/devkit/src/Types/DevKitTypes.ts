@@ -1,6 +1,6 @@
-import { ConfigTypes } from '@vercube/core';
 import type { Hookable } from 'hookable';
 import { type Worker as _Worker } from 'node:worker_threads';
+import { ConfigTypes } from '@vercube/core';
 
 export namespace DevKitTypes {
   export type BuildFunc = (ctx?: ConfigTypes.BuildOptions) => void | Promise<void>;

@@ -1,6 +1,6 @@
-import { defineConfig } from 'tsdown';
-import { resolve } from 'node:path';
 import { builtinModules } from 'node:module';
+import { resolve } from 'node:path';
+import { defineConfig } from 'tsdown';
 import { getPackageEntries } from './scripts/utils';
 
 // get entries as auto-detected from package.json export field

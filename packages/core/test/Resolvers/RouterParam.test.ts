@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { resolveRouterParam } from '../../src/Resolvers/RouterParam';
 import type { RouterTypes } from '../../src/Types/RouterTypes';
 

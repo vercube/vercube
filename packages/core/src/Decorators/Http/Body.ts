@@ -1,6 +1,6 @@
 import { BaseDecorator, createDecorator } from '@vercube/di';
-import { MetadataTypes } from '../../Types/MetadataTypes';
 import { ValidationMiddleware } from '../../Middleware/ValidationMiddleware';
+import { MetadataTypes } from '../../Types/MetadataTypes';
 import { ValidationTypes } from '../../Types/ValidationTypes';
 import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
 

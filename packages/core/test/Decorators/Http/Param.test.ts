@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
+import { initializeMetadata } from '../../../src';
 import { createTestApp } from '../../Utils/App.mock';
 import { MockController } from '../../Utils/MockController.mock';
-import { initializeMetadata } from '../../../src';
 
 describe('Param Decorator', () => {
   beforeAll(async () => {

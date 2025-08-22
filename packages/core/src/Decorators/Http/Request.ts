@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
-
 import { BaseDecorator, createDecorator } from '@vercube/di';
 import { MetadataTypes } from '../../Types/MetadataTypes';
 import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';

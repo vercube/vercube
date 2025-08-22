@@ -1,8 +1,8 @@
 import { Container, Inject } from '@vercube/di';
+import type { Logger } from '../Common/Logger';
+import { LoggerProvider } from '../Common/LoggerProvider';
 import type { LoggerTypes } from '../Types/LoggerTypes';
 import { isLogLevelEnabled } from '../Utils/Utils';
-import { LoggerProvider } from '../Common/LoggerProvider';
-import type { Logger } from '../Common/Logger';
 
 export class BaseLogger implements Logger {
   @Inject(Container)

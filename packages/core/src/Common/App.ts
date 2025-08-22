@@ -1,11 +1,11 @@
-import { type Container, initializeContainer, Inject } from '@vercube/di';
-import { PluginsRegistry } from '../Services/Plugins/PluginsRegistry';
-import type { BasePlugin } from '../Services/Plugins/BasePlugin';
-import { ConfigTypes } from '../Types/ConfigTypes';
+import { type Container, Inject, initializeContainer } from '@vercube/di';
+import { RuntimeConfig } from '../Services/Config/RuntimeConfig';
 import { HttpServer } from '../Services/HttpServer/HttpServer';
+import type { BasePlugin } from '../Services/Plugins/BasePlugin';
+import { PluginsRegistry } from '../Services/Plugins/PluginsRegistry';
 import { Router } from '../Services/Router/Router';
 import { StaticRequestHandler } from '../Services/Router/StaticRequestHandler';
-import { RuntimeConfig } from '../Services/Config/RuntimeConfig';
+import { ConfigTypes } from '../Types/ConfigTypes';
 
 /**
  * Represents the main application class.

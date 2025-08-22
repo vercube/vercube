@@ -1,9 +1,9 @@
 // oxlint-disable no-unused-vars
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { type Peer, type Message, defineHooks } from 'crossws';
+import { type Message, type Peer, defineHooks } from 'crossws';
 import { type ServerPlugin } from 'srvx';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { type App, type ConfigTypes, HttpServer, createApp } from '@vercube/core';
 import { Container, initializeContainer } from '@vercube/di';
-import { type App, type ConfigTypes, createApp, HttpServer } from '@vercube/core';
 import { $WebsocketService, WebsocketService, WebsocketTypes } from '../../src';
 
 vi.mock('srvx', () => ({

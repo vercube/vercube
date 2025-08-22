@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { resolveRequestBody } from '../../src/Resolvers/Body';
 import type { RouterTypes } from '../../src/Types/RouterTypes';
 

@@ -1,4 +1,8 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { resolveRequestBody } from '../../src/Resolvers/Body';
+import { getRequestHeader, getRequestHeaders } from '../../src/Resolvers/Headers';
+import { resolveQueryParam, resolveQueryParams } from '../../src/Resolvers/Query';
+import { resolveRouterParam } from '../../src/Resolvers/RouterParam';
 import { MetadataResolver } from '../../src/Services/Metadata/MetadataResolver';
 import type { MetadataTypes } from '../../src/Types/MetadataTypes';
 import type { RouterTypes } from '../../src/Types/RouterTypes';
@@ -21,11 +25,6 @@ vi.mock('../../src/Resolvers/Headers', () => ({
   getRequestHeader: vi.fn(),
   getRequestHeaders: vi.fn(),
 }));
-
-import { resolveRouterParam } from '../../src/Resolvers/RouterParam';
-import { resolveRequestBody } from '../../src/Resolvers/Body';
-import { resolveQueryParam, resolveQueryParams } from '../../src/Resolvers/Query';
-import { getRequestHeader, getRequestHeaders } from '../../src/Resolvers/Headers';
 
 describe('MetadataResolver', () => {
   let resolver: MetadataResolver;

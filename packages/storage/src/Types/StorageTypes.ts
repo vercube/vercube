@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
-import type { Storage } from '../Service/Storage';
 import type { IOC } from '@vercube/di';
+import type { Storage } from '../Service/Storage';
 
 export namespace StorageTypes {
   export interface BaseOptions {

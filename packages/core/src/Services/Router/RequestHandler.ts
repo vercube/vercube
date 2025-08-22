@@ -1,9 +1,9 @@
 import { Container, Inject } from '@vercube/di';
-import { MetadataResolver } from '../Metadata/MetadataResolver';
+import { FastResponse } from '../../Types/CommonTypes';
 import { RouterTypes } from '../../Types/RouterTypes';
 import { ErrorHandlerProvider } from '../ErrorHandler/ErrorHandlerProvider';
+import { MetadataResolver } from '../Metadata/MetadataResolver';
 import { GlobalMiddlewareRegistry } from '../Middleware/GlobalMiddlewareRegistry';
-import { FastResponse } from '../../Types/CommonTypes';
 
 /**
  * Options for configuring a request handler

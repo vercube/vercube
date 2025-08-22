@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { type EventHandler, mockEvent } from 'h3';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { type App, createApp } from '@vercube/core';
-import { mockEvent, type EventHandler } from 'h3';
 import { toH3 } from '../src';
 
 describe('h3', () => {

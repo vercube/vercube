@@ -4,7 +4,6 @@
  *
  * The old Container.spec.ts measures backward compatiblity between new & old container.
  */
-
 import { beforeEach, describe, expect, it } from 'vitest';
 import { Container, IOC, Identity, Inject, InjectOptional } from '../src';
 

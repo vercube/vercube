@@ -2,13 +2,13 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   BaseDecorator,
   Container,
+  IDecoratedInstance,
   Identity,
   createDecorator,
-  initializeDecorators,
+  destroyContainer,
   destroyDecorators,
   initializeContainer,
-  destroyContainer,
-  IDecoratedInstance,
+  initializeDecorators,
 } from '../src';
 
 describe('[Framework][IOC] Utils', () => {

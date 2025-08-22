@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { getBuildFunc, getWatchFunc } from '../src/Utils/Utils';
+import { describe, expect, it } from 'vitest';
 import { build as rolldownBuild, watch as rolldownWatch } from '../src/Bundlers/Rolldown';
+import { getBuildFunc, getWatchFunc } from '../src/Utils/Utils';
 
 describe('Utils', () => {
   describe('getBuildFunc', () => {

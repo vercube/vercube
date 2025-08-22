@@ -1,8 +1,8 @@
-import { initializeMetadata, initializeMetadataMethod, ValidationTypes } from '@vercube/core';
-import { BaseDecorator, createDecorator, InjectOptional } from '@vercube/di';
-import { WebsocketTypes } from '../Types/WebsocketTypes';
-import { $WebsocketService } from '../Symbols/WebsocketSymbols';
+import { ValidationTypes, initializeMetadata, initializeMetadataMethod } from '@vercube/core';
+import { BaseDecorator, InjectOptional, createDecorator } from '@vercube/di';
 import { type WebsocketService } from '../Services/WebsocketService';
+import { $WebsocketService } from '../Symbols/WebsocketSymbols';
+import { WebsocketTypes } from '../Types/WebsocketTypes';
 
 interface MessageDecoratorOptions {
   event: string;

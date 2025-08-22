@@ -1,9 +1,9 @@
-import { ErrorHandlerProvider } from './ErrorHandlerProvider';
+import { Inject } from '@vercube/di';
+import { Logger } from '@vercube/logger';
 import { InternalServerError } from '../../Errors/Http/InternalServerError';
 import { HttpError } from '../../Errors/HttpError';
-import { Logger } from '@vercube/logger';
-import { Inject } from '@vercube/di';
 import { FastResponse } from '../../Types/CommonTypes';
+import { ErrorHandlerProvider } from './ErrorHandlerProvider';
 
 /**
  * Default error handler provider

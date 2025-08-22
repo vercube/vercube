@@ -1,5 +1,5 @@
-import { defineCommand, type CommandDef } from 'citty';
-import { createVercube, createDevServer, watch } from '@vercube/devkit';
+import { type CommandDef, defineCommand } from 'citty';
+import { createDevServer, createVercube, watch } from '@vercube/devkit';
 
 export const devCommand: CommandDef = defineCommand({
   meta: {

@@ -1,5 +1,5 @@
-import { BaseDecorator, createDecorator, Inject, Container } from '@vercube/di';
-import { initializeMetadata, initializeMetadataMethod, type RouterTypes } from '@vercube/core';
+import { type RouterTypes, initializeMetadata, initializeMetadataMethod } from '@vercube/core';
+import { BaseDecorator, Container, Inject, createDecorator } from '@vercube/di';
 import { AuthProvider } from '../Services/AuthProvider';
 
 /**

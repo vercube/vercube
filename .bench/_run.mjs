@@ -1,5 +1,5 @@
-import { Worker } from 'node:worker_threads';
 import { execSync } from 'node:child_process';
+import { Worker } from 'node:worker_threads';
 
 let ohaVersion;
 try {

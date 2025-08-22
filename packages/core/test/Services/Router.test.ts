@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Container } from '@vercube/di';
-import { Router } from '../../src/Services/Router/Router';
 import { HooksService } from '../../src/Services/Hooks/HooksService';
+import { Router } from '../../src/Services/Router/Router';
 import type { RouterTypes } from '../../src/Types/RouterTypes';
 
 // Mock rou3

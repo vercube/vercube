@@ -1,8 +1,9 @@
 import { BaseDecorator, createDecorator } from '@vercube/di';
 import { FastResponse } from '../../Types/CommonTypes';
-import type { MetadataTypes } from '../../Types/MetadataTypes';
 import { HTTPStatus } from '../../Types/HttpTypes';
+import type { MetadataTypes } from '../../Types/MetadataTypes';
 import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
+
 /**
  * Options for the RedirectDecorator.
  * @typedef {Object} RedirectDecoratorOptions

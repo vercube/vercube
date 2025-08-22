@@ -5,7 +5,6 @@
  * @abstract
  * @class AuthorizationProvider
  */
-
 import { AuthTypes } from '../Types/AuthTypes';
 
 export abstract class AuthProvider<U = unknown> {

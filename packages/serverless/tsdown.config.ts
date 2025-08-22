@@ -1,6 +1,6 @@
 import { defineConfig } from 'tsdown';
-import defaultConfig from '../../tsdown.config';
 import { transformExports } from '../../scripts/utils';
+import defaultConfig from '../../tsdown.config';
 
 // return config for tsdown
 export default defineConfig({

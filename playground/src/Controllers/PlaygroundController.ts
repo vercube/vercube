@@ -1,28 +1,28 @@
 // oxlint-disable no-unused-vars
+import { Auth } from '@vercube/auth';
 import {
+  Body,
   Controller,
   Get,
+  HTTPStatus,
   Middleware,
+  Param,
+  Post,
+  QueryParams,
+  Redirect,
+  RuntimeConfig,
   SetHeader,
   Status,
-  HTTPStatus,
-  Redirect,
-  Post,
-  Body,
-  QueryParams,
-  Param,
-  RuntimeConfig,
 } from '@vercube/core';
-import { Auth } from '@vercube/auth';
-import { Emit, Message, Namespace } from '@vercube/ws';
-import { Schema, z } from '@vercube/schema';
-import { FirstMiddleware } from '../Middlewares/FirstMiddleware';
 import { Inject } from '@vercube/di';
-import { StorageManager } from '@vercube/storage';
 import { Logger } from '@vercube/logger';
+import { Schema, z } from '@vercube/schema';
+import { StorageManager } from '@vercube/storage';
+import { Emit, Message, Namespace } from '@vercube/ws';
+import { FirstMiddleware } from '../Middlewares/FirstMiddleware';
+import { SecondMiddleware } from '../Middlewares/SecondMiddleware';
 import { BasicAuthenticationProvider } from '../Services/BasicAuthenticationProvider';
 import { DummyAuthorizationProvider } from '../Services/DummyAuthorizationProvider';
-import { SecondMiddleware } from '../Middlewares/SecondMiddleware';
 import type { AppTypes } from '../Types/AppTypes';
 
 const schema = z.object({

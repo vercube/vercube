@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeAll } from 'vitest';
-import { createTestApp } from '../../Utils/App.mock';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { App, initializeMetadata } from '../../../src';
+import { createTestApp } from '../../Utils/App.mock';
 import { MiddlewareController, MiddlewareGlobalController, TestMiddleware } from '../../Utils/Middleware.mock';
 
 describe('Middleware Decorator', () => {

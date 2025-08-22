@@ -1,11 +1,11 @@
-import { describe, it, expect, vi } from 'vitest';
-import { Container, initializeContainer } from '@vercube/di';
+import { describe, expect, it, vi } from 'vitest';
 import { UnauthorizedError } from '@vercube/core';
+import { Container, initializeContainer } from '@vercube/di';
 import { Logger } from '@vercube/logger';
 import { AuthMiddleware } from '../src/Middleware/AuthMiddleware';
 import { AuthProvider } from '../src/Services/AuthProvider';
-import { MockAuthProvider } from './Mock/TestClass.mock';
 import { ErrorAuthProvider } from './Mock/Middleware.mock';
+import { MockAuthProvider } from './Mock/TestClass.mock';
 
 describe('[auth] AuthMiddleware', () => {
   // Create a mock logger

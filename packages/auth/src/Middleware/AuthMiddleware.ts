@@ -1,8 +1,8 @@
 import { type BaseMiddleware, type MiddlewareOptions, UnauthorizedError } from '@vercube/core';
 import { Container, Inject, InjectOptional } from '@vercube/di';
 import { Logger } from '@vercube/logger';
-import type { AuthTypes } from '../Types/AuthTypes';
 import { AuthProvider } from '../Services/AuthProvider';
+import type { AuthTypes } from '../Types/AuthTypes';
 
 /**
  * Middleware for auth

@@ -1,9 +1,9 @@
-import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
+import { BaseDecorator, Inject, createDecorator } from '@vercube/di';
 import { MetadataResolver } from '../../Services/Metadata/MetadataResolver';
 import { RequestHandler } from '../../Services/Router/RequestHandler';
+import { Router } from '../../Services/Router/Router';
 import { MetadataTypes } from '../../Types/MetadataTypes';
 import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
-import { Router } from '../../Services/Router/Router';
 
 interface DeleteDecoratorOptions {
   path: string;

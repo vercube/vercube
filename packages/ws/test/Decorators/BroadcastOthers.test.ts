@@ -1,12 +1,12 @@
 // oxlint-disable no-unused-vars
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { createApp, type App, type ConfigTypes } from '@vercube/core';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { type App, type ConfigTypes, createApp } from '@vercube/core';
 import { Container, initializeContainer } from '@vercube/di';
-import { WebsocketService } from '../../src/Services/WebsocketService';
-import { $WebsocketService } from '../../src/Symbols/WebsocketSymbols';
 import { BroadcastOthers } from '../../src/Decorators/BroadcastOthers';
 import { Message } from '../../src/Decorators/Message';
 import { Namespace } from '../../src/Decorators/Namespace';
+import { WebsocketService } from '../../src/Services/WebsocketService';
+import { $WebsocketService } from '../../src/Symbols/WebsocketSymbols';
 
 vi.mock('srvx', () => ({
   serve: vi.fn().mockReturnValue({

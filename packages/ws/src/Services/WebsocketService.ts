@@ -1,9 +1,9 @@
+import { type Message, type Peer, type WSError, defineHooks } from 'crossws';
 import { plugin } from 'crossws/server';
-import { defineHooks, type Message, type WSError, type Peer } from 'crossws';
 import { BadRequestError, HttpServer, ValidationProvider } from '@vercube/core';
 import { Inject, InjectOptional } from '@vercube/di';
-import { WebsocketTypes } from '../Types/WebsocketTypes';
 import { Logger } from '@vercube/logger';
+import { WebsocketTypes } from '../Types/WebsocketTypes';
 
 /**
  * WebsocketService class responsible for dealing with Websocket connections.

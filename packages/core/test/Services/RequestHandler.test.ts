@@ -1,13 +1,13 @@
 // oxlint-disable no-unused-vars
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Container } from '@vercube/di';
-import { RequestHandler } from '../../src/Services/Router/RequestHandler';
-import { MetadataResolver } from '../../src/Services/Metadata/MetadataResolver';
-import { GlobalMiddlewareRegistry } from '../../src/Services/Middleware/GlobalMiddlewareRegistry';
 import { ErrorHandlerProvider } from '../../src/Services/ErrorHandler/ErrorHandlerProvider';
+import { MetadataResolver } from '../../src/Services/Metadata/MetadataResolver';
 import { BaseMiddleware } from '../../src/Services/Middleware/BaseMiddleware';
-import type { RouterTypes } from '../../src/Types/RouterTypes';
+import { GlobalMiddlewareRegistry } from '../../src/Services/Middleware/GlobalMiddlewareRegistry';
+import { RequestHandler } from '../../src/Services/Router/RequestHandler';
 import type { MetadataTypes } from '../../src/Types/MetadataTypes';
+import type { RouterTypes } from '../../src/Types/RouterTypes';
 
 // Mock middleware classes
 class MockBeforeMiddleware extends BaseMiddleware {

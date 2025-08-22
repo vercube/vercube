@@ -1,5 +1,5 @@
-import { stringifyQuery } from 'ufo';
 import type { APIGatewayProxyEvent, APIGatewayProxyEventV2 } from 'aws-lambda';
+import { stringifyQuery } from 'ufo';
 
 // Constants for better maintainability
 const DEFAULT_METHOD = 'GET';

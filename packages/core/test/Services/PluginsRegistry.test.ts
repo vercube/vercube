@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Container } from '@vercube/di';
 import { PluginsRegistry } from '../../src/Services/Plugins/PluginsRegistry';
 import { MockPlugin, MockPlugin2 } from '../Utils/Plugin.mock';

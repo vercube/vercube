@@ -1,6 +1,6 @@
 import { IOC } from '../Types/IOCTypes';
+import { type IDecoratedInstance, destroyDecorators, initializeDecorators } from '../Utils/Utils';
 import { ContainerEvents } from './ContainerEvents';
-import { destroyDecorators, initializeDecorators, type IDecoratedInstance } from '../Utils/Utils';
 import { IOCEngine } from './Engine';
 
 /**

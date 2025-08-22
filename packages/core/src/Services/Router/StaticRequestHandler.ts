@@ -1,6 +1,6 @@
 import { createReadStream } from 'node:fs';
-import { normalize, join, extname } from 'node:path';
 import { stat as statAsync } from 'node:fs/promises';
+import { extname, join, normalize } from 'node:path';
 import { ConfigTypes } from '../../Types/ConfigTypes';
 import { mime } from '../../Utils/Mine';
 

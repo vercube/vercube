@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import consola from 'consola';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { watch } from '../src/Build/Watch';
 import { getWatchFunc } from '../src/Utils/Utils';
-import consola from 'consola';
 
 // Mock dependencies
 vi.mock('../src/Utils/Utils', () => ({

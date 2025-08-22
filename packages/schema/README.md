@@ -70,7 +70,7 @@ The `@Schema` decorator lets you define OpenAPI-compatible schema definitions di
 It leverages [`@asteasolutions/zod-to-openapi`](https://github.com/asteasolutions/zod-to-openapi) for automatic schema translation and also supports `.openapi` properties on Zod schemas.
 
 ```ts
-import { Controller, Post, Body } from '@vercube/core';
+import { Body, Controller, Post } from '@vercube/core';
 import { Schema } from '@vercube/schema';
 
 @Controller('/users')

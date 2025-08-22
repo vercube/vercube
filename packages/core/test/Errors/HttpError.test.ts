@@ -1,13 +1,13 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
   BadRequestError,
-  UnauthorizedError,
   ForbiddenError,
-  NotFoundError,
+  HttpError,
+  InternalServerError,
   MethodNotAllowedError,
   NotAcceptableError,
-  InternalServerError,
-  HttpError,
+  NotFoundError,
+  UnauthorizedError,
 } from '../../src';
 
 const ERRORS = [

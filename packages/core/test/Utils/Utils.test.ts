@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { createMetadataCtx, createMetadataMethod, initializeMetadataMethod, initializeMetadata } from '../../src/Utils/Utils';
+import { describe, expect, it } from 'vitest';
+import { createMetadataCtx, createMetadataMethod, initializeMetadata, initializeMetadataMethod } from '../../src/Utils/Utils';
 
 describe('Utils', () => {
   describe('createMetadataCtx', () => {

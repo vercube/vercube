@@ -1,4 +1,4 @@
-import { createApp, Router } from '../packages/core/dist/index.mjs';
+import { Router, createApp } from '../packages/core/dist/index.mjs';
 
 class SimpleController {
   index() {

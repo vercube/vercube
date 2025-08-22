@@ -34,9 +34,9 @@ It allows you to:
 ### Basic Usage
 
 ```ts
+import { H3, serve } from 'h3';
 import { createApp } from '@vercube/core';
 import { toH3 } from '@vercube/h3';
-import { H3, serve } from 'h3';
 
 // Create Vercube app
 const app = await createApp();

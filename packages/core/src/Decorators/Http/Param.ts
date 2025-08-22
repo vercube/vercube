@@ -1,4 +1,4 @@
-import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
+import { BaseDecorator, Inject, createDecorator } from '@vercube/di';
 import { MetadataResolver } from '../../Services/Metadata/MetadataResolver';
 import { MetadataTypes } from '../../Types/MetadataTypes';
 import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
