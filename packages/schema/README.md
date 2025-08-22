@@ -3,10 +3,10 @@
   <br>
   <br>
 
-  # Vercube
-  
-  Next generation HTTP framework
-  
+# Vercube
+
+Next generation HTTP framework
+
   <a href="https://www.npmjs.com/package/@vercube/schema">
     <img src="https://img.shields.io/npm/v/%40vercube%2Fschema?style=for-the-badge&logo=npm&color=%23767eff" alt="npm"/>
   </a>
@@ -43,7 +43,7 @@ It abstracts schema definitions into a consistent API that works across tools an
 
 ```bash
 pnpm install @vercube/schema
-````
+```
 
 ---
 
@@ -58,7 +58,7 @@ import { SchemaPlugin } from '@vercube/schema';
 const app = createApp({
   setup: async (app) => {
     app.addPlugin(SchemaPlugin);
-  }
+  },
 });
 ```
 
@@ -75,7 +75,6 @@ import { Schema } from '@vercube/schema';
 
 @Controller('/users')
 export class UsersController {
-
   @Post('/')
   @Schema({
     request: {
@@ -106,6 +105,7 @@ When the SchemaPlugin is added to your application, a special controller is auto
 This controller exposes the full OpenAPI schema at runtime and is available without any additional configuration.
 
 You can access it at:
+
 ```
 http://localhost:3000/_schema
 ```
@@ -114,12 +114,11 @@ This makes it easy to integrate with tools like Swagger UI, Postman, or for debu
 
 ### ✨ Automatic Resolution
 
-* The `@Schema` decorator automatically resolves:
-
-  * HTTP method and route path
-  * Request body schema (`@Body`)
-  * Query parameters (`@QueryParams`)
-  * Path parameters (`@Params`)
+- The `@Schema` decorator automatically resolves:
+  - HTTP method and route path
+  - Request body schema (`@Body`)
+  - Query parameters (`@QueryParams`)
+  - Path parameters (`@Params`)
 
 ---
 
@@ -134,13 +133,12 @@ Explore guides, API references, and best practices to master Vercube.
 
 This module is inspired by:
 
-* [@asteasolutions/zod-to-openapi](https://github.com/asteasolutions/zod-to-openapi)
-* [Hono Zod OpenAPI Example](https://hono.dev/examples/zod-openapi)
-* [Nitro OpenAPI](https://nitro.build/config#openapi)
+- [@asteasolutions/zod-to-openapi](https://github.com/asteasolutions/zod-to-openapi)
+- [Hono Zod OpenAPI Example](https://hono.dev/examples/zod-openapi)
+- [Nitro OpenAPI](https://nitro.build/config#openapi)
 
 ---
 
 ## 🪪 License
 
 [MIT License](https://github.com/vercube/vercube/blob/main/LICENSE)
-

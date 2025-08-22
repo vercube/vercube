@@ -45,17 +45,20 @@ By participating in this project, you agree to abide by our Code of Conduct. Ple
 ### Development Setup
 
 1. Clone the repository:
+
    ```sh
    git clone https://github.com/vercube/vercube.git
    cd vercube
    ```
 
 2. Install dependencies:
+
    ```sh
    pnpm install
    ```
 
 3. Run tests:
+
    ```sh
    pnpm test
    ```

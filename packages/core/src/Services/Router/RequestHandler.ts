@@ -18,7 +18,7 @@ export interface RequestHandlerOptions {
 
 /**
  * Handles HTTP requests by preparing and executing route handlers with their associated middlewares
- * 
+ *
  * The RequestHandler is responsible for:
  * - Preparing route handlers with their metadata
  * - Executing middleware chains (before and after)
@@ -26,7 +26,6 @@ export interface RequestHandlerOptions {
  * - Error handling during request processing
  */
 export class RequestHandler {
-
   /** Resolver for extracting metadata from controller classes and methods */
   @Inject(MetadataResolver)
   private gMetadataResolver!: MetadataResolver;
@@ -40,28 +39,38 @@ export class RequestHandler {
 
   /**
    * Prepares a route handler by resolving its metadata and middlewares
-   * 
+   *
    * @param {RequestHandlerOptions} params - Configuration options for the handler
    * @returns {RouterTypes.RouterHandler} A prepared handler with resolved metadata and middlewares
    */
-  public prepareHandler(params: RequestHandlerOptions): RouterTypes.RouterHandler {
+  public prepareHandler(
+    params: RequestHandlerOptions,
+  ): RouterTypes.RouterHandler {
     const { instance, propertyName } = params;
 
     // get the prototype of the instance to access the metadata
     const prototype = Object.getPrototypeOf(instance);
 
     // get method metadata
-    const method = this.gMetadataResolver.resolveMethod(prototype, propertyName);
+    const method = this.gMetadataResolver.resolveMethod(
+      prototype,
+      propertyName,
+    );
 
     // get middlewares
-    const middlewares = this.gMetadataResolver.resolveMiddlewares(prototype, propertyName);
+    const middlewares = this.gMetadataResolver.resolveMiddlewares(
+      prototype,
+      propertyName,
+    );
 
     // get global middlewares
     const globalMiddlewares = this.gGlobalMiddlewareRegistry.middlewares;
 
     // get unique middlewares;
-    const uniqueMiddlewares = [...middlewares, ...globalMiddlewares]
-      .filter((m, index, self) => self.findIndex((t) => t.middleware === m.middleware) === index);
+    const uniqueMiddlewares = [...middlewares, ...globalMiddlewares].filter(
+      (m, index, self) =>
+        self.findIndex((t) => t.middleware === m.middleware) === index,
+    );
 
     // resolve middlewares
     const resolvedMiddlewares = uniqueMiddlewares.map((m) => ({
@@ -70,12 +79,20 @@ export class RequestHandler {
     }));
 
     // get middleware types
-    const beforeMiddlewares = resolvedMiddlewares.filter(m => !!m.middleware.onRequest);
-    const afterMiddlewares = resolvedMiddlewares.filter((m) => !!m.middleware.onResponse);
+    const beforeMiddlewares = resolvedMiddlewares.filter(
+      (m) => !!m.middleware.onRequest,
+    );
+    const afterMiddlewares = resolvedMiddlewares.filter(
+      (m) => !!m.middleware.onResponse,
+    );
 
     // sort middlewares by priority
-    beforeMiddlewares.sort((a, b) => (a?.priority ?? 999) - (b?.priority ?? 999));
-    afterMiddlewares.sort((a, b) => (a?.priority ?? 999) - (b?.priority ?? 999));
+    beforeMiddlewares.sort(
+      (a, b) => (a?.priority ?? 999) - (b?.priority ?? 999),
+    );
+    afterMiddlewares.sort(
+      (a, b) => (a?.priority ?? 999) - (b?.priority ?? 999),
+    );
 
     return {
       instance,
@@ -91,7 +108,7 @@ export class RequestHandler {
 
   /**
    * Processes an HTTP request through the middleware chain and route handler
-   * 
+   *
    * The request handling lifecycle:
    * 1. Execute "before" middlewares
    * 2. Apply route actions (status codes, redirects, etc.)
@@ -99,37 +116,57 @@ export class RequestHandler {
    * 4. Execute the route handler
    * 5. Execute "after" middlewares
    * 6. Format and return the final response
-   * 
+   *
    * @param {Request} request - The incoming HTTP request
    * @param {RouterTypes.RouteMatched<RouterTypes.RouterHandler>} route - The matched route with handler data
    * @returns {Promise<Response>} The HTTP response
    */
-  public async handleRequest(request: Request, route: RouterTypes.RouteMatched<RouterTypes.RouterHandler>): Promise<Response> {
-
+  public async handleRequest(
+    request: Request,
+    route: RouterTypes.RouteMatched<RouterTypes.RouterHandler>,
+  ): Promise<Response> {
     try {
-      const { instance, propertyName, actions = [], args = [], middlewares = { beforeMiddlewares: [], afterMiddlewares: [] } } = route.data;
+      const {
+        instance,
+        propertyName,
+        actions = [],
+        args = [],
+        middlewares = { beforeMiddlewares: [], afterMiddlewares: [] },
+      } = route.data;
       let fakeResponse = new FastResponse(undefined, {
         headers: {
-          'Content-Type': request.headers.get('Content-Type') ?? 'application/json',
+          'Content-Type':
+            request.headers.get('Content-Type') ?? 'application/json',
         },
       });
 
       // 1. Resolve all args
-      const resolvedArgs = args.length > 0
-        ? await this.gMetadataResolver.resolveArgs(args, { ...route, request, response: fakeResponse })
-        : [];
+      const resolvedArgs =
+        args.length > 0
+          ? await this.gMetadataResolver.resolveArgs(args, {
+              ...route,
+              request,
+              response: fakeResponse,
+            })
+          : [];
 
       // 2. Call before route middlewares
       if (middlewares.beforeMiddlewares.length > 0) {
         for await (const hook of middlewares.beforeMiddlewares) {
           try {
-            const hookResponse = await hook.middleware.onRequest?.(request, fakeResponse, { middlewareArgs: hook.args, methodArgs: resolvedArgs });
+            const hookResponse = await hook.middleware.onRequest?.(
+              request,
+              fakeResponse,
+              { middlewareArgs: hook.args, methodArgs: resolvedArgs },
+            );
 
             if (hookResponse instanceof Response) {
               return hookResponse;
             }
           } catch (error) {
-            const internalError = this.gContainer.get(ErrorHandlerProvider).handleError(error);
+            const internalError = this.gContainer
+              .get(ErrorHandlerProvider)
+              .handleError(error);
 
             if (internalError instanceof Response) {
               return internalError;
@@ -143,12 +180,18 @@ export class RequestHandler {
         const actionResponse = action.handler(request, fakeResponse);
 
         if (actionResponse !== null) {
-          fakeResponse = this.processOverrideResponse(actionResponse!, fakeResponse);
+          fakeResponse = this.processOverrideResponse(
+            actionResponse!,
+            fakeResponse,
+          );
         }
       }
 
       // 4. Call current route handler
-      let handlerResponse = instance[propertyName].call(instance, ...resolvedArgs?.map((a) => a.resolved) ?? []);
+      let handlerResponse = instance[propertyName].call(
+        instance,
+        ...(resolvedArgs?.map((a) => a.resolved) ?? []),
+      );
 
       if (handlerResponse instanceof Promise) {
         handlerResponse = await handlerResponse;
@@ -158,13 +201,22 @@ export class RequestHandler {
       if (middlewares.afterMiddlewares.length > 0) {
         for await (const hook of middlewares.afterMiddlewares) {
           try {
-            const hookResponse = await hook.middleware.onResponse?.(request, fakeResponse, handlerResponse);
+            const hookResponse = await hook.middleware.onResponse?.(
+              request,
+              fakeResponse,
+              handlerResponse,
+            );
 
             if (hookResponse !== null) {
-              fakeResponse = this.processOverrideResponse(hookResponse!, fakeResponse);
+              fakeResponse = this.processOverrideResponse(
+                hookResponse!,
+                fakeResponse,
+              );
             }
           } catch (error) {
-            const internalError = this.gContainer.get(ErrorHandlerProvider).handleError(error);
+            const internalError = this.gContainer
+              .get(ErrorHandlerProvider)
+              .handleError(error);
 
             if (internalError instanceof Response) {
               return internalError;
@@ -183,7 +235,6 @@ export class RequestHandler {
       });
 
       return response;
-
     } catch (error) {
       return this.gContainer.get(ErrorHandlerProvider).handleError(error);
     }
@@ -191,17 +242,20 @@ export class RequestHandler {
 
   /**
    * Processes and merges response overrides from middlewares or actions
-   * 
+   *
    * This method handles different response formats:
    * - If a full Response object is provided, it's used directly
    * - If ResponseInit is provided, it's merged with the base response
-   * 
+   *
    * @param {Response | ResponseInit} response - The response or response options to apply
    * @param {Response} [base] - The base response to extend (optional)
    * @returns {Response} The processed response with applied overrides
    * @private
    */
-  private processOverrideResponse(response: Response | ResponseInit, base?: Response): Response {
+  private processOverrideResponse(
+    response: Response | ResponseInit,
+    base?: Response,
+  ): Response {
     let fakeResponse = base ?? new FastResponse();
 
     if (response != null && response instanceof FastResponse) {

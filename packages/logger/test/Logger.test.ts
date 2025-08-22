@@ -41,4 +41,4 @@ describe('Logger', () => {
     expect(() => logger.warn(...testArgs)).not.toThrow();
     expect(() => logger.error(...testArgs)).not.toThrow();
   });
-}); 
+});

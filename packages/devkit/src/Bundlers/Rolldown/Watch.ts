@@ -12,7 +12,7 @@ export async function watch(app: DevKitTypes.App): Promise<void> {
   const bundlerConfig = await getRolldownConfig(app.config.build);
   const watcher = rolldownWatch({
     ...bundlerConfig,
-      onwarn: () => {},
+    onwarn: () => {},
   });
 
   watcher.on('event', (event: any) => {
@@ -42,4 +42,4 @@ export async function watch(app: DevKitTypes.App): Promise<void> {
       }
     }
   });
-};
+}

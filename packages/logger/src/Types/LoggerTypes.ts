@@ -2,7 +2,6 @@ import type { IOC } from '@vercube/di';
 import type { LoggerProvider } from '../Common/LoggerProvider';
 
 export namespace LoggerTypes {
-
   export type Level = 'debug' | 'info' | 'warn' | 'error';
 
   export type Arg = any;
@@ -16,9 +15,10 @@ export namespace LoggerTypes {
     timestamp?: number;
   }
 
-  export type LogProviderOptions<T extends IOC.Newable<LoggerProvider>> = Parameters<InstanceType<T>['initialize']>[0] & {
-    logLevel?: Level;
-  }
+  export type LogProviderOptions<T extends IOC.Newable<LoggerProvider>> =
+    Parameters<InstanceType<T>['initialize']>[0] & {
+      logLevel?: Level;
+    };
 
   export interface LogAppender<T extends IOC.Newable<LoggerProvider>> {
     name: string;
@@ -31,5 +31,4 @@ export namespace LoggerTypes {
     logLevel?: Level;
     providers?: LogAppender<any>[];
   }
-
 }

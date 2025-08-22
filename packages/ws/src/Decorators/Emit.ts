@@ -17,7 +17,6 @@ interface EmitDecoratorOptions {
  * @extends {BaseDecorator<EmitDecoratorOptions>}
  */
 class EmitDecorator extends BaseDecorator<EmitDecoratorOptions> {
-
   @InjectOptional($WebsocketService)
   private gWebsocketService: WebsocketService;
 
@@ -32,21 +31,24 @@ class EmitDecorator extends BaseDecorator<EmitDecoratorOptions> {
 
     const originalMethod = this.instance[this.propertyName];
 
-    this.instance[this.propertyName] = async (incomingMessage: Record<string, unknown>, peer: Peer) => {
-      const result = await originalMethod.call(this.instance, incomingMessage, peer);
-
-      this.gWebsocketService.emit(
+    this.instance[this.propertyName] = async (
+      incomingMessage: Record<string, unknown>,
+      peer: Peer,
+    ) => {
+      const result = await originalMethod.call(
+        this.instance,
+        incomingMessage,
         peer,
-        {
-          event: this.options.event,
-          data: result
-        }
       );
 
-      return result;
-    }
-  }
+      this.gWebsocketService.emit(peer, {
+        event: this.options.event,
+        data: result,
+      });
 
+      return result;
+    };
+  }
 }
 
 /**

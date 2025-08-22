@@ -35,7 +35,10 @@ export function createMetadataMethod(): MetadataTypes.Method {
  * @param {any} target - The target to initialize metadata for.
  * @param {string} propertyName - The name of the property to initialize metadata for.
  */
-export function initializeMetadataMethod(target: any, propertyName: string): MetadataTypes.Method {
+export function initializeMetadataMethod(
+  target: any,
+  propertyName: string,
+): MetadataTypes.Method {
   if (!target.__metadata.__methods[propertyName]) {
     target.__metadata.__methods[propertyName] = createMetadataMethod();
   }

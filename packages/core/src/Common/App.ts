@@ -11,7 +11,6 @@ import { RuntimeConfig } from '../Services/Config/RuntimeConfig';
  * Represents the main application class.
  */
 export class App {
-
   @Inject(Router)
   private gRouter: Router;
 
@@ -123,7 +122,7 @@ export class App {
   /**
    * Handles an incoming HTTP request.
    * This method is an adapter for HttpServer.handleRequest method.
-   * 
+   *
    * @param {Request} request - The incoming HTTP request
    * @returns {Promise<Response>} The HTTP response
    */
@@ -139,5 +138,4 @@ export class App {
   private async resolvePlugins(): Promise<void> {
     await this.gPluginsRegistry.init(this);
   }
-
 }

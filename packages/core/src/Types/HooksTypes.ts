@@ -1,8 +1,6 @@
- 
 export namespace HooksTypes {
-
   export interface HookType<T> {
-    new(): T;
+    new (): T;
   }
 
   export type HookData<T> = {
@@ -23,5 +21,4 @@ export namespace HooksTypes {
     readonly __id: number;
     readonly __type: HookType<any>;
   }
-
-  }
+}

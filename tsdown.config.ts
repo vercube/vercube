@@ -7,7 +7,9 @@ import { getPackageEntries } from './scripts/utils';
 const entries = await getPackageEntries(process.cwd());
 
 // get package.json
-const packageJson = await import(resolve(process.cwd(), 'package.json'), { with: { type: 'json' } });
+const packageJson = await import(resolve(process.cwd(), 'package.json'), {
+  with: { type: 'json' },
+});
 
 // return config for tsdown
 export default defineConfig({

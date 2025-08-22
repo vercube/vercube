@@ -3,7 +3,6 @@
  * @extends {Error}
  */
 export class HttpError extends Error {
-
   /**
    * The HTTP status code associated with the error.
    * @type {number}
@@ -30,5 +29,4 @@ export class HttpError extends Error {
     // eslint-disable-next-line unicorn/error-message
     this.stack = new Error().stack;
   }
-
 }

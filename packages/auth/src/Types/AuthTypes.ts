@@ -1,7 +1,6 @@
 import { AuthProvider } from '../Services/AuthProvider';
 
 export namespace AuthTypes {
-
   /**
    * Middleware options for auth
    */
@@ -17,5 +16,4 @@ export namespace AuthTypes {
      */
     provider?: typeof AuthProvider;
   }
-
 }

@@ -1,5 +1,15 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { BaseDecorator, Container, Identity, createDecorator, initializeDecorators, destroyDecorators, initializeContainer, destroyContainer, IDecoratedInstance } from '../src';
+import {
+  BaseDecorator,
+  Container,
+  Identity,
+  createDecorator,
+  initializeDecorators,
+  destroyDecorators,
+  initializeContainer,
+  destroyContainer,
+  IDecoratedInstance,
+} from '../src';
 
 describe('[Framework][IOC] Utils', () => {
   let container: Container;
@@ -155,4 +165,4 @@ describe('[Framework][IOC] Utils', () => {
       expect(() => container.get(Service2)).toThrow();
     });
   });
-}); 
+});

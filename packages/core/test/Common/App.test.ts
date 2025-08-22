@@ -35,7 +35,7 @@ describe('App', () => {
     },
   };
 
-  beforeEach(async () => {  
+  beforeEach(async () => {
     app = await createTestApp({ cfg: config });
     container = app.container;
   });
@@ -54,7 +54,9 @@ describe('App', () => {
 
       expect(httpServer.initialize).toHaveBeenCalledWith(config);
       expect(router.initialize).toHaveBeenCalled();
-      expect(staticHandler.initialize).toHaveBeenCalledWith(config.server?.static);
+      expect(staticHandler.initialize).toHaveBeenCalledWith(
+        config.server?.static,
+      );
     });
 
     it('should listen for incoming requests', async () => {
@@ -68,7 +70,7 @@ describe('App', () => {
 
     it('should throw an error if the app is already initialized', async () => {
       await app.listen();
-      
+
       await expect(app.listen()).rejects.toThrow('App is already initialized');
     });
   });
@@ -76,7 +78,10 @@ describe('App', () => {
   describe('fetch', () => {
     it('should fetch a request', async () => {
       const request = new Request('http://localhost/mock/get');
-      const spyHttpServer = vi.spyOn(container.get(HttpServer), 'handleRequest');
+      const spyHttpServer = vi.spyOn(
+        container.get(HttpServer),
+        'handleRequest',
+      );
 
       await app.fetch(request);
 
@@ -85,18 +90,20 @@ describe('App', () => {
   });
 
   describe('config', () => {
-    it ('should return config without runtime', () => {
+    it('should return config without runtime', () => {
       expect(app.config.runtime).toBeUndefined();
-    })
+    });
   });
 
   describe('plugins', () => {
-    it ('should add plugin', () => {
-      const spyOnPluginsRegistry = vi.spyOn(container.get(PluginsRegistry), 'register');
+    it('should add plugin', () => {
+      const spyOnPluginsRegistry = vi.spyOn(
+        container.get(PluginsRegistry),
+        'register',
+      );
       app.addPlugin(MockPlugin);
 
       expect(spyOnPluginsRegistry).toHaveBeenCalledWith(MockPlugin, undefined);
     });
   });
-
-}); 
+});

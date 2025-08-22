@@ -12,7 +12,7 @@ vi.mock('srvx', () => {
     serve: vi.fn(),
     ready: vi.fn(),
   };
-  
+
   return {
     serve: mockServe.mockReturnValue(mockServer),
   };
@@ -55,10 +55,10 @@ describe('HttpServer', () => {
     container.bindMock(StaticRequestHandler, mockStaticRequestHandler);
     container.bindMock(Router, mockRouter);
     container.bindMock(ErrorHandlerProvider, mockErrorHandler);
-    
+
     container.bind(HttpServer);
     container.bind(HooksService);
-    
+
     httpServer = container.get(HttpServer);
 
     // Reset mocks
@@ -88,7 +88,7 @@ describe('HttpServer', () => {
 
     it('should initialize the server with default config when server config is missing', async () => {
       const configWithoutServer = {} as ConfigTypes.Config;
-      
+
       await httpServer.initialize(configWithoutServer);
 
       expect(vi.mocked(srvx.serve)).toHaveBeenCalledWith({
@@ -114,7 +114,9 @@ describe('HttpServer', () => {
       const bunErrorHandler = serveCall.bun?.error;
       const testError = new Error('Bun error');
 
-      mockErrorHandler.handleError.mockReturnValue(new Response('Error handled'));
+      mockErrorHandler.handleError.mockReturnValue(
+        new Response('Error handled'),
+      );
 
       const result = bunErrorHandler!(testError);
 
@@ -129,7 +131,9 @@ describe('HttpServer', () => {
       const denoErrorHandler = serveCall.deno?.onError;
       const testError = new Error('Deno error');
 
-      mockErrorHandler.handleError.mockReturnValue(new Response('Error handled'));
+      mockErrorHandler.handleError.mockReturnValue(
+        new Response('Error handled'),
+      );
 
       const result = denoErrorHandler!(testError);
 
@@ -172,7 +176,7 @@ describe('HttpServer', () => {
 
     it('should handle serve error', async () => {
       await httpServer.initialize(config);
-      
+
       const serveError = new Error('Serve error');
       const mockServer = vi.mocked(srvx.serve).mock.results[0].value;
       mockServer.serve.mockRejectedValue(serveError);
@@ -182,7 +186,7 @@ describe('HttpServer', () => {
 
     it('should handle ready error', async () => {
       await httpServer.initialize(config);
-      
+
       const readyError = new Error('Ready error');
       const mockServer = vi.mocked(srvx.serve).mock.results[0].value;
       mockServer.serve.mockResolvedValue(undefined);
@@ -211,7 +215,10 @@ describe('HttpServer', () => {
         path: request.url,
         method: request.method,
       });
-      expect(mockRequestHandler.handleRequest).toHaveBeenCalledWith(request, mockRoute);
+      expect(mockRequestHandler.handleRequest).toHaveBeenCalledWith(
+        request,
+        mockRoute,
+      );
       expect(result).toBe(expectedResponse);
     });
 
@@ -228,7 +235,9 @@ describe('HttpServer', () => {
         path: request.url,
         method: request.method,
       });
-      expect(mockStaticRequestHandler.handleRequest).toHaveBeenCalledWith(request);
+      expect(mockStaticRequestHandler.handleRequest).toHaveBeenCalledWith(
+        request,
+      );
       expect(result).toBe(staticResponse);
     });
 
@@ -246,19 +255,25 @@ describe('HttpServer', () => {
         path: request.url,
         method: request.method,
       });
-      expect(mockStaticRequestHandler.handleRequest).toHaveBeenCalledWith(request);
-      expect(mockErrorHandler.handleError).toHaveBeenCalledWith(expect.objectContaining({
-        message: 'Route not found',
-        status: 404,
-        name: 'NotFoundError',
-      }));
+      expect(mockStaticRequestHandler.handleRequest).toHaveBeenCalledWith(
+        request,
+      );
+      expect(mockErrorHandler.handleError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: 'Route not found',
+          status: 404,
+          name: 'NotFoundError',
+        }),
+      );
       expect(result).toBe(errorResponse);
     });
 
     it('should handle static request handler error', async () => {
       const request = new Request('http://localhost/static/file.js');
       const staticError = new Error('Static handler error');
-      const errorResponse = new Response('Internal Server Error', { status: 500 });
+      const errorResponse = new Response('Internal Server Error', {
+        status: 500,
+      });
 
       mockRouter.resolve.mockReturnValue(null);
       mockStaticRequestHandler.handleRequest.mockRejectedValue(staticError);
@@ -270,7 +285,9 @@ describe('HttpServer', () => {
         path: request.url,
         method: request.method,
       });
-      expect(mockStaticRequestHandler.handleRequest).toHaveBeenCalledWith(request);
+      expect(mockStaticRequestHandler.handleRequest).toHaveBeenCalledWith(
+        request,
+      );
       expect(mockErrorHandler.handleError).toHaveBeenCalledWith(staticError);
       expect(result).toBe(errorResponse);
     });

@@ -108,7 +108,11 @@ describe('[Framework][IOC] Engine', () => {
     it('should throw error for invalid inject method', () => {
       const instance = new TestClass();
       expect(() => {
-        IOCEngine.injectDeps(container, instance, 'invalid' as IOC.InjectMethod);
+        IOCEngine.injectDeps(
+          container,
+          instance,
+          'invalid' as IOC.InjectMethod,
+        );
       }).toThrow('IOCEngine.injectDeps() - invalid inject method invalid');
     });
   });
@@ -165,7 +169,7 @@ describe('[Framework][IOC] Engine', () => {
       // Create an instance of a class that has no @Inject decorators
       class ClassWithoutInject {}
       const instance = new ClassWithoutInject();
-      
+
       // This should return an empty array when no entry exists
       const deps = IOCEngine.getDeps(instance);
       expect(deps).toEqual([]);
@@ -178,7 +182,7 @@ describe('[Framework][IOC] Engine', () => {
         @Inject(TestDependency)
         public dep!: TestDependency;
       }
-      
+
       // This should return the entry (not null) when it exists
       const entry = IOCEngine.getEntryForClass(TestClass);
       expect(entry).not.toBeNull();
@@ -192,19 +196,19 @@ describe('[Framework][IOC] Engine', () => {
         @Inject(TestDependency)
         public dep!: TestDependency;
       }
-      
+
       const instance = new TestClass();
-      
+
       // Get the entry and manually modify it to have undefined deps
       const entry = IOCEngine.getEntryForClass(TestClass);
       if (entry) {
         // Temporarily set deps to undefined to test the fallback
         const originalDeps = entry.deps;
         entry.deps = undefined as any;
-        
+
         const deps = IOCEngine.getDeps(instance);
         expect(deps).toEqual([]);
-        
+
         // Restore the original deps
         entry.deps = originalDeps;
       }
@@ -213,20 +217,24 @@ describe('[Framework][IOC] Engine', () => {
     it('should handle injectDeps with null prototype (lines 106-107)', () => {
       // Create an object with null prototype
       const instanceWithNullPrototype = Object.create(null);
-      
+
       // This should not throw and should return early
       expect(() => {
-        IOCEngine.injectDeps(container, instanceWithNullPrototype, IOC.InjectMethod.STATIC);
+        IOCEngine.injectDeps(
+          container,
+          instanceWithNullPrototype,
+          IOC.InjectMethod.STATIC,
+        );
       }).not.toThrow();
     });
 
     it('should handle getDeps with null prototype', () => {
       // Create an object with null prototype
       const instanceWithNullPrototype = Object.create(null);
-      
+
       // This should return an empty array
       const deps = IOCEngine.getDeps(instanceWithNullPrototype);
       expect(deps).toEqual([]);
     });
   });
-}); 
+});

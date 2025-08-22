@@ -19,8 +19,5 @@ export default defineConfig({
       return transformed;
     },
   },
-  entry: [
-    './src/index.ts',
-    './src/Adapters/**/index.ts',
-  ],
+  entry: ['./src/index.ts', './src/Adapters/**/index.ts'],
 });

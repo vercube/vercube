@@ -1,5 +1,3 @@
- 
- 
 import { Container } from '../Domain/Container';
 
 /**
@@ -7,7 +5,6 @@ import { Container } from '../Domain/Container';
  */
 
 export namespace IOC {
-
   /**
    * This is a key that we use to identify service. Symbol is new way of doing it, however we
    * also keep standard/abstract classes for backward compatability.
@@ -119,5 +116,4 @@ export namespace IOC {
     STANDARD,
     OPTIONAL,
   }
-
 }

@@ -13,5 +13,4 @@ export default defineConfig<AppTypes.Config>({
       enabled: true,
     },
   },
-
 });

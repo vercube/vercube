@@ -10,7 +10,7 @@ export class RuntimeConfig<T = Record<string, unknown>> {
    * @private
    */
   private fRuntimeConfig: ConfigTypes.CreateRuntimeConfig<T> | undefined;
-  
+
   /**
    * Gets the current runtime configuration.
    * @returns {ConfigTypes.CreateRuntimeConfig<T> | undefined} The current runtime configuration object.
@@ -23,7 +23,9 @@ export class RuntimeConfig<T = Record<string, unknown>> {
    * Sets the runtime configuration.
    * @param {ConfigTypes.CreateRuntimeConfig<T>} value - The new runtime configuration object to set.
    */
-  public set runtimeConfig(value: ConfigTypes.CreateRuntimeConfig<T> | undefined) {
+  public set runtimeConfig(
+    value: ConfigTypes.CreateRuntimeConfig<T> | undefined,
+  ) {
     this.fRuntimeConfig = value;
   }
 }

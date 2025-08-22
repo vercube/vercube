@@ -10,12 +10,12 @@ describe('[AWS Lambda] Request Utils', () => {
         path: '/api/users',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer token123',
-          'host': 'api.example.com'
+          Authorization: 'Bearer token123',
+          host: 'api.example.com',
         },
         queryStringParameters: {
           page: '1',
-          limit: '10'
+          limit: '10',
         },
         body: JSON.stringify({ name: 'John Doe', email: 'john@example.com' }),
         isBase64Encoded: false,
@@ -24,7 +24,7 @@ describe('[AWS Lambda] Request Utils', () => {
         pathParameters: null,
         stageVariables: null,
         requestContext: {} as any,
-        resource: ''
+        resource: '',
       };
 
       const request = convertEventToRequest(v1Event);
@@ -46,9 +46,9 @@ describe('[AWS Lambda] Request Utils', () => {
         rawQueryString: 'page=1&limit=10',
         headers: {
           'content-type': 'application/json',
-          'authorization': 'Bearer token123',
-          'host': 'api.example.com',
-          'x-forwarded-proto': 'https'
+          authorization: 'Bearer token123',
+          host: 'api.example.com',
+          'x-forwarded-proto': 'https',
         },
         cookies: ['sessionId=abc123', 'theme=dark'],
         body: JSON.stringify({ name: 'Jane Doe', email: 'jane@example.com' }),
@@ -56,10 +56,10 @@ describe('[AWS Lambda] Request Utils', () => {
         requestContext: {
           http: {
             method: 'POST',
-            path: '/api/users'
+            path: '/api/users',
           },
-          domainName: 'api.example.com'
-        } as any
+          domainName: 'api.example.com',
+        } as any,
       };
 
       const request = convertEventToRequest(v2Event);
@@ -81,7 +81,7 @@ describe('[AWS Lambda] Request Utils', () => {
       const v1Event: APIGatewayProxyEvent = {
         httpMethod: 'POST',
         path: '/api/upload',
-        headers: { 'host': 'api.example.com' },
+        headers: { host: 'api.example.com' },
         body: encodedBody,
         isBase64Encoded: true,
         multiValueHeaders: {},
@@ -90,11 +90,11 @@ describe('[AWS Lambda] Request Utils', () => {
         stageVariables: null,
         requestContext: {} as any,
         resource: '',
-        queryStringParameters: null
+        queryStringParameters: null,
       };
 
       const request = convertEventToRequest(v1Event);
-      
+
       expect(request.body).toBeDefined();
       // Body is a ReadableStream, we can't easily test its content in this environment
     });
@@ -103,7 +103,7 @@ describe('[AWS Lambda] Request Utils', () => {
       const v1Event: APIGatewayProxyEvent = {
         httpMethod: 'GET',
         path: '/api/users',
-        headers: { 'host': 'api.example.com' },
+        headers: { host: 'api.example.com' },
         body: null,
         isBase64Encoded: false,
         multiValueHeaders: {},
@@ -112,11 +112,11 @@ describe('[AWS Lambda] Request Utils', () => {
         stageVariables: null,
         requestContext: {} as any,
         resource: '',
-        queryStringParameters: null
+        queryStringParameters: null,
       };
 
       const request = convertEventToRequest(v1Event);
-      
+
       expect(request.body).toBeNull();
     });
 
@@ -133,11 +133,11 @@ describe('[AWS Lambda] Request Utils', () => {
         stageVariables: null,
         requestContext: {} as any,
         resource: '',
-        queryStringParameters: null
+        queryStringParameters: null,
       };
 
       const request = convertEventToRequest(v1Event);
-      
+
       expect(request.headers).toBeInstanceOf(Headers);
     });
 
@@ -145,7 +145,7 @@ describe('[AWS Lambda] Request Utils', () => {
       const v1Event: APIGatewayProxyEvent = {
         httpMethod: 'GET',
         path: '/api/users',
-        headers: { 'host': 'api.example.com' },
+        headers: { host: 'api.example.com' },
         body: null,
         isBase64Encoded: false,
         multiValueHeaders: {},
@@ -154,11 +154,11 @@ describe('[AWS Lambda] Request Utils', () => {
         stageVariables: null,
         requestContext: {} as any,
         resource: '',
-        queryStringParameters: null
+        queryStringParameters: null,
       };
 
       const request = convertEventToRequest(v1Event);
-      
+
       expect(request.url).not.toContain('?');
     });
 
@@ -166,23 +166,23 @@ describe('[AWS Lambda] Request Utils', () => {
       const v1Event: APIGatewayProxyEvent = {
         httpMethod: 'GET',
         path: '/api/users',
-        headers: { 'host': 'api.example.com' },
+        headers: { host: 'api.example.com' },
         body: null,
         isBase64Encoded: false,
         multiValueHeaders: {},
         multiValueQueryStringParameters: {
           tags: ['javascript', 'typescript'],
-          category: ['backend']
+          category: ['backend'],
         },
         pathParameters: null,
         stageVariables: null,
         requestContext: {} as any,
         resource: '',
-        queryStringParameters: null
+        queryStringParameters: null,
       };
 
       const request = convertEventToRequest(v1Event);
-      
+
       expect(request.url).toContain('tags=javascript');
       expect(request.url).toContain('tags=typescript');
       expect(request.url).toContain('category=backend');
@@ -192,7 +192,7 @@ describe('[AWS Lambda] Request Utils', () => {
       const v1Event: APIGatewayProxyEvent = {
         httpMethod: null as any,
         path: '/api/users',
-        headers: { 'host': 'api.example.com' },
+        headers: { host: 'api.example.com' },
         body: null,
         isBase64Encoded: false,
         multiValueHeaders: {},
@@ -201,11 +201,11 @@ describe('[AWS Lambda] Request Utils', () => {
         stageVariables: null,
         requestContext: {} as any,
         resource: '',
-        queryStringParameters: null
+        queryStringParameters: null,
       };
 
       const request = convertEventToRequest(v1Event);
-      
+
       expect(request.method).toBe('GET');
     });
 
@@ -213,9 +213,9 @@ describe('[AWS Lambda] Request Utils', () => {
       const v1Event: APIGatewayProxyEvent = {
         httpMethod: 'GET',
         path: '/api/users',
-        headers: { 
-          'host': 'api.example.com',
-          'x-forwarded-proto': 'http'
+        headers: {
+          host: 'api.example.com',
+          'x-forwarded-proto': 'http',
         },
         body: null,
         isBase64Encoded: false,
@@ -225,11 +225,11 @@ describe('[AWS Lambda] Request Utils', () => {
         stageVariables: null,
         requestContext: {} as any,
         resource: '',
-        queryStringParameters: null
+        queryStringParameters: null,
       };
 
       const request = convertEventToRequest(v1Event);
-      
+
       expect(request.url).toMatch(/^http:\/\//);
     });
 
@@ -237,7 +237,7 @@ describe('[AWS Lambda] Request Utils', () => {
       const v1Event: APIGatewayProxyEvent = {
         httpMethod: 'GET',
         path: '/api/users',
-        headers: { 'host': 'api.example.com' },
+        headers: { host: 'api.example.com' },
         body: null,
         isBase64Encoded: false,
         multiValueHeaders: {},
@@ -246,11 +246,11 @@ describe('[AWS Lambda] Request Utils', () => {
         stageVariables: null,
         requestContext: {} as any,
         resource: '',
-        queryStringParameters: null
+        queryStringParameters: null,
       };
 
       const request = convertEventToRequest(v1Event);
-      
+
       expect(request.url).toMatch(/^https:\/\//);
     });
 
@@ -272,7 +272,7 @@ describe('[AWS Lambda] Request Utils', () => {
       const v1Event: APIGatewayProxyEvent = {
         httpMethod: 'GET',
         path: '/api/users/123',
-        headers: { 'host': 'api.example.com' },
+        headers: { host: 'api.example.com' },
         body: null,
         isBase64Encoded: false,
         multiValueHeaders: {},
@@ -281,11 +281,11 @@ describe('[AWS Lambda] Request Utils', () => {
         stageVariables: null,
         requestContext: {} as any,
         resource: '',
-        queryStringParameters: null
+        queryStringParameters: null,
       };
 
       const request = convertEventToRequest(v1Event);
-      
+
       expect(request.url).toContain('/api/users/123');
     });
 
@@ -304,11 +304,11 @@ describe('[AWS Lambda] Request Utils', () => {
         stageVariables: null,
         requestContext: { domainName: 'fallback.example.com' } as any,
         resource: '',
-        queryStringParameters: null
+        queryStringParameters: null,
       };
 
       const request = convertEventToRequest(v1Event);
-      
+
       // Should use fallback hostname from requestContext
       expect(request.url).toContain('fallback.example.com');
     });
@@ -326,11 +326,11 @@ describe('[AWS Lambda] Request Utils', () => {
         stageVariables: null,
         requestContext: { domainName: 'fallback.example.com' } as any,
         resource: '',
-        queryStringParameters: null
+        queryStringParameters: null,
       };
 
       const request = convertEventToRequest(v1Event);
-      
+
       // Should use fallback hostname from requestContext
       expect(request.url).toContain('fallback.example.com');
     });
@@ -340,14 +340,14 @@ describe('[AWS Lambda] Request Utils', () => {
       const invalidEvent = {
         // Missing httpMethod (v1) and requestContext.http.method (v2)
         path: '/api/users',
-        headers: { 'host': 'api.example.com' },
+        headers: { host: 'api.example.com' },
         body: null,
         isBase64Encoded: false,
-        requestContext: {} // Missing http property
+        requestContext: {}, // Missing http property
       } as any;
 
       const request = convertEventToRequest(invalidEvent);
-      
+
       // Should default to GET method and / path
       expect(request.method).toBe('GET');
       expect(request.url).toContain('/');
@@ -357,7 +357,7 @@ describe('[AWS Lambda] Request Utils', () => {
       const v1Event: APIGatewayProxyEvent = {
         httpMethod: 'POST',
         path: '/api/upload',
-        headers: { 'host': 'api.example.com' },
+        headers: { host: 'api.example.com' },
         body: 'invalid-base64-string!@#$%', // Invalid base64 that will fail to decode
         isBase64Encoded: true,
         multiValueHeaders: {},
@@ -366,11 +366,11 @@ describe('[AWS Lambda] Request Utils', () => {
         stageVariables: null,
         requestContext: {} as any,
         resource: '',
-        queryStringParameters: null
+        queryStringParameters: null,
       };
 
       const request = convertEventToRequest(v1Event);
-      
+
       // Should fallback to original body string when base64 decoding fails
       expect(request.body).toBeDefined();
     });
@@ -388,11 +388,11 @@ describe('[AWS Lambda] Request Utils', () => {
         stageVariables: null,
         requestContext: {} as any, // No domainName
         resource: '',
-        queryStringParameters: null
+        queryStringParameters: null,
       };
 
       const request = convertEventToRequest(v1Event);
-      
+
       // Should use default hostname
       expect(request.url).toContain('.'); // DEFAULT_HOSTNAME
     });
@@ -403,13 +403,13 @@ describe('[AWS Lambda] Request Utils', () => {
         requestContext: {
           // Missing http property completely
         },
-        headers: { 'host': 'api.example.com' },
+        headers: { host: 'api.example.com' },
         body: null,
-        isBase64Encoded: false
+        isBase64Encoded: false,
       } as any;
 
       const request = convertEventToRequest(v2Event);
-      
+
       // Should default to GET method and / path
       expect(request.method).toBe('GET');
       expect(request.url).toContain('/');
@@ -425,7 +425,7 @@ describe('[AWS Lambda] Request Utils', () => {
       const v1Event: APIGatewayProxyEvent = {
         httpMethod: 'POST',
         path: '/api/upload',
-        headers: { 'host': 'api.example.com' },
+        headers: { host: 'api.example.com' },
         body: 'valid-base64-string', // This will trigger the catch block
         isBase64Encoded: true,
         multiValueHeaders: {},
@@ -434,11 +434,11 @@ describe('[AWS Lambda] Request Utils', () => {
         stageVariables: null,
         requestContext: {} as any,
         resource: '',
-        queryStringParameters: null
+        queryStringParameters: null,
       };
 
       const request = convertEventToRequest(v1Event);
-      
+
       // Should fallback to original body string when base64 decoding throws
       expect(request.body).toBeDefined();
 

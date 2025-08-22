@@ -1,3 +1,4 @@
+// oxlint-disable no-unused-vars
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Container, initializeContainer } from '@vercube/di';
 import { createApp, type ConfigTypes, type App } from '@vercube/core';
@@ -61,7 +62,8 @@ describe('@Message() decorator', () => {
   });
 
   it('should register both message handlers under the correct namespace and events', () => {
-    const handlers = websocketService['fHandlers'][WebsocketTypes.HandlerAction.MESSAGE];
+    const handlers =
+      websocketService['fHandlers'][WebsocketTypes.HandlerAction.MESSAGE];
 
     expect(handlers['/foo']).toBeDefined();
 

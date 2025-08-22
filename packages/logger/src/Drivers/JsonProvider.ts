@@ -5,7 +5,6 @@ import { LoggerTypes } from '../Types/LoggerTypes';
  * A logger implementation that formats log messages as JSON.
  */
 export class JSONProvider extends LoggerProvider {
-
   /**
    * Initializes the appender with the provided options.
    * This method should be called before using the appender to process messages.
@@ -19,7 +18,8 @@ export class JSONProvider extends LoggerProvider {
    * @protected
    */
   public processMessage(message: LoggerTypes.Message): void {
-    console.log(JSON.stringify({ type: message?.type ?? 'application_log', ...message }));
+    console.log(
+      JSON.stringify({ type: message?.type ?? 'application_log', ...message }),
+    );
   }
-
 }

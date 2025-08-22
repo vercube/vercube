@@ -1,11 +1,16 @@
 import { describe, it, expect } from 'vitest';
-import { getRequestHeader, getRequestHeaders } from '../../src/Resolvers/Headers';
+import {
+  getRequestHeader,
+  getRequestHeaders,
+} from '../../src/Resolvers/Headers';
 import type { RouterTypes } from '../../src/Types/RouterTypes';
 
 describe('Headers Resolvers', () => {
-  const createMockEvent = (headers?: Record<string, string>): RouterTypes.RouterEvent => {
+  const createMockEvent = (
+    headers?: Record<string, string>,
+  ): RouterTypes.RouterEvent => {
     const requestHeaders = new Headers();
-    
+
     if (headers) {
       for (const [key, value] of Object.entries(headers)) {
         requestHeaders.set(key, value);
@@ -34,7 +39,7 @@ describe('Headers Resolvers', () => {
     it('should retrieve a specific header value', () => {
       const event = createMockEvent({
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer token123',
+        Authorization: 'Bearer token123',
         'User-Agent': 'Mozilla/5.0',
       });
 
@@ -45,7 +50,7 @@ describe('Headers Resolvers', () => {
 
     it('should retrieve authorization header', () => {
       const event = createMockEvent({
-        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
       });
 
       const result = getRequestHeader('Authorization', event);
@@ -66,7 +71,7 @@ describe('Headers Resolvers', () => {
     it('should handle case-insensitive header names', () => {
       const event = createMockEvent({
         'content-type': 'application/json',
-        'AUTHORIZATION': 'Bearer token123',
+        AUTHORIZATION: 'Bearer token123',
       });
 
       const result1 = getRequestHeader('Content-Type', event);
@@ -97,24 +102,31 @@ describe('Headers Resolvers', () => {
 
     it('should handle common HTTP headers', () => {
       const event = createMockEvent({
-        'Accept': 'application/json, text/plain, */*',
+        Accept: 'application/json, text/plain, */*',
         'Accept-Language': 'en-US,en;q=0.9',
         'Accept-Encoding': 'gzip, deflate, br',
         'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-        'Host': 'localhost:3000',
-        'Referer': 'http://localhost:3000/',
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+        Connection: 'keep-alive',
+        Host: 'localhost:3000',
+        Referer: 'http://localhost:3000/',
+        'User-Agent':
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
       });
 
-      expect(getRequestHeader('Accept', event)).toBe('application/json, text/plain, */*');
+      expect(getRequestHeader('Accept', event)).toBe(
+        'application/json, text/plain, */*',
+      );
       expect(getRequestHeader('Accept-Language', event)).toBe('en-US,en;q=0.9');
-      expect(getRequestHeader('Accept-Encoding', event)).toBe('gzip, deflate, br');
+      expect(getRequestHeader('Accept-Encoding', event)).toBe(
+        'gzip, deflate, br',
+      );
       expect(getRequestHeader('Cache-Control', event)).toBe('no-cache');
       expect(getRequestHeader('Connection', event)).toBe('keep-alive');
       expect(getRequestHeader('Host', event)).toBe('localhost:3000');
       expect(getRequestHeader('Referer', event)).toBe('http://localhost:3000/');
-      expect(getRequestHeader('User-Agent', event)).toBe('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36');
+      expect(getRequestHeader('User-Agent', event)).toBe(
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+      );
     });
 
     it('should handle custom headers', () => {
@@ -133,8 +145,6 @@ describe('Headers Resolvers', () => {
       expect(getRequestHeader('X-Real-IP', event)).toBe('192.168.1.1');
     });
 
-
-
     it('should handle headers with special characters', () => {
       const event = createMockEvent({
         'X-Special-Header': 'value with spaces and special chars: !@#$%^&*()',
@@ -142,9 +152,15 @@ describe('Headers Resolvers', () => {
         'X-URL-Header': 'https://example.com/path?param=value&other=123',
       });
 
-      expect(getRequestHeader('X-Special-Header', event)).toBe('value with spaces and special chars: !@#$%^&*()');
-      expect(getRequestHeader('X-JSON-Header', event)).toBe('{"key": "value", "nested": {"array": [1,2,3]}}');
-      expect(getRequestHeader('X-URL-Header', event)).toBe('https://example.com/path?param=value&other=123');
+      expect(getRequestHeader('X-Special-Header', event)).toBe(
+        'value with spaces and special chars: !@#$%^&*()',
+      );
+      expect(getRequestHeader('X-JSON-Header', event)).toBe(
+        '{"key": "value", "nested": {"array": [1,2,3]}}',
+      );
+      expect(getRequestHeader('X-URL-Header', event)).toBe(
+        'https://example.com/path?param=value&other=123',
+      );
     });
   });
 
@@ -152,7 +168,7 @@ describe('Headers Resolvers', () => {
     it('should retrieve all headers from the request', () => {
       const headers = {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer token123',
+        Authorization: 'Bearer token123',
         'User-Agent': 'Mozilla/5.0',
       };
 
@@ -195,7 +211,7 @@ describe('Headers Resolvers', () => {
     it('should return Headers object that can be iterated', () => {
       const headers = {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer token123',
+        Authorization: 'Bearer token123',
         'User-Agent': 'Mozilla/5.0',
       };
 
@@ -213,14 +229,14 @@ describe('Headers Resolvers', () => {
           ['content-type', 'application/json'],
           ['authorization', 'Bearer token123'],
           ['user-agent', 'Mozilla/5.0'],
-        ])
+        ]),
       );
     });
 
     it('should return Headers object that supports entries() method', () => {
       const headers = {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer token123',
+        Authorization: 'Bearer token123',
       };
 
       const event = createMockEvent(headers);
@@ -232,14 +248,14 @@ describe('Headers Resolvers', () => {
         expect.arrayContaining([
           ['content-type', 'application/json'],
           ['authorization', 'Bearer token123'],
-        ])
+        ]),
       );
     });
 
     it('should return Headers object that supports keys() method', () => {
       const headers = {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer token123',
+        Authorization: 'Bearer token123',
         'User-Agent': 'Mozilla/5.0',
       };
 
@@ -249,14 +265,14 @@ describe('Headers Resolvers', () => {
       const keys = [...result.keys()];
       expect(keys).toHaveLength(3);
       expect(keys).toEqual(
-        expect.arrayContaining(['content-type', 'authorization', 'user-agent'])
+        expect.arrayContaining(['content-type', 'authorization', 'user-agent']),
       );
     });
 
     it('should return Headers object that supports values() method', () => {
       const headers = {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer token123',
+        Authorization: 'Bearer token123',
         'User-Agent': 'Mozilla/5.0',
       };
 
@@ -266,14 +282,18 @@ describe('Headers Resolvers', () => {
       const values = [...result.values()];
       expect(values).toHaveLength(3);
       expect(values).toEqual(
-        expect.arrayContaining(['application/json', 'Bearer token123', 'Mozilla/5.0'])
+        expect.arrayContaining([
+          'application/json',
+          'Bearer token123',
+          'Mozilla/5.0',
+        ]),
       );
     });
 
     it('should return Headers object that supports has() method', () => {
       const headers = {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer token123',
+        Authorization: 'Bearer token123',
       };
 
       const event = createMockEvent(headers);
@@ -288,7 +308,7 @@ describe('Headers Resolvers', () => {
 
     it('should return Headers object that supports getAll() method for multiple values', () => {
       const event = createMockEvent({
-        'Accept': 'application/json, text/plain, */*',
+        Accept: 'application/json, text/plain, */*',
         'Accept-Language': 'en-US,en;q=0.9',
       });
 

@@ -1,7 +1,10 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 import { BaseDecorator, createDecorator } from '@vercube/di';
 import { MetadataTypes } from '../../Types/MetadataTypes';
-import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
+import {
+  initializeMetadata,
+  initializeMetadataMethod,
+} from '../../Utils/Utils';
 
 /**
  * This class is responsible for managing response decorators.
@@ -13,7 +16,6 @@ import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils'
  * @extends {BaseDecorator<{}>}
  */
 class ResponseDecorator extends BaseDecorator<{}, MetadataTypes.Metadata> {
-
   /**
    * Called when the decorator is created.
    *
@@ -28,9 +30,7 @@ class ResponseDecorator extends BaseDecorator<{}, MetadataTypes.Metadata> {
       idx: this.propertyIndex,
       type: 'response',
     });
-
   }
-
 }
 
 /**

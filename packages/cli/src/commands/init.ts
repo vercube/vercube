@@ -10,9 +10,11 @@ import { downloadTemplate, startShell } from 'giget';
 import { installDependencies, type PackageManagerName } from 'nypm';
 import { x } from 'tinyexec';
 
-
-export const logger: ConsolaInstance = consola.withTag(colors.whiteBright(colors.bold(colors.bgGreenBright(' vercube '))));
-const DEFAULT_REGISTRY = 'https://raw.githubusercontent.com/vercube/starter/main/templates';
+export const logger: ConsolaInstance = consola.withTag(
+  colors.whiteBright(colors.bold(colors.bgGreenBright(' vercube '))),
+);
+const DEFAULT_REGISTRY =
+  'https://raw.githubusercontent.com/vercube/starter/main/templates';
 const DEFAULT_TEMPLATE_NAME = 'vercube';
 
 const pms: Record<PackageManagerName, undefined> = {
@@ -56,10 +58,8 @@ export const initCommand: CommandDef = defineCommand({
       description: 'Package manager choice (npm, pnpm, yarn, bun)',
       default: 'pnpm',
     },
-
   },
   async run(ctx) {
-
     if (hasTTY) {
       process.stdout.write(`\n${vercubeIcon}\n\n`);
     }
@@ -67,17 +67,21 @@ export const initCommand: CommandDef = defineCommand({
     consola.info(`Welcome to ${colors.bold('Vercube')}!`);
 
     if (ctx.args.dir === '') {
-      ctx.args.dir = await logger.prompt('Where would you like to create your project?', {
-        placeholder: './vercube-app',
-        type: 'text',
-        default: 'vercube-app',
-        cancel: 'reject',
-      }).catch(() => process.exit(1));
+      ctx.args.dir = await logger
+        .prompt('Where would you like to create your project?', {
+          placeholder: './vercube-app',
+          type: 'text',
+          default: 'vercube-app',
+          cancel: 'reject',
+        })
+        .catch(() => process.exit(1));
     }
 
     const cwd = resolve(process.cwd());
     let templateDownloadPath = resolve(cwd, ctx.args.dir);
-    logger.info(`Creating a new project in ${colors.cyan(relative(cwd, templateDownloadPath) || templateDownloadPath)}.`);
+    logger.info(
+      `Creating a new project in ${colors.cyan(relative(cwd, templateDownloadPath) || templateDownloadPath)}.`,
+    );
 
     let shouldForce = Boolean(ctx.args.force);
 
@@ -89,7 +93,11 @@ export const initCommand: CommandDef = defineCommand({
         `The directory ${colors.cyan(templateDownloadPath)} already exists. What would you like to do?`,
         {
           type: 'select',
-          options: ['Override its contents', 'Select different directory', 'Abort'],
+          options: [
+            'Override its contents',
+            'Select different directory',
+            'Abort',
+          ],
         },
       );
 
@@ -100,10 +108,15 @@ export const initCommand: CommandDef = defineCommand({
         }
 
         case 'Select different directory': {
-          templateDownloadPath = resolve(cwd, await logger.prompt('Please specify a different directory:', {
-            type: 'text',
-            cancel: 'reject',
-          }).catch(() => process.exit(1)));
+          templateDownloadPath = resolve(
+            cwd,
+            await logger
+              .prompt('Please specify a different directory:', {
+                type: 'text',
+                cancel: 'reject',
+              })
+              .catch(() => process.exit(1)),
+          );
           break;
         }
 
@@ -135,20 +148,23 @@ export const initCommand: CommandDef = defineCommand({
 
     // Resolve package manager
     const packageManagerArg = ctx.args.packageManager as PackageManagerName;
-    const selectedPackageManager = packageManagerOptions.includes(packageManagerArg)
+    const selectedPackageManager = packageManagerOptions.includes(
+      packageManagerArg,
+    )
       ? packageManagerArg
-      : await logger.prompt('Which package manager would you like to use?', {
-        type: 'select',
-        options: packageManagerOptions,
-        cancel: 'reject',
-      }).catch(() => process.exit(1));
+      : await logger
+          .prompt('Which package manager would you like to use?', {
+            type: 'select',
+            options: packageManagerOptions,
+            cancel: 'reject',
+          })
+          .catch(() => process.exit(1));
 
     // Install project dependencies
     // or skip installation based on the '--no-install' flag
     if (ctx.args.install === false) {
       logger.info('Skipping install dependencies step.');
-    }
-    else {
+    } else {
       logger.start('Installing dependencies...');
 
       try {
@@ -159,8 +175,7 @@ export const initCommand: CommandDef = defineCommand({
             command: selectedPackageManager,
           },
         });
-      }
-      catch (error) {
+      } catch (error) {
         if (process.env.DEBUG) {
           throw error;
         }
@@ -172,10 +187,12 @@ export const initCommand: CommandDef = defineCommand({
     }
 
     if (ctx.args.gitInit === undefined) {
-      ctx.args.gitInit = await logger.prompt('Initialize git repository?', {
-        type: 'confirm',
-        cancel: 'reject',
-      }).catch(() => process.exit(1));
+      ctx.args.gitInit = await logger
+        .prompt('Initialize git repository?', {
+          type: 'confirm',
+          cancel: 'reject',
+        })
+        .catch(() => process.exit(1));
     }
     if (ctx.args.gitInit) {
       logger.info('Initializing git repository...\n');
@@ -186,22 +203,19 @@ export const initCommand: CommandDef = defineCommand({
             stdio: 'inherit',
           },
         });
-      }
-      catch (error) {
+      } catch (error) {
         logger.warn(`Failed to initialize git repository: ${error}`);
       }
     }
 
     // Display next steps
-    logger.log(
-      '\n✨ Vercube project has been created! Next steps:',
-    );
+    logger.log('\n✨ Vercube project has been created! Next steps:');
     const relativeTemplateDir = relative(process.cwd(), template.dir) || '.';
     const runCmd = selectedPackageManager === 'deno' ? 'task' : 'run';
     const nextSteps = [
-      !ctx.args.shell
-      && relativeTemplateDir.length > 1
-      && `\`cd ${relativeTemplateDir}\``,
+      !ctx.args.shell &&
+        relativeTemplateDir.length > 1 &&
+        `\`cd ${relativeTemplateDir}\``,
       `Start development server with \`${selectedPackageManager} ${runCmd} dev\``,
     ].filter(Boolean);
 
@@ -212,7 +226,5 @@ export const initCommand: CommandDef = defineCommand({
     if (ctx.args.shell) {
       startShell(template.dir);
     }
-
   },
-
 });

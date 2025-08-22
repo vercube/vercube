@@ -1,4 +1,3 @@
-
 import { defineCommand, type CommandDef } from 'citty';
 import { createVercube, createDevServer, watch } from '@vercube/devkit';
 

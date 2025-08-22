@@ -9,13 +9,12 @@ describe('WebsocketPlugin', () => {
     app = await createApp({
       setup: async (app) => {
         app.addPlugin(WebsocketPlugin);
-      }
+      },
     });
   });
 
   it('should register plugin correctly', () => {
-    const plugin = app.container.get($WebsocketService)
+    const plugin = app.container.get($WebsocketService);
     expect(plugin).toBeDefined();
   });
-
 });

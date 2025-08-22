@@ -73,4 +73,4 @@ describe('Build', () => {
 
     await expect(build(mockApp as any)).rejects.toThrow(mockError);
   });
-}); 
+});

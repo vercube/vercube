@@ -5,7 +5,6 @@ import { HttpError } from '../HttpError';
  * @extends {HttpError}
  */
 export class ForbiddenError extends HttpError {
-
   /**
    * The name of the error.
    * @type {string}
@@ -23,7 +22,5 @@ export class ForbiddenError extends HttpError {
     if (message) {
       this.message = message;
     }
-
   }
-
 }

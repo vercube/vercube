@@ -19,7 +19,6 @@ class MyDynamicClassA {
 }
 
 describe('[Framework][IOC] Container', () => {
-
   let container: Container;
 
   beforeEach(() => {
@@ -54,7 +53,6 @@ describe('[Framework][IOC] Container', () => {
   });
 
   it('should properly inject dependencies that are dynamic as well', () => {
-
     container.bind(MyClass);
     const myClassInstance = container.get(MyClass);
     expect(myClassInstance).toBeInstanceOf(MyClass);
@@ -67,7 +65,5 @@ describe('[Framework][IOC] Container', () => {
     const myInstanceA = container.get(MyDynamicClassA);
     expect(myInstanceA).toBeInstanceOf(MyDynamicClassA);
     expect(myInstanceA.myClassB).toBeInstanceOf(MyDynamicClassB);
-
   });
-
 });

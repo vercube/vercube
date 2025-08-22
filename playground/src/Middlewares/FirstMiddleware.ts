@@ -1,11 +1,9 @@
- 
 import { BaseMiddleware } from '@vercube/core';
 
 /**
  * FirstMiddleware class that implements the BaseMiddleware interface.
  */
 export class FirstMiddleware implements BaseMiddleware {
-
   /**
    * Middleware function that processes the HTTP event.
    *
@@ -15,5 +13,4 @@ export class FirstMiddleware implements BaseMiddleware {
   public async onRequest(): Promise<void> {
     console.log('First middleware');
   }
-
 }

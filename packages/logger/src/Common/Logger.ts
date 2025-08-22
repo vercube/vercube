@@ -6,7 +6,6 @@ import { LoggerTypes } from '../Types/LoggerTypes';
  * Implementations can customize how logs are processed and stored.
  */
 export abstract class Logger {
-
   /**
    * Configures the logger with the provided options.
    * This method should be called before using the logger to process logs.

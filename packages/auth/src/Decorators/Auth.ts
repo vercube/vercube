@@ -8,7 +8,7 @@ import type { AuthTypes } from '../Types/AuthTypes';
  */
 export function Auth(options?: AuthTypes.MiddlewareOptions): Function {
   return function internalDecorator(target: Function, propertyName?: string) {
-    const meta = initializeMetadata((propertyName) ? target : target.prototype);
+    const meta = initializeMetadata(propertyName ? target : target.prototype);
 
     if (propertyName) {
       initializeMetadataMethod(target, propertyName);

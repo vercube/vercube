@@ -1,7 +1,10 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
- 
+
 import type { DevKitTypes } from '../Types/DevKitTypes';
-import { build as rolldownBuild, watch as rolldownWatch } from '../Bundlers/Rolldown';
+import {
+  build as rolldownBuild,
+  watch as rolldownWatch,
+} from '../Bundlers/Rolldown';
 
 /**
  * Returns the appropriate build function based on the specified bundler

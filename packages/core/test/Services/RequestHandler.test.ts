@@ -11,31 +11,51 @@ import type { MetadataTypes } from '../../src/Types/MetadataTypes';
 
 // Mock middleware classes
 class MockBeforeMiddleware extends BaseMiddleware {
-  public async onRequest(request: Request, response: Response, args: any): Promise<Response | void> {
+  public async onRequest(
+    request: Request,
+    response: Response,
+    args: any,
+  ): Promise<Response | void> {
     return undefined;
   }
 }
 
 class MockAfterMiddleware extends BaseMiddleware {
-  public async onResponse(request: Request, response: Response, handlerResponse: any): Promise<Response | void> {
+  public async onResponse(
+    request: Request,
+    response: Response,
+    handlerResponse: any,
+  ): Promise<Response | void> {
     return undefined;
   }
 }
 
 class MockBeforeMiddlewareWithResponse extends BaseMiddleware {
-  public async onRequest(request: Request, response: Response, args: any): Promise<Response | void> {
+  public async onRequest(
+    request: Request,
+    response: Response,
+    args: any,
+  ): Promise<Response | void> {
     return new Response('Early return', { status: 200 });
   }
 }
 
 class MockBeforeMiddlewareWithError extends BaseMiddleware {
-  public async onRequest(request: Request, response: Response, args: any): Promise<Response | void> {
+  public async onRequest(
+    request: Request,
+    response: Response,
+    args: any,
+  ): Promise<Response | void> {
     throw new Error('Middleware error');
   }
 }
 
 class MockAfterMiddlewareWithError extends BaseMiddleware {
-  public async onResponse(request: Request, response: Response, handlerResponse: any): Promise<Response | void> {
+  public async onResponse(
+    request: Request,
+    response: Response,
+    handlerResponse: any,
+  ): Promise<Response | void> {
     throw new Error('After middleware error');
   }
 }
@@ -279,7 +299,7 @@ describe('RequestHandler', () => {
 
     beforeEach(() => {
       mockRequest = new Request('http://localhost/test');
-      
+
       mockRoute = {
         data: {
           instance: mockInstance,
@@ -355,7 +375,7 @@ describe('RequestHandler', () => {
     it('should handle before middleware error', async () => {
       const mockMiddleware = new MockBeforeMiddlewareWithError();
       const errorResponse = new Response('Error', { status: 500 });
-      
+
       mockRoute.data.middlewares.beforeMiddlewares = [
         {
           middleware: mockMiddleware,
@@ -431,7 +451,7 @@ describe('RequestHandler', () => {
     it('should handle after middleware error', async () => {
       const mockMiddleware = new MockAfterMiddlewareWithError();
       const errorResponse = new Response('Error', { status: 500 });
-      
+
       mockRoute.data.middlewares.afterMiddlewares = [
         {
           middleware: mockMiddleware,
@@ -450,7 +470,9 @@ describe('RequestHandler', () => {
 
     it('should handle after middleware that returns response override', async () => {
       const mockMiddleware = {
-        onResponse: vi.fn().mockResolvedValue({ status: 201, statusText: 'Created' }),
+        onResponse: vi
+          .fn()
+          .mockResolvedValue({ status: 201, statusText: 'Created' }),
       };
 
       mockRoute.data.middlewares.afterMiddlewares = [
@@ -472,7 +494,10 @@ describe('RequestHandler', () => {
         headers: { 'Content-Type': 'text/plain' },
       });
 
-      const result = await requestHandler.handleRequest(customRequest, mockRoute);
+      const result = await requestHandler.handleRequest(
+        customRequest,
+        mockRoute,
+      );
 
       expect(result).toBeInstanceOf(Response);
     });
@@ -568,10 +593,10 @@ describe('RequestHandler', () => {
       mockRoute.data.instance = mockInstanceWithCustomResponse;
       mockRoute.data.actions = [
         {
-          handler: vi.fn().mockReturnValue({ 
-            status: 201, 
+          handler: vi.fn().mockReturnValue({
+            status: 201,
             statusText: 'Created',
-            headers: { 'X-Custom-Header': 'test' }
+            headers: { 'X-Custom-Header': 'test' },
           }),
         },
       ];
@@ -609,7 +634,10 @@ describe('RequestHandler', () => {
       const fastResponse = new Response('Fast Response', { status: 201 });
       const baseResponse = new Response('Base Response', { status: 200 });
 
-      const result = (requestHandler as any).processOverrideResponse(fastResponse, baseResponse);
+      const result = (requestHandler as any).processOverrideResponse(
+        fastResponse,
+        baseResponse,
+      );
 
       expect(result).toBeInstanceOf(Response);
       expect(result.status).toBe(201);
@@ -619,7 +647,10 @@ describe('RequestHandler', () => {
       const responseInit = { status: 201, statusText: 'Created' };
       const baseResponse = new Response('Base Response', { status: 200 });
 
-      const result = (requestHandler as any).processOverrideResponse(responseInit, baseResponse);
+      const result = (requestHandler as any).processOverrideResponse(
+        responseInit,
+        baseResponse,
+      );
 
       expect(result.status).toBe(201);
       expect(result.statusText).toBe('Created');
@@ -628,7 +659,10 @@ describe('RequestHandler', () => {
     it('should handle null response', () => {
       const baseResponse = new Response('Base Response', { status: 200 });
 
-      const result = (requestHandler as any).processOverrideResponse(null, baseResponse);
+      const result = (requestHandler as any).processOverrideResponse(
+        null,
+        baseResponse,
+      );
 
       expect(result).toBe(baseResponse);
     });
@@ -636,7 +670,10 @@ describe('RequestHandler', () => {
     it('should handle undefined response', () => {
       const baseResponse = new Response('Base Response', { status: 200 });
 
-      const result = (requestHandler as any).processOverrideResponse(undefined, baseResponse);
+      const result = (requestHandler as any).processOverrideResponse(
+        undefined,
+        baseResponse,
+      );
 
       expect(result).toBeInstanceOf(Response);
       expect(result.status).toBe(200);
@@ -645,7 +682,9 @@ describe('RequestHandler', () => {
     it('should create new response when no base provided', () => {
       const responseInit = { status: 201, statusText: 'Created' };
 
-      const result = (requestHandler as any).processOverrideResponse(responseInit);
+      const result = (requestHandler as any).processOverrideResponse(
+        responseInit,
+      );
 
       expect(result.status).toBe(201);
       expect(result.statusText).toBe('Created');
@@ -653,13 +692,16 @@ describe('RequestHandler', () => {
 
     it('should handle partial ResponseInit override', () => {
       const responseInit = { status: 201 };
-      const baseResponse = new Response('Base Response', { 
-        status: 200, 
+      const baseResponse = new Response('Base Response', {
+        status: 200,
         statusText: 'OK',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
       });
 
-      const result = (requestHandler as any).processOverrideResponse(responseInit, baseResponse);
+      const result = (requestHandler as any).processOverrideResponse(
+        responseInit,
+        baseResponse,
+      );
 
       expect(result.status).toBe(201);
       expect(result.statusText).toBe('OK'); // Should preserve base statusText

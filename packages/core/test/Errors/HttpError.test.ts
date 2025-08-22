@@ -46,17 +46,16 @@ const ERRORS = [
     status: 406,
     message: 'Not Acceptable',
     class: NotAcceptableError,
-    },
+  },
   {
     name: 'InternalServerError',
     status: 500,
     message: 'Internal Server Error',
     class: InternalServerError,
   },
-]
+];
 
 describe('HttpError', () => {
-  
   describe.each(ERRORS)('HttpError', (error) => {
     it(`should have status ${error.status}`, () => {
       const errorInstance = new error.class();
@@ -71,11 +70,9 @@ describe('HttpError', () => {
       const errorInstance = new error.class('Custom Message');
       expect(errorInstance.message).toBe('Custom Message');
     });
-
   });
 
   describe('BadRequestError', () => {
-
     it('should have errors', () => {
       const errorInstance = new BadRequestError('Custom Message', {
         field: 'value',
@@ -83,26 +80,22 @@ describe('HttpError', () => {
 
       expect((errorInstance as any).errors).toEqual({ field: 'value' });
     });
-
   });
 
   describe('HttpError', () => {
-
-    it ('should have status', () => {
+    it('should have status', () => {
       const errorInstance = new HttpError(400);
       expect(errorInstance.status).toBe(400);
     });
 
-    it ('should have message', () => {
+    it('should have message', () => {
       const errorInstance = new HttpError(400, 'Custom Message');
       expect(errorInstance.message).toBe('Custom Message');
     });
 
-    it ('should have stack', () => {
+    it('should have stack', () => {
       const errorInstance = new HttpError(400);
       expect(errorInstance.stack).toBeDefined();
     });
-
   });
-
 });

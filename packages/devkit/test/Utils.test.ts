@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { getBuildFunc, getWatchFunc } from '../src/Utils/Utils';
-import { build as rolldownBuild, watch as rolldownWatch } from '../src/Bundlers/Rolldown';
+import {
+  build as rolldownBuild,
+  watch as rolldownWatch,
+} from '../src/Bundlers/Rolldown';
 
 describe('Utils', () => {
   describe('getBuildFunc', () => {
@@ -36,4 +39,4 @@ describe('Utils', () => {
       expect(watchFunc).toBe(rolldownWatch);
     });
   });
-}); 
+});

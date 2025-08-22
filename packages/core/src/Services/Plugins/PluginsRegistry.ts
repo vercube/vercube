@@ -3,12 +3,12 @@ import { Container, Inject } from '@vercube/di';
 import { BasePlugin } from './BasePlugin';
 
 export class PluginsRegistry {
-
   @Inject(Container)
   private gContainer!: Container;
 
   /** Holds the list of plugins */
-  private fPlugins: Map<string, { instance: BasePlugin, options?: unknown }> = new Map();
+  private fPlugins: Map<string, { instance: BasePlugin; options?: unknown }> =
+    new Map();
 
   /**
    * Registers a plugin.
@@ -16,7 +16,10 @@ export class PluginsRegistry {
    * @param {Plugin} plugin - The plugin to register.
    * @param {unknown} options - The options to pass to the plugin.
    */
-  public register<T = unknown>(plugin: typeof BasePlugin<T>, options?: T): void {
+  public register<T = unknown>(
+    plugin: typeof BasePlugin<T>,
+    options?: T,
+  ): void {
     const instance = this.gContainer.resolve(plugin);
 
     if (!instance.name) {
@@ -45,5 +48,4 @@ export class PluginsRegistry {
       await instance.use(app, options);
     }
   }
-
 }

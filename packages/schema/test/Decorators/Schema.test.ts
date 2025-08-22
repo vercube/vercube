@@ -11,7 +11,7 @@ describe('SchemaDecorator', () => {
     app = await createApp({
       setup: async (app) => {
         app.addPlugin(SchemaPlugin);
-      }
+      },
     });
 
     app.container.expand((container) => {
@@ -22,7 +22,7 @@ describe('SchemaDecorator', () => {
   });
 
   it('Should register schema correctly', async () => {
-    const registry = app.container.get(SchemaRegistry);    
+    const registry = app.container.get(SchemaRegistry);
     const schema = await registry.generateSchema();
 
     const path = schema.paths['/mock/'];
@@ -30,17 +30,23 @@ describe('SchemaDecorator', () => {
     expect(path).toBeDefined();
     expect(path.get).toBeDefined();
     expect(path?.get?.responses['200']).toBeDefined();
-    expect(path?.get?.responses['200']?.content['application/json']?.schema).toBeDefined();
-    expect(path?.get?.responses['200']?.content['application/json']?.schema?.properties.message).toBeDefined();
-    expect(path?.get?.responses['200']?.content['application/json']?.schema?.properties.message.type).toBe('string');
+    expect(
+      path?.get?.responses['200']?.content['application/json']?.schema,
+    ).toBeDefined();
+    expect(
+      path?.get?.responses['200']?.content['application/json']?.schema
+        ?.properties.message,
+    ).toBeDefined();
+    expect(
+      path?.get?.responses['200']?.content['application/json']?.schema
+        ?.properties.message.type,
+    ).toBe('string');
   });
 
   it('should generate schema correctly', async () => {
-    const registry = app.container.get(SchemaRegistry);    
+    const registry = app.container.get(SchemaRegistry);
     const schema = await registry.generateSchema();
 
     expect(schema).toMatchSnapshot();
-  })
-
-
+  });
 });

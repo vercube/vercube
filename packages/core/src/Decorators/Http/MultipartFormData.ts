@@ -1,7 +1,10 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 import { BaseDecorator, createDecorator } from '@vercube/di';
 import { MetadataTypes } from '../../Types/MetadataTypes';
-import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
+import {
+  initializeMetadata,
+  initializeMetadataMethod,
+} from '../../Utils/Utils';
 
 /**
  * @class MultipartFormDataDecorator
@@ -9,8 +12,10 @@ import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils'
  *
  * A decorator class that handles the metadata for HTTP request bodies.
  */
-class MultipartFormDataDecorator extends BaseDecorator<{}, MetadataTypes.Metadata> {
-
+class MultipartFormDataDecorator extends BaseDecorator<
+  {},
+  MetadataTypes.Metadata
+> {
   /**
    * @method created
    * This method is called when the decorator is created. It ensures that the metadata
@@ -24,18 +29,16 @@ class MultipartFormDataDecorator extends BaseDecorator<{}, MetadataTypes.Metadat
       idx: this.propertyIndex,
       type: 'multipart-form-data',
     });
-
   }
-
 }
 
 /**
  * Decorator function that marks a parameter as multipart/form-data request body.
  * This decorator will automatically parse incoming multipart form data
- * 
+ *
  * @decorator
  * @returns {Function} A decorator function that can be applied to method parameters
- * 
+ *
  * @example
  * class UserController {
  *   uploadFile(@MultipartFormData() formData: MyData) {

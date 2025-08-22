@@ -1,9 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": [
-    "typescript",
-    "unicorn"
-  ],
+  "plugins": ["typescript", "unicorn"],
   "categories": {
     "correctness": "off"
   },
@@ -1823,12 +1820,7 @@
   ],
   "overrides": [
     {
-      "files": [
-        "**/*.ts",
-        "**/*.tsx",
-        "**/*.mts",
-        "**/*.cts"
-      ],
+      "files": ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"],
       "rules": {
         "no-class-assign": "off",
         "no-const-assign": "off",
@@ -1849,10 +1841,7 @@
       }
     },
     {
-      "files": [
-        "**/*.md/*.js",
-        "**/*.md/*.ts"
-      ],
+      "files": ["**/*.md/*.js", "**/*.md/*.ts"],
       "rules": {
         "no-unused-expressions": "off",
         "no-empty-pattern": "off",

@@ -1,7 +1,10 @@
 import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
 import { MetadataResolver } from '../../Services/Metadata/MetadataResolver';
 import { RequestHandler } from '../../Services/Router/RequestHandler';
-import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
+import {
+  initializeMetadata,
+  initializeMetadataMethod,
+} from '../../Utils/Utils';
 import { Router } from '../../Services/Router/Router';
 
 interface PutDecoratorOptions {
@@ -18,7 +21,6 @@ interface PutDecoratorOptions {
  * @extends {BaseDecorator<PutDecoratorOptions>}
  */
 class PutDecorator extends BaseDecorator<PutDecoratorOptions> {
-
   @Inject(Router)
   private gRouter: Router;
 
@@ -48,11 +50,12 @@ class PutDecorator extends BaseDecorator<PutDecoratorOptions> {
     this.gRouter.addRoute({
       path: this.options.path,
       method: 'PUT',
-      handler: this.gRequestHandler.prepareHandler({ instance: this.instance, propertyName: this.propertyName }),
+      handler: this.gRequestHandler.prepareHandler({
+        instance: this.instance,
+        propertyName: this.propertyName,
+      }),
     });
-
   }
-
 }
 
 /**

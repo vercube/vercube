@@ -9,25 +9,26 @@ import { type WebsocketService } from '../Services/WebsocketService';
  *
  * This class extends the BaseDecorator and is used to handle a
  * websocket connection attempt to a namespace.
- * 
+ *
  * If your function throws, or returns false, the connection
  * will not be accepted.
- * 
+ *
  * The decorated function will receive the following parameters:
- * 
+ *
  * @param {Record<string, unknown>} params - The connection query parameters.
  * @param {Request} request - The original HTTP request.
  *
  * @extends {BaseDecorator}
  */
 class OnConnectionAttemptDecorator extends BaseDecorator {
-
   @InjectOptional($WebsocketService)
   private gWebsocketService: WebsocketService;
 
   public override created(): void {
     if (!this.gWebsocketService) {
-      console.warn('OnConnectionAttemptDecorator::WebsocketService is not registered');
+      console.warn(
+        'OnConnectionAttemptDecorator::WebsocketService is not registered',
+      );
       return;
     }
 
@@ -36,7 +37,9 @@ class OnConnectionAttemptDecorator extends BaseDecorator {
 
     const namespace = meta?.__meta?.namespace as string;
     if (!namespace) {
-      console.warn('OnConnectionAttemptDecorator::Unable to find namespace. Did you use @Namespace()?');
+      console.warn(
+        'OnConnectionAttemptDecorator::Unable to find namespace. Did you use @Namespace()?',
+      );
       return;
     }
 
@@ -47,7 +50,7 @@ class OnConnectionAttemptDecorator extends BaseDecorator {
       namespace,
       {
         callback: originalMethod,
-      }
+      },
     );
   }
 }

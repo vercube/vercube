@@ -2,7 +2,10 @@ import { BaseDecorator, createDecorator } from '@vercube/di';
 import { FastResponse } from '../../Types/CommonTypes';
 import type { MetadataTypes } from '../../Types/MetadataTypes';
 import { HTTPStatus } from '../../Types/HttpTypes';
-import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
+import {
+  initializeMetadata,
+  initializeMetadataMethod,
+} from '../../Utils/Utils';
 /**
  * Options for the RedirectDecorator.
  * @typedef {Object} RedirectDecoratorOptions
@@ -14,8 +17,10 @@ interface RedirectDecoratorOptions {
   code: HTTPStatus;
 }
 
-class RedirectDecorator extends BaseDecorator<RedirectDecoratorOptions, MetadataTypes.Metadata> {
-
+class RedirectDecorator extends BaseDecorator<
+  RedirectDecoratorOptions,
+  MetadataTypes.Metadata
+> {
   /**
    * Decorator responsible for redirecting to a specified URL.
    * Called when the decorator is created.
@@ -31,13 +36,12 @@ class RedirectDecorator extends BaseDecorator<RedirectDecoratorOptions, Metadata
         return new FastResponse(undefined, {
           status: this.options.code,
           headers: {
-            'Location': this.options.location,
+            Location: this.options.location,
           },
         });
       },
     });
   }
-
 }
 
 /**

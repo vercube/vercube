@@ -1,8 +1,14 @@
+// oxlint-disable no-unused-vars
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { type Peer, type Message, defineHooks } from 'crossws';
 import { type ServerPlugin } from 'srvx';
 import { Container, initializeContainer } from '@vercube/di';
-import { type App, type ConfigTypes, createApp, HttpServer } from '@vercube/core';
+import {
+  type App,
+  type ConfigTypes,
+  createApp,
+  HttpServer,
+} from '@vercube/core';
 import { $WebsocketService, WebsocketService, WebsocketTypes } from '../../src';
 
 vi.mock('srvx', () => ({
@@ -73,7 +79,7 @@ describe('WebsocketService', () => {
     peer = {
       id: '123',
       namespace: '/foo',
-      send: vi.fn()
+      send: vi.fn(),
     };
 
     initializeContainer(container);
@@ -86,10 +92,17 @@ describe('WebsocketService', () => {
 
   it('registers message handlers and namespaces', () => {
     const handler = { callback: vi.fn() };
-    service.registerHandler(WebsocketTypes.HandlerAction.MESSAGE, '/chat', { callback: handler.callback, event: 'message' });
-    expect(service['fHandlers'][WebsocketTypes.HandlerAction.MESSAGE]['/chat']['message']).toStrictEqual({
+    service.registerHandler(WebsocketTypes.HandlerAction.MESSAGE, '/chat', {
       callback: handler.callback,
-      event: 'message'
+      event: 'message',
+    });
+    expect(
+      service['fHandlers'][WebsocketTypes.HandlerAction.MESSAGE]['/chat'][
+        'message'
+      ],
+    ).toStrictEqual({
+      callback: handler.callback,
+      event: 'message',
     });
     expect(service['fNamespaces']['/chat']).toEqual([]);
   });
@@ -97,9 +110,15 @@ describe('WebsocketService', () => {
   it('handles messages by calling correct handler', async () => {
     const handler = { callback: vi.fn() };
     const peer = createMockPeer('123', '/room');
-    const message = createMockMessage({ event: 'say', data: { text: 'hello' } });
+    const message = createMockMessage({
+      event: 'say',
+      data: { text: 'hello' },
+    });
 
-    service.registerHandler(WebsocketTypes.HandlerAction.MESSAGE, '/room', { callback: handler.callback, event: 'say' });
+    service.registerHandler(WebsocketTypes.HandlerAction.MESSAGE, '/room', {
+      callback: handler.callback,
+      event: 'say',
+    });
     await service['handleMessage'](peer, message);
 
     expect(handler.callback).toHaveBeenCalledWith({ text: 'hello' }, peer);
@@ -147,7 +166,9 @@ describe('WebsocketService', () => {
     const pluginSpy = vi.mocked(container.get(HttpServer).addPlugin);
     const serverPlugin = pluginSpy.mock.calls[0][0] as MockedServerPlugin;
     const hooks = serverPlugin.__hooks;
-    const response = await hooks?.upgrade?.(new Request('http://localhost/unknown'));
+    const response = await hooks?.upgrade?.(
+      new Request('http://localhost/unknown'),
+    );
 
     expect((response as Response).status).toBe(403);
   });

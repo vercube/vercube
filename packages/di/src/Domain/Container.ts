@@ -1,16 +1,17 @@
- import { IOC } from '../Types/IOCTypes';
+import { IOC } from '../Types/IOCTypes';
 import { ContainerEvents } from './ContainerEvents';
-import { destroyDecorators, initializeDecorators, type IDecoratedInstance } from '../Utils/Utils';
+import {
+  destroyDecorators,
+  initializeDecorators,
+  type IDecoratedInstance,
+} from '../Utils/Utils';
 import { IOCEngine } from './Engine';
-
-
 
 /**
  * This is new implementation of IOC Container. It mimics Inversify.js container a little bit but its
  * simpler and (probably) more performant on larger scales.
  */
 export class Container {
-
   // determines if container is locked or not; this is BC feature that should be removed in the future
   protected fLocked: boolean = false;
 
@@ -70,7 +71,6 @@ export class Container {
    * @param value implementation
    */
   public bind<T>(key: IOC.ServiceKey<T>, value?: IOC.ServiceValue<T>): void {
-
     const newDef = {
       serviceKey: key,
       serviceValue: value ?? key,
@@ -78,7 +78,9 @@ export class Container {
     };
 
     if (typeof key === 'symbol' && !value) {
-      throw new Error('Container - provide implementation for binds with symbols.');
+      throw new Error(
+        'Container - provide implementation for binds with symbols.',
+      );
     }
 
     const existingServiceDef = this.fServices.get(key);
@@ -97,8 +99,10 @@ export class Container {
    * @param key key of service, preferably class or abstract class
    * @param value implementation
    */
-  public bindTransient<T>(key: IOC.ServiceKey<T>, value?: IOC.ServiceValue<T>): void {
-
+  public bindTransient<T>(
+    key: IOC.ServiceKey<T>,
+    value?: IOC.ServiceValue<T>,
+  ): void {
     const newDef = {
       serviceKey: key,
       serviceValue: value ?? key,
@@ -123,7 +127,6 @@ export class Container {
    * @param value instance of class to be used as resolution
    */
   public bindInstance<T>(key: IOC.ServiceKey<T>, value: T): void {
-
     const newDef = {
       serviceKey: key,
       serviceValue: value,
@@ -154,7 +157,6 @@ export class Container {
    * @param mockInstance mock instance
    */
   public bindMock<T>(key: IOC.ServiceKey<T>, mockInstance: Partial<T>): void {
-
     const newDef = {
       serviceKey: key,
       serviceValue: mockInstance,
@@ -203,8 +205,10 @@ export class Container {
    * @param providers functor that is used to expand the container
    * @param flush whether container should be flushed now or not
    */
-  public expand(providers: IOC.ProviderFunc | IOC.ProviderFunc[], flush: boolean = true): void {
-
+  public expand(
+    providers: IOC.ProviderFunc | IOC.ProviderFunc[],
+    flush: boolean = true,
+  ): void {
     const preLockState = this.fLocked;
     const allProviders = Array.isArray(providers) ? providers : [providers];
 
@@ -216,8 +220,9 @@ export class Container {
       }
 
       // call internal container event
-      const newKeys = [...this.fNewQueue.keys()]
-        .filter((k) => !this.fSingletonInstances.has(k));
+      const newKeys = [...this.fNewQueue.keys()].filter(
+        (k) => !this.fSingletonInstances.has(k),
+      );
 
       this.fContainerEvents.callOnExpanded(newKeys);
 
@@ -225,11 +230,9 @@ export class Container {
       if (flush) {
         this.flushQueue();
       }
-
     } finally {
       this.fLocked = preLockState;
     }
-
   }
 
   /**
@@ -238,7 +241,10 @@ export class Container {
    * @param method (optional) inject method
    * @returns new class instance with dependencies
    */
-  public resolve<T>(classType: IOC.Newable<T>, method: IOC.InjectMethod = IOC.InjectMethod.LAZY): T {
+  public resolve<T>(
+    classType: IOC.Newable<T>,
+    method: IOC.InjectMethod = IOC.InjectMethod.LAZY,
+  ): T {
     const newInstance = new classType();
     this.internalProcessInjects(newInstance, method);
     return newInstance;
@@ -303,7 +309,9 @@ export class Container {
   protected internalGet<T>(key: IOC.ServiceKey<T>, parent?: IOC.Instance): T {
     const serviceDef = this.fServices.get(key);
     if (!serviceDef) {
-      throw new Error(`Unresolved dependency for [${this.getKeyDescription(key)}]`);
+      throw new Error(
+        `Unresolved dependency for [${this.getKeyDescription(key)}]`,
+      );
     }
 
     return this.internalResolve(serviceDef) as T;
@@ -331,7 +339,6 @@ export class Container {
    * @returns class instance
    */
   protected internalResolve(serviceDef: IOC.ServiceDef): IOC.Instance {
-
     // depending on inject type, make proper actions
     switch (serviceDef.type) {
       case IOC.ServiceFactoryType.INSTANCE: {
@@ -340,7 +347,7 @@ export class Container {
 
       case IOC.ServiceFactoryType.CLASS_SINGLETON: {
         if (!this.fSingletonInstances.has(serviceDef.serviceKey)) {
-          const constructor = (serviceDef.serviceValue as IOC.Newable<unknown>);
+          const constructor = serviceDef.serviceValue as IOC.Newable<unknown>;
           const instance = new constructor();
           this.fSingletonInstances.set(serviceDef.serviceKey, instance);
           this.internalProcessInjects(instance, this.fInjectMethod);
@@ -351,7 +358,7 @@ export class Container {
       }
 
       case IOC.ServiceFactoryType.CLASS: {
-        const constructor = (serviceDef.serviceValue as IOC.Newable<unknown>);
+        const constructor = serviceDef.serviceValue as IOC.Newable<unknown>;
         const instance = new constructor();
         this.internalProcessInjects(instance, this.fInjectMethod);
         return instance;
@@ -360,9 +367,7 @@ export class Container {
       default: {
         throw new Error(`Container - invalid factory type: ${serviceDef.type}`);
       }
-
     }
-
   }
 
   /**
@@ -370,8 +375,10 @@ export class Container {
    * @param instance instance to inject
    * @param method method for injecting dependencies, either lazy or static
    */
-  protected internalProcessInjects(instance: IOC.Instance, method: IOC.InjectMethod): void {
-
+  protected internalProcessInjects(
+    instance: IOC.Instance,
+    method: IOC.InjectMethod,
+  ): void {
     // for lazy method its simple, just inject everything and we're good to go
     if (method === IOC.InjectMethod.LAZY) {
       IOCEngine.injectDeps(this, instance, IOC.InjectMethod.LAZY);
@@ -403,7 +410,6 @@ export class Container {
 
     // process queue until there is nothing left to process
     while (processQueue.length > 0) {
-
       // get last element from queue, we are getting last element to prevent array reallocation (its faster)
       const element = processQueue.pop();
 
@@ -412,15 +418,13 @@ export class Container {
 
       // process them...
       for (const inj of deps) {
-
         // if we did not processed this service yet, process it...
         if (!elementSet.has(inj.dependency)) {
-
           // should dep be optional?
-          const isOptional = (inj.type === IOC.DependencyType.OPTIONAL);
+          const isOptional = inj.type === IOC.DependencyType.OPTIONAL;
 
           // create empty instance & save it
-          const childInstance = (isOptional)
+          const childInstance = isOptional
             ? this.internalGetOptional(inj.dependency)
             : this.internalGet(inj.dependency, instance);
 
@@ -431,17 +435,14 @@ export class Container {
             processQueue.push(childInstance);
             toProcessElements.push(childInstance);
           }
-
         }
       }
-
     }
 
     // this is "filling" phase, basically now @Inject everyting we have collected within "planning" phase
     for (const el of toProcessElements) {
       IOCEngine.injectDeps(this, el, IOC.InjectMethod.STATIC);
     }
-
   }
 
   /**
@@ -449,9 +450,7 @@ export class Container {
    * @param def def that should be disposed
    */
   protected internalDispose(def: IOC.ServiceDef): void {
-
     switch (def.type) {
-
       case IOC.ServiceFactoryType.INSTANCE: {
         destroyDecorators(def.serviceValue as IDecoratedInstance, this);
         break;
@@ -473,9 +472,10 @@ export class Container {
       }
 
       default: {
-        throw new Error(`Container::internalDispose() - invalid def type: ${def.type}`);
+        throw new Error(
+          `Container::internalDispose() - invalid def type: ${def.type}`,
+        );
       }
-
     }
   }
 
@@ -495,5 +495,4 @@ export class Container {
 
     return 'Unknown';
   }
-
 }

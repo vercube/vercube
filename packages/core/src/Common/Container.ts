@@ -22,7 +22,6 @@ import { StaticRequestHandler } from '../Services/Router/StaticRequestHandler';
  * @returns {Container} A configured dependency injection container.
  */
 export function createContainer(config: ConfigTypes.Config): Container {
-
   const container = new Container();
   container.bindInstance(Container, container);
 
@@ -30,9 +29,7 @@ export function createContainer(config: ConfigTypes.Config): Container {
   container.bind(Logger, BaseLogger);
   container.get(Logger).configure({
     logLevel: config.logLevel ?? 'debug',
-    providers: [
-      { name: 'console', provider: ConsoleProvider },
-    ],
+    providers: [{ name: 'console', provider: ConsoleProvider }],
   });
 
   // bind default error provider

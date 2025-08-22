@@ -15,7 +15,7 @@ export function Namespace(path: string): Function {
 
     meta.__meta = {
       ...meta?.__meta,
-      namespace: path
+      namespace: path,
     };
   };
 }

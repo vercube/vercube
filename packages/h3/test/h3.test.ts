@@ -15,8 +15,7 @@ describe('h3', () => {
   it('should handle h3 event', () => {
     const event = mockEvent('/api/test');
     const response = handler(event);
-    
+
     expect(response).toBeDefined();
   });
-
 });

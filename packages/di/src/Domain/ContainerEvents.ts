@@ -6,7 +6,6 @@ export type OnExpandedEvent = (serviceKeys: IOC.ServiceKey[]) => void;
  * This class allows for container to listen on various IOC events.
  */
 export class ContainerEvents {
-
   private fOnExpanded: OnExpandedEvent[] = [];
 
   /**
@@ -24,5 +23,4 @@ export class ContainerEvents {
   public callOnExpanded(serviceKeys: IOC.ServiceKey[]): void {
     for (const handler of this.fOnExpanded) handler(serviceKeys);
   }
-
 }

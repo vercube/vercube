@@ -1,13 +1,12 @@
 import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
 import type { DeepPartial, MetadataTypes } from '@vercube/core';
-import type { RouteConfig } from '@asteasolutions/zod-to-openapi'
+import type { RouteConfig } from '@asteasolutions/zod-to-openapi';
 import { SchemaRegistry } from '../Services/SchemaRegistry';
 import { SchemaBodyResolver } from '../Resolvers/SchemaBodyResolver';
 import { SchemaQueryParamsResolver } from '../Resolvers/SchemaQueryParamsResolver';
 
 // oxlint-disable-next-line no-empty-object-type
-interface SchemaDecoratorOptions extends Omit<RouteConfig, 'method' | 'path'> {
-};
+interface SchemaDecoratorOptions extends Omit<RouteConfig, 'method' | 'path'> {}
 
 /**
  * A decorator class for handling OpenAPI schema registration for routes.
@@ -19,7 +18,6 @@ interface SchemaDecoratorOptions extends Omit<RouteConfig, 'method' | 'path'> {
  * @extends {BaseDecorator<SchemaDecoratorOptions>}
  */
 class SchemaDecorator extends BaseDecorator<SchemaDecoratorOptions> {
-
   @Inject(SchemaRegistry)
   private readonly gSchemaRegistry: SchemaRegistry;
 
@@ -28,12 +26,14 @@ class SchemaDecorator extends BaseDecorator<SchemaDecoratorOptions> {
     await new Promise((resolve) => setTimeout(resolve, 0));
 
     // get method metadata object
-    const _methodMeta = this.prototype.__metadata.__methods[this.propertyName] as MetadataTypes.Method;
+    const _methodMeta = this.prototype.__metadata.__methods[
+      this.propertyName
+    ] as MetadataTypes.Method;
 
     const _schema: DeepPartial<RouteConfig> = {
       method: _methodMeta.method!.toLowerCase() as any,
       path: _methodMeta.url!,
-      ...this.options as any,
+      ...(this.options as any),
     };
 
     // Use resolvers
@@ -43,7 +43,6 @@ class SchemaDecorator extends BaseDecorator<SchemaDecoratorOptions> {
     // register schema
     this.gSchemaRegistry.register(_schema as RouteConfig);
   }
-
 }
 
 /**

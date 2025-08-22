@@ -59,7 +59,9 @@ describe('MemoryStorage', () => {
 
       expect(storage.getItem<number>('number')).toBe(42);
       expect(storage.getItem<string>('string')).toBe('test');
-      expect(storage.getItem<{ key: string }>('object')).toEqual({ key: 'value' });
+      expect(storage.getItem<{ key: string }>('object')).toEqual({
+        key: 'value',
+      });
     });
   });
 
@@ -147,4 +149,4 @@ describe('MemoryStorage', () => {
       expect(storage.size()).toBe(0);
     });
   });
-}); 
+});

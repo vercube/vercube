@@ -11,7 +11,7 @@ describe('SchemaPlugin', () => {
     app = await createApp({
       setup: async (app) => {
         app.addPlugin(SchemaPlugin);
-      }
+      },
     });
   });
 
@@ -21,5 +21,4 @@ describe('SchemaPlugin', () => {
     expect(plugin).toBeDefined();
     expect(controller).toBeDefined();
   });
-
 });

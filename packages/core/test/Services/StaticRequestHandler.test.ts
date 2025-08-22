@@ -49,14 +49,14 @@ describe('StaticRequestHandler', () => {
 
   beforeEach(async () => {
     staticHandler = new StaticRequestHandler();
-    
+
     // Get mocked functions
     const { stat } = await import('node:fs/promises');
     const { createReadStream } = await import('node:fs');
-    
+
     mockStat = vi.mocked(stat);
     mockCreateReadStream = vi.mocked(createReadStream);
-    
+
     vi.clearAllMocks();
   });
 
@@ -170,8 +170,9 @@ describe('StaticRequestHandler', () => {
         mtime: new Date('2023-01-01'),
       };
 
-      mockStat.mockRejectedValueOnce(new Error('Not found in first dir'))
-              .mockResolvedValue(mockStats);
+      mockStat
+        .mockRejectedValueOnce(new Error('Not found in first dir'))
+        .mockResolvedValue(mockStats);
       mockCreateReadStream.mockReturnValue({
         pipe: vi.fn(),
         on: vi.fn(),
@@ -183,7 +184,9 @@ describe('StaticRequestHandler', () => {
     });
 
     it('should handle path normalization', async () => {
-      const request = new Request('http://localhost/public/../public/test.html');
+      const request = new Request(
+        'http://localhost/public/../public/test.html',
+      );
       const mockStats = {
         isDirectory: () => false,
         isFile: () => true,
@@ -266,12 +269,17 @@ describe('StaticRequestHandler', () => {
         on: vi.fn(),
       });
 
-      const result = await (staticHandler as any).serveFile('/public/test.html', mockStats);
+      const result = await (staticHandler as any).serveFile(
+        '/public/test.html',
+        mockStats,
+      );
 
       expect(result).toBeInstanceOf(Response);
       expect(result.headers.get('Content-Type')).toBe('text/html');
       expect(result.headers.get('Content-Length')).toBe('1024');
-      expect(result.headers.get('Cache-Control')).toBe('public, max-age=3600, immutable');
+      expect(result.headers.get('Cache-Control')).toBe(
+        'public, max-age=3600, immutable',
+      );
       expect(result.headers.get('ETag')).toBe('W/"1024-1672531200000"');
     });
 
@@ -288,7 +296,10 @@ describe('StaticRequestHandler', () => {
         on: vi.fn(),
       });
 
-      const result = await (staticHandler as any).serveFile('/public/style.css', mockStats);
+      const result = await (staticHandler as any).serveFile(
+        '/public/style.css',
+        mockStats,
+      );
 
       expect(result).toBeInstanceOf(Response);
       expect(result.headers.get('Content-Type')).toBe('text/css');
@@ -308,7 +319,10 @@ describe('StaticRequestHandler', () => {
         on: vi.fn(),
       });
 
-      const result = await (staticHandler as any).serveFile('/public/script.js', mockStats);
+      const result = await (staticHandler as any).serveFile(
+        '/public/script.js',
+        mockStats,
+      );
 
       expect(result).toBeInstanceOf(Response);
       expect(result.headers.get('Content-Type')).toBe('application/javascript');
@@ -328,7 +342,10 @@ describe('StaticRequestHandler', () => {
         on: vi.fn(),
       });
 
-      const result = await (staticHandler as any).serveFile('/public/image.png', mockStats);
+      const result = await (staticHandler as any).serveFile(
+        '/public/image.png',
+        mockStats,
+      );
 
       expect(result).toBeInstanceOf(Response);
       expect(result.headers.get('Content-Type')).toBe('image/png');
@@ -354,7 +371,10 @@ describe('StaticRequestHandler', () => {
         on: vi.fn(),
       });
 
-      const result = await (staticHandler as any).serveFile('/public/test.html', mockStats);
+      const result = await (staticHandler as any).serveFile(
+        '/public/test.html',
+        mockStats,
+      );
 
       expect(result).toBeInstanceOf(Response);
       expect(result.headers.get('Cache-Control')).toBeNull();
@@ -379,7 +399,10 @@ describe('StaticRequestHandler', () => {
         on: vi.fn(),
       });
 
-      const result = await (staticHandler as any).serveFile('/public/test.html', mockStats);
+      const result = await (staticHandler as any).serveFile(
+        '/public/test.html',
+        mockStats,
+      );
 
       expect(result).toBeInstanceOf(Response);
       expect(result.headers.get('ETag')).toBeNull();
@@ -398,10 +421,15 @@ describe('StaticRequestHandler', () => {
         on: vi.fn(),
       });
 
-      const result = await (staticHandler as any).serveFile('/public/test.unknown', mockStats);
+      const result = await (staticHandler as any).serveFile(
+        '/public/test.unknown',
+        mockStats,
+      );
 
       expect(result).toBeInstanceOf(Response);
-      expect(result.headers.get('Content-Type')).toBe('application/octet-stream');
+      expect(result.headers.get('Content-Type')).toBe(
+        'application/octet-stream',
+      );
     });
   });
 });

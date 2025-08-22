@@ -273,7 +273,7 @@ describe('BaseLogger', () => {
   it('should handle async provider initialization', async () => {
     class AsyncProvider extends ConsoleProvider {
       public async initialize(): Promise<void> {
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 10));
       }
     }
 
@@ -365,4 +365,4 @@ describe('BaseLogger', () => {
     expect(consoleSpy).not.toHaveBeenCalled();
     vi.restoreAllMocks();
   });
-}); 
+});

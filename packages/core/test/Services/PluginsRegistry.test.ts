@@ -20,16 +20,16 @@ describe('PluginsRegistry', () => {
     expect(registry.plugins[0].name).toBe('mock');
   });
 
-  it ('should throw error if plugin has no name', () => {
+  it('should throw error if plugin has no name', () => {
     const registry = container.get(PluginsRegistry);
     expect(() => {
       registry.register(MockPlugin2);
     }).toThrow('Plugin must have a name');
   });
 
-  it ('should initialize plugins', async () => {
+  it('should initialize plugins', async () => {
     const spyOnUse = vi.spyOn(MockPlugin.prototype, 'use');
-    
+
     const registry = container.get(PluginsRegistry);
     registry.register(MockPlugin);
 
@@ -37,5 +37,4 @@ describe('PluginsRegistry', () => {
 
     expect(spyOnUse).toHaveBeenCalled();
   });
-
 });

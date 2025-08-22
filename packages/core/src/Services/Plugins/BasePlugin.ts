@@ -5,7 +5,6 @@ import type { App } from '../../Common/App';
  * Represents a Plugin.
  */
 export class BasePlugin<T = unknown> {
-
   /**
    * The name of the plugin.
    */
@@ -17,5 +16,4 @@ export class BasePlugin<T = unknown> {
    * @returns {void | Promise<void>} - A void or a promise that resolves to void.
    */
   public use(app: App, options?: T): void | Promise<void> {}
-
 }

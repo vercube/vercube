@@ -9,9 +9,9 @@ interface BroadcastOthersDecoratorOptions {
 }
 
 /**
- * A decorator class for broadcasting websocket messages to everyone 
+ * A decorator class for broadcasting websocket messages to everyone
  * on the namespace (except the peer).
- * 
+ *
  * This class extends the BaseDecorator and is used to emit the result of
  * your function as a websocket message to everyone on the namespace
  * (except the peer).
@@ -19,13 +19,14 @@ interface BroadcastOthersDecoratorOptions {
  * @extends {BaseDecorator<BroadcastOthersDecoratorOptions>}
  */
 class BroadcastOthersDecorator extends BaseDecorator<BroadcastOthersDecoratorOptions> {
-
   @InjectOptional($WebsocketService)
   private gWebsocketService: WebsocketService;
 
   public override created(): void {
     if (!this.gWebsocketService) {
-      console.warn('BroadcastOthersDecorator::WebsocketService is not registered');
+      console.warn(
+        'BroadcastOthersDecorator::WebsocketService is not registered',
+      );
       return;
     }
 
@@ -34,21 +35,24 @@ class BroadcastOthersDecorator extends BaseDecorator<BroadcastOthersDecoratorOpt
 
     const originalMethod = this.instance[this.propertyName];
 
-    this.instance[this.propertyName] = async (incomingMessage: Record<string, unknown>, peer: Peer) => {
-      const result = await originalMethod.call(this.instance, incomingMessage, peer);
-
-      this.gWebsocketService.broadcastOthers(
+    this.instance[this.propertyName] = async (
+      incomingMessage: Record<string, unknown>,
+      peer: Peer,
+    ) => {
+      const result = await originalMethod.call(
+        this.instance,
+        incomingMessage,
         peer,
-        {
-          event: this.options.event,
-          data: result
-        }
       );
 
-      return result;
-    }
-  }
+      this.gWebsocketService.broadcastOthers(peer, {
+        event: this.options.event,
+        data: result,
+      });
 
+      return result;
+    };
+  }
 }
 
 /**

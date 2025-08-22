@@ -9,7 +9,6 @@ import { Logger } from '@vercube/logger';
  * This class handles initialization, registration, and delegation of storage operations.
  */
 export class StorageManager {
-
   @Inject(Container)
   private gContainer: Container;
 
@@ -28,7 +27,11 @@ export class StorageManager {
    * @param {IOC.Newable<Storage>} params.storage - Storage implementation to mount
    * @returns {Promise<void>} A promise that resolves when mounting is complete
    */
-  public async mount<T extends Storage<unknown>>({ name, storage, initOptions }: StorageTypes.Mount<T>): Promise<void> {
+  public async mount<T extends Storage<unknown>>({
+    name,
+    storage,
+    initOptions,
+  }: StorageTypes.Mount<T>): Promise<void> {
     this.fStorages.set(name ?? 'default', {
       storage: this.gContainer.resolve(storage),
       initOptions,
@@ -52,7 +55,10 @@ export class StorageManager {
    * @param {string} params.key - Key of the item to retrieve
    * @returns {Promise<T | null>} A promise that resolves with the stored value or null if not found
    */
-  public async getItem<T = unknown>({ storage, key }: StorageTypes.GetItem): Promise<T | null> {
+  public async getItem<T = unknown>({
+    storage,
+    key,
+  }: StorageTypes.GetItem): Promise<T | null> {
     const storageInstance = this.getStorage(storage);
     return storageInstance?.getItem<T>(key) ?? null;
   }
@@ -66,7 +72,12 @@ export class StorageManager {
    * @param {T} params.value - Value to store
    * @returns {Promise<void>} A promise that resolves when the value is stored
    */
-  public async setItem<T = unknown, U = unknown>({ storage, key, value, options }: StorageTypes.SetItem<T, U>): Promise<void> {
+  public async setItem<T = unknown, U = unknown>({
+    storage,
+    key,
+    value,
+    options,
+  }: StorageTypes.SetItem<T, U>): Promise<void> {
     const storageInstance = this.getStorage(storage);
     storageInstance?.setItem<T, U>(key, value, options);
   }
@@ -78,7 +89,10 @@ export class StorageManager {
    * @param {string} params.key - Key of the item to delete
    * @returns {Promise<void>} A promise that resolves when the item is deleted
    */
-  public async deleteItem({ storage, key }: StorageTypes.DeleteItem): Promise<void> {
+  public async deleteItem({
+    storage,
+    key,
+  }: StorageTypes.DeleteItem): Promise<void> {
     const storageInstance = this.getStorage(storage);
     storageInstance?.deleteItem(key);
   }
@@ -90,7 +104,10 @@ export class StorageManager {
    * @param {string} params.key - Key to check for
    * @returns {Promise<boolean>} A promise that resolves to true if the item exists, false otherwise
    */
-  public async hasItem({ storage, key }: StorageTypes.HasItem): Promise<boolean> {
+  public async hasItem({
+    storage,
+    key,
+  }: StorageTypes.HasItem): Promise<boolean> {
     const storageInstance = this.getStorage(storage);
     return storageInstance?.hasItem(key) ?? false;
   }

@@ -64,7 +64,9 @@ describe('S3Storage', () => {
 
     it('should throw for other errors', async () => {
       mockSend.mockRejectedValueOnce({ name: 'OtherError' });
-      await expect(storage.getItem('key')).rejects.toEqual({ name: 'OtherError' });
+      await expect(storage.getItem('key')).rejects.toEqual({
+        name: 'OtherError',
+      });
     });
   });
 
@@ -93,7 +95,9 @@ describe('S3Storage', () => {
 
     it('should throw on other errors', async () => {
       mockSend.mockRejectedValueOnce({ name: 'OtherError' });
-      await expect(storage.hasItem('key')).rejects.toEqual({ name: 'OtherError' });
+      await expect(storage.hasItem('key')).rejects.toEqual({
+        name: 'OtherError',
+      });
     });
   });
 

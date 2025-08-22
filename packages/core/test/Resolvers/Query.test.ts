@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { resolveQueryParam, resolveQueryParams } from '../../src/Resolvers/Query';
+import {
+  resolveQueryParam,
+  resolveQueryParams,
+} from '../../src/Resolvers/Query';
 import type { RouterTypes } from '../../src/Types/RouterTypes';
 
 describe('Query Resolvers', () => {
@@ -27,14 +30,18 @@ describe('Query Resolvers', () => {
     });
 
     it('should resolve a query parameter with special characters', () => {
-      const event = createMockEvent('http://localhost/test?message=Hello%20World&path=%2Fusers%2F123');
+      const event = createMockEvent(
+        'http://localhost/test?message=Hello%20World&path=%2Fusers%2F123',
+      );
       const result = resolveQueryParam('message', event);
 
       expect(result).toBe('Hello World');
     });
 
     it('should resolve a query parameter with multiple values (returns first)', () => {
-      const event = createMockEvent('http://localhost/test?tags=javascript&tags=typescript&tags=node');
+      const event = createMockEvent(
+        'http://localhost/test?tags=javascript&tags=typescript&tags=node',
+      );
       const result = resolveQueryParam('tags', event);
 
       expect(result).toBe('javascript');
@@ -69,7 +76,9 @@ describe('Query Resolvers', () => {
     });
 
     it('should handle case-sensitive parameter names', () => {
-      const event = createMockEvent('http://localhost/test?Name=John&name=Jane');
+      const event = createMockEvent(
+        'http://localhost/test?Name=John&name=Jane',
+      );
       const result = resolveQueryParam('Name', event);
 
       expect(result).toBe('John');
@@ -83,14 +92,18 @@ describe('Query Resolvers', () => {
     });
 
     it('should handle boolean-like query parameters', () => {
-      const event = createMockEvent('http://localhost/test?active=true&enabled=false');
+      const event = createMockEvent(
+        'http://localhost/test?active=true&enabled=false',
+      );
       const result = resolveQueryParam('active', event);
 
       expect(result).toBe('true');
     });
 
     it('should handle complex query parameter values', () => {
-      const event = createMockEvent('http://localhost/test?json=%7B%22key%22%3A%22value%22%7D');
+      const event = createMockEvent(
+        'http://localhost/test?json=%7B%22key%22%3A%22value%22%7D',
+      );
       const result = resolveQueryParam('json', event);
 
       expect(result).toBe('{"key":"value"}');
@@ -99,7 +112,9 @@ describe('Query Resolvers', () => {
 
   describe('resolveQueryParams', () => {
     it('should resolve all query parameters', () => {
-      const event = createMockEvent('http://localhost/test?name=John&age=30&active=true');
+      const event = createMockEvent(
+        'http://localhost/test?name=John&age=30&active=true',
+      );
       const result = resolveQueryParams(event);
 
       expect(result).toEqual({
@@ -124,7 +139,9 @@ describe('Query Resolvers', () => {
     });
 
     it('should handle query parameters with special characters', () => {
-      const event = createMockEvent('http://localhost/test?message=Hello%20World&path=%2Fusers%2F123');
+      const event = createMockEvent(
+        'http://localhost/test?message=Hello%20World&path=%2Fusers%2F123',
+      );
       const result = resolveQueryParams(event);
 
       expect(result).toEqual({
@@ -134,7 +151,9 @@ describe('Query Resolvers', () => {
     });
 
     it('should handle multiple values for the same parameter (keeps last)', () => {
-      const event = createMockEvent('http://localhost/test?tags=javascript&tags=typescript&tags=node');
+      const event = createMockEvent(
+        'http://localhost/test?tags=javascript&tags=typescript&tags=node',
+      );
       const result = resolveQueryParams(event);
 
       expect(result).toEqual({
@@ -143,7 +162,9 @@ describe('Query Resolvers', () => {
     });
 
     it('should handle empty query parameter values', () => {
-      const event = createMockEvent('http://localhost/test?name=&age=30&empty=');
+      const event = createMockEvent(
+        'http://localhost/test?name=&age=30&empty=',
+      );
       const result = resolveQueryParams(event);
 
       expect(result).toEqual({
@@ -154,7 +175,9 @@ describe('Query Resolvers', () => {
     });
 
     it('should handle case-sensitive parameter names', () => {
-      const event = createMockEvent('http://localhost/test?Name=John&name=Jane');
+      const event = createMockEvent(
+        'http://localhost/test?Name=John&name=Jane',
+      );
       const result = resolveQueryParams(event);
 
       expect(result).toEqual({
@@ -164,7 +187,9 @@ describe('Query Resolvers', () => {
     });
 
     it('should handle numeric query parameters', () => {
-      const event = createMockEvent('http://localhost/test?id=123&count=456&price=99.99');
+      const event = createMockEvent(
+        'http://localhost/test?id=123&count=456&price=99.99',
+      );
       const result = resolveQueryParams(event);
 
       expect(result).toEqual({
@@ -175,7 +200,9 @@ describe('Query Resolvers', () => {
     });
 
     it('should handle boolean-like query parameters', () => {
-      const event = createMockEvent('http://localhost/test?active=true&enabled=false&visible=1');
+      const event = createMockEvent(
+        'http://localhost/test?active=true&enabled=false&visible=1',
+      );
       const result = resolveQueryParams(event);
 
       expect(result).toEqual({
@@ -186,7 +213,9 @@ describe('Query Resolvers', () => {
     });
 
     it('should handle complex query parameter values', () => {
-      const event = createMockEvent('http://localhost/test?json=%7B%22key%22%3A%22value%22%7D&array=%5B1%2C2%2C3%5D');
+      const event = createMockEvent(
+        'http://localhost/test?json=%7B%22key%22%3A%22value%22%7D&array=%5B1%2C2%2C3%5D',
+      );
       const result = resolveQueryParams(event);
 
       expect(result).toEqual({
@@ -198,8 +227,8 @@ describe('Query Resolvers', () => {
     it('should handle many query parameters', () => {
       const event = createMockEvent(
         'http://localhost/test?' +
-        'p1=value1&p2=value2&p3=value3&p4=value4&p5=value5&' +
-        'p6=value6&p7=value7&p8=value8&p9=value9&p10=value10'
+          'p1=value1&p2=value2&p3=value3&p4=value4&p5=value5&' +
+          'p6=value6&p7=value7&p8=value8&p9=value9&p10=value10',
       );
       const result = resolveQueryParams(event);
 
@@ -209,7 +238,9 @@ describe('Query Resolvers', () => {
     });
 
     it('should handle query parameters with equals signs in values', () => {
-      const event = createMockEvent('http://localhost/test?filter=name=John&condition=age>=30');
+      const event = createMockEvent(
+        'http://localhost/test?filter=name=John&condition=age>=30',
+      );
       const result = resolveQueryParams(event);
 
       expect(result).toEqual({
@@ -219,7 +250,9 @@ describe('Query Resolvers', () => {
     });
 
     it('should handle query parameters with ampersands in values', () => {
-      const event = createMockEvent('http://localhost/test?query=name%3DJohn%26age%3D30');
+      const event = createMockEvent(
+        'http://localhost/test?query=name%3DJohn%26age%3D30',
+      );
       const result = resolveQueryParams(event);
 
       expect(result).toEqual({

@@ -6,7 +6,7 @@ import { mime } from '../../Utils/Mine';
 
 /**
  * Handles serving static files over HTTP
- * 
+ *
  * The StaticRequestHandler is responsible for:
  * - Serving static files from configured directories
  * - Setting appropriate content types and headers
@@ -15,7 +15,6 @@ import { mime } from '../../Utils/Mine';
  */
 
 export class StaticRequestHandler {
-
   /**
    * The options for the static server
    */
@@ -23,7 +22,7 @@ export class StaticRequestHandler {
 
   /**
    * Initializes the static server with the given options
-   * 
+   *
    * @param {ConfigTypes.ServerOptions['static']} options - The options for the static server
    * @returns {void}
    */
@@ -33,14 +32,13 @@ export class StaticRequestHandler {
 
   /**
    * Handles HTTP requests for static files
-   * 
+   *
    * @param {Request} request - The incoming HTTP request
    * @returns {Promise<void | Response>} A promise that resolves to void or a Response object
    */
-  public async handleRequest(request: Request): Promise<void | Response>  {
-
+  public async handleRequest(request: Request): Promise<void | Response> {
     // Get dirs that has to be static provided
-    const dirs = this.fOptions?.dirs ?? [] as string[];
+    const dirs = this.fOptions?.dirs ?? ([] as string[]);
 
     // No static request was provided
     if (!dirs) {
@@ -74,18 +72,16 @@ export class StaticRequestHandler {
         if (stats.isFile()) {
           return this.serveFile(fullPath, stats);
         }
-
       } catch {
         // silent catch
         continue;
       }
     }
-
   }
 
   /**
    * Serves a static file and returns a Response object
-   * 
+   *
    * @param {string} path - The path to the file to serve
    * @param {any} stats - The stats object for the file
    * @returns {Promise<Response>} A promise that resolves to a Response object
@@ -117,5 +113,4 @@ export class StaticRequestHandler {
       headers,
     });
   }
-  
 }

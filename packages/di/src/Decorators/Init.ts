@@ -6,7 +6,6 @@ import { BaseDecorator, createDecorator } from '@vercube/di';
  * can use this for initialization logic in runtime-loaded container deps.
  */
 class InitDecorator extends BaseDecorator<{}> {
-
   /**
    * Called when decorator is initialized.
    */
@@ -15,7 +14,6 @@ class InitDecorator extends BaseDecorator<{}> {
       this.instance[this.propertyName]();
     }
   }
-
 }
 
 /**

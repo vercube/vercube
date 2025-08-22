@@ -6,7 +6,10 @@ import { RouterTypes } from '../Types/RouterTypes';
  * @param {RouterTypes.RouterEvent} event - The router event containing the request
  * @returns {string | null} The header value if found, null otherwise
  */
-export function getRequestHeader(header: string, event: RouterTypes.RouterEvent): string | null {
+export function getRequestHeader(
+  header: string,
+  event: RouterTypes.RouterEvent,
+): string | null {
   return event.request.headers.get(header);
 }
 

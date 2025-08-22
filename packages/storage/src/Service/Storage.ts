@@ -1,7 +1,7 @@
 /**
  * Abstract base class for storage implementations
  * Provides a common interface for different storage providers
- * 
+ *
  * @abstract
  * @class Storage
  * @description
@@ -10,11 +10,10 @@
  * Concrete implementations must provide the actual storage mechanism.
  */
 export abstract class Storage<T = undefined> {
-
   /**
    * Initializes the storage implementation.
    * Must be called before using any other storage operations.
-   * 
+   *
    * @param {T} options - Initialization parameters. May be omitted if not required by the storage implementation.
    * @returns {Promise<void>} A promise that resolves when initialization is complete.
    */
@@ -26,7 +25,7 @@ export abstract class Storage<T = undefined> {
    * @param {string} key - The key to retrieve the value for
    * @returns {Promise<T>} A promise that resolves with the stored value
    */
-  public abstract getItem<T = unknown>(key: string): T | Promise<T>
+  public abstract getItem<T = unknown>(key: string): T | Promise<T>;
 
   /**
    * Stores a value in storage with the specified key
@@ -36,7 +35,11 @@ export abstract class Storage<T = undefined> {
    * @param {T} value - The value to store
    * @returns {Promise<void>} A promise that resolves when the value is stored
    */
-  public abstract setItem<T = unknown, U = unknown>(key: string, value: T, options?: U): void | Promise<void>;
+  public abstract setItem<T = unknown, U = unknown>(
+    key: string,
+    value: T,
+    options?: U,
+  ): void | Promise<void>;
 
   /**
    * Removes a value from storage by its key
@@ -69,5 +72,4 @@ export abstract class Storage<T = undefined> {
    * @returns {Promise<number>} A promise that resolves with the number of stored items
    */
   public abstract size(): number | Promise<number>;
-
 }

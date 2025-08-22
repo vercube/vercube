@@ -3,10 +3,10 @@
   <br>
   <br>
 
-  # Vercube
-  
-  Next generation HTTP framework
-  
+# Vercube
+
+Next generation HTTP framework
+
   <a href="https://www.npmjs.com/package/@vercube/core">
     <img src="https://img.shields.io/npm/v/%40vercube%2Fcore?style=for-the-badge&logo=npm&color=%23767eff" alt="npm"/>
   </a>
@@ -22,8 +22,8 @@
 
 An ultra-efficient JavaScript server framework that runs anywhere - Node.js, Bun, or Deno - with unmatched flexibility and complete configurability for developers who refuse to sacrifice speed or control.
 
-
 ## <a name="getting-started">🚀 Quick Start</a>
+
 Vercube makes it incredibly easy to get started. With just one command, you'll have a fully configured project ready for development:
 
 ```sh
@@ -39,12 +39,12 @@ You can also try Vercube instantly using our online templates:
   <img src="https://img.shields.io/badge/Open%20in-CodeSandbox-blue?style=for-the-badge&logo=codesandbox" alt="Open in CodeSandbox">
 </a>
 
-
-
 ## <a name="documentation">📖 Documentation</a>
+
 Comprehensive documentation is available at [vercube.dev](https://vercube.dev). There you'll find detailed module descriptions, project information, guides, and everything else you need to know about Vercube.
 
 ## <a name="contribute">❤️ Contribute</a>
+
 We welcome and appreciate all contributions to Vercube! There are several ways you can help make this project better:
 
 - **Report bugs**: If you find a bug, please [open an issue](https://github.com/vercube/vercube/issues) with detailed steps to reproduce it

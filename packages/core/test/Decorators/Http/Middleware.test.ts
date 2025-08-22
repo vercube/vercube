@@ -1,8 +1,11 @@
-import { describe, it, expect, beforeAll } from "vitest";
-import { createTestApp } from "../../Utils/App.mock";
-import { App, initializeMetadata } from "../../../src";
-import { MiddlewareController, MiddlewareGlobalController, TestMiddleware } from "../../Utils/Middleware.mock";
-
+import { describe, it, expect, beforeAll } from 'vitest';
+import { createTestApp } from '../../Utils/App.mock';
+import { App, initializeMetadata } from '../../../src';
+import {
+  MiddlewareController,
+  MiddlewareGlobalController,
+  TestMiddleware,
+} from '../../Utils/Middleware.mock';
 
 describe('Middleware Decorator', () => {
   let app: App;
@@ -11,11 +14,9 @@ describe('Middleware Decorator', () => {
     app = await createTestApp();
   });
 
-
   describe('Global Middleware', () => {
-
     beforeAll(async () => {
-      app.container.bind(MiddlewareGlobalController);      
+      app.container.bind(MiddlewareGlobalController);
     });
 
     it(`should add global middleware to metadata`, () => {
@@ -28,7 +29,6 @@ describe('Middleware Decorator', () => {
   });
 
   describe('Property Middleware', () => {
-
     beforeAll(async () => {
       app.container.bind(MiddlewareController);
     });
@@ -40,8 +40,5 @@ describe('Middleware Decorator', () => {
       expect(meta.__middlewares[0].priority).toBe(1);
       expect(meta.__middlewares[0].middleware).toBe(TestMiddleware);
     });
-
   });
-
 });
-

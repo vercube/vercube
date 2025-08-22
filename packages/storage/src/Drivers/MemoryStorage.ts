@@ -5,11 +5,10 @@ import { Storage } from '../Service/Storage';
  * In-memory storage implementation of the Storage interface
  * Provides a simple key-value store that persists only for the duration of the application runtime
  * Useful for testing, caching, and scenarios where temporary storage is needed
- * 
+ *
  * @implements {Storage}
  */
 export class MemoryStorage implements Storage {
-
   /** Internal storage map to hold key-value pairs */
   private storage: Map<string, unknown> = new Map();
 
@@ -38,7 +37,11 @@ export class MemoryStorage implements Storage {
    * @param {string} key - The key under which to store the value
    * @param {T} value - The value to store
    */
-  public setItem<T = unknown, U = unknown>(key: string, value: T, options?: U): void {
+  public setItem<T = unknown, U = unknown>(
+    key: string,
+    value: T,
+    options?: U,
+  ): void {
     this.storage.set(key, value);
   }
 
@@ -81,5 +84,4 @@ export class MemoryStorage implements Storage {
   public size(): number {
     return this.storage.size;
   }
-
 }

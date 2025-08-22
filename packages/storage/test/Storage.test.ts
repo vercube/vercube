@@ -6,13 +6,21 @@ describe('Storage', () => {
     // Create a concrete class that extends Storage
     class ConcreteStorage extends Storage {
       public initialize(): void {}
-      public getItem<T = unknown>(): T { return {} as T; }
+      public getItem<T = unknown>(): T {
+        return {} as T;
+      }
       public setItem(): void {}
       public deleteItem(): void {}
-      public hasItem(): boolean { return false; }
-      public getKeys(): string[] { return []; }
+      public hasItem(): boolean {
+        return false;
+      }
+      public getKeys(): string[] {
+        return [];
+      }
       public clear(): void {}
-      public size(): number { return 0; }
+      public size(): number {
+        return 0;
+      }
     }
 
     // This should work
@@ -23,17 +31,27 @@ describe('Storage', () => {
     // Create a concrete class that extends Storage
     class ConcreteStorage extends Storage {
       public initialize(): void {}
-      public getItem<T = unknown>(): T { return {} as T; }
+      public getItem<T = unknown>(): T {
+        return {} as T;
+      }
       public setItem(): void {}
       public deleteItem(): void {}
-      public hasItem(): boolean { return false; }
-      public getKeys(): string[] { return []; }
+      public hasItem(): boolean {
+        return false;
+      }
+      public getKeys(): string[] {
+        return [];
+      }
       public clear(): void {}
-      public size(): number { return 0; }
+      public size(): number {
+        return 0;
+      }
     }
 
     const storage = new ConcreteStorage();
-    const storageMethods = Object.getOwnPropertyNames(Object.getPrototypeOf(storage));
+    const storageMethods = Object.getOwnPropertyNames(
+      Object.getPrototypeOf(storage),
+    );
     const requiredMethods = [
       'initialize',
       'getItem',
@@ -49,4 +67,4 @@ describe('Storage', () => {
       expect(storageMethods).toContain(method);
     }
   });
-}); 
+});

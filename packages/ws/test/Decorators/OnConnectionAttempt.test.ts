@@ -52,7 +52,10 @@ describe('@OnConnectionAttempt() decorator', () => {
   });
 
   it('registers connection handler on WebsocketService', async () => {
-    const handler = websocketService['fHandlers'][WebsocketTypes.HandlerAction.CONNECTION]['/auth'];
+    const handler =
+      websocketService['fHandlers'][WebsocketTypes.HandlerAction.CONNECTION][
+        '/auth'
+      ];
 
     expect(handler).toBeDefined();
     expect(typeof handler.callback).toBe('function');

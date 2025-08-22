@@ -1,6 +1,5 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { resolveRequestBody } from '../../src/Resolvers/Body';
-import { BadRequestError } from '../../src/Errors/Http/BadRequestError';
 import type { RouterTypes } from '../../src/Types/RouterTypes';
 
 describe('resolveRequestBody', () => {
@@ -136,7 +135,9 @@ describe('resolveRequestBody', () => {
 
       const event = createMockEvent(request);
 
-      await expect(resolveRequestBody(event)).rejects.toThrow('Invalid JSON body');
+      await expect(resolveRequestBody(event)).rejects.toThrow(
+        'Invalid JSON body',
+      );
     });
   });
 
@@ -150,7 +151,9 @@ describe('resolveRequestBody', () => {
 
       const event = createMockEvent(request);
 
-      await expect(resolveRequestBody(event)).rejects.toThrow('Invalid JSON body');
+      await expect(resolveRequestBody(event)).rejects.toThrow(
+        'Invalid JSON body',
+      );
     });
 
     it('should throw BadRequestError for incomplete JSON', async () => {
@@ -162,7 +165,9 @@ describe('resolveRequestBody', () => {
 
       const event = createMockEvent(request);
 
-      await expect(resolveRequestBody(event)).rejects.toThrow('Invalid JSON body');
+      await expect(resolveRequestBody(event)).rejects.toThrow(
+        'Invalid JSON body',
+      );
     });
 
     it('should throw BadRequestError for missing closing quote', async () => {
@@ -174,7 +179,9 @@ describe('resolveRequestBody', () => {
 
       const event = createMockEvent(request);
 
-      await expect(resolveRequestBody(event)).rejects.toThrow('Invalid JSON body');
+      await expect(resolveRequestBody(event)).rejects.toThrow(
+        'Invalid JSON body',
+      );
     });
 
     it('should throw BadRequestError for missing quotes around key', async () => {
@@ -186,7 +193,9 @@ describe('resolveRequestBody', () => {
 
       const event = createMockEvent(request);
 
-      await expect(resolveRequestBody(event)).rejects.toThrow('Invalid JSON body');
+      await expect(resolveRequestBody(event)).rejects.toThrow(
+        'Invalid JSON body',
+      );
     });
 
     it('should throw BadRequestError for trailing comma', async () => {
@@ -198,7 +207,9 @@ describe('resolveRequestBody', () => {
 
       const event = createMockEvent(request);
 
-      await expect(resolveRequestBody(event)).rejects.toThrow('Invalid JSON body');
+      await expect(resolveRequestBody(event)).rejects.toThrow(
+        'Invalid JSON body',
+      );
     });
 
     it('should throw BadRequestError for missing value', async () => {
@@ -210,7 +221,9 @@ describe('resolveRequestBody', () => {
 
       const event = createMockEvent(request);
 
-      await expect(resolveRequestBody(event)).rejects.toThrow('Invalid JSON body');
+      await expect(resolveRequestBody(event)).rejects.toThrow(
+        'Invalid JSON body',
+      );
     });
 
     it('should throw BadRequestError for incomplete nested object', async () => {
@@ -222,7 +235,9 @@ describe('resolveRequestBody', () => {
 
       const event = createMockEvent(request);
 
-      await expect(resolveRequestBody(event)).rejects.toThrow('Invalid JSON body');
+      await expect(resolveRequestBody(event)).rejects.toThrow(
+        'Invalid JSON body',
+      );
     });
 
     it('should throw BadRequestError for non-JSON text', async () => {
@@ -234,7 +249,9 @@ describe('resolveRequestBody', () => {
 
       const event = createMockEvent(request);
 
-      await expect(resolveRequestBody(event)).rejects.toThrow('Invalid JSON body');
+      await expect(resolveRequestBody(event)).rejects.toThrow(
+        'Invalid JSON body',
+      );
     });
 
     it('should throw BadRequestError for HTML content', async () => {
@@ -246,7 +263,9 @@ describe('resolveRequestBody', () => {
 
       const event = createMockEvent(request);
 
-      await expect(resolveRequestBody(event)).rejects.toThrow('Invalid JSON body');
+      await expect(resolveRequestBody(event)).rejects.toThrow(
+        'Invalid JSON body',
+      );
     });
   });
 

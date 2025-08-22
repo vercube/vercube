@@ -3,10 +3,10 @@
   <br>
   <br>
 
-  # @vercube/serverless
-  
-  Serverless deployment adapters for Vercube applications
-  
+# @vercube/serverless
+
+Serverless deployment adapters for Vercube applications
+
   <a href="https://www.npmjs.com/package/@vercube/serverless">
     <img src="https://img.shields.io/npm/v/%40vercube%2Fserverless?style=for-the-badge&logo=npm&color=%23767eff" alt="npm"/>
   </a>
@@ -107,12 +107,15 @@ Full support for AWS Lambda with API Gateway integration:
 Converts a Vercube App instance into a serverless handler function.
 
 **Parameters:**
+
 - `app` - The Vercube App instance that will handle requests
 
 **Returns:**
+
 - An async function that accepts serverless events and returns platform-specific responses
 
 **Example:**
+
 ```ts
 import { createApp } from '@vercube/core';
 import { toServerlessHandler } from '@vercube/serverless/aws-lambda';
@@ -128,12 +131,14 @@ export const handler = toServerlessHandler(app);
 The serverless adapters handle automatic conversion between platform-specific events and standard web requests:
 
 ### Request Conversion
+
 - **HTTP Method** - Extracted from event properties
 - **URL Construction** - Built from path, query parameters, and headers
 - **Headers** - Converted to standard Headers object
 - **Body** - Properly decoded and converted to Request body
 
 ### Response Conversion
+
 - **Status Code** - Mapped from Response status
 - **Headers** - Converted to platform-specific format
 - **Body** - Encoded appropriately (text vs binary)
@@ -160,8 +165,8 @@ import { toServerlessHandler } from '@vercube/serverless/aws-lambda';
 
 const app = createApp({
   logger: {
-    level: 'debug'
-  }
+    level: 'debug',
+  },
 });
 
 export const handler = toServerlessHandler(app);
@@ -180,13 +185,12 @@ Explore guides, API references, and best practices to master Vercube serverless 
 
 This module is inspired by:
 
-* [Nitro AWS Lambda Preset](https://nitro.build/presets/aws-lambda)
-* [Hono AWS Lambda Adapter](https://hono.dev/guides/aws-lambda)
-* [Vercel Serverless Functions](https://vercel.com/docs/functions)
+- [Nitro AWS Lambda Preset](https://nitro.build/presets/aws-lambda)
+- [Hono AWS Lambda Adapter](https://hono.dev/guides/aws-lambda)
+- [Vercel Serverless Functions](https://vercel.com/docs/functions)
 
 ---
 
 ## 🪪 License
 
 [MIT License](https://github.com/vercube/vercube/blob/main/LICENSE)
-

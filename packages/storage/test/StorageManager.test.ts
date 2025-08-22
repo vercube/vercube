@@ -187,9 +187,11 @@ describe('StorageManager', () => {
       });
 
       it('should not throw when deleting non-existent item', async () => {
-        await expect(storageManager.deleteItem({
-          key: 'nonExistent',
-        })).resolves.not.toThrow();
+        await expect(
+          storageManager.deleteItem({
+            key: 'nonExistent',
+          }),
+        ).resolves.not.toThrow();
       });
     });
 
@@ -276,9 +278,11 @@ describe('StorageManager', () => {
       });
 
       it('should not throw when storage is undefined', async () => {
-        await expect(storageManager.clear({
-          storage: 'nonExistentStorage',
-        })).resolves.not.toThrow();
+        await expect(
+          storageManager.clear({
+            storage: 'nonExistentStorage',
+          }),
+        ).resolves.not.toThrow();
       });
     });
 
@@ -355,4 +359,4 @@ describe('StorageManager', () => {
       expect(logger.error).toHaveBeenCalled();
     });
   });
-}); 
+});

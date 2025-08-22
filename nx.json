@@ -6,11 +6,7 @@
   "parallel": 4,
   "packageManager": "pnpm",
   "release": {
-    "projects": [
-      "*",
-      "!playground",
-      "!@vercube/nx"
-    ],
+    "projects": ["*", "!playground", "!@vercube/nx"],
     "git": {
       "commitMessage": "chore: release v{version} [no ci]"
     },
@@ -43,9 +39,7 @@
       }
     },
     "test": {
-      "dependsOn": [
-        "^build"
-      ],
+      "dependsOn": ["^build"],
       "cache": false
     }
   }

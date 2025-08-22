@@ -9,7 +9,6 @@ export interface CustomPluginOptions {
  * CustomPlugin class that extends the Plugin class.
  */
 export class CustomPlugin extends BasePlugin<CustomPluginOptions> {
-
   /**
    * The name of the plugin.
    * @override
@@ -22,6 +21,8 @@ export class CustomPlugin extends BasePlugin<CustomPluginOptions> {
    * @returns {void | Promise<void>}
    * @override
    */
-  public override use(app: App, options: CustomPluginOptions): void | Promise<void> {}
-
+  public override use(
+    app: App,
+    options: CustomPluginOptions,
+  ): void | Promise<void> {}
 }

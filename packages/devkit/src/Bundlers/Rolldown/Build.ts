@@ -4,7 +4,7 @@ import { getRolldownConfig } from './Config';
 
 /**
  * Builds the application using Rolldown bundler
- * 
+ *
  * @async
  * @function build
  * @param {ConfigTypes.BuildOptions} ctx - The build context and configuration options
@@ -20,7 +20,9 @@ export async function build(ctx: ConfigTypes.BuildOptions): Promise<void> {
   const build = await rolldown({ ...bundlerConfig });
 
   // Process and write output to destination
-  const outputs = Array.isArray(bundlerConfig.output) ? bundlerConfig.output : [bundlerConfig.output];
+  const outputs = Array.isArray(bundlerConfig.output)
+    ? bundlerConfig.output
+    : [bundlerConfig.output];
 
   for (const output of outputs) {
     await build.write(output);

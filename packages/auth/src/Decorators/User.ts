@@ -1,5 +1,9 @@
 import { BaseDecorator, createDecorator, Inject, Container } from '@vercube/di';
-import { initializeMetadata, initializeMetadataMethod, type RouterTypes } from '@vercube/core';
+import {
+  initializeMetadata,
+  initializeMetadataMethod,
+  type RouterTypes,
+} from '@vercube/core';
 import { AuthProvider } from '../Services/AuthProvider';
 
 /**
@@ -17,12 +21,11 @@ interface UserDecoratorOptions {
 /**
  * Decorator class for injecting the current user into controller methods
  * Extends BaseDecorator to provide user injection functionality
- * 
+ *
  * @class UserDecorator
  * @extends {BaseDecorator<UserDecoratorOptions>}
  */
 class UserDecorator extends BaseDecorator<UserDecoratorOptions> {
-
   @Inject(Container)
   private gContainer!: Container;
 
@@ -51,23 +54,21 @@ class UserDecorator extends BaseDecorator<UserDecoratorOptions> {
         return provider.getCurrentUser(event.request);
       },
     });
-
   }
-
 }
 
 /**
  * Creates a decorator that injects the current user into controller methods
- * 
+ *
  * @param {UserDecoratorOptions} [params] - Optional configuration for the decorator
  * @returns {Function} A decorator function that can be applied to controller method parameters
- * 
+ *
  * @example
  * // Basic usage
  * async someMethod(@User() user: User) {
  *   // user is automatically injected
  * }
- * 
+ *
  * @example
  * // With custom provider
  * async someMethod(@User() user: User) {

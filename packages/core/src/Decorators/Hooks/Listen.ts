@@ -2,7 +2,6 @@ import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
 import { HooksService } from '../../Services/Hooks/HooksService';
 import type { HooksTypes } from '../../Types/HooksTypes';
 
-
 interface IListenDecoratorParams {
   hookType: HooksTypes.HookType<unknown>;
 }
@@ -11,7 +10,6 @@ interface IListenDecoratorParams {
  * This class is responsible for managing cache decorator.
  */
 class ListenDecorator extends BaseDecorator<IListenDecoratorParams> {
-
   @Inject(HooksService)
   private gHooksService!: HooksService;
 
@@ -23,7 +21,9 @@ class ListenDecorator extends BaseDecorator<IListenDecoratorParams> {
    */
   public override created(): void {
     // listen on hook type, and after it triggers, call proper method and return its result
-    this.fHook = this.gHooksService.on(this.options.hookType, (data) => this.instance[this.propertyName](data));
+    this.fHook = this.gHooksService.on(this.options.hookType, (data) =>
+      this.instance[this.propertyName](data),
+    );
   }
 
   /**
@@ -33,7 +33,6 @@ class ListenDecorator extends BaseDecorator<IListenDecoratorParams> {
     // release event listener
     this.gHooksService.off(this.fHook);
   }
-
 }
 
 /**

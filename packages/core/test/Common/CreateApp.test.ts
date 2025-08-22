@@ -18,7 +18,6 @@ vi.mock('c12', () => ({
 }));
 
 describe('createApp', () => {
-  
   let mockConfig: ConfigTypes.Config;
 
   beforeEach(() => {
@@ -70,5 +69,4 @@ describe('createApp', () => {
 
     expect(setupCalled).toBe(true);
   });
-
-}); 
+});

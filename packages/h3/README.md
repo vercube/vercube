@@ -3,10 +3,10 @@
   <br>
   <br>
 
-  # Vercube
-  
-  Next generation HTTP framework
-  
+# Vercube
+
+Next generation HTTP framework
+
   <a href="https://www.npmjs.com/package/@vercube/h3">
     <img src="https://img.shields.io/npm/v/%40vercube%2Fh3?style=for-the-badge&logo=npm&color=%23767eff" alt="npm"/>
   </a>
@@ -23,7 +23,8 @@
 An ultra-efficient JavaScript server framework that runs anywhere - Node.js, Bun, or Deno - with unmatched flexibility and complete configurability for developers who refuse to sacrifice speed or control.
 
 ## <a name="module">H3 Module</a>
-The H3 module provides integration between Vercube applications and the H3 HTTP framework. 
+
+The H3 module provides integration between Vercube applications and the H3 HTTP framework.
 It allows you to:
 
 - Mount Vercube applications on [H3](https://h3.dev) server
@@ -50,6 +51,6 @@ h3app.all('/api/**', toH3(app));
 await serve(h3app, { port: 3000 });
 ```
 
-
 ## <a name="documentation">📖 Documentation</a>
+
 Comprehensive documentation is available at [vercube.dev](https://vercube.dev). There you'll find detailed module descriptions, project information, guides, and everything else you need to know about Vercube.

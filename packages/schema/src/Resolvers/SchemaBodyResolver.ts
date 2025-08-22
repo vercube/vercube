@@ -8,8 +8,10 @@ import defu from 'defu';
  * @param schema - The schema to resolve the body for.
  * @returns void
  */
-export function SchemaBodyResolver(metadata: MetadataTypes.Method, schema: DeepPartial<RouteConfig>): void {
-  
+export function SchemaBodyResolver(
+  metadata: MetadataTypes.Method,
+  schema: DeepPartial<RouteConfig>,
+): void {
   // check if method has body
   const body = metadata.args.find((arg) => arg.type === 'body');
 
@@ -26,5 +28,4 @@ export function SchemaBodyResolver(metadata: MetadataTypes.Method, schema: DeepP
       },
     },
   });
-
 }

@@ -1,3 +1,4 @@
+// oxlint-disable no-unused-vars
 import {
   Controller,
   Get,
@@ -43,7 +44,6 @@ const schemaQueryParams = z.object({
   bar: z.string().min(1, 'Bar is required'),
 });
 
-
 /**
  * Playground controller.
  * This is a sample controller that demonstrates how to create a controller using the @vercube/core package.
@@ -52,7 +52,6 @@ const schemaQueryParams = z.object({
 @Controller('/api/playground')
 @Middleware(FirstMiddleware)
 export default class PlaygroundController {
-
   @Inject(StorageManager)
   private gStorageManager: StorageManager;
 
@@ -64,7 +63,10 @@ export default class PlaygroundController {
 
   @Message({ event: 'message' })
   @Emit('message')
-  public async onMessage(incomingMessage: unknown, peer: { id: string; ip: string; }): Promise<Record<string, string>> {
+  public async onMessage(
+    incomingMessage: unknown,
+    peer: { id: string; ip: string },
+  ): Promise<Record<string, string>> {
     console.log(incomingMessage, peer);
     return { foo: 'bar' };
   }
@@ -236,5 +238,4 @@ export default class PlaygroundController {
 
     return { message: `Something is ${something ? 'enabled' : 'disabled'}` };
   }
-
 }

@@ -19,5 +19,4 @@ describe('GlobalMiddlewareRegistry', () => {
     expect(registry.middlewares[0].middleware).toBe(TestMiddleware);
     expect(registry.middlewares[0].target).toBe('__global__');
   });
-
 });

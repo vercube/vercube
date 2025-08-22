@@ -1,3 +1,4 @@
+// oxlint-disable no-unused-vars
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createApp, type App, type ConfigTypes } from '@vercube/core';
 import { Container, initializeContainer } from '@vercube/di';
@@ -30,7 +31,7 @@ describe('@BroadcastOthers() decorator', () => {
 
   const config: ConfigTypes.Config = {
     logLevel: 'info',
-    server: { static: { dirs: ['./public'] } }
+    server: { static: { dirs: ['./public'] } },
   };
 
   beforeEach(async () => {
@@ -43,7 +44,9 @@ describe('@BroadcastOthers() decorator', () => {
 
     websocketService = container.get($WebsocketService);
 
-    vi.spyOn(websocketService, 'broadcastOthers').mockImplementation(broadcastSpy);
+    vi.spyOn(websocketService, 'broadcastOthers').mockImplementation(
+      broadcastSpy,
+    );
 
     initializeContainer(container);
   });

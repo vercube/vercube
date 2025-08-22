@@ -7,14 +7,13 @@ import { ErrorHandlerProvider } from '../ErrorHandler/ErrorHandlerProvider';
 import { StaticRequestHandler } from '../Router/StaticRequestHandler';
 /**
  * HTTP server implementation for handling incoming web requests
- * 
+ *
  * This class is responsible for:
  * - Initializing and managing the HTTP server
  * - Routing incoming requests to appropriate handlers
  * - Processing HTTP responses
  */
 export class HttpServer {
-
   /**
    * DI container for resolving dependencies
    */
@@ -53,7 +52,7 @@ export class HttpServer {
 
   /**
    * Adds a plugin to the HTTP server
-   * 
+   *
    * @param {ServerPlugin} plugin - The plugin to add
    * @returns {void}
    */
@@ -63,7 +62,7 @@ export class HttpServer {
 
   /**
    * Initializes the HTTP server and starts listening for requests
-   * 
+   *
    * @returns {Promise<void>} A promise that resolves when the server is ready
    */
   public async initialize(config: ConfigTypes.Config): Promise<void> {
@@ -91,7 +90,7 @@ export class HttpServer {
 
   /**
    * Listens for incoming requests on the HTTP server
-   * 
+   *
    * @returns {Promise<void>} A promise that resolves when the server is ready to listen
    */
   public async listen(): Promise<void> {
@@ -102,23 +101,27 @@ export class HttpServer {
 
   /**
    * Processes an incoming HTTP request
-   * 
+   *
    * This method:
    * 1. Resolves the route for the request
    * 2. Returns a 404 response if no route is found
    * 3. Delegates to the request handler for matched routes
-   * 
+   *
    * @param {Request} request - The incoming HTTP request
    * @returns {Promise<Response>} The HTTP response
    * @private
    */
   public async handleRequest(request: Request): Promise<Response> {
     try {
-      const route = this.gRouter.resolve({ path: request.url, method: request.method });
+      const route = this.gRouter.resolve({
+        path: request.url,
+        method: request.method,
+      });
 
       // if no route is found, try to serve static file
       if (!route) {
-        const response = await this.gStaticRequestHandler.handleRequest(request);
+        const response =
+          await this.gStaticRequestHandler.handleRequest(request);
 
         if (response) {
           return response;
@@ -131,6 +134,5 @@ export class HttpServer {
     } catch (error) {
       return this.gContainer.get(ErrorHandlerProvider).handleError(error);
     }
-
   }
 }

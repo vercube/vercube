@@ -5,6 +5,8 @@ import { ConfigTypes } from '../Types/ConfigTypes';
  * @param {ConfigTypes.Config} config - The configuration object to validate
  * @returns {ConfigTypes.Config} The validated configuration object
  */
-export function defineConfig<T = Record<string, unknown>>(config: ConfigTypes.Config<T>): ConfigTypes.Config<T> {
+export function defineConfig<T = Record<string, unknown>>(
+  config: ConfigTypes.Config<T>,
+): ConfigTypes.Config<T> {
   return config;
 }

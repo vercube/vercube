@@ -1,5 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
-import { convertResponseToAWSResponse, convertBodyToAWSResponse } from '../../src/Adapters/aws-lambda/Utils/Response';
+import {
+  convertResponseToAWSResponse,
+  convertBodyToAWSResponse,
+} from '../../src/Adapters/aws-lambda/Utils/Response';
 
 // Mock Headers.getAll method for testing
 class MockHeaders extends Headers {
@@ -24,12 +27,12 @@ describe('[AWS Lambda] Response Utils', () => {
       const headers = new MockHeaders({
         'Content-Type': 'application/json',
         'Cache-Control': 'no-cache',
-        'X-Custom-Header': 'custom-value'
+        'X-Custom-Header': 'custom-value',
       });
 
       const response = new Response('{"message": "success"}', {
         status: 200,
-        headers
+        headers,
       });
 
       const awsResponse = convertResponseToAWSResponse(response);
@@ -37,7 +40,7 @@ describe('[AWS Lambda] Response Utils', () => {
       expect(awsResponse.headers).toEqual({
         'content-type': 'application/json',
         'cache-control': 'no-cache',
-        'x-custom-header': 'custom-value'
+        'x-custom-header': 'custom-value',
       });
       expect(awsResponse.cookies).toBeUndefined();
       expect(awsResponse.multiValueHeaders).toBeUndefined();
@@ -45,42 +48,40 @@ describe('[AWS Lambda] Response Utils', () => {
 
     it('should handle cookies for API Gateway compatibility', () => {
       const headers = new MockHeaders({
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       });
       headers.setCookie('sessionId=abc123; HttpOnly; Secure');
       headers.setCookie('theme=dark; Path=/');
 
       const response = new Response('{"message": "success"}', {
         status: 200,
-        headers
+        headers,
       });
 
       // Replace the response.headers with our MockHeaders instance
       Object.defineProperty(response, 'headers', {
         value: headers,
         writable: true,
-        configurable: true
+        configurable: true,
       });
 
       // Verify the mock is working
       expect(headers.getSetCookie()).toEqual([
         'sessionId=abc123; HttpOnly; Secure',
-        'theme=dark; Path=/'
+        'theme=dark; Path=/',
       ]);
-
-
 
       const awsResponse = convertResponseToAWSResponse(response);
 
       expect(awsResponse.cookies).toEqual([
         'sessionId=abc123; HttpOnly; Secure',
-        'theme=dark; Path=/'
+        'theme=dark; Path=/',
       ]);
       expect(awsResponse.multiValueHeaders).toEqual({
         'set-cookie': [
           'sessionId=abc123; HttpOnly; Secure',
-          'theme=dark; Path=/'
-        ]
+          'theme=dark; Path=/',
+        ],
       });
     });
 
@@ -92,24 +93,26 @@ describe('[AWS Lambda] Response Utils', () => {
 
       const response = new Response('content', {
         status: 200,
-        headers
+        headers,
       });
 
       const awsResponse = convertResponseToAWSResponse(response);
 
-      expect(awsResponse.headers.accept).toBe('application/json, text/html, text/plain');
+      expect(awsResponse.headers.accept).toBe(
+        'application/json, text/html, text/plain',
+      );
     });
 
     it('should handle null/undefined header values', () => {
       const headers = new MockHeaders({
         'Valid-Header': 'valid-value',
         'Null-Header': null as any,
-        'Undefined-Header': undefined as any
+        'Undefined-Header': undefined as any,
       });
 
       const response = new Response('content', {
         status: 200,
-        headers
+        headers,
       });
 
       const awsResponse = convertResponseToAWSResponse(response);
@@ -122,25 +125,31 @@ describe('[AWS Lambda] Response Utils', () => {
     it('should throw error for invalid response', () => {
       expect(() => {
         convertResponseToAWSResponse(null as any);
-      }).toThrow('Invalid response: response must be a valid Response object with headers');
+      }).toThrow(
+        'Invalid response: response must be a valid Response object with headers',
+      );
 
       expect(() => {
         convertResponseToAWSResponse(undefined as any);
-      }).toThrow('Invalid response: response must be a valid Response object with headers');
+      }).toThrow(
+        'Invalid response: response must be a valid Response object with headers',
+      );
     });
 
     it('should handle response without headers', () => {
       const response = new Response('content', { status: 200 });
-      
+
       // Mock the headers property to be null
       Object.defineProperty(response, 'headers', {
         value: null,
-        writable: true
+        writable: true,
       });
 
       expect(() => {
         convertResponseToAWSResponse(response);
-      }).toThrow('Invalid response: response must be a valid Response object with headers');
+      }).toThrow(
+        'Invalid response: response must be a valid Response object with headers',
+      );
     });
   });
 
@@ -148,7 +157,7 @@ describe('[AWS Lambda] Response Utils', () => {
     it('should convert text response to UTF-8 string', async () => {
       const response = new Response('Hello, World!', {
         status: 200,
-        headers: { 'Content-Type': 'text/plain' }
+        headers: { 'Content-Type': 'text/plain' },
       });
 
       const awsBody = await convertBodyToAWSResponse(response);
@@ -161,7 +170,7 @@ describe('[AWS Lambda] Response Utils', () => {
       const jsonData = { message: 'success', data: { id: 1, name: 'John' } };
       const response = new Response(JSON.stringify(jsonData), {
         status: 200,
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
       });
 
       const awsBody = await convertBodyToAWSResponse(response);
@@ -174,7 +183,7 @@ describe('[AWS Lambda] Response Utils', () => {
       const binaryData = Buffer.from('Hello, Binary World!');
       const response = new Response(binaryData, {
         status: 200,
-        headers: { 'Content-Type': 'application/octet-stream' }
+        headers: { 'Content-Type': 'application/octet-stream' },
       });
 
       const awsBody = await convertBodyToAWSResponse(response);
@@ -210,13 +219,13 @@ describe('[AWS Lambda] Response Utils', () => {
         'application/javascript',
         'application/xml',
         'text/xml',
-        'application/x-www-form-urlencoded'
+        'application/x-www-form-urlencoded',
       ];
 
       for (const contentType of textContentTypes) {
         const response = new Response('text content', {
           status: 200,
-          headers: { 'Content-Type': contentType }
+          headers: { 'Content-Type': contentType },
         });
 
         const awsBody = await convertBodyToAWSResponse(response);
@@ -233,7 +242,7 @@ describe('[AWS Lambda] Response Utils', () => {
         'image/jpeg',
         'application/pdf',
         'video/mp4',
-        'audio/mpeg'
+        'audio/mpeg',
       ];
 
       const binaryData = Buffer.from('binary content');
@@ -241,7 +250,7 @@ describe('[AWS Lambda] Response Utils', () => {
       for (const contentType of binaryContentTypes) {
         const response = new Response(binaryData, {
           status: 200,
-          headers: { 'Content-Type': contentType }
+          headers: { 'Content-Type': contentType },
         });
 
         const awsBody = await convertBodyToAWSResponse(response);
@@ -261,35 +270,38 @@ describe('[AWS Lambda] Response Utils', () => {
     });
 
     it('should throw error for invalid response', async () => {
-      await expect(convertBodyToAWSResponse(null as any))
-        .rejects.toThrow('Invalid response: response must be a valid Response object');
+      await expect(convertBodyToAWSResponse(null as any)).rejects.toThrow(
+        'Invalid response: response must be a valid Response object',
+      );
 
-      await expect(convertBodyToAWSResponse(undefined as any))
-        .rejects.toThrow('Invalid response: response must be a valid Response object');
+      await expect(convertBodyToAWSResponse(undefined as any)).rejects.toThrow(
+        'Invalid response: response must be a valid Response object',
+      );
     });
 
     it('should handle stream errors gracefully', async () => {
       // Create a response with a problematic body stream
       const response = new Response('content', { status: 200 });
-      
+
       // Mock the body to throw an error
       const mockBody = {
-        pipeTo: vi.fn().mockRejectedValue(new Error('Stream error'))
+        pipeTo: vi.fn().mockRejectedValue(new Error('Stream error')),
       };
       Object.defineProperty(response, 'body', {
         value: mockBody,
-        writable: true
+        writable: true,
       });
 
-      await expect(convertBodyToAWSResponse(response))
-        .rejects.toThrow('Failed to convert response body: Stream error');
+      await expect(convertBodyToAWSResponse(response)).rejects.toThrow(
+        'Failed to convert response body: Stream error',
+      );
     });
 
     it('should handle large response bodies', async () => {
       const largeContent = 'x'.repeat(10_000);
       const response = new Response(largeContent, {
         status: 200,
-        headers: { 'Content-Type': 'text/plain' }
+        headers: { 'Content-Type': 'text/plain' },
       });
 
       const awsBody = await convertBodyToAWSResponse(response);
@@ -303,18 +315,18 @@ describe('[AWS Lambda] Response Utils', () => {
     it('should handle response without getSetCookie method (line 72)', () => {
       // Create a response with headers that don't have getSetCookie method
       const headers = new Headers({
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       });
 
       const response = new Response('{"message": "success"}', {
         status: 200,
-        headers
+        headers,
       });
 
       const awsResponse = convertResponseToAWSResponse(response);
 
       expect(awsResponse.headers).toEqual({
-        'content-type': 'application/json'
+        'content-type': 'application/json',
       });
       expect(awsResponse.cookies).toBeUndefined();
       expect(awsResponse.multiValueHeaders).toBeUndefined();
@@ -323,27 +335,27 @@ describe('[AWS Lambda] Response Utils', () => {
     it('should handle headers that do not have getSetCookie as a function (line 72)', () => {
       // Create mock headers where getSetCookie is not a function
       const mockHeaders = {
-        forEach: function(callback: (value: string, key: string) => void) {
+        forEach: function (callback: (value: string, key: string) => void) {
           callback('application/json', 'content-type');
         },
-        getSetCookie: 'not-a-function' // This is not a function
+        getSetCookie: 'not-a-function', // This is not a function
       };
 
       const response = new Response('{"message": "success"}', {
-        status: 200
+        status: 200,
       });
 
       // Replace the headers with our mock
       Object.defineProperty(response, 'headers', {
         value: mockHeaders,
         writable: true,
-        configurable: true
+        configurable: true,
       });
 
       const awsResponse = convertResponseToAWSResponse(response);
 
       expect(awsResponse.headers).toEqual({
-        'content-type': 'application/json'
+        'content-type': 'application/json',
       });
       expect(awsResponse.cookies).toBeUndefined();
       expect(awsResponse.multiValueHeaders).toBeUndefined();
@@ -353,23 +365,23 @@ describe('[AWS Lambda] Response Utils', () => {
       // Create a mock Headers object with a custom forEach implementation
       const mockHeaders = {
         getSetCookie: () => [],
-        forEach: function(callback: (value: string, key: string) => void) {
+        forEach: function (callback: (value: string, key: string) => void) {
           // Simulate headers with null and undefined values
           callback('valid-value', 'valid-header');
           callback(null as any, 'null-header');
           callback(undefined as any, 'undefined-header');
-        }
+        },
       };
 
       const response = new Response('content', {
-        status: 200
+        status: 200,
       });
 
       // Replace the headers with our mock
       Object.defineProperty(response, 'headers', {
         value: mockHeaders,
         writable: true,
-        configurable: true
+        configurable: true,
       });
 
       const awsResponse = convertResponseToAWSResponse(response);
@@ -380,9 +392,9 @@ describe('[AWS Lambda] Response Utils', () => {
     });
 
     it('should handle empty content type in isTextType (lines 154-155)', async () => {
-      const response = new Response('content', { 
+      const response = new Response('content', {
         status: 200,
-        headers: { 'Content-Type': '' } // Empty content type
+        headers: { 'Content-Type': '' }, // Empty content type
       });
 
       const awsBody = await convertBodyToAWSResponse(response);
@@ -394,7 +406,7 @@ describe('[AWS Lambda] Response Utils', () => {
 
     it('should handle stream abort error (lines 189-190)', async () => {
       const response = new Response('content', { status: 200 });
-      
+
       // Mock the body to simulate stream abort
       const mockBody = {
         pipeTo: vi.fn().mockImplementation((writableStream) => {
@@ -403,32 +415,32 @@ describe('[AWS Lambda] Response Utils', () => {
             writableStream.abort(new Error('Stream aborted'));
           }, 0);
           return Promise.reject(new Error('Stream aborted'));
-        })
+        }),
       };
-      
+
       Object.defineProperty(response, 'body', {
         value: mockBody,
-        writable: true
+        writable: true,
       });
 
-      await expect(convertBodyToAWSResponse(response))
-        .rejects.toThrow('Stream aborted');
+      await expect(convertBodyToAWSResponse(response)).rejects.toThrow(
+        'Stream aborted',
+      );
     });
 
     it('should handle missing content-type header as falsy value', async () => {
       // Test with explicitly undefined content-type
-      const response = new Response('content', { 
+      const response = new Response('content', {
         status: 200,
-        headers: new Headers() // No content-type header
+        headers: new Headers(), // No content-type header
       });
 
       // Mock headers.get to return undefined explicitly
-      const originalGet = response.headers.get;
       response.headers.get = vi.fn().mockReturnValue(undefined);
 
       const awsBody = await convertBodyToAWSResponse(response);
 
-      // Should treat missing content-type as binary 
+      // Should treat missing content-type as binary
       expect(awsBody.body).toBe(Buffer.from('content').toString('base64'));
       expect(awsBody.isBase64Encoded).toBe(true);
     });

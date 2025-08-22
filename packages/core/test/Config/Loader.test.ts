@@ -4,7 +4,7 @@ import { ConfigTypes, loadVercubeConfig } from '../../src';
 vi.mock('c12', () => {
   const mockLoadConfig = vi.fn();
   const mockSetupDotenv = vi.fn();
-  
+
   return {
     loadConfig: mockLoadConfig,
     setupDotenv: mockSetupDotenv,
@@ -17,7 +17,7 @@ describe('Config loader', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
-    
+
     const c12 = await import('c12');
     mockLoadConfig = vi.mocked(c12.loadConfig);
     mockSetupDotenv = vi.mocked(c12.setupDotenv);
@@ -29,8 +29,8 @@ describe('Config loader', () => {
       c12: {
         dotenv: {
           cwd: process.cwd(),
-        }
-      }
+        },
+      },
     };
 
     mockLoadConfig.mockResolvedValue({
@@ -38,12 +38,12 @@ describe('Config loader', () => {
         logLevel: 'info',
         server: {
           port: 3000,
-        }
+        },
       },
     });
 
     const config = await loadVercubeConfig(overrides);
-    
+
     expect(mockLoadConfig).toHaveBeenCalledWith({
       name: 'vercube',
       dotenv: overrides.c12?.dotenv,
@@ -57,11 +57,11 @@ describe('Config loader', () => {
       c12: {
         dotenv: {
           cwd: process.cwd(),
-        }
+        },
       }, // From overrides
       server: {
         port: 3000,
-      } // From loaded config
+      }, // From loaded config
     });
   });
 
@@ -71,12 +71,12 @@ describe('Config loader', () => {
         logLevel: 'info',
         server: {
           port: 3000,
-        }
+        },
       },
     });
 
     const config = await loadVercubeConfig();
-    
+
     expect(mockLoadConfig).toHaveBeenCalledWith({
       name: 'vercube',
       dotenv: true, // Should use default true when no overrides
@@ -88,7 +88,7 @@ describe('Config loader', () => {
       logLevel: 'info',
       server: {
         port: 3000,
-      }
+      },
     });
   });
 
@@ -103,12 +103,12 @@ describe('Config loader', () => {
         logLevel: 'info',
         server: {
           port: 3000,
-        }
+        },
       },
     });
 
     const config = await loadVercubeConfig(overrides);
-    
+
     expect(mockLoadConfig).toHaveBeenCalledWith({
       name: 'vercube',
       dotenv: true, // Should use default true when overrides.c12?.dotenv is undefined
@@ -121,7 +121,7 @@ describe('Config loader', () => {
       logLevel: 'debug', // From overrides
       server: {
         port: 3000,
-      } // From loaded config
+      }, // From loaded config
     });
   });
 
@@ -131,8 +131,8 @@ describe('Config loader', () => {
       c12: {
         dotenv: {
           cwd: process.cwd(),
-        }
-      }
+        },
+      },
     };
 
     const dotenvConfig = { cwd: '/custom/path' };
@@ -141,12 +141,12 @@ describe('Config loader', () => {
         logLevel: 'info',
         c12: {
           dotenv: dotenvConfig,
-        }
+        },
       },
     });
 
     const config = await loadVercubeConfig(overrides);
-    
+
     expect(mockSetupDotenv).toHaveBeenCalledWith(dotenvConfig);
     expect(config).toEqual(overrides);
   });
@@ -161,19 +161,19 @@ describe('Config loader', () => {
         logLevel: 'info',
         c12: {
           dotenv: true, // Not an object
-        }
+        },
       },
     });
 
     const config = await loadVercubeConfig(overrides);
-    
+
     expect(mockSetupDotenv).not.toHaveBeenCalled();
     // defu merges loaded config with overrides, with overrides taking precedence
     expect(config).toEqual({
       logLevel: 'debug', // From overrides
       c12: {
         dotenv: true, // From loaded config
-      }
+      },
     });
   });
 
@@ -190,7 +190,7 @@ describe('Config loader', () => {
     });
 
     const config = await loadVercubeConfig(overrides);
-    
+
     expect(mockSetupDotenv).not.toHaveBeenCalled();
     expect(config).toEqual(overrides);
   });
@@ -203,7 +203,7 @@ describe('Config loader', () => {
     mockLoadConfig.mockResolvedValue(null);
 
     const config = await loadVercubeConfig(overrides);
-    
+
     expect(mockSetupDotenv).not.toHaveBeenCalled();
     expect(config).toEqual(overrides);
   });
@@ -213,7 +213,7 @@ describe('Config loader', () => {
       logLevel: 'debug',
       server: {
         port: 8080,
-      }
+      },
     };
 
     mockLoadConfig.mockResolvedValue({
@@ -225,12 +225,12 @@ describe('Config loader', () => {
         },
         runtime: {
           env: 'production',
-        }
+        },
       },
     });
 
     const config = await loadVercubeConfig(overrides);
-    
+
     // Should merge with overrides taking precedence
     expect(config).toEqual({
       logLevel: 'debug', // From overrides
@@ -240,7 +240,7 @@ describe('Config loader', () => {
       },
       runtime: {
         env: 'production', // From loaded config
-      }
+      },
     });
   });
 
@@ -250,7 +250,7 @@ describe('Config loader', () => {
     });
 
     const config = await loadVercubeConfig();
-    
+
     expect(config).toEqual({});
   });
 
@@ -260,7 +260,7 @@ describe('Config loader', () => {
     });
 
     const config = await loadVercubeConfig();
-    
+
     expect(config).toEqual({});
   });
 });

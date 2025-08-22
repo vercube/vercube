@@ -5,7 +5,6 @@ import { LoggerProvider } from '../Common/LoggerProvider';
 import type { Logger } from '../Common/Logger';
 
 export class BaseLogger implements Logger {
-
   @Inject(Container)
   private gContainer: Container;
 
@@ -27,7 +26,7 @@ export class BaseLogger implements Logger {
 
   /**
    * Configure logger
-   * @param options 
+   * @param options
    */
   public configure(options: LoggerTypes.Options): void {
     this.fLogLevel = options?.logLevel ?? 'debug';
@@ -35,7 +34,7 @@ export class BaseLogger implements Logger {
     if (!options?.providers?.length) {
       return;
     }
-    
+
     // reset registerd providers
     this.fProviders.clear();
 
@@ -43,7 +42,9 @@ export class BaseLogger implements Logger {
     for (const logger of options.providers) {
       try {
         // Resolve provider instance
-        const provider = this.gContainer.resolve<LoggerProvider>(logger.provider);
+        const provider = this.gContainer.resolve<LoggerProvider>(
+          logger.provider,
+        );
 
         // Initialize provider
         provider.initialize(logger.options);
@@ -52,9 +53,15 @@ export class BaseLogger implements Logger {
         this.fProviders.set(logger.name, provider);
 
         // Set log level for provider. If not set, use global log level
-        this.fProvidersLevel.set(logger.name, logger.logLevel?? this.fLogLevel);
+        this.fProvidersLevel.set(
+          logger.name,
+          logger.logLevel ?? this.fLogLevel,
+        );
       } catch (error) {
-        console.error(`Failed to initialize logger provider: ${logger.provider.name}`, error);
+        console.error(
+          `Failed to initialize logger provider: ${logger.provider.name}`,
+          error,
+        );
       }
     }
   }
@@ -104,14 +111,18 @@ export class BaseLogger implements Logger {
    */
   protected printMessage(message: LoggerTypes.Message): void {
     // check if message level is enabled for any provider
-    const providersToProcess = [...this.fProviders.entries()].filter(([name]) => {
-      return isLogLevelEnabled(message.level, this.fProvidersLevel.get(name) ?? this.fLogLevel);
-    });
+    const providersToProcess = [...this.fProviders.entries()].filter(
+      ([name]) => {
+        return isLogLevelEnabled(
+          message.level,
+          this.fProvidersLevel.get(name) ?? this.fLogLevel,
+        );
+      },
+    );
 
     // process message through appenders
     for (const [, provider] of providersToProcess) {
       provider.processMessage(message);
     }
   }
-
 }

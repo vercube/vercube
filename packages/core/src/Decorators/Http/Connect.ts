@@ -3,7 +3,10 @@ import { MetadataResolver } from '../../Services/Metadata/MetadataResolver';
 import { RequestHandler } from '../../Services/Router/RequestHandler';
 import { MetadataTypes } from '../../Types/MetadataTypes';
 import { Router } from '../../Services/Router/Router';
-import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
+import {
+  initializeMetadata,
+  initializeMetadataMethod,
+} from '../../Utils/Utils';
 
 interface ConnectDecoratorOptions {
   path: string;
@@ -18,8 +21,10 @@ interface ConnectDecoratorOptions {
  *
  * @extends {BaseDecorator<ConnectDecoratorOptions>}
  */
-class ConnectDecorator extends BaseDecorator<ConnectDecoratorOptions, MetadataTypes.Metadata> {
-
+class ConnectDecorator extends BaseDecorator<
+  ConnectDecoratorOptions,
+  MetadataTypes.Metadata
+> {
   @Inject(Router)
   private gRouter!: Router;
 
@@ -49,11 +54,12 @@ class ConnectDecorator extends BaseDecorator<ConnectDecoratorOptions, MetadataTy
     this.gRouter.addRoute({
       path: this.options.path,
       method: 'CONNECT',
-      handler: this.gRequestHandler.prepareHandler({ instance: this.instance, propertyName: this.propertyName }),
+      handler: this.gRequestHandler.prepareHandler({
+        instance: this.instance,
+        propertyName: this.propertyName,
+      }),
     });
-
   }
-
 }
 
 /**

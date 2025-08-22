@@ -24,16 +24,16 @@ describe('[auth] AuthMiddleware', () => {
     testContainer.bind(AuthProvider, MockAuthProvider);
 
     initializeContainer(testContainer);
-    
+
     const testMiddleware = testContainer.get(AuthMiddleware);
-    
+
     // Call the middleware with a mock request
     await testMiddleware.onRequest(
       new Request('http://localhost'),
       new Response(),
       { middlewareArgs: {} },
     );
-    
+
     // No error should be thrown
     expect(true).toBe(true);
   });
@@ -45,23 +45,25 @@ describe('[auth] AuthMiddleware', () => {
     testContainer.bind(ErrorAuthProvider);
     testContainer.bindMock(Logger, mockLogger);
     initializeContainer(testContainer);
-    
+
     const testMiddleware = testContainer.get(AuthMiddleware);
-    
+
     // Call the middleware with a mock request and custom provider
     try {
-      await testMiddleware.onRequest(
-        {} as Request,
-        {} as Response,
-        { middlewareArgs: { provider: ErrorAuthProvider as unknown as typeof AuthProvider } },
-      );
-      
+      await testMiddleware.onRequest({} as Request, {} as Response, {
+        middlewareArgs: {
+          provider: ErrorAuthProvider as unknown as typeof AuthProvider,
+        },
+      });
+
       // Should not reach here
       expect(true).toBe(false);
     } catch (error) {
       // Should throw an UnauthorizedError
       expect(error).toBeInstanceOf(UnauthorizedError);
-      expect((error as UnauthorizedError).message).toBe('Authentication failed');
+      expect((error as UnauthorizedError).message).toBe(
+        'Authentication failed',
+      );
     }
   });
 
@@ -71,17 +73,17 @@ describe('[auth] AuthMiddleware', () => {
     testContainer.bind(AuthMiddleware);
     testContainer.bindMock(Logger, mockLogger);
     initializeContainer(testContainer);
-    
+
     const testMiddleware = testContainer.get(AuthMiddleware);
-    
+
     // Call the middleware with a mock request
-    await testMiddleware.onRequest(
-      {} as Request,
-      {} as Response,
-      { middlewareArgs: {} },
-    );
-    
+    await testMiddleware.onRequest({} as Request, {} as Response, {
+      middlewareArgs: {},
+    });
+
     // Should log a warning
-    expect(mockLogger.warn).toHaveBeenCalledWith('AuthMiddleware::AuthProvider is not registered');
+    expect(mockLogger.warn).toHaveBeenCalledWith(
+      'AuthMiddleware::AuthProvider is not registered',
+    );
   });
-}); 
+});
