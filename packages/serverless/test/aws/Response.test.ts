@@ -297,5 +297,140 @@ describe('[AWS Lambda] Response Utils', () => {
       expect(awsBody.body).toBe(largeContent);
       expect(awsBody.body.length).toBe(10_000);
     });
+
+    // Tests to cover uncovered lines for 100% coverage
+
+    it('should handle response without getSetCookie method (line 72)', () => {
+      // Create a response with headers that don't have getSetCookie method
+      const headers = new Headers({
+        'Content-Type': 'application/json'
+      });
+
+      const response = new Response('{"message": "success"}', {
+        status: 200,
+        headers
+      });
+
+      const awsResponse = convertResponseToAWSResponse(response);
+
+      expect(awsResponse.headers).toEqual({
+        'content-type': 'application/json'
+      });
+      expect(awsResponse.cookies).toBeUndefined();
+      expect(awsResponse.multiValueHeaders).toBeUndefined();
+    });
+
+    it('should handle headers that do not have getSetCookie as a function (line 72)', () => {
+      // Create mock headers where getSetCookie is not a function
+      const mockHeaders = {
+        forEach: function(callback: (value: string, key: string) => void) {
+          callback('application/json', 'content-type');
+        },
+        getSetCookie: 'not-a-function' // This is not a function
+      };
+
+      const response = new Response('{"message": "success"}', {
+        status: 200
+      });
+
+      // Replace the headers with our mock
+      Object.defineProperty(response, 'headers', {
+        value: mockHeaders,
+        writable: true,
+        configurable: true
+      });
+
+      const awsResponse = convertResponseToAWSResponse(response);
+
+      expect(awsResponse.headers).toEqual({
+        'content-type': 'application/json'
+      });
+      expect(awsResponse.cookies).toBeUndefined();
+      expect(awsResponse.multiValueHeaders).toBeUndefined();
+    });
+
+    it('should handle explicit null and undefined header values (lines 63-66)', () => {
+      // Create a mock Headers object with a custom forEach implementation
+      const mockHeaders = {
+        getSetCookie: () => [],
+        forEach: function(callback: (value: string, key: string) => void) {
+          // Simulate headers with null and undefined values
+          callback('valid-value', 'valid-header');
+          callback(null as any, 'null-header');
+          callback(undefined as any, 'undefined-header');
+        }
+      };
+
+      const response = new Response('content', {
+        status: 200
+      });
+
+      // Replace the headers with our mock
+      Object.defineProperty(response, 'headers', {
+        value: mockHeaders,
+        writable: true,
+        configurable: true
+      });
+
+      const awsResponse = convertResponseToAWSResponse(response);
+
+      expect(awsResponse.headers['valid-header']).toBe('valid-value');
+      expect(awsResponse.headers['null-header']).toBe('null');
+      expect(awsResponse.headers['undefined-header']).toBe('undefined');
+    });
+
+    it('should handle empty content type in isTextType (lines 154-155)', async () => {
+      const response = new Response('content', { 
+        status: 200,
+        headers: { 'Content-Type': '' } // Empty content type
+      });
+
+      const awsBody = await convertBodyToAWSResponse(response);
+
+      // Should treat empty content-type as binary and base64 encode
+      expect(awsBody.body).toBe(Buffer.from('content').toString('base64'));
+      expect(awsBody.isBase64Encoded).toBe(true);
+    });
+
+    it('should handle stream abort error (lines 189-190)', async () => {
+      const response = new Response('content', { status: 200 });
+      
+      // Mock the body to simulate stream abort
+      const mockBody = {
+        pipeTo: vi.fn().mockImplementation((writableStream) => {
+          // Simulate calling the abort method
+          setTimeout(() => {
+            writableStream.abort(new Error('Stream aborted'));
+          }, 0);
+          return Promise.reject(new Error('Stream aborted'));
+        })
+      };
+      
+      Object.defineProperty(response, 'body', {
+        value: mockBody,
+        writable: true
+      });
+
+      await expect(convertBodyToAWSResponse(response))
+        .rejects.toThrow('Stream aborted');
+    });
+
+    it('should handle missing content-type header as falsy value', async () => {
+      // Test with explicitly undefined content-type
+      const response = new Response('content', { 
+        status: 200,
+        headers: new Headers() // No content-type header
+      });
+
+      // Mock headers.get to return undefined explicitly
+      const originalGet = response.headers.get;
+      response.headers.get = vi.fn().mockReturnValue(undefined);
+
+      const awsBody = await convertBodyToAWSResponse(response);
+
+      // Should treat missing content-type as binary 
+      expect(awsBody.body).toBe(Buffer.from('content').toString('base64'));
+      expect(awsBody.isBase64Encoded).toBe(true);
+    });
   });
 });

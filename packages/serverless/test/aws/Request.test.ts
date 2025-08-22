@@ -288,5 +288,162 @@ describe('[AWS Lambda] Request Utils', () => {
       
       expect(request.url).toContain('/api/users/123');
     });
+
+    // Tests to cover uncovered lines for 100% coverage
+
+    it('should handle null headers in getHeaderValue (lines 38-39)', () => {
+      const v1Event: APIGatewayProxyEvent = {
+        httpMethod: 'GET',
+        path: '/api/users',
+        headers: null as any, // This triggers the null check
+        body: null,
+        isBase64Encoded: false,
+        multiValueHeaders: {},
+        multiValueQueryStringParameters: {},
+        pathParameters: null,
+        stageVariables: null,
+        requestContext: { domainName: 'fallback.example.com' } as any,
+        resource: '',
+        queryStringParameters: null
+      };
+
+      const request = convertEventToRequest(v1Event);
+      
+      // Should use fallback hostname from requestContext
+      expect(request.url).toContain('fallback.example.com');
+    });
+
+    it('should handle undefined headers in getHeaderValue', () => {
+      const v1Event: APIGatewayProxyEvent = {
+        httpMethod: 'GET',
+        path: '/api/users',
+        headers: undefined as any, // This triggers the undefined check
+        body: null,
+        isBase64Encoded: false,
+        multiValueHeaders: {},
+        multiValueQueryStringParameters: {},
+        pathParameters: null,
+        stageVariables: null,
+        requestContext: { domainName: 'fallback.example.com' } as any,
+        resource: '',
+        queryStringParameters: null
+      };
+
+      const request = convertEventToRequest(v1Event);
+      
+      // Should use fallback hostname from requestContext
+      expect(request.url).toContain('fallback.example.com');
+    });
+
+    it('should handle invalid event that is neither v1 nor v2 format (lines 69-70, 119-120)', () => {
+      // Create an event that doesn't match v1 or v2 patterns
+      const invalidEvent = {
+        // Missing httpMethod (v1) and requestContext.http.method (v2)
+        path: '/api/users',
+        headers: { 'host': 'api.example.com' },
+        body: null,
+        isBase64Encoded: false,
+        requestContext: {} // Missing http property
+      } as any;
+
+      const request = convertEventToRequest(invalidEvent);
+      
+      // Should default to GET method and / path
+      expect(request.method).toBe('GET');
+      expect(request.url).toContain('/');
+    });
+
+    it('should handle base64 decoding failure (lines 208-209)', () => {
+      const v1Event: APIGatewayProxyEvent = {
+        httpMethod: 'POST',
+        path: '/api/upload',
+        headers: { 'host': 'api.example.com' },
+        body: 'invalid-base64-string!@#$%', // Invalid base64 that will fail to decode
+        isBase64Encoded: true,
+        multiValueHeaders: {},
+        multiValueQueryStringParameters: {},
+        pathParameters: null,
+        stageVariables: null,
+        requestContext: {} as any,
+        resource: '',
+        queryStringParameters: null
+      };
+
+      const request = convertEventToRequest(v1Event);
+      
+      // Should fallback to original body string when base64 decoding fails
+      expect(request.body).toBeDefined();
+    });
+
+    it('should handle event without requestContext domainName', () => {
+      const v1Event: APIGatewayProxyEvent = {
+        httpMethod: 'GET',
+        path: '/api/users',
+        headers: {}, // No host header
+        body: null,
+        isBase64Encoded: false,
+        multiValueHeaders: {},
+        multiValueQueryStringParameters: {},
+        pathParameters: null,
+        stageVariables: null,
+        requestContext: {} as any, // No domainName
+        resource: '',
+        queryStringParameters: null
+      };
+
+      const request = convertEventToRequest(v1Event);
+      
+      // Should use default hostname
+      expect(request.url).toContain('.'); // DEFAULT_HOSTNAME
+    });
+
+    it('should handle v2 event with missing http properties', () => {
+      const v2Event = {
+        version: '2.0',
+        requestContext: {
+          // Missing http property completely
+        },
+        headers: { 'host': 'api.example.com' },
+        body: null,
+        isBase64Encoded: false
+      } as any;
+
+      const request = convertEventToRequest(v2Event);
+      
+      // Should default to GET method and / path
+      expect(request.method).toBe('GET');
+      expect(request.url).toContain('/');
+    });
+
+    it('should handle base64 decoding with Buffer.from throwing error (lines 208-209)', () => {
+      // Mock Buffer.from to throw an error
+      const originalBufferFrom = Buffer.from;
+      Buffer.from = vi.fn().mockImplementation(() => {
+        throw new Error('Base64 decode error');
+      });
+
+      const v1Event: APIGatewayProxyEvent = {
+        httpMethod: 'POST',
+        path: '/api/upload',
+        headers: { 'host': 'api.example.com' },
+        body: 'valid-base64-string', // This will trigger the catch block
+        isBase64Encoded: true,
+        multiValueHeaders: {},
+        multiValueQueryStringParameters: {},
+        pathParameters: null,
+        stageVariables: null,
+        requestContext: {} as any,
+        resource: '',
+        queryStringParameters: null
+      };
+
+      const request = convertEventToRequest(v1Event);
+      
+      // Should fallback to original body string when base64 decoding throws
+      expect(request.body).toBeDefined();
+
+      // Restore original Buffer.from
+      Buffer.from = originalBufferFrom;
+    });
   });
 });

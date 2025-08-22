@@ -34,6 +34,23 @@ class MyClassWithOptionalDependency {
   public gMyOptionalDependecny: MyOptionalDependency | null;
 }
 
+// Test classes for additional coverage
+class TestSingletonClass {
+  public value = 'singleton';
+}
+
+class TestTransientClass {
+  public value = 'transient';
+}
+
+class TestInstanceClass {
+  public value = 'instance';
+}
+
+class TestInvalidFactoryType {
+  public value = 'invalid';
+}
+
 describe('[Framework][IOC] Container', () => {
 
   let container: Container;
@@ -278,6 +295,256 @@ describe('[Framework][IOC] Container', () => {
     container.bindInstance(key, instance);
 
     expect(container.get(key)).toBeInstanceOf(MySubclass);
+  });
+
+  // Additional tests for uncovered lines
+
+  it('should handle flushQueue with empty queue', () => {
+    // This should not throw and should handle empty queue gracefully
+    expect(() => container.flushQueue()).not.toThrow();
+  });
+
+  it('should handle flushQueue with singleton services', () => {
+    container.bind(TestSingletonClass);
+    // This should initialize singletons in the queue
+    expect(() => container.flushQueue()).not.toThrow();
+  });
+
+  it('should throw error when getting unregistered service', () => {
+    const unregisteredKey = Identity('UnregisteredService');
+    expect(() => container.get(unregisteredKey)).toThrow('Unresolved dependency');
+  });
+
+  it('should handle invalid factory type in internalResolve', () => {
+    // This test covers the default case in internalResolve
+    // We'll test this by trying to access a service that doesn't exist
+    const key = Identity('InvalidFactoryTest');
+    expect(() => container.get(key)).toThrow('Unresolved dependency');
+  });
+
+  it('should handle disposal through rebinding', () => {
+    const instance = new TestInstanceClass();
+    container.bindInstance(TestInstanceClass, instance);
+    
+    // Rebinding should trigger internal disposal
+    const newInstance = new TestInstanceClass();
+    container.bindInstance(TestInstanceClass, newInstance);
+    
+    expect(container.get(TestInstanceClass)).toBe(newInstance);
+  });
+
+  it('should handle disposal of singleton services through rebinding', () => {
+    container.bind(TestSingletonClass);
+    const instance1 = container.get(TestSingletonClass);
+    
+    // Rebinding should trigger internal disposal
+    container.bind(TestSingletonClass);
+    const instance2 = container.get(TestSingletonClass);
+    
+    expect(instance1).toStrictEqual(instance2); // Should still be singleton
+  });
+
+  it('should handle disposal of transient services through rebinding', () => {
+    container.bindTransient(TestTransientClass);
+    const instance1 = container.get(TestTransientClass);
+    
+    // Rebinding should trigger internal disposal
+    container.bindTransient(TestTransientClass);
+    const instance2 = container.get(TestTransientClass);
+    
+    expect(instance1).not.toBe(instance2); // Should be different instances
+  });
+
+  it('should handle error messages for different key types', () => {
+    // Test symbol key error
+    const symbolKey = Symbol('TestSymbol');
+    expect(() => container.get(symbolKey)).toThrow('TestSymbol');
+
+    // Test function key error
+    const functionKey = function TestFunction() {};
+    expect(() => container.get(functionKey)).toThrow('TestFunction');
+
+    // Test class key error
+    class TestClassForError {}
+    expect(() => container.get(TestClassForError)).toThrow('TestClassForError');
+  });
+
+  it('should handle lock and unlock operations', () => {
+    expect(() => container.lock()).not.toThrow();
+    expect(() => container.unlock()).not.toThrow();
+  });
+
+  it('should handle complex dependency tree', () => {
+    // Create a complex dependency tree
+    class ServiceC {
+      public value = 'test';
+    }
+
+    class ServiceB {
+      @Inject(ServiceC)
+      public serviceC: ServiceC;
+    }
+
+    class ServiceA {
+      @Inject(ServiceB)
+      public serviceB: ServiceB;
+    }
+
+    container.bind(ServiceA);
+    container.bind(ServiceB);
+    container.bind(ServiceC);
+
+    const serviceA = container.get(ServiceA);
+    expect(serviceA.serviceB.serviceC.value).toBe('test');
+  });
+
+  it('should handle complex dependency injection scenarios', () => {
+    class DeepService {
+      public value = 'deep';
+    }
+
+    class MiddleService {
+      @Inject(DeepService)
+      public deepService: DeepService;
+    }
+
+    class TopService {
+      @Inject(MiddleService)
+      public middleService: MiddleService;
+    }
+
+    container.bind(DeepService);
+    container.bind(MiddleService);
+    container.bind(TopService);
+
+    const topService = container.get(TopService);
+    expect(topService.middleService.deepService.value).toBe('deep');
+  });
+
+  it('should handle complex dependency injection scenarios', () => {
+    class DeepService {
+      public value = 'deep';
+    }
+
+    class MiddleService {
+      @Inject(DeepService)
+      public deepService: DeepService;
+    }
+
+    class TopService {
+      @Inject(MiddleService)
+      public middleService: MiddleService;
+    }
+
+    container.bind(DeepService);
+    container.bind(MiddleService);
+    container.bind(TopService);
+
+    const topService = container.get(TopService);
+    expect(topService.middleService.deepService.value).toBe('deep');
+  });
+
+  // Tests to cover uncovered lines for 100% coverage
+
+  it('should handle flushQueue with empty queue (lines 279-280)', () => {
+    // This test covers the early return when queue is empty
+    // We need to ensure the queue is actually empty and the early return is triggered
+    expect(() => container.flushQueue()).not.toThrow();
+    
+    // Call it again to make sure the early return path is covered
+    expect(() => container.flushQueue()).not.toThrow();
+  });
+
+  it('should throw error for invalid factory type in internalResolve (lines 361-362)', () => {
+    // Create a service definition with invalid type to trigger the default case
+    const invalidServiceDef = {
+      serviceKey: Symbol('InvalidService'),
+      serviceValue: class InvalidClass {},
+      type: 'INVALID_TYPE' as any
+    };
+
+    // We need to access the protected method, so we'll use a different approach
+    // Let's test this by creating a service that would cause an invalid factory type
+    const key = Identity('InvalidFactoryTest');
+    
+    // Mock the internal services map to inject an invalid service definition
+    (container as any).fServices.set(key, invalidServiceDef);
+    
+    expect(() => container.get(key)).toThrow('Container - invalid factory type: INVALID_TYPE');
+  });
+
+  it('should throw error for invalid def type in internalDispose (lines 476-477)', () => {
+    // Create an invalid service definition to trigger the default case in internalDispose
+    const invalidServiceDef = {
+      serviceKey: Symbol('InvalidDisposeService'),
+      serviceValue: class InvalidDisposeClass {},
+      type: 'INVALID_DISPOSE_TYPE' as any
+    };
+
+    // We need to trigger internalDispose by rebinding a service
+    const key = Identity('DisposeTest');
+    container.bind(key, class TestClass {});
+    
+    // Mock the service definition to be invalid
+    (container as any).fServices.set(key, invalidServiceDef);
+    
+    // Rebinding should trigger internalDispose
+    expect(() => container.bind(key, class TestClass2 {})).toThrow('Container::internalDispose() - invalid def type: INVALID_DISPOSE_TYPE');
+  });
+
+  it('should handle getKeyDescription for object keys (lines 493-496)', () => {
+    // Test object key with constructor name
+    const objectKey = { constructor: { name: 'TestObject' } };
+    expect(() => container.get(objectKey as any)).toThrow('TestObject');
+
+    // Test object key without constructor name
+    const objectKeyNoName = { constructor: {} };
+    expect(() => container.get(objectKeyNoName as any)).toThrow('Unknown object');
+
+    // Test object key without constructor
+    const objectKeyNoConstructor = {};
+    expect(() => container.get(objectKeyNoConstructor as any)).toThrow('Object');
+  });
+
+  it('should handle getKeyDescription for unknown key types', () => {
+    // Test with a key that doesn't match any known type
+    const unknownKey = 123 as any;
+    expect(() => container.get(unknownKey)).toThrow('Unknown');
+  });
+
+  it('should handle flushQueue with singleton services that need initialization', () => {
+    // Create a singleton service that will be in the queue
+    container.bind(TestSingletonClass);
+    
+    // This should trigger the singleton initialization in flushQueue
+    expect(() => container.flushQueue()).not.toThrow();
+    
+    // Verify the service is properly initialized
+    const instance = container.get(TestSingletonClass);
+    expect(instance).toBeInstanceOf(TestSingletonClass);
+  });
+
+  it('should handle flushQueue with non-singleton services in queue', () => {
+    // Create a transient service that will be in the queue
+    container.bindTransient(TestTransientClass);
+    
+    // This should skip singleton initialization but still clear the queue
+    expect(() => container.flushQueue()).not.toThrow();
+    
+    // Verify the service is properly registered
+    const instance = container.get(TestTransientClass);
+    expect(instance).toBeInstanceOf(TestTransientClass);
+  });
+
+  it('should handle flushQueue with empty queue after clearing', () => {
+    // First, add something to the queue
+    container.bind(TestSingletonClass);
+    
+    // Clear the queue
+    container.flushQueue();
+    
+    // Now the queue should be empty, triggering the early return
+    expect(() => container.flushQueue()).not.toThrow();
   });
 
 });

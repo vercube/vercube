@@ -1,16 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { Container, initializeContainer } from '@vercube/di';
+import { Container, destroyContainer, initializeContainer } from '@vercube/di';
 import { Listen, HooksService } from '../../../src';
 
 class TestEvent {}
 
 class Test {
-
   @Listen(TestEvent)
   public eventHandler() {}
 }
 
-describe('Debounce decorator', () => {
+describe('Listen decorator', () => {
 
   let container: Container;
   let tester: Test;
@@ -28,9 +27,24 @@ describe('Debounce decorator', () => {
     vi.spyOn(tester, 'eventHandler');
   });
 
-  it('call handler on event dispatch', async () => {
+  it('should call handler on event dispatch', async () => {
     gHooksService.trigger(TestEvent);
 
     expect(tester.eventHandler).toHaveBeenCalled();
+  });
+
+  it('should unregister event listener when decorator is destroyed', async () => {
+    const offSpy = vi.spyOn(gHooksService, 'off');
+    
+    gHooksService.trigger(TestEvent);
+    expect(tester.eventHandler).toHaveBeenCalledTimes(1);
+    
+    destroyContainer(container);
+    
+    expect(offSpy).toHaveBeenCalled();
+    
+    vi.clearAllMocks();
+    gHooksService.trigger(TestEvent);
+    expect(tester.eventHandler).not.toHaveBeenCalled();
   });
 });

@@ -18,6 +18,11 @@ export class PluginsRegistry {
    */
   public register<T = unknown>(plugin: typeof BasePlugin<T>, options?: T): void {
     const instance = this.gContainer.resolve(plugin);
+
+    if (!instance.name) {
+      throw new Error('Plugin must have a name');
+    }
+
     this.fPlugins.set(instance.name, { instance, options });
   }
 

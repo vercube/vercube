@@ -4,6 +4,7 @@ import { BaseMiddleware } from '../Services/Middleware/BaseMiddleware';
 import type { MiddlewareOptions } from '../Types/CommonTypes';
 import { BadRequestError } from '../Errors/Http/BadRequestError';
 import { ValidationProvider } from '../Services/Validation/ValidationProvider';
+import { Logger } from '@vercube/logger';
 
 /**
  * Middleware for validating request data against a schema
@@ -15,6 +16,9 @@ import { ValidationProvider } from '../Services/Validation/ValidationProvider';
  * await middleware.use(event, { schema: myValidationSchema });
  */
 export class ValidationMiddleware implements BaseMiddleware {
+
+  @InjectOptional(Logger)
+  private gLogger: Logger | null;
 
   @InjectOptional(ValidationProvider)
   private gValidationProvider: ValidationProvider | null;
@@ -29,7 +33,7 @@ export class ValidationMiddleware implements BaseMiddleware {
    */
   public async onRequest(request: Request, response: Response, args: MiddlewareOptions): Promise<void> {
     if (!this.gValidationProvider) {
-      console.warn('ValidationMiddleware::ValidationProvider is not registered');
+      this.gLogger?.warn('ValidationMiddleware::ValidationProvider', 'Validation provider is not registered');
       return;
     }
 

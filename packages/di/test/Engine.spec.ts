@@ -25,6 +25,12 @@ describe('[Framework][IOC] Engine', () => {
       expect(entry?.deps[0].type).toBe(IOC.DependencyType.STANDARD);
     });
 
+    it('should return null for class without dependencies', () => {
+      class ClassWithoutDeps {}
+      const entry = IOCEngine.getEntryForClass(ClassWithoutDeps);
+      expect(entry).toBeNull();
+    });
+
     it('should get dependencies for an instance', () => {
       const instance = new TestClass();
       const deps = IOCEngine.getDeps(instance);
@@ -149,6 +155,78 @@ describe('[Framework][IOC] Engine', () => {
 
       IOCEngine.injectDeps(container, instance, IOC.InjectMethod.STATIC);
       expect(instance.derivedDep.derivedValue).toBe('custom');
+    });
+  });
+
+  // Tests to cover uncovered lines for 100% coverage
+
+  describe('Edge Cases', () => {
+    it('should handle getDeps with undefined entry (lines 86-87)', () => {
+      // Create an instance of a class that has no @Inject decorators
+      class ClassWithoutInject {}
+      const instance = new ClassWithoutInject();
+      
+      // This should return an empty array when no entry exists
+      const deps = IOCEngine.getDeps(instance);
+      expect(deps).toEqual([]);
+    });
+
+    it('should handle getEntryForClass with existing entry (line 73)', () => {
+      // Create a class with @Inject decorator to ensure an entry exists
+      class TestDependency {}
+      class TestClass {
+        @Inject(TestDependency)
+        public dep!: TestDependency;
+      }
+      
+      // This should return the entry (not null) when it exists
+      const entry = IOCEngine.getEntryForClass(TestClass);
+      expect(entry).not.toBeNull();
+      expect(entry?.deps.length).toBe(1);
+    });
+
+    it('should handle getDeps with entry but undefined deps (lines 86-87)', () => {
+      // Create a class with @Inject decorator
+      class TestDependency {}
+      class TestClass {
+        @Inject(TestDependency)
+        public dep!: TestDependency;
+      }
+      
+      const instance = new TestClass();
+      
+      // Get the entry and manually modify it to have undefined deps
+      const entry = IOCEngine.getEntryForClass(TestClass);
+      if (entry) {
+        // Temporarily set deps to undefined to test the fallback
+        const originalDeps = entry.deps;
+        entry.deps = undefined as any;
+        
+        const deps = IOCEngine.getDeps(instance);
+        expect(deps).toEqual([]);
+        
+        // Restore the original deps
+        entry.deps = originalDeps;
+      }
+    });
+
+    it('should handle injectDeps with null prototype (lines 106-107)', () => {
+      // Create an object with null prototype
+      const instanceWithNullPrototype = Object.create(null);
+      
+      // This should not throw and should return early
+      expect(() => {
+        IOCEngine.injectDeps(container, instanceWithNullPrototype, IOC.InjectMethod.STATIC);
+      }).not.toThrow();
+    });
+
+    it('should handle getDeps with null prototype', () => {
+      // Create an object with null prototype
+      const instanceWithNullPrototype = Object.create(null);
+      
+      // This should return an empty array
+      const deps = IOCEngine.getDeps(instanceWithNullPrototype);
+      expect(deps).toEqual([]);
     });
   });
 }); 

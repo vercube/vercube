@@ -1,16 +1,20 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Container } from '@vercube/di';
-import { createApp, type App } from '../../src';
+import { type App } from '../../src';
 import { HttpServer } from '../../src/Services/HttpServer/HttpServer';
 import { Router } from '../../src/Services/Router/Router';
 import { StaticRequestHandler } from '../../src/Services/Router/StaticRequestHandler';
 import type { ConfigTypes } from '../../src/Types/ConfigTypes';
+import { createTestApp } from '../Utils/App.mock';
+import { PluginsRegistry } from '../../src/Services/Plugins/PluginsRegistry';
+import { MockPlugin } from '../Utils/Plugin.mock';
 
 vi.mock('srvx', () => ({
   serve: vi.fn().mockReturnValue({
     serve: vi.fn(),
     ready: vi.fn().mockResolvedValue(undefined),
   }),
+  FastResponse: vi.fn(),
 }));
 
 describe('App', () => {
@@ -26,10 +30,13 @@ describe('App', () => {
         etag: true,
       },
     },
+    runtime: {
+      test: 'test',
+    },
   };
 
   beforeEach(async () => {  
-    app = await createApp({ cfg: config });
+    app = await createTestApp({ cfg: config });
     container = app.container;
   });
 
@@ -65,4 +72,31 @@ describe('App', () => {
       await expect(app.listen()).rejects.toThrow('App is already initialized');
     });
   });
+
+  describe('fetch', () => {
+    it('should fetch a request', async () => {
+      const request = new Request('http://localhost/mock/get');
+      const spyHttpServer = vi.spyOn(container.get(HttpServer), 'handleRequest');
+
+      await app.fetch(request);
+
+      expect(spyHttpServer).toHaveBeenCalledWith(request);
+    });
+  });
+
+  describe('config', () => {
+    it ('should return config without runtime', () => {
+      expect(app.config.runtime).toBeUndefined();
+    })
+  });
+
+  describe('plugins', () => {
+    it ('should add plugin', () => {
+      const spyOnPluginsRegistry = vi.spyOn(container.get(PluginsRegistry), 'register');
+      app.addPlugin(MockPlugin);
+
+      expect(spyOnPluginsRegistry).toHaveBeenCalledWith(MockPlugin, undefined);
+    });
+  });
+
 }); 
