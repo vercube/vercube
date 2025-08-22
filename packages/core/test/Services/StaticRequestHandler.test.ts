@@ -101,7 +101,7 @@ describe('StaticRequestHandler', () => {
     });
 
     it('should return undefined when dirs is undefined', async () => {
-      staticHandler.initialize({ dirs: undefined });
+      staticHandler.initialize({ dirs: undefined as any });
       const request = new Request('http://localhost/public/test.html');
 
       const result = await staticHandler.handleRequest(request);

@@ -201,7 +201,7 @@ describe('Headers Resolvers', () => {
       const result = getRequestHeaders(event);
 
       const headerEntries: [string, string][] = [];
-      for (const [key, value] of result.entries()) {
+      for (const [key, value] of (result as any).entries()) {
         headerEntries.push([key, value]);
       }
 
@@ -224,7 +224,7 @@ describe('Headers Resolvers', () => {
       const event = createMockEvent(headers);
       const result = getRequestHeaders(event);
 
-      const entries = [...result.entries()];
+      const entries = [...(result as any).entries()];
       expect(entries).toHaveLength(2);
       expect(entries).toEqual(
         expect.arrayContaining([
@@ -244,7 +244,7 @@ describe('Headers Resolvers', () => {
       const event = createMockEvent(headers);
       const result = getRequestHeaders(event);
 
-      const keys = [...result.keys()];
+      const keys = [...(result as any).keys()];
       expect(keys).toHaveLength(3);
       expect(keys).toEqual(expect.arrayContaining(['content-type', 'authorization', 'user-agent']));
     });
@@ -259,7 +259,7 @@ describe('Headers Resolvers', () => {
       const event = createMockEvent(headers);
       const result = getRequestHeaders(event);
 
-      const values = [...result.values()];
+      const values = [...(result as any).values()];
       expect(values).toHaveLength(3);
       expect(values).toEqual(expect.arrayContaining(['application/json', 'Bearer token123', 'Mozilla/5.0']));
     });

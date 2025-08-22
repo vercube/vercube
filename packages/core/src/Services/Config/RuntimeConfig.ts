@@ -1,4 +1,4 @@
-import { ConfigTypes } from '../../Types/ConfigTypes';
+import type { ConfigTypes } from '../../Types/ConfigTypes';
 
 /**
  * RuntimeConfig class manages the runtime configuration for the Vercube application.

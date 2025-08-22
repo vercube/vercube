@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
-import { MetadataTypes } from '../../Types/MetadataTypes';
 import { BaseMiddleware } from './BaseMiddleware';
+import type { MetadataTypes } from '../../Types/MetadataTypes';
 
 interface GlobalMiddlewareParams<T> extends Omit<MetadataTypes.Middleware<T>, 'middleware'> {}
 

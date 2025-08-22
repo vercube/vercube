@@ -1,4 +1,4 @@
-import { LoggerTypes } from '../Types/LoggerTypes';
+import type { LoggerTypes } from '../Types/LoggerTypes';
 
 /**
  * Abstract base class for implementing logging services.

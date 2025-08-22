@@ -1,5 +1,5 @@
-import { MetadataTypes } from '@vercube/core';
 import { z } from '../../src';
+import type { MetadataTypes } from '@vercube/core';
 
 export const MetaMock: MetadataTypes.Method = {
   req: null,

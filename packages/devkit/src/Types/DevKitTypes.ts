@@ -1,5 +1,5 @@
-import { ConfigTypes } from '@vercube/core';
 import { type Worker as _Worker } from 'node:worker_threads';
+import type { ConfigTypes } from '@vercube/core';
 import type { Hookable } from 'hookable';
 
 export namespace DevKitTypes {

@@ -1,4 +1,4 @@
-import { MetadataTypes } from './MetadataTypes';
+import type { MetadataTypes } from './MetadataTypes';
 
 export { FastResponse } from 'srvx';
 

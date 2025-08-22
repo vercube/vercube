@@ -1,5 +1,5 @@
-import { ConfigTypes } from '../Types/ConfigTypes';
 import generateRandomHash from '../Utils/InternalUtils';
+import type { ConfigTypes } from '../Types/ConfigTypes';
 
 /**
  * Default configuration for the Vercube application.

@@ -5,11 +5,11 @@ import {
   createDecorator,
   destroyContainer,
   destroyDecorators,
-  IDecoratedInstance,
   Identity,
   initializeContainer,
   initializeDecorators,
 } from '../src';
+import type { IDecoratedInstance } from '../src';
 
 describe('[Framework][IOC] Utils', () => {
   let container: Container;

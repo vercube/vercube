@@ -1,4 +1,4 @@
-import { RouterTypes } from '../Types/RouterTypes';
+import type { RouterTypes } from '../Types/RouterTypes';
 
 /**
  * Resolves a single query parameter from the URL of a router event

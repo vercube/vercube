@@ -1,8 +1,8 @@
 import { BaseDecorator, createDecorator } from '@vercube/di';
 import { ValidationMiddleware } from '../../Middleware/ValidationMiddleware';
-import { MetadataTypes } from '../../Types/MetadataTypes';
-import { ValidationTypes } from '../../Types/ValidationTypes';
 import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
+import type { MetadataTypes } from '../../Types/MetadataTypes';
+import type { ValidationTypes } from '../../Types/ValidationTypes';
 
 interface BodyDecoratorOptions {
   validationSchema?: ValidationTypes.Schema;

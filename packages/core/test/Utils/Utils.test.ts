@@ -43,8 +43,8 @@ describe('Utils', () => {
       const result = initializeMetadataMethod(target, 'testMethod');
 
       expect(result).toBeDefined();
-      expect(target.__metadata.__methods.testMethod).toBeDefined();
-      expect(target.__metadata.__methods.testMethod).toEqual({
+      expect((target.__metadata as any).__methods.testMethod).toBeDefined();
+      expect((target.__metadata as any).__methods.testMethod).toEqual({
         req: null,
         res: null,
         url: null,
@@ -77,7 +77,7 @@ describe('Utils', () => {
       const result = initializeMetadataMethod(target, 'testMethod');
 
       expect(result).toBe(existingMethod);
-      expect(target.__metadata.__methods.testMethod).toBe(existingMethod);
+      expect((target.__metadata as any).__methods.testMethod).toBe(existingMethod);
     });
   });
 
@@ -88,10 +88,10 @@ describe('Utils', () => {
       const result = initializeMetadata(target);
 
       expect(result).toBeDefined();
-      expect(target.__metadata).toBeDefined();
-      expect(target.__metadata.__controller).toEqual({ path: '' });
-      expect(target.__metadata.__middlewares).toEqual([]);
-      expect(target.__metadata.__methods).toEqual({});
+      expect((target as any).__metadata).toBeDefined();
+      expect((target as any).__metadata.__controller).toEqual({ path: '' });
+      expect((target as any).__metadata.__middlewares).toEqual([]);
+      expect((target as any).__metadata.__methods).toEqual({});
     });
 
     it('should initialize methods when they do not exist', () => {
@@ -105,7 +105,7 @@ describe('Utils', () => {
       const result = initializeMetadata(target);
 
       expect(result).toBeDefined();
-      expect(target.__metadata.__methods).toEqual({});
+      expect((target as any).__metadata.__methods).toEqual({});
     });
 
     it('should initialize middlewares when they do not exist', () => {
@@ -119,7 +119,7 @@ describe('Utils', () => {
       const result = initializeMetadata(target);
 
       expect(result).toBeDefined();
-      expect(target.__metadata.__middlewares).toEqual([]);
+      expect((target as any).__metadata.__middlewares).toEqual([]);
     });
 
     it('should return existing metadata when it already exists', () => {
@@ -136,7 +136,7 @@ describe('Utils', () => {
       const result = initializeMetadata(target);
 
       expect(result).toBe(existingMetadata);
-      expect(target.__metadata).toBe(existingMetadata);
+      expect((target as any).__metadata).toBe(existingMetadata);
     });
 
     it('should preserve existing methods when initializing', () => {
@@ -151,7 +151,7 @@ describe('Utils', () => {
 
       const result = initializeMetadata(target);
 
-      expect(result.__methods).toBe(existingMethods);
+      expect((result as any).__methods).toBe(existingMethods);
     });
 
     it('should preserve existing middlewares when initializing', () => {
@@ -166,7 +166,7 @@ describe('Utils', () => {
 
       const result = initializeMetadata(target);
 
-      expect(result.__middlewares).toBe(existingMiddlewares);
+      expect((result as any).__middlewares).toBe(existingMiddlewares);
     });
   });
 });

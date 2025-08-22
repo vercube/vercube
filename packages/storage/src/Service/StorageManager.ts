@@ -1,7 +1,7 @@
 import { Container, Init, Inject, InjectOptional } from '@vercube/di';
 import { Logger } from '@vercube/logger';
-import { StorageTypes } from '../Types/StorageTypes';
 import { Storage } from './Storage';
+import type { StorageTypes } from '../Types/StorageTypes';
 
 /**
  * Manages multiple storage instances and provides a unified interface for storage operations.

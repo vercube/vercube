@@ -1,4 +1,4 @@
-import { ValidationTypes } from '../../Types/ValidationTypes';
+import type { ValidationTypes } from '../../Types/ValidationTypes';
 
 /**
  * Abstract class representing a validation provider

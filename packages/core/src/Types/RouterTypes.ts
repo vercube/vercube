@@ -1,5 +1,5 @@
-import { BaseMiddleware } from '../Services/Middleware/BaseMiddleware';
-import { MetadataTypes } from './MetadataTypes';
+import type { BaseMiddleware } from '../Services/Middleware/BaseMiddleware';
+import type { MetadataTypes } from './MetadataTypes';
 
 export namespace RouterTypes {
   export interface Route {

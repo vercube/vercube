@@ -1,4 +1,4 @@
-import { MetadataTypes } from '../Types/MetadataTypes';
+import type { MetadataTypes } from '../Types/MetadataTypes';
 
 /**
  * Creates a new metadata context.

@@ -14,7 +14,7 @@ import { Router } from '../Services/Router/Router';
 import { StaticRequestHandler } from '../Services/Router/StaticRequestHandler';
 import { StandardSchemaValidationProvider } from '../Services/Validation/StandardSchemaValidationProvider';
 import { ValidationProvider } from '../Services/Validation/ValidationProvider';
-import { ConfigTypes } from '../Types/ConfigTypes';
+import type { ConfigTypes } from '../Types/ConfigTypes';
 
 /**
  * Creates and configures a new dependency injection container for the application.

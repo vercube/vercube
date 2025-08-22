@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ConfigTypes, loadVercubeConfig } from '../../src';
+import { loadVercubeConfig } from '../../src';
+import type { ConfigTypes } from '../../src/Types/ConfigTypes';
 
 vi.mock('c12', () => {
   const mockLoadConfig = vi.fn();

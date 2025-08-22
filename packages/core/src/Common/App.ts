@@ -4,8 +4,8 @@ import { HttpServer } from '../Services/HttpServer/HttpServer';
 import { PluginsRegistry } from '../Services/Plugins/PluginsRegistry';
 import { Router } from '../Services/Router/Router';
 import { StaticRequestHandler } from '../Services/Router/StaticRequestHandler';
-import { ConfigTypes } from '../Types/ConfigTypes';
 import type { BasePlugin } from '../Services/Plugins/BasePlugin';
+import type { ConfigTypes } from '../Types/ConfigTypes';
 import type { Container } from '@vercube/di';
 
 /**
