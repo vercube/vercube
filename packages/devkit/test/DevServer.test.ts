@@ -1,6 +1,6 @@
-import consola from 'consola';
 import { fork } from 'node:child_process';
 import { resolve } from 'node:path';
+import consola from 'consola';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createDevServer, createVercube } from '../src';
 

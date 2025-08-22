@@ -1,8 +1,8 @@
-import type { RouteConfig } from '@asteasolutions/zod-to-openapi';
 import { describe, expect, it } from 'vitest';
-import type { DeepPartial } from '@vercube/core';
 import { SchemaBodyResolver } from '../../src/Resolvers/SchemaBodyResolver';
 import { MetaMock } from '../Utils/Meta.mock';
+import type { RouteConfig } from '@asteasolutions/zod-to-openapi';
+import type { DeepPartial } from '@vercube/core';
 
 describe('SchemaBodyResolver', () => {
   it('should resolve schema body correctly', () => {

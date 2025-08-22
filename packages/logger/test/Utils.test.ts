@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { LOG_LEVEL_COLORS, colors, isLogLevelEnabled } from '../src/Utils/Utils';
+import { colors, isLogLevelEnabled, LOG_LEVEL_COLORS } from '../src/Utils/Utils';
 
 describe('Logger Utils', () => {
   describe('isLogLevelEnabled', () => {

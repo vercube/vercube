@@ -1,4 +1,5 @@
-import { OpenAPIRegistry, OpenApiGeneratorV3, type RouteConfig } from '@asteasolutions/zod-to-openapi';
+import { OpenApiGeneratorV3, OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
+import type { RouteConfig } from '@asteasolutions/zod-to-openapi';
 
 /**
  * Manages the OpenAPI schema registry and provides utilities to generate OpenAPI components

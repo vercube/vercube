@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { Container, IOC, Inject, InjectOptional } from '../src';
+import { Container, Inject, InjectOptional, IOC } from '../src';
 import { IOCEngine } from '../src/Domain/Engine';
 
 describe('[Framework][IOC] Engine', () => {

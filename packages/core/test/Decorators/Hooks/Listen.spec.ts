@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Container, destroyContainer, initializeContainer } from '@vercube/di';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { HooksService, Listen } from '../../../src';
 
 class TestEvent {}

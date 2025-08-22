@@ -1,5 +1,5 @@
-import { type EventHandler, type H3Event } from 'h3';
 import { type App } from '@vercube/core';
+import { type EventHandler, type H3Event } from 'h3';
 
 /**
  * Converts a Vercube application to an H3 event handler

@@ -1,6 +1,6 @@
 import { Container, Inject } from '@vercube/di';
-import type { App } from '../../Common/App';
 import { BasePlugin } from './BasePlugin';
+import type { App } from '../../Common/App';
 
 export class PluginsRegistry {
   @Inject(Container)

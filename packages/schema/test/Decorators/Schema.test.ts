@@ -1,8 +1,9 @@
+import { createApp } from '@vercube/core';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { type App, createApp } from '@vercube/core';
 import { SchemaPlugin } from '../../src';
 import { SchemaRegistry } from '../../src/Services/SchemaRegistry';
 import { MockController } from '../Utils/Schema.mock';
+import type { App } from '@vercube/core';
 
 describe('SchemaDecorator', () => {
   let app: App;

@@ -1,7 +1,7 @@
 import { BaseDecorator, createDecorator } from '@vercube/di';
 import { HTTPStatus } from '../../Types/HttpTypes';
-import type { MetadataTypes } from '../../Types/MetadataTypes';
 import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
+import type { MetadataTypes } from '../../Types/MetadataTypes';
 
 /**
  * Options for the StatusDecorator.

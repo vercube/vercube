@@ -1,8 +1,8 @@
 import { builtinModules } from 'node:module';
 import { resolve } from 'pathe';
-import type { RolldownOptions } from 'rolldown';
 import UnpluginIsolatedDecl from 'unplugin-isolated-decl/rolldown';
 import type { ConfigTypes } from '@vercube/core';
+import type { RolldownOptions } from 'rolldown';
 
 /**
  * Generates a Rolldown configuration based on the provided build options.

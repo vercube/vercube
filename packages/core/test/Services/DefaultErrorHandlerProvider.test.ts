@@ -1,8 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Logger } from '@vercube/logger';
-import { type App, BadRequestError, ErrorHandlerProvider } from '../../src';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { BadRequestError, ErrorHandlerProvider } from '../../src';
 import { DefaultErrorHandlerProvider } from '../../src/Services/ErrorHandler/DefaultErrorHandlerProvider';
 import { createTestApp } from '../Utils/App.mock';
+import type { App } from '../../src';
 
 describe('DefaultErrorHandlerProvider', () => {
   let app: App;

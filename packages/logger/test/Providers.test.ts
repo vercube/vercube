@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Container } from '@vercube/di';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ConsoleProvider } from '../src/Drivers/ConsoleProvider';
 import { JSONProvider } from '../src/Drivers/JsonProvider';
 import type { LoggerTypes } from '../src/Types/LoggerTypes';

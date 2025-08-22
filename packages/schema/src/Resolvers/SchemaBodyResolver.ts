@@ -1,5 +1,5 @@
-import type { RouteConfig } from '@asteasolutions/zod-to-openapi';
 import defu from 'defu';
+import type { RouteConfig } from '@asteasolutions/zod-to-openapi';
 import type { DeepPartial, MetadataTypes } from '@vercube/core';
 
 /**

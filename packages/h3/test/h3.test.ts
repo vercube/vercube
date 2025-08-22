@@ -1,7 +1,9 @@
-import { type EventHandler, mockEvent } from 'h3';
+import { createApp } from '@vercube/core';
+import { mockEvent } from 'h3';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { type App, createApp } from '@vercube/core';
 import { toH3 } from '../src';
+import type { App } from '@vercube/core';
+import type { EventHandler } from 'h3';
 
 describe('h3', () => {
   let app: App;

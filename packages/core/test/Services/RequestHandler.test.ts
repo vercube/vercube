@@ -1,6 +1,6 @@
 // oxlint-disable no-unused-vars
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Container } from '@vercube/di';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ErrorHandlerProvider } from '../../src/Services/ErrorHandler/ErrorHandlerProvider';
 import { MetadataResolver } from '../../src/Services/Metadata/MetadataResolver';
 import { BaseMiddleware } from '../../src/Services/Middleware/BaseMiddleware';

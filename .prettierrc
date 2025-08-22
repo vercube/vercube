@@ -4,9 +4,7 @@
   "trailingComma": "all",
   "tabWidth": 2,
   "printWidth": 130,
-  "plugins": ["@trivago/prettier-plugin-sort-imports"],
-  "importOrder": ["^@vercube/(.*)$", "^[./]"],
-  "importOrderSeparation": false,
-  "importOrderSortSpecifiers": true,
+  "plugins": ["prettier-plugin-imports"],
+  "importOrder": ["^@vercube/(.*)$", "<BUILTIN_MODULES>", "<THIRD_PARTY_MODULES>", "^[./]", "<TYPES>"],
   "importOrderParserPlugins": ["typescript", "decorators-legacy"]
 }

@@ -1,5 +1,5 @@
-import type { IOC } from '@vercube/di';
 import type { LoggerProvider } from '../Common/LoggerProvider';
+import type { IOC } from '@vercube/di';
 
 export namespace LoggerTypes {
   export type Level = 'debug' | 'info' | 'warn' | 'error';

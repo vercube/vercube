@@ -1,8 +1,9 @@
+import { createApp } from '@vercube/core';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { type App, createApp } from '@vercube/core';
 import { SchemaPlugin } from '../../src';
 import { SchemaController } from '../../src/Controllers/SchameController';
 import { SchemaRegistry } from '../../src/Services/SchemaRegistry';
+import type { App } from '@vercube/core';
 
 describe('SchemaPlugin', () => {
   let app: App;

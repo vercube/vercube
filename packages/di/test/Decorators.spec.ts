@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { BaseDecorator, Container, Destroy, Init, Inject, InjectOptional, destroyContainer, initializeContainer } from '../src';
+import { BaseDecorator, Container, Destroy, destroyContainer, Init, initializeContainer, Inject, InjectOptional } from '../src';
 
 describe('[Framework][IOC] Decorators', () => {
   let container: Container;

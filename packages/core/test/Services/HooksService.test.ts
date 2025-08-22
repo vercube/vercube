@@ -1,7 +1,7 @@
 // oxlint-disable no-new-array
 // oxlint-disable no-array-for-each
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Container } from '@vercube/di';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { HooksService } from '../../src/';
 
 describe('HooksService', () => {

@@ -1,6 +1,6 @@
+import { Container } from '@vercube/di';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { Container } from '@vercube/di';
 import { StandardSchemaValidationProvider } from '../../src/Services/Validation/StandardSchemaValidationProvider';
 
 describe('StandardSchemaValidationProvider', () => {

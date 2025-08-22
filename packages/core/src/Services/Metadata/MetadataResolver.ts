@@ -2,8 +2,8 @@ import { resolveRequestBody } from '../../Resolvers/Body';
 import { getRequestHeader, getRequestHeaders } from '../../Resolvers/Headers';
 import { resolveQueryParam, resolveQueryParams } from '../../Resolvers/Query';
 import { resolveRouterParam } from '../../Resolvers/RouterParam';
-import type { MetadataTypes } from '../../Types/MetadataTypes';
 import { RouterTypes } from '../../Types/RouterTypes';
+import type { MetadataTypes } from '../../Types/MetadataTypes';
 
 /**
  * Class responsible for resolving metadata for route handlers.

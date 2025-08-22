@@ -1,6 +1,7 @@
-import { type RouterTypes, initializeMetadata, initializeMetadataMethod } from '@vercube/core';
-import { BaseDecorator, Container, Inject, createDecorator } from '@vercube/di';
+import { initializeMetadata, initializeMetadataMethod } from '@vercube/core';
+import { BaseDecorator, Container, createDecorator, Inject } from '@vercube/di';
 import { AuthProvider } from '../Services/AuthProvider';
+import type { RouterTypes } from '@vercube/core';
 
 /**
  * Options for the User decorator

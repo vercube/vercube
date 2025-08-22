@@ -1,5 +1,6 @@
-import { type CommandDef, defineCommand } from 'citty';
 import { build, createVercube } from '@vercube/devkit';
+import { defineCommand } from 'citty';
+import type { CommandDef } from 'citty';
 
 export const buildCommand: CommandDef = defineCommand({
   meta: {

@@ -1,10 +1,11 @@
+import { Container } from '@vercube/di';
 import * as srvx from 'srvx';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { Container } from '@vercube/di';
-import { type ConfigTypes, HooksService, HttpServer, Router } from '../../src';
+import { HooksService, HttpServer, Router } from '../../src';
 import { ErrorHandlerProvider } from '../../src/Services/ErrorHandler/ErrorHandlerProvider';
 import { RequestHandler } from '../../src/Services/Router/RequestHandler';
 import { StaticRequestHandler } from '../../src/Services/Router/StaticRequestHandler';
+import type { ConfigTypes } from '../../src';
 
 vi.mock('srvx', () => {
   const mockServe = vi.fn();

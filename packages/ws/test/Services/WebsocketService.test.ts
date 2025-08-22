@@ -1,10 +1,13 @@
-// oxlint-disable no-unused-vars
-import { type Message, type Peer, defineHooks } from 'crossws';
+import { createApp, HttpServer } from '@vercube/core';
+import { Container, initializeContainer } from '@vercube/di';
+import { defineHooks } from 'crossws';
 import { type ServerPlugin } from 'srvx';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { type App, type ConfigTypes, HttpServer, createApp } from '@vercube/core';
-import { Container, initializeContainer } from '@vercube/di';
 import { $WebsocketService, WebsocketService, WebsocketTypes } from '../../src';
+import type { App, ConfigTypes } from '@vercube/core';
+import type { Message, Peer } from 'crossws';
+
+// oxlint-disable no-unused-vars
 
 vi.mock('srvx', () => ({
   serve: vi.fn().mockReturnValue({

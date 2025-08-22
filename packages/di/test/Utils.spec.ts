@@ -2,11 +2,11 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   BaseDecorator,
   Container,
-  IDecoratedInstance,
-  Identity,
   createDecorator,
   destroyContainer,
   destroyDecorators,
+  IDecoratedInstance,
+  Identity,
   initializeContainer,
   initializeDecorators,
 } from '../src';

@@ -1,7 +1,8 @@
-import { vi } from 'vitest';
 import { Logger } from '@vercube/logger';
-import { type CreateAppOptions, ErrorHandlerProvider, createApp } from '../../src';
+import { vi } from 'vitest';
+import { createApp, ErrorHandlerProvider } from '../../src';
 import { MockController } from './MockController.mock';
+import type { CreateAppOptions } from '../../src';
 
 export const createTestApp = async (params: CreateAppOptions = {}) => {
   const app = await createApp(params);

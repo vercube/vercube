@@ -1,14 +1,18 @@
-/* eslint-disable unicorn/no-process-exit */
-import { type CommandDef, defineCommand } from 'citty';
-import { type ConsolaInstance, consola } from 'consola';
+import { existsSync } from 'node:fs';
+import { defineCommand } from 'citty';
+import { consola } from 'consola';
 import { colors } from 'consola/utils';
 import { downloadTemplate, startShell } from 'giget';
-import { existsSync } from 'node:fs';
-import { type PackageManagerName, installDependencies } from 'nypm';
+import { installDependencies } from 'nypm';
 import { relative, resolve } from 'pathe';
 import { hasTTY } from 'std-env';
 import { x } from 'tinyexec';
 import { vercubeIcon } from '../utils/logo';
+import type { CommandDef } from 'citty';
+import type { ConsolaInstance } from 'consola';
+import type { PackageManagerName } from 'nypm';
+
+/* eslint-disable unicorn/no-process-exit */
 
 export const logger: ConsolaInstance = consola.withTag(colors.whiteBright(colors.bold(colors.bgGreenBright(' vercube '))));
 const DEFAULT_REGISTRY = 'https://raw.githubusercontent.com/vercube/starter/main/templates';

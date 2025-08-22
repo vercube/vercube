@@ -1,6 +1,7 @@
+import { createApp } from '@vercube/core';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { type App, createApp } from '@vercube/core';
 import { $WebsocketService, WebsocketPlugin } from '../../src';
+import type { App } from '@vercube/core';
 
 describe('WebsocketPlugin', () => {
   let app: App;

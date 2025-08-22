@@ -1,6 +1,7 @@
-import { type App, BasePlugin } from '@vercube/core';
+import { BasePlugin } from '@vercube/core';
 import { WebsocketService } from '../Services/WebsocketService';
 import { $WebsocketService } from '../Symbols/WebsocketSymbols';
+import type { App } from '@vercube/core';
 
 /**
  * Websocket Plugin for Vercube framework

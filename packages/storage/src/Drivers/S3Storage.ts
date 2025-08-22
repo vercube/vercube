@@ -1,16 +1,9 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import {
-  DeleteObjectCommand,
-  GetObjectCommand,
-  ListObjectsV2Command,
-  type ListObjectsV2CommandOutput,
-  PutObjectCommand,
-  S3Client,
-  type S3ClientConfig,
-} from '@aws-sdk/client-s3';
-import type { Readable } from 'node:stream';
+import { DeleteObjectCommand, GetObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import type { Storage } from '../Service/Storage';
-import type { StorageTypes } from '../Types/StorageTypes';
+import type { ListObjectsV2CommandOutput, S3ClientConfig } from '@aws-sdk/client-s3';
+import type { Readable } from 'node:stream';
+
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 export interface S3BaseOptions extends S3ClientConfig {
   bucket: string;

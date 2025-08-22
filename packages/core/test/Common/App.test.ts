@@ -1,13 +1,13 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Container } from '@vercube/di';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { type App } from '../../src';
 import { HttpServer } from '../../src/Services/HttpServer/HttpServer';
 import { PluginsRegistry } from '../../src/Services/Plugins/PluginsRegistry';
 import { Router } from '../../src/Services/Router/Router';
 import { StaticRequestHandler } from '../../src/Services/Router/StaticRequestHandler';
-import type { ConfigTypes } from '../../src/Types/ConfigTypes';
 import { createTestApp } from '../Utils/App.mock';
 import { MockPlugin } from '../Utils/Plugin.mock';
+import type { ConfigTypes } from '../../src/Types/ConfigTypes';
 
 vi.mock('srvx', () => ({
   serve: vi.fn().mockReturnValue({

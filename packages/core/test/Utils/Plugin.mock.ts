@@ -1,5 +1,7 @@
+import { BasePlugin } from '../../src';
+import type { App } from '../../src';
+
 // oxlint-disable no-unused-vars
-import { type App, BasePlugin } from '../../src';
 
 export class MockPlugin extends BasePlugin {
   public name = 'mock';

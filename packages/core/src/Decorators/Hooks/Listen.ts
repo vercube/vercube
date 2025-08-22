@@ -1,4 +1,4 @@
-import { BaseDecorator, Inject, createDecorator } from '@vercube/di';
+import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
 import { HooksService } from '../../Services/Hooks/HooksService';
 import type { HooksTypes } from '../../Types/HooksTypes';
 
