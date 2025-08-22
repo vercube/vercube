@@ -35,8 +35,7 @@ export namespace ConfigTypes {
    * This allows users to define their own runtime configuration structure
    * while maintaining type safety.
    */
-  export type CreateRuntimeConfig<T = Record<string, unknown>> = RuntimeConfig &
-    T;
+  export type CreateRuntimeConfig<T = Record<string, unknown>> = RuntimeConfig & T;
 
   /**
    * Configuration options for experimental features.

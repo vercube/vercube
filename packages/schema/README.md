@@ -91,9 +91,7 @@ export class UsersController {
       },
     },
   })
-  public async insertUser(
-    @Body({ validationSchema: UserSchema }) user: User,
-  ): Promise<void> {
+  public async insertUser(@Body({ validationSchema: UserSchema }) user: User): Promise<void> {
     console.log(user);
   }
 }

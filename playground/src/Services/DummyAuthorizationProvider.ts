@@ -12,10 +12,7 @@ export class DummyAuthorizationProvider extends AuthProvider {
    * @param params - The parameters to authorize
    * @returns An error string or Promise of error string, null or Promise of null if authentication is successful
    */
-  public validate(
-    request: Request,
-    params?: AuthTypes.MiddlewareOptions,
-  ): MaybePromise<string | null> {
+  public validate(request: Request, params?: AuthTypes.MiddlewareOptions): MaybePromise<string | null> {
     if (params?.roles?.includes('admin')) {
       return 'Only available to admins';
     }

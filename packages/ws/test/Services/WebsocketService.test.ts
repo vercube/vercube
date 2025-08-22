@@ -3,12 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { type Peer, type Message, defineHooks } from 'crossws';
 import { type ServerPlugin } from 'srvx';
 import { Container, initializeContainer } from '@vercube/di';
-import {
-  type App,
-  type ConfigTypes,
-  createApp,
-  HttpServer,
-} from '@vercube/core';
+import { type App, type ConfigTypes, createApp, HttpServer } from '@vercube/core';
 import { $WebsocketService, WebsocketService, WebsocketTypes } from '../../src';
 
 vi.mock('srvx', () => ({
@@ -96,11 +91,7 @@ describe('WebsocketService', () => {
       callback: handler.callback,
       event: 'message',
     });
-    expect(
-      service['fHandlers'][WebsocketTypes.HandlerAction.MESSAGE]['/chat'][
-        'message'
-      ],
-    ).toStrictEqual({
+    expect(service['fHandlers'][WebsocketTypes.HandlerAction.MESSAGE]['/chat']['message']).toStrictEqual({
       callback: handler.callback,
       event: 'message',
     });
@@ -166,9 +157,7 @@ describe('WebsocketService', () => {
     const pluginSpy = vi.mocked(container.get(HttpServer).addPlugin);
     const serverPlugin = pluginSpy.mock.calls[0][0] as MockedServerPlugin;
     const hooks = serverPlugin.__hooks;
-    const response = await hooks?.upgrade?.(
-      new Request('http://localhost/unknown'),
-    );
+    const response = await hooks?.upgrade?.(new Request('http://localhost/unknown'));
 
     expect((response as Response).status).toBe(403);
   });

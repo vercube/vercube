@@ -47,13 +47,9 @@ interface AWSResponseBody {
  * @returns An object containing headers and cookies in AWS API Gateway format
  * @throws {Error} If the response object is invalid or headers cannot be processed
  */
-export function convertResponseToAWSResponse(
-  response: Response,
-): AWSResponseHeaders {
+export function convertResponseToAWSResponse(response: Response): AWSResponseHeaders {
   if (!response || !response.headers) {
-    throw new Error(
-      'Invalid response: response must be a valid Response object with headers',
-    );
+    throw new Error('Invalid response: response must be a valid Response object with headers');
   }
 
   const headers: Record<string, string> = Object.create(null);
@@ -71,10 +67,7 @@ export function convertResponseToAWSResponse(
   });
 
   // Extract cookies for API Gateway compatibility
-  const cookies =
-    typeof response.headers.getSetCookie === 'function'
-      ? response.headers.getSetCookie()
-      : [];
+  const cookies = typeof response.headers.getSetCookie === 'function' ? response.headers.getSetCookie() : [];
 
   // Return appropriate format based on whether cookies exist
   if (cookies.length > 0) {
@@ -109,13 +102,9 @@ export function convertResponseToAWSResponse(
  * @returns A promise that resolves to an object with the encoded body and encoding flag
  * @throws {Error} If the response body cannot be read or converted
  */
-export async function convertBodyToAWSResponse(
-  response: Response,
-): Promise<AWSResponseBody> {
+export async function convertBodyToAWSResponse(response: Response): Promise<AWSResponseBody> {
   if (!response) {
-    throw new Error(
-      'Invalid response: response must be a valid Response object',
-    );
+    throw new Error('Invalid response: response must be a valid Response object');
   }
 
   // Handle empty body case
@@ -125,8 +114,7 @@ export async function convertBodyToAWSResponse(
 
   try {
     const buffer = await toBuffer(response.body);
-    const contentType =
-      response.headers.get('content-type') || DEFAULT_CONTENT_TYPE;
+    const contentType = response.headers.get('content-type') || DEFAULT_CONTENT_TYPE;
 
     // Determine if content should be treated as text or binary
     if (isTextType(contentType)) {
@@ -138,8 +126,7 @@ export async function convertBodyToAWSResponse(
       };
     }
   } catch (error) {
-    const errorMessage =
-      error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     throw new Error(`Failed to convert response body: ${errorMessage}`);
   }
 }
@@ -163,9 +150,7 @@ function isTextType(contentType: string = DEFAULT_CONTENT_TYPE): boolean {
     return false;
   }
 
-  return TEXT_CONTENT_TYPE_PATTERNS.some((pattern) =>
-    pattern.test(contentType),
-  );
+  return TEXT_CONTENT_TYPE_PATTERNS.some((pattern) => pattern.test(contentType));
 }
 
 /**

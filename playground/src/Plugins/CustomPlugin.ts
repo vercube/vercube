@@ -21,8 +21,5 @@ export class CustomPlugin extends BasePlugin<CustomPluginOptions> {
    * @returns {void | Promise<void>}
    * @override
    */
-  public override use(
-    app: App,
-    options: CustomPluginOptions,
-  ): void | Promise<void> {}
+  public override use(app: App, options: CustomPluginOptions): void | Promise<void> {}
 }

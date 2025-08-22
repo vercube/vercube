@@ -114,9 +114,7 @@ describe('HttpServer', () => {
       const bunErrorHandler = serveCall.bun?.error;
       const testError = new Error('Bun error');
 
-      mockErrorHandler.handleError.mockReturnValue(
-        new Response('Error handled'),
-      );
+      mockErrorHandler.handleError.mockReturnValue(new Response('Error handled'));
 
       const result = bunErrorHandler!(testError);
 
@@ -131,9 +129,7 @@ describe('HttpServer', () => {
       const denoErrorHandler = serveCall.deno?.onError;
       const testError = new Error('Deno error');
 
-      mockErrorHandler.handleError.mockReturnValue(
-        new Response('Error handled'),
-      );
+      mockErrorHandler.handleError.mockReturnValue(new Response('Error handled'));
 
       const result = denoErrorHandler!(testError);
 
@@ -215,10 +211,7 @@ describe('HttpServer', () => {
         path: request.url,
         method: request.method,
       });
-      expect(mockRequestHandler.handleRequest).toHaveBeenCalledWith(
-        request,
-        mockRoute,
-      );
+      expect(mockRequestHandler.handleRequest).toHaveBeenCalledWith(request, mockRoute);
       expect(result).toBe(expectedResponse);
     });
 
@@ -235,9 +228,7 @@ describe('HttpServer', () => {
         path: request.url,
         method: request.method,
       });
-      expect(mockStaticRequestHandler.handleRequest).toHaveBeenCalledWith(
-        request,
-      );
+      expect(mockStaticRequestHandler.handleRequest).toHaveBeenCalledWith(request);
       expect(result).toBe(staticResponse);
     });
 
@@ -255,9 +246,7 @@ describe('HttpServer', () => {
         path: request.url,
         method: request.method,
       });
-      expect(mockStaticRequestHandler.handleRequest).toHaveBeenCalledWith(
-        request,
-      );
+      expect(mockStaticRequestHandler.handleRequest).toHaveBeenCalledWith(request);
       expect(mockErrorHandler.handleError).toHaveBeenCalledWith(
         expect.objectContaining({
           message: 'Route not found',
@@ -285,9 +274,7 @@ describe('HttpServer', () => {
         path: request.url,
         method: request.method,
       });
-      expect(mockStaticRequestHandler.handleRequest).toHaveBeenCalledWith(
-        request,
-      );
+      expect(mockStaticRequestHandler.handleRequest).toHaveBeenCalledWith(request);
       expect(mockErrorHandler.handleError).toHaveBeenCalledWith(staticError);
       expect(result).toBe(errorResponse);
     });

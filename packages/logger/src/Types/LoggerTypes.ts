@@ -15,10 +15,9 @@ export namespace LoggerTypes {
     timestamp?: number;
   }
 
-  export type LogProviderOptions<T extends IOC.Newable<LoggerProvider>> =
-    Parameters<InstanceType<T>['initialize']>[0] & {
-      logLevel?: Level;
-    };
+  export type LogProviderOptions<T extends IOC.Newable<LoggerProvider>> = Parameters<InstanceType<T>['initialize']>[0] & {
+    logLevel?: Level;
+  };
 
   export interface LogAppender<T extends IOC.Newable<LoggerProvider>> {
     name: string;

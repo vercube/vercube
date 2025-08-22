@@ -2,10 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { BadRequestError, ValidationProvider, type App } from '../../src/';
 import { createTestApp } from '../Utils/App.mock';
 import { ValidationMiddleware } from '../../src/Middleware/ValidationMiddleware';
-import {
-  ValidatorProviderMock,
-  ValidatorWithIssuesProvider,
-} from '../Utils/ValidatorProvider.mock';
+import { ValidatorProviderMock, ValidatorWithIssuesProvider } from '../Utils/ValidatorProvider.mock';
 import { z } from 'zod';
 
 describe('ValidationMiddleware', () => {

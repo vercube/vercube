@@ -17,22 +17,14 @@ const HEADER_KEYS = {
 /**
  * Type guard to check if an event is APIGatewayProxyEventV2
  */
-function isV2Event(
-  event: APIGatewayProxyEvent | APIGatewayProxyEventV2,
-): event is APIGatewayProxyEventV2 {
-  return (
-    'requestContext' in event &&
-    'http' in event.requestContext &&
-    'method' in event.requestContext.http
-  );
+function isV2Event(event: APIGatewayProxyEvent | APIGatewayProxyEventV2): event is APIGatewayProxyEventV2 {
+  return 'requestContext' in event && 'http' in event.requestContext && 'method' in event.requestContext.http;
 }
 
 /**
  * Type guard to check if an event is APIGatewayProxyEvent
  */
-function isV1Event(
-  event: APIGatewayProxyEvent | APIGatewayProxyEventV2,
-): event is APIGatewayProxyEvent {
+function isV1Event(event: APIGatewayProxyEvent | APIGatewayProxyEventV2): event is APIGatewayProxyEvent {
   return 'httpMethod' in event;
 }
 
@@ -66,9 +58,7 @@ function getHeaderValue(
  * @param event - The AWS API Gateway event object (v1 or v2 format)
  * @returns The HTTP method as a string, defaults to 'GET' if not found
  */
-function getEventMethod(
-  event: APIGatewayProxyEvent | APIGatewayProxyEventV2,
-): string {
+function getEventMethod(event: APIGatewayProxyEvent | APIGatewayProxyEventV2): string {
   if (isV1Event(event)) {
     return event.httpMethod || DEFAULT_METHOD;
   }
@@ -92,9 +82,7 @@ function getEventMethod(
  * @param event - The AWS API Gateway event object (v1 or v2 format)
  * @returns A complete URL object
  */
-function getEventUrl(
-  event: APIGatewayProxyEvent | APIGatewayProxyEventV2,
-): URL {
+function getEventUrl(event: APIGatewayProxyEvent | APIGatewayProxyEventV2): URL {
   const hostname = getEventHostname(event);
   const path = getEventPath(event);
   const query = getEventQuery(event);
@@ -108,9 +96,7 @@ function getEventUrl(
 /**
  * Extracts the hostname from the event
  */
-function getEventHostname(
-  event: APIGatewayProxyEvent | APIGatewayProxyEventV2,
-): string {
+function getEventHostname(event: APIGatewayProxyEvent | APIGatewayProxyEventV2): string {
   const hostHeader = getHeaderValue(event.headers, HEADER_KEYS.HOST);
   if (hostHeader) {
     return hostHeader;
@@ -122,9 +108,7 @@ function getEventHostname(
 /**
  * Extracts the path from the event
  */
-function getEventPath(
-  event: APIGatewayProxyEvent | APIGatewayProxyEventV2,
-): string {
+function getEventPath(event: APIGatewayProxyEvent | APIGatewayProxyEventV2): string {
   if (isV1Event(event)) {
     return event.path || '/';
   }
@@ -139,13 +123,8 @@ function getEventPath(
 /**
  * Determines the protocol from the event headers
  */
-function getEventProtocol(
-  event: APIGatewayProxyEvent | APIGatewayProxyEventV2,
-): string {
-  const forwardedProto = getHeaderValue(
-    event.headers,
-    HEADER_KEYS.X_FORWARDED_PROTO,
-  );
+function getEventProtocol(event: APIGatewayProxyEvent | APIGatewayProxyEventV2): string {
+  const forwardedProto = getHeaderValue(event.headers, HEADER_KEYS.X_FORWARDED_PROTO);
   return forwardedProto === HTTP_PROTOCOL ? HTTP_PROTOCOL : HTTPS_PROTOCOL;
 }
 
@@ -159,17 +138,13 @@ function getEventProtocol(
  * @param event - The AWS API Gateway event object (v1 or v2 format)
  * @returns A formatted query string (without the leading '?')
  */
-function getEventQuery(
-  event: APIGatewayProxyEvent | APIGatewayProxyEventV2,
-): string {
+function getEventQuery(event: APIGatewayProxyEvent | APIGatewayProxyEventV2): string {
   if (isV2Event(event) && typeof event.rawQueryString === 'string') {
     return event.rawQueryString;
   }
 
   const queryParams = event.queryStringParameters || {};
-  const multiValueParams = isV1Event(event)
-    ? event.multiValueQueryStringParameters || {}
-    : {};
+  const multiValueParams = isV1Event(event) ? event.multiValueQueryStringParameters || {} : {};
 
   const combinedParams = { ...queryParams, ...multiValueParams };
 
@@ -186,9 +161,7 @@ function getEventQuery(
  * @param event - The AWS API Gateway event object (v1 or v2 format)
  * @returns A Headers object with all event headers and cookies
  */
-function getEventHeaders(
-  event: APIGatewayProxyEvent | APIGatewayProxyEventV2,
-): Headers {
+function getEventHeaders(event: APIGatewayProxyEvent | APIGatewayProxyEventV2): Headers {
   const headers = new Headers();
 
   // Process all headers
@@ -223,9 +196,7 @@ function getEventHeaders(
  * @param event - The AWS API Gateway event object (v1 or v2 format)
  * @returns The request body as BodyInit (string, Buffer, or undefined)
  */
-function getEventBody(
-  event: APIGatewayProxyEvent | APIGatewayProxyEventV2,
-): BodyInit | undefined {
+function getEventBody(event: APIGatewayProxyEvent | APIGatewayProxyEventV2): BodyInit | undefined {
   if (!event.body || event.body === null) {
     return undefined;
   }
@@ -255,9 +226,7 @@ function getEventBody(
  * @returns A new Request object with the extracted event data
  * @throws {Error} If the event is invalid or missing required properties
  */
-export function convertEventToRequest(
-  event: APIGatewayProxyEvent | APIGatewayProxyEventV2,
-): Request {
+export function convertEventToRequest(event: APIGatewayProxyEvent | APIGatewayProxyEventV2): Request {
   if (!event || typeof event !== 'object') {
     throw new Error('Invalid event: event must be a valid object');
   }

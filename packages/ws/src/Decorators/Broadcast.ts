@@ -32,15 +32,8 @@ class BroadcastDecorator extends BaseDecorator<BroadcastDecoratorOptions> {
 
     const originalMethod = this.instance[this.propertyName];
 
-    this.instance[this.propertyName] = async (
-      incomingMessage: Record<string, unknown>,
-      peer: Peer,
-    ) => {
-      const result = await originalMethod.call(
-        this.instance,
-        incomingMessage,
-        peer,
-      );
+    this.instance[this.propertyName] = async (incomingMessage: Record<string, unknown>, peer: Peer) => {
+      const result = await originalMethod.call(this.instance, incomingMessage, peer);
 
       this.gWebsocketService.broadcast(peer, {
         event: this.options.event,

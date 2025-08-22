@@ -10,11 +10,8 @@ import { downloadTemplate, startShell } from 'giget';
 import { installDependencies, type PackageManagerName } from 'nypm';
 import { x } from 'tinyexec';
 
-export const logger: ConsolaInstance = consola.withTag(
-  colors.whiteBright(colors.bold(colors.bgGreenBright(' vercube '))),
-);
-const DEFAULT_REGISTRY =
-  'https://raw.githubusercontent.com/vercube/starter/main/templates';
+export const logger: ConsolaInstance = consola.withTag(colors.whiteBright(colors.bold(colors.bgGreenBright(' vercube '))));
+const DEFAULT_REGISTRY = 'https://raw.githubusercontent.com/vercube/starter/main/templates';
 const DEFAULT_TEMPLATE_NAME = 'vercube';
 
 const pms: Record<PackageManagerName, undefined> = {
@@ -79,9 +76,7 @@ export const initCommand: CommandDef = defineCommand({
 
     const cwd = resolve(process.cwd());
     let templateDownloadPath = resolve(cwd, ctx.args.dir);
-    logger.info(
-      `Creating a new project in ${colors.cyan(relative(cwd, templateDownloadPath) || templateDownloadPath)}.`,
-    );
+    logger.info(`Creating a new project in ${colors.cyan(relative(cwd, templateDownloadPath) || templateDownloadPath)}.`);
 
     let shouldForce = Boolean(ctx.args.force);
 
@@ -93,11 +88,7 @@ export const initCommand: CommandDef = defineCommand({
         `The directory ${colors.cyan(templateDownloadPath)} already exists. What would you like to do?`,
         {
           type: 'select',
-          options: [
-            'Override its contents',
-            'Select different directory',
-            'Abort',
-          ],
+          options: ['Override its contents', 'Select different directory', 'Abort'],
         },
       );
 
@@ -148,9 +139,7 @@ export const initCommand: CommandDef = defineCommand({
 
     // Resolve package manager
     const packageManagerArg = ctx.args.packageManager as PackageManagerName;
-    const selectedPackageManager = packageManagerOptions.includes(
-      packageManagerArg,
-    )
+    const selectedPackageManager = packageManagerOptions.includes(packageManagerArg)
       ? packageManagerArg
       : await logger
           .prompt('Which package manager would you like to use?', {
@@ -213,9 +202,7 @@ export const initCommand: CommandDef = defineCommand({
     const relativeTemplateDir = relative(process.cwd(), template.dir) || '.';
     const runCmd = selectedPackageManager === 'deno' ? 'task' : 'run';
     const nextSteps = [
-      !ctx.args.shell &&
-        relativeTemplateDir.length > 1 &&
-        `\`cd ${relativeTemplateDir}\``,
+      !ctx.args.shell && relativeTemplateDir.length > 1 && `\`cd ${relativeTemplateDir}\``,
       `Start development server with \`${selectedPackageManager} ${runCmd} dev\``,
     ].filter(Boolean);
 

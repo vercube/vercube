@@ -62,8 +62,7 @@ describe('@Message() decorator', () => {
   });
 
   it('should register both message handlers under the correct namespace and events', () => {
-    const handlers =
-      websocketService['fHandlers'][WebsocketTypes.HandlerAction.MESSAGE];
+    const handlers = websocketService['fHandlers'][WebsocketTypes.HandlerAction.MESSAGE];
 
     expect(handlers['/foo']).toBeDefined();
 

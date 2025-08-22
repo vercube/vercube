@@ -78,11 +78,7 @@ export class S3Storage implements Storage<S3BaseOptions> {
    * @param {U} [options] - Additional options (currently unused).
    * @returns {Promise<void>} A promise that resolves when the value has been stored.
    */
-  public async setItem<T = unknown, U = unknown>(
-    key: string,
-    value: T,
-    options?: U,
-  ): Promise<void> {
+  public async setItem<T = unknown, U = unknown>(key: string, value: T, options?: U): Promise<void> {
     await this.s3.send(
       new PutObjectCommand({
         Bucket: this.bucket,

@@ -14,21 +14,15 @@ describe('QueryParams Decorator', () => {
     expect(meta.__methods['queryParams']).toBeDefined();
     expect(meta.__methods['queryParams'].args[0].type).toBe('query-params');
     expect(meta.__methods['queryParams'].args[0].validate).toBe(false);
-    expect(
-      meta.__methods['queryParams'].args[0].validationSchema,
-    ).toBeUndefined();
+    expect(meta.__methods['queryParams'].args[0].validationSchema).toBeUndefined();
   });
 
   it(`should add body validation to metadata`, () => {
     const meta = initializeMetadata(MockController.prototype);
 
     expect(meta.__methods['queryValidation']).toBeDefined();
-    expect(meta.__methods['queryParamsValidation'].args[0].type).toBe(
-      'query-params',
-    );
+    expect(meta.__methods['queryParamsValidation'].args[0].type).toBe('query-params');
     expect(meta.__methods['queryParamsValidation'].args[0].validate).toBe(true);
-    expect(
-      meta.__methods['queryParamsValidation'].args[0].validationSchema,
-    ).toBeDefined();
+    expect(meta.__methods['queryParamsValidation'].args[0].validationSchema).toBeDefined();
   });
 });

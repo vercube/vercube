@@ -54,9 +54,7 @@ describe('App', () => {
 
       expect(httpServer.initialize).toHaveBeenCalledWith(config);
       expect(router.initialize).toHaveBeenCalled();
-      expect(staticHandler.initialize).toHaveBeenCalledWith(
-        config.server?.static,
-      );
+      expect(staticHandler.initialize).toHaveBeenCalledWith(config.server?.static);
     });
 
     it('should listen for incoming requests', async () => {
@@ -78,10 +76,7 @@ describe('App', () => {
   describe('fetch', () => {
     it('should fetch a request', async () => {
       const request = new Request('http://localhost/mock/get');
-      const spyHttpServer = vi.spyOn(
-        container.get(HttpServer),
-        'handleRequest',
-      );
+      const spyHttpServer = vi.spyOn(container.get(HttpServer), 'handleRequest');
 
       await app.fetch(request);
 
@@ -97,10 +92,7 @@ describe('App', () => {
 
   describe('plugins', () => {
     it('should add plugin', () => {
-      const spyOnPluginsRegistry = vi.spyOn(
-        container.get(PluginsRegistry),
-        'register',
-      );
+      const spyOnPluginsRegistry = vi.spyOn(container.get(PluginsRegistry), 'register');
       app.addPlugin(MockPlugin);
 
       expect(spyOnPluginsRegistry).toHaveBeenCalledWith(MockPlugin, undefined);

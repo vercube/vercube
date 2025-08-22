@@ -1,9 +1,5 @@
 import { Logger } from '@vercube/logger';
-import {
-  createApp,
-  ErrorHandlerProvider,
-  type CreateAppOptions,
-} from '../../src';
+import { createApp, ErrorHandlerProvider, type CreateAppOptions } from '../../src';
 import { MockController } from './MockController.mock';
 import { vi } from 'vitest';
 

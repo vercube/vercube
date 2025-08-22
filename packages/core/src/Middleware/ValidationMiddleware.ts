@@ -29,36 +29,21 @@ export class ValidationMiddleware implements BaseMiddleware {
    * @returns {Promise<void>} - A promise that resolves when the processing is complete
    * @throws {BadRequestError} - If validation fails
    */
-  public async onRequest(
-    request: Request,
-    response: Response,
-    args: MiddlewareOptions,
-  ): Promise<void> {
+  public async onRequest(request: Request, response: Response, args: MiddlewareOptions): Promise<void> {
     if (!this.gValidationProvider) {
-      this.gLogger?.warn(
-        'ValidationMiddleware::ValidationProvider',
-        'Validation provider is not registered',
-      );
+      this.gLogger?.warn('ValidationMiddleware::ValidationProvider', 'Validation provider is not registered');
       return;
     }
 
     // get all data to validate
-    const validators =
-      args.methodArgs?.filter((arg) => arg.validate && arg.validationSchema) ??
-      [];
+    const validators = args.methodArgs?.filter((arg) => arg.validate && arg.validationSchema) ?? [];
 
     // validate data
     for (const validator of validators) {
-      const result = await this.gValidationProvider.validate(
-        validator.validationSchema!,
-        validator.resolved,
-      );
+      const result = await this.gValidationProvider.validate(validator.validationSchema!, validator.resolved);
 
       if (result.issues?.length) {
-        throw new BadRequestError(
-          `Validation error - ${validator.type}`,
-          result.issues,
-        );
+        throw new BadRequestError(`Validation error - ${validator.type}`, result.issues);
       }
     }
   }

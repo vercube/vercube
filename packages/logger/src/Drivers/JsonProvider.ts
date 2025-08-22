@@ -18,8 +18,6 @@ export class JSONProvider extends LoggerProvider {
    * @protected
    */
   public processMessage(message: LoggerTypes.Message): void {
-    console.log(
-      JSON.stringify({ type: message?.type ?? 'application_log', ...message }),
-    );
+    console.log(JSON.stringify({ type: message?.type ?? 'application_log', ...message }));
   }
 }

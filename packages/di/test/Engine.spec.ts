@@ -108,11 +108,7 @@ describe('[Framework][IOC] Engine', () => {
     it('should throw error for invalid inject method', () => {
       const instance = new TestClass();
       expect(() => {
-        IOCEngine.injectDeps(
-          container,
-          instance,
-          'invalid' as IOC.InjectMethod,
-        );
+        IOCEngine.injectDeps(container, instance, 'invalid' as IOC.InjectMethod);
       }).toThrow('IOCEngine.injectDeps() - invalid inject method invalid');
     });
   });
@@ -220,11 +216,7 @@ describe('[Framework][IOC] Engine', () => {
 
       // This should not throw and should return early
       expect(() => {
-        IOCEngine.injectDeps(
-          container,
-          instanceWithNullPrototype,
-          IOC.InjectMethod.STATIC,
-        );
+        IOCEngine.injectDeps(container, instanceWithNullPrototype, IOC.InjectMethod.STATIC);
       }).not.toThrow();
     });
 

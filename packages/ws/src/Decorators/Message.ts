@@ -1,8 +1,4 @@
-import {
-  initializeMetadata,
-  initializeMetadataMethod,
-  ValidationTypes,
-} from '@vercube/core';
+import { initializeMetadata, initializeMetadataMethod, ValidationTypes } from '@vercube/core';
 import { BaseDecorator, createDecorator, InjectOptional } from '@vercube/di';
 import { WebsocketTypes } from '../Types/WebsocketTypes';
 import { $WebsocketService } from '../Symbols/WebsocketSymbols';
@@ -37,9 +33,7 @@ class MessageDecorator extends BaseDecorator<MessageDecoratorOptions> {
 
     const namespace = meta?.__meta?.namespace as string;
     if (!namespace) {
-      console.warn(
-        'MessageDecorator::Unable to find namespace. Did you use @Namespace()?',
-      );
+      console.warn('MessageDecorator::Unable to find namespace. Did you use @Namespace()?');
       return;
     }
 
@@ -50,15 +44,11 @@ class MessageDecorator extends BaseDecorator<MessageDecoratorOptions> {
 
     const originalMethod = this.instance[this.propertyName].bind(this.instance);
 
-    this.gWebsocketService.registerHandler(
-      WebsocketTypes.HandlerAction.MESSAGE,
-      namespace,
-      {
-        callback: originalMethod,
-        event: this.options.event,
-        schema: this.options.validationSchema,
-      },
-    );
+    this.gWebsocketService.registerHandler(WebsocketTypes.HandlerAction.MESSAGE, namespace, {
+      callback: originalMethod,
+      event: this.options.event,
+      schema: this.options.validationSchema,
+    });
   }
 }
 

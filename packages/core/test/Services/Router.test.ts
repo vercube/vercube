@@ -64,9 +64,7 @@ describe('Router', () => {
 
       expect(() => {
         router.addRoute(route);
-      }).toThrow(
-        'Router not initialized. Please call init() before adding routes.',
-      );
+      }).toThrow('Router not initialized. Please call init() before adding routes.');
     });
   });
 
@@ -146,15 +144,7 @@ describe('Router', () => {
     });
 
     it('should resolve route with different HTTP methods', () => {
-      const methods = [
-        'GET',
-        'POST',
-        'PUT',
-        'DELETE',
-        'PATCH',
-        'HEAD',
-        'OPTIONS',
-      ];
+      const methods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'];
 
       for (const method of methods) {
         const routeFind: RouterTypes.RouteFind = {

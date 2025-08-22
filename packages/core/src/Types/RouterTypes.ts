@@ -4,16 +4,7 @@ import { BaseMiddleware } from '../Services/Middleware/BaseMiddleware';
 export namespace RouterTypes {
   export interface Route {
     path: string;
-    method:
-      | 'GET'
-      | 'POST'
-      | 'PUT'
-      | 'DELETE'
-      | 'PATCH'
-      | 'OPTIONS'
-      | 'HEAD'
-      | 'CONNECT'
-      | 'TRACE';
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'OPTIONS' | 'HEAD' | 'CONNECT' | 'TRACE';
     handler: RouterHandler;
   }
 
@@ -45,9 +36,8 @@ export namespace RouterTypes {
     params?: Record<string, string>;
   }
 
-  export type RouterEvent =
-    RouterTypes.RouteMatched<RouterTypes.RouterHandler> & {
-      request: Request;
-      response: Response;
-    };
+  export type RouterEvent = RouterTypes.RouteMatched<RouterTypes.RouterHandler> & {
+    request: Request;
+    response: Response;
+  };
 }

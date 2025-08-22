@@ -21,9 +21,7 @@ export class DefaultErrorHandlerProvider extends ErrorHandlerProvider {
    * @returns Promise<Response> | Response - The response to be sent to the client
    */
   public handleError(error: Error): Response {
-    const _internalError = new InternalServerError(
-      error?.message ?? 'Internal server error',
-    );
+    const _internalError = new InternalServerError(error?.message ?? 'Internal server error');
     const status = (error as any)?.status ?? 500;
 
     // check if the error is known error type and return it.
@@ -35,9 +33,6 @@ export class DefaultErrorHandlerProvider extends ErrorHandlerProvider {
 
     this.gLogger.error(error);
 
-    return new FastResponse(
-      JSON.stringify({ ...(error?.cause ?? _internalError) }, undefined, 2),
-      { status },
-    );
+    return new FastResponse(JSON.stringify({ ...(error?.cause ?? _internalError) }, undefined, 2), { status });
   }
 }

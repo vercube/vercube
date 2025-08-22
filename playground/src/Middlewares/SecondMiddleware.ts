@@ -17,11 +17,7 @@ export class SecondMiddleware implements BaseMiddleware {
    * @param {unknown} body - The body of the request
    * @returns {Promise<void>} - A promise that resolves when the processing is complete.
    */
-  public async onResponse(
-    request: Request,
-    response: Response,
-    body: unknown,
-  ): Promise<Response> {
+  public async onResponse(request: Request, response: Response, body: unknown): Promise<Response> {
     const payload = body as { message: string };
 
     return new Response(

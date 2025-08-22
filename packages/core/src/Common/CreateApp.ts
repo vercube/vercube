@@ -16,10 +16,7 @@ export interface CreateAppOptions {
  *
  * @returns {Promise<App>} A promise that resolves to an instance of the App.
  */
-export async function createApp({
-  cfg = {},
-  setup = undefined,
-}: CreateAppOptions = {}): Promise<App> {
+export async function createApp({ cfg = {}, setup = undefined }: CreateAppOptions = {}): Promise<App> {
   // load config
   const config = await loadVercubeConfig(cfg);
 
@@ -30,8 +27,7 @@ export async function createApp({
   const app = container.resolve(App);
 
   // set runtime config
-  container.get<RuntimeConfig>(RuntimeConfig).runtimeConfig =
-    config?.runtime ?? {};
+  container.get<RuntimeConfig>(RuntimeConfig).runtimeConfig = config?.runtime ?? {};
 
   // initialize app
   app.container = container;

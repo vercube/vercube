@@ -8,9 +8,7 @@ import { defaultConfig } from './DefaultConfig';
  * @param {ConfigTypes.Config} overrides - The configuration object to load
  * @returns {ConfigTypes.Config} The loaded configuration object
  */
-export async function loadVercubeConfig(
-  overrides?: ConfigTypes.Config,
-): Promise<ConfigTypes.Config> {
+export async function loadVercubeConfig(overrides?: ConfigTypes.Config): Promise<ConfigTypes.Config> {
   const config = await loadConfig<ConfigTypes.Config>({
     name: 'vercube',
     dotenv: overrides?.c12?.dotenv ?? true,
@@ -20,10 +18,7 @@ export async function loadVercubeConfig(
   });
 
   // override dotenv
-  if (
-    config?.config?.c12?.dotenv &&
-    typeof config?.config?.c12?.dotenv === 'object'
-  ) {
+  if (config?.config?.c12?.dotenv && typeof config?.config?.c12?.dotenv === 'object') {
     await setupDotenv(config.config.c12.dotenv);
   }
 

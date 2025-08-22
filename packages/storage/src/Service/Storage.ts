@@ -35,11 +35,7 @@ export abstract class Storage<T = undefined> {
    * @param {T} value - The value to store
    * @returns {Promise<void>} A promise that resolves when the value is stored
    */
-  public abstract setItem<T = unknown, U = unknown>(
-    key: string,
-    value: T,
-    options?: U,
-  ): void | Promise<void>;
+  public abstract setItem<T = unknown, U = unknown>(key: string, value: T, options?: U): void | Promise<void>;
 
   /**
    * Removes a value from storage by its key

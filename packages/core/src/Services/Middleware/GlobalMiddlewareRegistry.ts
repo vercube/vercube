@@ -2,8 +2,7 @@
 import { MetadataTypes } from '../../Types/MetadataTypes';
 import { BaseMiddleware } from './BaseMiddleware';
 
-interface GlobalMiddlewareParams<T>
-  extends Omit<MetadataTypes.Middleware<T>, 'middleware'> {}
+interface GlobalMiddlewareParams<T> extends Omit<MetadataTypes.Middleware<T>, 'middleware'> {}
 
 interface GlobalMiddlewareStorageItem<T = unknown, U = unknown> {
   middleware: typeof BaseMiddleware<T, U>;

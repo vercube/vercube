@@ -30,17 +30,9 @@ describe('SchemaDecorator', () => {
     expect(path).toBeDefined();
     expect(path.get).toBeDefined();
     expect(path?.get?.responses['200']).toBeDefined();
-    expect(
-      path?.get?.responses['200']?.content['application/json']?.schema,
-    ).toBeDefined();
-    expect(
-      path?.get?.responses['200']?.content['application/json']?.schema
-        ?.properties.message,
-    ).toBeDefined();
-    expect(
-      path?.get?.responses['200']?.content['application/json']?.schema
-        ?.properties.message.type,
-    ).toBe('string');
+    expect(path?.get?.responses['200']?.content['application/json']?.schema).toBeDefined();
+    expect(path?.get?.responses['200']?.content['application/json']?.schema?.properties.message).toBeDefined();
+    expect(path?.get?.responses['200']?.content['application/json']?.schema?.properties.message.type).toBe('string');
   });
 
   it('should generate schema correctly', async () => {

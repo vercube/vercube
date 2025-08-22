@@ -10,13 +10,9 @@ import UnpluginIsolatedDecl from 'unplugin-isolated-decl/rolldown';
  * @param {ConfigTypes.BuildOptions} [ctx] - Build configuration options
  * @returns {Promise<RolldownOptions>} A promise that resolves to the Rolldown configuration
  */
-export async function getRolldownConfig(
-  ctx?: ConfigTypes.BuildOptions,
-): Promise<RolldownOptions> {
+export async function getRolldownConfig(ctx?: ConfigTypes.BuildOptions): Promise<RolldownOptions> {
   const root = ctx?.root ?? process.cwd();
-  const pkg = (
-    await import(resolve(root, 'package.json'), { with: { type: 'json' } })
-  ).default;
+  const pkg = (await import(resolve(root, 'package.json'), { with: { type: 'json' } })).default;
   const input = ctx?.entry ?? 'src/index.ts';
   const output = ctx?.output?.dir ?? 'dist';
 

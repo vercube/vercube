@@ -26,9 +26,7 @@ class SchemaDecorator extends BaseDecorator<SchemaDecoratorOptions> {
     await new Promise((resolve) => setTimeout(resolve, 0));
 
     // get method metadata object
-    const _methodMeta = this.prototype.__metadata.__methods[
-      this.propertyName
-    ] as MetadataTypes.Method;
+    const _methodMeta = this.prototype.__metadata.__methods[this.propertyName] as MetadataTypes.Method;
 
     const _schema: DeepPartial<RouteConfig> = {
       method: _methodMeta.method!.toLowerCase() as any,

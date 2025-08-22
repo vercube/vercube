@@ -25,8 +25,6 @@ describe('QueryParam Decorator', () => {
     expect(meta.__methods['queryValidation'].args[0].type).toBe('query-param');
     expect(meta.__methods['queryValidation'].args[0].data?.name).toBe('age');
     expect(meta.__methods['queryValidation'].args[0].validate).toBe(true);
-    expect(
-      meta.__methods['queryValidation'].args[0].validationSchema,
-    ).toBeDefined();
+    expect(meta.__methods['queryValidation'].args[0].validationSchema).toBeDefined();
   });
 });

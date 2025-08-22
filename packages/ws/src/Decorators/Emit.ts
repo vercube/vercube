@@ -31,15 +31,8 @@ class EmitDecorator extends BaseDecorator<EmitDecoratorOptions> {
 
     const originalMethod = this.instance[this.propertyName];
 
-    this.instance[this.propertyName] = async (
-      incomingMessage: Record<string, unknown>,
-      peer: Peer,
-    ) => {
-      const result = await originalMethod.call(
-        this.instance,
-        incomingMessage,
-        peer,
-      );
+    this.instance[this.propertyName] = async (incomingMessage: Record<string, unknown>, peer: Peer) => {
+      const result = await originalMethod.call(this.instance, incomingMessage, peer);
 
       this.gWebsocketService.emit(peer, {
         event: this.options.event,

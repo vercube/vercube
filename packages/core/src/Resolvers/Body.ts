@@ -21,9 +21,7 @@ import { RouterTypes } from '../Types/RouterTypes';
  * - Returns undefined for empty request bodies
  * - Throws BadRequestError for malformed JSON
  */
-export async function resolveRequestBody(
-  event: RouterTypes.RouterEvent,
-): Promise<unknown> {
+export async function resolveRequestBody(event: RouterTypes.RouterEvent): Promise<unknown> {
   const text = await event.request.text();
   if (!text) {
     return undefined;

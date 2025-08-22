@@ -12,8 +12,6 @@ describe('MultipartFormData Decorator', () => {
     const meta = initializeMetadata(MockController.prototype);
 
     expect(meta.__methods['multipartFormData']).toBeDefined();
-    expect(meta.__methods['multipartFormData'].args[0].type).toBe(
-      'multipart-form-data',
-    );
+    expect(meta.__methods['multipartFormData'].args[0].type).toBe('multipart-form-data');
   });
 });

@@ -43,33 +43,24 @@ export class RequestHandler {
    * @param {RequestHandlerOptions} params - Configuration options for the handler
    * @returns {RouterTypes.RouterHandler} A prepared handler with resolved metadata and middlewares
    */
-  public prepareHandler(
-    params: RequestHandlerOptions,
-  ): RouterTypes.RouterHandler {
+  public prepareHandler(params: RequestHandlerOptions): RouterTypes.RouterHandler {
     const { instance, propertyName } = params;
 
     // get the prototype of the instance to access the metadata
     const prototype = Object.getPrototypeOf(instance);
 
     // get method metadata
-    const method = this.gMetadataResolver.resolveMethod(
-      prototype,
-      propertyName,
-    );
+    const method = this.gMetadataResolver.resolveMethod(prototype, propertyName);
 
     // get middlewares
-    const middlewares = this.gMetadataResolver.resolveMiddlewares(
-      prototype,
-      propertyName,
-    );
+    const middlewares = this.gMetadataResolver.resolveMiddlewares(prototype, propertyName);
 
     // get global middlewares
     const globalMiddlewares = this.gGlobalMiddlewareRegistry.middlewares;
 
     // get unique middlewares;
     const uniqueMiddlewares = [...middlewares, ...globalMiddlewares].filter(
-      (m, index, self) =>
-        self.findIndex((t) => t.middleware === m.middleware) === index,
+      (m, index, self) => self.findIndex((t) => t.middleware === m.middleware) === index,
     );
 
     // resolve middlewares
@@ -79,20 +70,12 @@ export class RequestHandler {
     }));
 
     // get middleware types
-    const beforeMiddlewares = resolvedMiddlewares.filter(
-      (m) => !!m.middleware.onRequest,
-    );
-    const afterMiddlewares = resolvedMiddlewares.filter(
-      (m) => !!m.middleware.onResponse,
-    );
+    const beforeMiddlewares = resolvedMiddlewares.filter((m) => !!m.middleware.onRequest);
+    const afterMiddlewares = resolvedMiddlewares.filter((m) => !!m.middleware.onResponse);
 
     // sort middlewares by priority
-    beforeMiddlewares.sort(
-      (a, b) => (a?.priority ?? 999) - (b?.priority ?? 999),
-    );
-    afterMiddlewares.sort(
-      (a, b) => (a?.priority ?? 999) - (b?.priority ?? 999),
-    );
+    beforeMiddlewares.sort((a, b) => (a?.priority ?? 999) - (b?.priority ?? 999));
+    afterMiddlewares.sort((a, b) => (a?.priority ?? 999) - (b?.priority ?? 999));
 
     return {
       instance,
@@ -121,10 +104,7 @@ export class RequestHandler {
    * @param {RouterTypes.RouteMatched<RouterTypes.RouterHandler>} route - The matched route with handler data
    * @returns {Promise<Response>} The HTTP response
    */
-  public async handleRequest(
-    request: Request,
-    route: RouterTypes.RouteMatched<RouterTypes.RouterHandler>,
-  ): Promise<Response> {
+  public async handleRequest(request: Request, route: RouterTypes.RouteMatched<RouterTypes.RouterHandler>): Promise<Response> {
     try {
       const {
         instance,
@@ -135,8 +115,7 @@ export class RequestHandler {
       } = route.data;
       let fakeResponse = new FastResponse(undefined, {
         headers: {
-          'Content-Type':
-            request.headers.get('Content-Type') ?? 'application/json',
+          'Content-Type': request.headers.get('Content-Type') ?? 'application/json',
         },
       });
 
@@ -154,19 +133,16 @@ export class RequestHandler {
       if (middlewares.beforeMiddlewares.length > 0) {
         for await (const hook of middlewares.beforeMiddlewares) {
           try {
-            const hookResponse = await hook.middleware.onRequest?.(
-              request,
-              fakeResponse,
-              { middlewareArgs: hook.args, methodArgs: resolvedArgs },
-            );
+            const hookResponse = await hook.middleware.onRequest?.(request, fakeResponse, {
+              middlewareArgs: hook.args,
+              methodArgs: resolvedArgs,
+            });
 
             if (hookResponse instanceof Response) {
               return hookResponse;
             }
           } catch (error) {
-            const internalError = this.gContainer
-              .get(ErrorHandlerProvider)
-              .handleError(error);
+            const internalError = this.gContainer.get(ErrorHandlerProvider).handleError(error);
 
             if (internalError instanceof Response) {
               return internalError;
@@ -180,18 +156,12 @@ export class RequestHandler {
         const actionResponse = action.handler(request, fakeResponse);
 
         if (actionResponse !== null) {
-          fakeResponse = this.processOverrideResponse(
-            actionResponse!,
-            fakeResponse,
-          );
+          fakeResponse = this.processOverrideResponse(actionResponse!, fakeResponse);
         }
       }
 
       // 4. Call current route handler
-      let handlerResponse = instance[propertyName].call(
-        instance,
-        ...(resolvedArgs?.map((a) => a.resolved) ?? []),
-      );
+      let handlerResponse = instance[propertyName].call(instance, ...(resolvedArgs?.map((a) => a.resolved) ?? []));
 
       if (handlerResponse instanceof Promise) {
         handlerResponse = await handlerResponse;
@@ -201,22 +171,13 @@ export class RequestHandler {
       if (middlewares.afterMiddlewares.length > 0) {
         for await (const hook of middlewares.afterMiddlewares) {
           try {
-            const hookResponse = await hook.middleware.onResponse?.(
-              request,
-              fakeResponse,
-              handlerResponse,
-            );
+            const hookResponse = await hook.middleware.onResponse?.(request, fakeResponse, handlerResponse);
 
             if (hookResponse !== null) {
-              fakeResponse = this.processOverrideResponse(
-                hookResponse!,
-                fakeResponse,
-              );
+              fakeResponse = this.processOverrideResponse(hookResponse!, fakeResponse);
             }
           } catch (error) {
-            const internalError = this.gContainer
-              .get(ErrorHandlerProvider)
-              .handleError(error);
+            const internalError = this.gContainer.get(ErrorHandlerProvider).handleError(error);
 
             if (internalError instanceof Response) {
               return internalError;
@@ -252,10 +213,7 @@ export class RequestHandler {
    * @returns {Response} The processed response with applied overrides
    * @private
    */
-  private processOverrideResponse(
-    response: Response | ResponseInit,
-    base?: Response,
-  ): Response {
+  private processOverrideResponse(response: Response | ResponseInit, base?: Response): Response {
     let fakeResponse = base ?? new FastResponse();
 
     if (response != null && response instanceof FastResponse) {

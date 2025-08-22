@@ -8,10 +8,7 @@ import defu from 'defu';
  * @param schema - The schema to resolve the query params for.
  * @returns void
  */
-export function SchemaQueryParamsResolver(
-  metadata: MetadataTypes.Method,
-  schema: DeepPartial<RouteConfig>,
-): void {
+export function SchemaQueryParamsResolver(metadata: MetadataTypes.Method, schema: DeepPartial<RouteConfig>): void {
   // check if method has query
   const query = metadata.args.find((arg) => arg.type === 'query-params');
 

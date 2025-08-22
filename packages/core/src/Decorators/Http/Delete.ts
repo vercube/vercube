@@ -2,10 +2,7 @@ import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
 import { MetadataResolver } from '../../Services/Metadata/MetadataResolver';
 import { RequestHandler } from '../../Services/Router/RequestHandler';
 import { MetadataTypes } from '../../Types/MetadataTypes';
-import {
-  initializeMetadata,
-  initializeMetadataMethod,
-} from '../../Utils/Utils';
+import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
 import { Router } from '../../Services/Router/Router';
 
 interface DeleteDecoratorOptions {
@@ -21,10 +18,7 @@ interface DeleteDecoratorOptions {
  *
  * @extends {BaseDecorator<DeleteDecoratorOptions>}
  */
-class DeleteDecorator extends BaseDecorator<
-  DeleteDecoratorOptions,
-  MetadataTypes.Metadata
-> {
+class DeleteDecorator extends BaseDecorator<DeleteDecoratorOptions, MetadataTypes.Metadata> {
   @Inject(Router)
   private gRouter: Router;
 

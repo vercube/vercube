@@ -22,12 +22,8 @@ export class ConsoleProvider extends LoggerProvider {
 
     console[message.level](
       `%s%s${message?.tag ? '%s' : ''} %s`,
-      LOG_LEVEL_COLORS[message.level](
-        `[${date.toISOString().split('T')[1]?.replace('Z', '')}]`,
-      ),
-      LOG_LEVEL_COLORS[message.level](
-        `[${message.level.toUpperCase().padEnd(5, ' ')}]`,
-      ),
+      LOG_LEVEL_COLORS[message.level](`[${date.toISOString().split('T')[1]?.replace('Z', '')}]`),
+      LOG_LEVEL_COLORS[message.level](`[${message.level.toUpperCase().padEnd(5, ' ')}]`),
       message?.tag ? LOG_LEVEL_COLORS[message.level](`[${message.tag}]`) : '',
       ...message.args,
     );

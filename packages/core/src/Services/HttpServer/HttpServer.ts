@@ -120,8 +120,7 @@ export class HttpServer {
 
       // if no route is found, try to serve static file
       if (!route) {
-        const response =
-          await this.gStaticRequestHandler.handleRequest(request);
+        const response = await this.gStaticRequestHandler.handleRequest(request);
 
         if (response) {
           return response;

@@ -1,8 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import {
-  convertResponseToAWSResponse,
-  convertBodyToAWSResponse,
-} from '../../src/Adapters/aws-lambda/Utils/Response';
+import { convertResponseToAWSResponse, convertBodyToAWSResponse } from '../../src/Adapters/aws-lambda/Utils/Response';
 
 // Mock Headers.getAll method for testing
 class MockHeaders extends Headers {
@@ -66,22 +63,13 @@ describe('[AWS Lambda] Response Utils', () => {
       });
 
       // Verify the mock is working
-      expect(headers.getSetCookie()).toEqual([
-        'sessionId=abc123; HttpOnly; Secure',
-        'theme=dark; Path=/',
-      ]);
+      expect(headers.getSetCookie()).toEqual(['sessionId=abc123; HttpOnly; Secure', 'theme=dark; Path=/']);
 
       const awsResponse = convertResponseToAWSResponse(response);
 
-      expect(awsResponse.cookies).toEqual([
-        'sessionId=abc123; HttpOnly; Secure',
-        'theme=dark; Path=/',
-      ]);
+      expect(awsResponse.cookies).toEqual(['sessionId=abc123; HttpOnly; Secure', 'theme=dark; Path=/']);
       expect(awsResponse.multiValueHeaders).toEqual({
-        'set-cookie': [
-          'sessionId=abc123; HttpOnly; Secure',
-          'theme=dark; Path=/',
-        ],
+        'set-cookie': ['sessionId=abc123; HttpOnly; Secure', 'theme=dark; Path=/'],
       });
     });
 
@@ -98,9 +86,7 @@ describe('[AWS Lambda] Response Utils', () => {
 
       const awsResponse = convertResponseToAWSResponse(response);
 
-      expect(awsResponse.headers.accept).toBe(
-        'application/json, text/html, text/plain',
-      );
+      expect(awsResponse.headers.accept).toBe('application/json, text/html, text/plain');
     });
 
     it('should handle null/undefined header values', () => {
@@ -125,15 +111,11 @@ describe('[AWS Lambda] Response Utils', () => {
     it('should throw error for invalid response', () => {
       expect(() => {
         convertResponseToAWSResponse(null as any);
-      }).toThrow(
-        'Invalid response: response must be a valid Response object with headers',
-      );
+      }).toThrow('Invalid response: response must be a valid Response object with headers');
 
       expect(() => {
         convertResponseToAWSResponse(undefined as any);
-      }).toThrow(
-        'Invalid response: response must be a valid Response object with headers',
-      );
+      }).toThrow('Invalid response: response must be a valid Response object with headers');
     });
 
     it('should handle response without headers', () => {
@@ -147,9 +129,7 @@ describe('[AWS Lambda] Response Utils', () => {
 
       expect(() => {
         convertResponseToAWSResponse(response);
-      }).toThrow(
-        'Invalid response: response must be a valid Response object with headers',
-      );
+      }).toThrow('Invalid response: response must be a valid Response object with headers');
     });
   });
 
@@ -292,9 +272,7 @@ describe('[AWS Lambda] Response Utils', () => {
         writable: true,
       });
 
-      await expect(convertBodyToAWSResponse(response)).rejects.toThrow(
-        'Failed to convert response body: Stream error',
-      );
+      await expect(convertBodyToAWSResponse(response)).rejects.toThrow('Failed to convert response body: Stream error');
     });
 
     it('should handle large response bodies', async () => {
@@ -423,9 +401,7 @@ describe('[AWS Lambda] Response Utils', () => {
         writable: true,
       });
 
-      await expect(convertBodyToAWSResponse(response)).rejects.toThrow(
-        'Stream aborted',
-      );
+      await expect(convertBodyToAWSResponse(response)).rejects.toThrow('Stream aborted');
     });
 
     it('should handle missing content-type header as falsy value', async () => {

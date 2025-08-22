@@ -20,9 +20,7 @@ export async function build(ctx: ConfigTypes.BuildOptions): Promise<void> {
   const build = await rolldown({ ...bundlerConfig });
 
   // Process and write output to destination
-  const outputs = Array.isArray(bundlerConfig.output)
-    ? bundlerConfig.output
-    : [bundlerConfig.output];
+  const outputs = Array.isArray(bundlerConfig.output) ? bundlerConfig.output : [bundlerConfig.output];
 
   for (const output of outputs) {
     await build.write(output);

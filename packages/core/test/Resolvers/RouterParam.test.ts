@@ -3,9 +3,7 @@ import { resolveRouterParam } from '../../src/Resolvers/RouterParam';
 import type { RouterTypes } from '../../src/Types/RouterTypes';
 
 describe('RouterParam Resolver', () => {
-  const createMockEvent = (
-    params?: Record<string, string>,
-  ): RouterTypes.RouterEvent => ({
+  const createMockEvent = (params?: Record<string, string>): RouterTypes.RouterEvent => ({
     request: new Request('http://localhost/test'),
     response: new Response(),
     params,
@@ -227,8 +225,7 @@ describe('RouterParam Resolver', () => {
     it('should handle parameters with JSON-like values', () => {
       const event = createMockEvent({
         config: '{"theme":"dark","notifications":true}',
-        filters:
-          '[{"field":"name","value":"John"},{"field":"age","value":"30"}]',
+        filters: '[{"field":"name","value":"John"},{"field":"age","value":"30"}]',
         metadata: '{"tags":["important","urgent"],"priority":"high"}',
       });
 
@@ -237,9 +234,7 @@ describe('RouterParam Resolver', () => {
       const result3 = resolveRouterParam('metadata', event);
 
       expect(result1).toBe('{"theme":"dark","notifications":true}');
-      expect(result2).toBe(
-        '[{"field":"name","value":"John"},{"field":"age","value":"30"}]',
-      );
+      expect(result2).toBe('[{"field":"name","value":"John"},{"field":"age","value":"30"}]');
       expect(result3).toBe('{"tags":["important","urgent"],"priority":"high"}');
     });
 

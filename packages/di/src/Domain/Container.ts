@@ -1,10 +1,6 @@
 import { IOC } from '../Types/IOCTypes';
 import { ContainerEvents } from './ContainerEvents';
-import {
-  destroyDecorators,
-  initializeDecorators,
-  type IDecoratedInstance,
-} from '../Utils/Utils';
+import { destroyDecorators, initializeDecorators, type IDecoratedInstance } from '../Utils/Utils';
 import { IOCEngine } from './Engine';
 
 /**
@@ -78,9 +74,7 @@ export class Container {
     };
 
     if (typeof key === 'symbol' && !value) {
-      throw new Error(
-        'Container - provide implementation for binds with symbols.',
-      );
+      throw new Error('Container - provide implementation for binds with symbols.');
     }
 
     const existingServiceDef = this.fServices.get(key);
@@ -99,10 +93,7 @@ export class Container {
    * @param key key of service, preferably class or abstract class
    * @param value implementation
    */
-  public bindTransient<T>(
-    key: IOC.ServiceKey<T>,
-    value?: IOC.ServiceValue<T>,
-  ): void {
+  public bindTransient<T>(key: IOC.ServiceKey<T>, value?: IOC.ServiceValue<T>): void {
     const newDef = {
       serviceKey: key,
       serviceValue: value ?? key,
@@ -205,10 +196,7 @@ export class Container {
    * @param providers functor that is used to expand the container
    * @param flush whether container should be flushed now or not
    */
-  public expand(
-    providers: IOC.ProviderFunc | IOC.ProviderFunc[],
-    flush: boolean = true,
-  ): void {
+  public expand(providers: IOC.ProviderFunc | IOC.ProviderFunc[], flush: boolean = true): void {
     const preLockState = this.fLocked;
     const allProviders = Array.isArray(providers) ? providers : [providers];
 
@@ -220,9 +208,7 @@ export class Container {
       }
 
       // call internal container event
-      const newKeys = [...this.fNewQueue.keys()].filter(
-        (k) => !this.fSingletonInstances.has(k),
-      );
+      const newKeys = [...this.fNewQueue.keys()].filter((k) => !this.fSingletonInstances.has(k));
 
       this.fContainerEvents.callOnExpanded(newKeys);
 
@@ -241,10 +227,7 @@ export class Container {
    * @param method (optional) inject method
    * @returns new class instance with dependencies
    */
-  public resolve<T>(
-    classType: IOC.Newable<T>,
-    method: IOC.InjectMethod = IOC.InjectMethod.LAZY,
-  ): T {
+  public resolve<T>(classType: IOC.Newable<T>, method: IOC.InjectMethod = IOC.InjectMethod.LAZY): T {
     const newInstance = new classType();
     this.internalProcessInjects(newInstance, method);
     return newInstance;
@@ -309,9 +292,7 @@ export class Container {
   protected internalGet<T>(key: IOC.ServiceKey<T>, parent?: IOC.Instance): T {
     const serviceDef = this.fServices.get(key);
     if (!serviceDef) {
-      throw new Error(
-        `Unresolved dependency for [${this.getKeyDescription(key)}]`,
-      );
+      throw new Error(`Unresolved dependency for [${this.getKeyDescription(key)}]`);
     }
 
     return this.internalResolve(serviceDef) as T;
@@ -375,10 +356,7 @@ export class Container {
    * @param instance instance to inject
    * @param method method for injecting dependencies, either lazy or static
    */
-  protected internalProcessInjects(
-    instance: IOC.Instance,
-    method: IOC.InjectMethod,
-  ): void {
+  protected internalProcessInjects(instance: IOC.Instance, method: IOC.InjectMethod): void {
     // for lazy method its simple, just inject everything and we're good to go
     if (method === IOC.InjectMethod.LAZY) {
       IOCEngine.injectDeps(this, instance, IOC.InjectMethod.LAZY);
@@ -472,9 +450,7 @@ export class Container {
       }
 
       default: {
-        throw new Error(
-          `Container::internalDispose() - invalid def type: ${def.type}`,
-        );
+        throw new Error(`Container::internalDispose() - invalid def type: ${def.type}`);
       }
     }
   }

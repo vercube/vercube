@@ -2,10 +2,7 @@ import { BaseDecorator, createDecorator } from '@vercube/di';
 import type { MetadataTypes } from '../../Types/MetadataTypes';
 import type { ValidationTypes } from '../../Types/ValidationTypes';
 import { ValidationMiddleware } from '../../Middleware/ValidationMiddleware';
-import {
-  initializeMetadata,
-  initializeMetadataMethod,
-} from '../../Utils/Utils';
+import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
 
 interface QueryParamsDecoratorOptions {
   validationSchema?: ValidationTypes.Schema;
@@ -20,10 +17,7 @@ interface QueryParamsDecoratorOptions {
  *
  * @extends {BaseDecorator<QueryDecoratorOptions>}
  */
-class QueryParamsDecorator extends BaseDecorator<
-  QueryParamsDecoratorOptions,
-  MetadataTypes.Metadata
-> {
+class QueryParamsDecorator extends BaseDecorator<QueryParamsDecoratorOptions, MetadataTypes.Metadata> {
   /**
    * Called when the decorator is created.
    *

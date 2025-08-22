@@ -33,17 +33,10 @@ export class Router {
    */
   public addRoute(route: RouterTypes.Route): void {
     if (!this.fRouterContext) {
-      throw new Error(
-        'Router not initialized. Please call init() before adding routes.',
-      );
+      throw new Error('Router not initialized. Please call init() before adding routes.');
     }
 
-    addRoute(
-      this.fRouterContext,
-      route.method.toUpperCase(),
-      route.path,
-      route.handler,
-    );
+    addRoute(this.fRouterContext, route.method.toUpperCase(), route.path, route.handler);
   }
 
   /**
@@ -68,9 +61,7 @@ export class Router {
    * @param {RouterTypes.RouteFind} route - The route to resolve
    * @returns {RouterTypes.RouteMatched<RouterTypes.RouterHandler> | undefined} The matched route or undefined if no match found
    */
-  public resolve(
-    route: RouterTypes.RouteFind,
-  ): RouterTypes.RouteMatched<RouterTypes.RouterHandler> | undefined {
+  public resolve(route: RouterTypes.RouteFind): RouterTypes.RouteMatched<RouterTypes.RouterHandler> | undefined {
     let url = route.path;
 
     try {

@@ -142,23 +142,17 @@ describe('[Framework][IOC] Container', () => {
     container.bind($MyIdentityOtherClass, MyIdentityOtherClass);
 
     const myIdentity = container.get<MyIdentityClass>($MyIdentityClass);
-    const myIdentityOther = container.get<MyIdentityOtherClass>(
-      $MyIdentityOtherClass,
-    );
+    const myIdentityOther = container.get<MyIdentityOtherClass>($MyIdentityOtherClass);
 
     expect(myIdentity).toBeInstanceOf(MyIdentityClass);
     expect(myIdentityOther).toBeInstanceOf(MyIdentityOtherClass);
-    expect(myIdentity.myIdentityOtherClass).toBeInstanceOf(
-      MyIdentityOtherClass,
-    );
+    expect(myIdentity.myIdentityOtherClass).toBeInstanceOf(MyIdentityOtherClass);
   });
 
   it('should allow to register optional dependencies', () => {
     container.bind(MyClassWithOptionalDependency);
 
-    const instance = container.get<MyClassWithOptionalDependency>(
-      MyClassWithOptionalDependency,
-    );
+    const instance = container.get<MyClassWithOptionalDependency>(MyClassWithOptionalDependency);
     expect(instance.gMyOptionalDependecny).toBeNull();
 
     container.bind(MyOptionalDependency);

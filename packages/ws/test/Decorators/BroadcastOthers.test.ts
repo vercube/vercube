@@ -44,9 +44,7 @@ describe('@BroadcastOthers() decorator', () => {
 
     websocketService = container.get($WebsocketService);
 
-    vi.spyOn(websocketService, 'broadcastOthers').mockImplementation(
-      broadcastSpy,
-    );
+    vi.spyOn(websocketService, 'broadcastOthers').mockImplementation(broadcastSpy);
 
     initializeContainer(container);
   });

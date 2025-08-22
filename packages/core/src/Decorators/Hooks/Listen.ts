@@ -21,9 +21,7 @@ class ListenDecorator extends BaseDecorator<IListenDecoratorParams> {
    */
   public override created(): void {
     // listen on hook type, and after it triggers, call proper method and return its result
-    this.fHook = this.gHooksService.on(this.options.hookType, (data) =>
-      this.instance[this.propertyName](data),
-    );
+    this.fHook = this.gHooksService.on(this.options.hookType, (data) => this.instance[this.propertyName](data));
   }
 
   /**

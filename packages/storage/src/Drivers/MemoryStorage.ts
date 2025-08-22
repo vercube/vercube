@@ -37,11 +37,7 @@ export class MemoryStorage implements Storage {
    * @param {string} key - The key under which to store the value
    * @param {T} value - The value to store
    */
-  public setItem<T = unknown, U = unknown>(
-    key: string,
-    value: T,
-    options?: U,
-  ): void {
+  public setItem<T = unknown, U = unknown>(key: string, value: T, options?: U): void {
     this.storage.set(key, value);
   }
 

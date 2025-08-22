@@ -49,19 +49,8 @@ describe('Storage', () => {
     }
 
     const storage = new ConcreteStorage();
-    const storageMethods = Object.getOwnPropertyNames(
-      Object.getPrototypeOf(storage),
-    );
-    const requiredMethods = [
-      'initialize',
-      'getItem',
-      'setItem',
-      'deleteItem',
-      'hasItem',
-      'getKeys',
-      'clear',
-      'size',
-    ];
+    const storageMethods = Object.getOwnPropertyNames(Object.getPrototypeOf(storage));
+    const requiredMethods = ['initialize', 'getItem', 'setItem', 'deleteItem', 'hasItem', 'getKeys', 'clear', 'size'];
 
     for (const method of requiredMethods) {
       expect(storageMethods).toContain(method);

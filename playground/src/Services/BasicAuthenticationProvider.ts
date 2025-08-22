@@ -9,9 +9,7 @@ export class BasicAuthenticationProvider extends AuthProvider {
    * @returns An error string or Promise of error string, null or Promise of null if authentication is successful
    */
   public validate(request: Request): MaybePromise<string | null> {
-    const [type, token] = (request.headers.get('Authorization') ?? '').split(
-      ' ',
-    );
+    const [type, token] = (request.headers.get('Authorization') ?? '').split(' ');
 
     if (type !== 'Basic') {
       return 'Invalid authentication method';

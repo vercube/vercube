@@ -15,17 +15,12 @@ export abstract class AuthProvider<U = unknown> {
    * @param {AuthTypes.MiddlewareOptions} params - Additional parameters
    * @returns An error string or Promise of error string, null or Promise of null if authentication is successful
    */
-  public abstract validate(
-    request: Request,
-    params?: AuthTypes.MiddlewareOptions,
-  ): Promise<string | null> | string | null;
+  public abstract validate(request: Request, params?: AuthTypes.MiddlewareOptions): Promise<string | null> | string | null;
 
   /**
    * Get current user
    * @param {Request} request - The request object
    * @returns A promise of the current user or null if no user is authenticated
    */
-  public abstract getCurrentUser(
-    request: Request,
-  ): Promise<U | null> | U | null;
+  public abstract getCurrentUser(request: Request): Promise<U | null> | U | null;
 }

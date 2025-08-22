@@ -1,10 +1,7 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 import { BaseDecorator, createDecorator } from '@vercube/di';
 import { MetadataTypes } from '../../Types/MetadataTypes';
-import {
-  initializeMetadata,
-  initializeMetadataMethod,
-} from '../../Utils/Utils';
+import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
 
 /**
  * @class MultipartFormDataDecorator
@@ -12,10 +9,7 @@ import {
  *
  * A decorator class that handles the metadata for HTTP request bodies.
  */
-class MultipartFormDataDecorator extends BaseDecorator<
-  {},
-  MetadataTypes.Metadata
-> {
+class MultipartFormDataDecorator extends BaseDecorator<{}, MetadataTypes.Metadata> {
   /**
    * @method created
    * This method is called when the decorator is created. It ensures that the metadata

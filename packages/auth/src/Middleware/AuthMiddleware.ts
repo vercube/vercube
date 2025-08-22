@@ -1,8 +1,4 @@
-import {
-  type BaseMiddleware,
-  type MiddlewareOptions,
-  UnauthorizedError,
-} from '@vercube/core';
+import { type BaseMiddleware, type MiddlewareOptions, UnauthorizedError } from '@vercube/core';
 import { Container, Inject, InjectOptional } from '@vercube/di';
 import { Logger } from '@vercube/logger';
 import type { AuthTypes } from '../Types/AuthTypes';
@@ -16,9 +12,7 @@ import { AuthProvider } from '../Services/AuthProvider';
  * const middleware = new AuthMiddleware();
  * await middleware.use(event);
  */
-export class AuthMiddleware
-  implements BaseMiddleware<AuthTypes.MiddlewareOptions>
-{
+export class AuthMiddleware implements BaseMiddleware<AuthTypes.MiddlewareOptions> {
   @Inject(Container)
   private gContainer: Container;
 
@@ -52,10 +46,7 @@ export class AuthMiddleware
       return;
     }
 
-    const authenticationError = await provider.validate(
-      request,
-      args.middlewareArgs,
-    );
+    const authenticationError = await provider.validate(request, args.middlewareArgs);
 
     if (authenticationError) {
       throw new UnauthorizedError(authenticationError);

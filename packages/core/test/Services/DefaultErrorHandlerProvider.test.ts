@@ -13,9 +13,7 @@ describe('DefaultErrorHandlerProvider', () => {
     app = await createTestApp();
     app.container.bind(ErrorHandlerProvider, DefaultErrorHandlerProvider);
 
-    errorHandler = app.container.get(
-      ErrorHandlerProvider,
-    ) as DefaultErrorHandlerProvider;
+    errorHandler = app.container.get(ErrorHandlerProvider) as DefaultErrorHandlerProvider;
     logger = app.container.get(Logger);
   });
 

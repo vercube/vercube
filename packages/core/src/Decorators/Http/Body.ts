@@ -2,10 +2,7 @@ import { BaseDecorator, createDecorator } from '@vercube/di';
 import { MetadataTypes } from '../../Types/MetadataTypes';
 import { ValidationMiddleware } from '../../Middleware/ValidationMiddleware';
 import { ValidationTypes } from '../../Types/ValidationTypes';
-import {
-  initializeMetadata,
-  initializeMetadataMethod,
-} from '../../Utils/Utils';
+import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
 
 interface BodyDecoratorOptions {
   validationSchema?: ValidationTypes.Schema;
@@ -17,10 +14,7 @@ interface BodyDecoratorOptions {
  *
  * A decorator class that handles the metadata for HTTP request bodies.
  */
-class BodyDecorator extends BaseDecorator<
-  BodyDecoratorOptions,
-  MetadataTypes.Metadata
-> {
+class BodyDecorator extends BaseDecorator<BodyDecoratorOptions, MetadataTypes.Metadata> {
   /**
    * @method created
    * This method is called when the decorator is created. It ensures that the metadata

@@ -37,14 +37,8 @@ export class WebsocketService {
    * Internal handlers registry
    */
   private fHandlers: {
-    [WebsocketTypes.HandlerAction.CONNECTION]: Record<
-      string,
-      WebsocketTypes.HandlerAttributes
-    >;
-    [WebsocketTypes.HandlerAction.MESSAGE]: Record<
-      string,
-      Record<string, WebsocketTypes.HandlerAttributes>
-    >;
+    [WebsocketTypes.HandlerAction.CONNECTION]: Record<string, WebsocketTypes.HandlerAttributes>;
+    [WebsocketTypes.HandlerAction.MESSAGE]: Record<string, Record<string, WebsocketTypes.HandlerAttributes>>;
   } = {
     [WebsocketTypes.HandlerAction.CONNECTION]: {}, // namespace -> handler
     [WebsocketTypes.HandlerAction.MESSAGE]: {}, // namespace -> event -> handler
@@ -163,20 +157,14 @@ export class WebsocketService {
         const url = new URL(request.url);
         const namespace = url.pathname;
         const parameters = Object.fromEntries(url.searchParams.entries());
-        const isNamespaceRegistered = !!this.fNamespaces?.[
-          namespace?.toLowerCase()
-        ] as boolean;
+        const isNamespaceRegistered = !!this.fNamespaces?.[namespace?.toLowerCase()] as boolean;
 
         if (!isNamespaceRegistered) {
-          this.gLogger?.warn(
-            'WebsocketService::initialize',
-            `Namespace "${namespace}" is not registered. Connection rejected.`,
-          );
+          this.gLogger?.warn('WebsocketService::initialize', `Namespace "${namespace}" is not registered. Connection rejected.`);
           return new Response('Namespace not registered', { status: 403 });
         }
 
-        const handler =
-          this.fHandlers[WebsocketTypes.HandlerAction.CONNECTION]?.[namespace];
+        const handler = this.fHandlers[WebsocketTypes.HandlerAction.CONNECTION]?.[namespace];
 
         if (handler) {
           try {
@@ -216,13 +204,9 @@ export class WebsocketService {
         }
       },
       error: async (peer: Peer, error: WSError) => {
-        this.gLogger?.error(
-          'WebsocketService::initialize',
-          `Error: ${error.message}`,
-          {
-            peer,
-          },
-        );
+        this.gLogger?.error('WebsocketService::initialize', `Error: ${error.message}`, {
+          peer,
+        });
       },
     });
 
@@ -244,10 +228,7 @@ export class WebsocketService {
       const event = msg.event;
       const data = msg.data;
 
-      const handler =
-        this.fHandlers[WebsocketTypes.HandlerAction.MESSAGE]?.[namespace]?.[
-          event
-        ];
+      const handler = this.fHandlers[WebsocketTypes.HandlerAction.MESSAGE]?.[namespace]?.[event];
 
       if (!handler) {
         this.gLogger?.warn(
@@ -259,32 +240,20 @@ export class WebsocketService {
 
       if (handler.schema) {
         if (!this.gValidationProvider) {
-          this.gLogger?.warn(
-            'WebsocketService::handleMessage',
-            'ValidationProvider is not registered',
-          );
+          this.gLogger?.warn('WebsocketService::handleMessage', 'ValidationProvider is not registered');
           return;
         }
 
-        const result = await this.gValidationProvider.validate(
-          handler.schema,
-          data,
-        );
+        const result = await this.gValidationProvider.validate(handler.schema, data);
 
         if (result?.issues?.length) {
-          throw new BadRequestError(
-            'Websocket message validation error',
-            result.issues,
-          );
+          throw new BadRequestError('Websocket message validation error', result.issues);
         }
       }
 
       await handler.callback(data, peer);
     } catch (error) {
-      this.gLogger?.error(
-        'WebsocketService::handleMessage',
-        `Failed to process message: ${error}`,
-      );
+      this.gLogger?.error('WebsocketService::handleMessage', `Failed to process message: ${error}`);
     }
   }
 }

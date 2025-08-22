@@ -1,9 +1,6 @@
 import { BaseDecorator, createDecorator } from '@vercube/di';
 import type { MetadataTypes } from '../../Types/MetadataTypes';
-import {
-  initializeMetadata,
-  initializeMetadataMethod,
-} from '../../Utils/Utils';
+import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
 
 /**
  * Options for the SetHeaderDecorator.
@@ -20,10 +17,7 @@ interface SetHeaderDecoratorOptions {
  * A decorator that sets a header on the response.
  * @extends {BaseDecorator<SetHeaderDecoratorOptions>}
  */
-class SetHeaderDecorator extends BaseDecorator<
-  SetHeaderDecoratorOptions,
-  MetadataTypes.Metadata
-> {
+class SetHeaderDecorator extends BaseDecorator<SetHeaderDecoratorOptions, MetadataTypes.Metadata> {
   /**
    * Called when the decorator is created.
    * Adds a query parameter to the metadata.

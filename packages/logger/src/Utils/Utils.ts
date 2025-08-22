@@ -14,10 +14,7 @@ const LOG_LEVEL_VALUES: Record<LoggerTypes.Level, number> = {
  * @param targetLevel target level
  * @param logLevels array of enabled log levels
  */
-export function isLogLevelEnabled(
-  targetLevel: LoggerTypes.Level,
-  currentLevel: LoggerTypes.Level,
-): boolean {
+export function isLogLevelEnabled(targetLevel: LoggerTypes.Level, currentLevel: LoggerTypes.Level): boolean {
   return LOG_LEVEL_VALUES[targetLevel] >= LOG_LEVEL_VALUES[currentLevel];
 }
 
@@ -35,12 +32,8 @@ export const colors: Record<string, ColorTextFn> = {
   green: colorIfAllowed((text: string): string => `\x1B[32m${text}\x1B[39m`),
   yellow: colorIfAllowed((text: string): string => `\x1B[33m${text}\x1B[39m`),
   red: colorIfAllowed((text: string): string => `\x1B[31m${text}\x1B[39m`),
-  magentaBright: colorIfAllowed(
-    (text: string): string => `\x1B[95m${text}\x1B[39m`,
-  ),
-  cyanBright: colorIfAllowed(
-    (text: string): string => `\x1B[96m${text}\x1B[39m`,
-  ),
+  magentaBright: colorIfAllowed((text: string): string => `\x1B[95m${text}\x1B[39m`),
+  cyanBright: colorIfAllowed((text: string): string => `\x1B[96m${text}\x1B[39m`),
 };
 
 export const LOG_LEVEL_COLORS: Record<LoggerTypes.Level, ColorTextFn> = {

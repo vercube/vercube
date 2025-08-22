@@ -179,23 +179,17 @@ describe('[Framework][IOC] Container', () => {
     container.bind($MyIdentityOtherClass, MyIdentityOtherClass);
 
     const myIdentity = container.get<MyIdentityClass>($MyIdentityClass);
-    const myIdentityOther = container.get<MyIdentityOtherClass>(
-      $MyIdentityOtherClass,
-    );
+    const myIdentityOther = container.get<MyIdentityOtherClass>($MyIdentityOtherClass);
 
     expect(myIdentity).toBeInstanceOf(MyIdentityClass);
     expect(myIdentityOther).toBeInstanceOf(MyIdentityOtherClass);
-    expect(myIdentity.myIdentityOtherClass).toBeInstanceOf(
-      MyIdentityOtherClass,
-    );
+    expect(myIdentity.myIdentityOtherClass).toBeInstanceOf(MyIdentityOtherClass);
   });
 
   it('should allow to register optional dependencies', () => {
     container.bind(MyClassWithOptionalDependency);
 
-    const instance = container.get<MyClassWithOptionalDependency>(
-      MyClassWithOptionalDependency,
-    );
+    const instance = container.get<MyClassWithOptionalDependency>(MyClassWithOptionalDependency);
     expect(instance.gMyOptionalDependecny).toBeNull();
 
     container.bind(MyOptionalDependency);
@@ -315,9 +309,7 @@ describe('[Framework][IOC] Container', () => {
 
   it('should throw error when getting unregistered service', () => {
     const unregisteredKey = Identity('UnregisteredService');
-    expect(() => container.get(unregisteredKey)).toThrow(
-      'Unresolved dependency',
-    );
+    expect(() => container.get(unregisteredKey)).toThrow('Unresolved dependency');
   });
 
   it('should handle invalid factory type in internalResolve', () => {
@@ -475,9 +467,7 @@ describe('[Framework][IOC] Container', () => {
     // Mock the internal services map to inject an invalid service definition
     (container as any).fServices.set(key, invalidServiceDef);
 
-    expect(() => container.get(key)).toThrow(
-      'Container - invalid factory type: INVALID_TYPE',
-    );
+    expect(() => container.get(key)).toThrow('Container - invalid factory type: INVALID_TYPE');
   });
 
   it('should throw error for invalid def type in internalDispose (lines 476-477)', () => {
@@ -508,15 +498,11 @@ describe('[Framework][IOC] Container', () => {
 
     // Test object key without constructor name
     const objectKeyNoName = { constructor: {} };
-    expect(() => container.get(objectKeyNoName as any)).toThrow(
-      'Unknown object',
-    );
+    expect(() => container.get(objectKeyNoName as any)).toThrow('Unknown object');
 
     // Test object key without constructor
     const objectKeyNoConstructor = {};
-    expect(() => container.get(objectKeyNoConstructor as any)).toThrow(
-      'Object',
-    );
+    expect(() => container.get(objectKeyNoConstructor as any)).toThrow('Object');
   });
 
   it('should handle getKeyDescription for unknown key types', () => {

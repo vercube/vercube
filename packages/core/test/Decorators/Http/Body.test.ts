@@ -23,8 +23,6 @@ describe('Body Decorator', () => {
     expect(meta.__methods['bodyValidation']).toBeDefined();
     expect(meta.__methods['bodyValidation'].args[0].type).toBe('body');
     expect(meta.__methods['bodyValidation'].args[0].validate).toBe(true);
-    expect(
-      meta.__methods['bodyValidation'].args[0].validationSchema,
-    ).toBeDefined();
+    expect(meta.__methods['bodyValidation'].args[0].validationSchema).toBeDefined();
   });
 });

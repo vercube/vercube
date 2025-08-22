@@ -63,10 +63,7 @@ export default class PlaygroundController {
 
   @Message({ event: 'message' })
   @Emit('message')
-  public async onMessage(
-    incomingMessage: unknown,
-    peer: { id: string; ip: string },
-  ): Promise<Record<string, string>> {
+  public async onMessage(incomingMessage: unknown, peer: { id: string; ip: string }): Promise<Record<string, string>> {
     console.log(incomingMessage, peer);
     return { foo: 'bar' };
   }

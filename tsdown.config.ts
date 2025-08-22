@@ -16,9 +16,5 @@ export default defineConfig({
   entry: Object.values(entries),
   fixedExtension: true,
   dts: true,
-  external: [
-    ...builtinModules,
-    ...builtinModules.map((m) => `node:${m}`),
-    ...Object.keys(packageJson?.dependencies ?? {}),
-  ],
+  external: [...builtinModules, ...builtinModules.map((m) => `node:${m}`), ...Object.keys(packageJson?.dependencies ?? {})],
 });

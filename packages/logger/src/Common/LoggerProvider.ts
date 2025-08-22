@@ -24,7 +24,5 @@ export abstract class LoggerProvider<T = unknown> {
    * @param message - The log message to process, containing level, tag, and other metadata
    * @returns void or Promise<void> if processing is asynchronous
    */
-  public abstract processMessage(
-    message: LoggerTypes.Message,
-  ): void | Promise<void>;
+  public abstract processMessage(message: LoggerTypes.Message): void | Promise<void>;
 }

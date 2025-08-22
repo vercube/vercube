@@ -3,9 +3,7 @@ import type { Hookable } from 'hookable';
 import { type Worker as _Worker } from 'node:worker_threads';
 
 export namespace DevKitTypes {
-  export type BuildFunc = (
-    ctx?: ConfigTypes.BuildOptions,
-  ) => void | Promise<void>;
+  export type BuildFunc = (ctx?: ConfigTypes.BuildOptions) => void | Promise<void>;
   export type WatchFunc = (app?: App) => void | Promise<void>;
 
   type HookResult = void | Promise<void>;

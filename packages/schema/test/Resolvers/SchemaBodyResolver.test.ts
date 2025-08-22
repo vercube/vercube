@@ -9,8 +9,6 @@ describe('SchemaBodyResolver', () => {
     const schema: DeepPartial<RouteConfig> = {};
     SchemaBodyResolver(MetaMock, schema);
 
-    expect(
-      schema?.request?.body?.content?.['application/json']?.schema,
-    ).toBeDefined();
+    expect(schema?.request?.body?.content?.['application/json']?.schema).toBeDefined();
   });
 });

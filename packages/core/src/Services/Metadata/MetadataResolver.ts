@@ -26,10 +26,7 @@ export class MetadataResolver {
     return url;
   }
 
-  public resolveMethod(
-    ctx: MetadataTypes.Metadata,
-    propertyName: string,
-  ): MetadataTypes.Method {
+  public resolveMethod(ctx: MetadataTypes.Metadata, propertyName: string): MetadataTypes.Method {
     return ctx.__metadata.__methods[propertyName];
   }
 
@@ -41,10 +38,7 @@ export class MetadataResolver {
    * @return {unknown[]} The resolved arguments.
    * @public
    */
-  public async resolveArgs(
-    args: MetadataTypes.Arg[],
-    event: RouterTypes.RouterEvent,
-  ): Promise<MetadataTypes.Arg[]> {
+  public async resolveArgs(args: MetadataTypes.Arg[], event: RouterTypes.RouterEvent): Promise<MetadataTypes.Arg[]> {
     // sort arguments by index
     args.sort((a, b) => a.idx - b.idx);
 
@@ -66,10 +60,7 @@ export class MetadataResolver {
    * @return {unknown} The resolved argument.
    * @private
    */
-  private resolveArg(
-    arg: MetadataTypes.Arg,
-    event: RouterTypes.RouterEvent,
-  ): unknown {
+  private resolveArg(arg: MetadataTypes.Arg, event: RouterTypes.RouterEvent): unknown {
     switch (arg.type) {
       case 'param': {
         return resolveRouterParam(arg?.data?.name ?? '', event);
@@ -130,14 +121,9 @@ export class MetadataResolver {
    * @returns {MetadataTypes.Middleware[]} Array of middleware functions that apply globally or to the specific property
    * @public
    */
-  public resolveMiddlewares(
-    ctx: MetadataTypes.Metadata,
-    propertyName: string,
-  ): MetadataTypes.Middleware[] {
+  public resolveMiddlewares(ctx: MetadataTypes.Metadata, propertyName: string): MetadataTypes.Middleware[] {
     const middlewares =
-      ctx?.__metadata?.__middlewares?.filter(
-        (m) => m.target === '__global__' || m.target === propertyName,
-      ) ?? [];
+      ctx?.__metadata?.__middlewares?.filter((m) => m.target === '__global__' || m.target === propertyName) ?? [];
 
     // return middlewares sorted by global first
     return middlewares.sort((a) => (a.target === '__global__' ? -1 : 1));

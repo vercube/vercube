@@ -3,16 +3,7 @@ import { createTestApp } from '../../Utils/App.mock';
 import { MockController } from '../../Utils/MockController.mock';
 import { type App, initializeMetadata, Router } from '../../../src';
 
-const methods: string[] = [
-  'connect',
-  'get',
-  'post',
-  'put',
-  'delete',
-  'patch',
-  'trace',
-  'head',
-];
+const methods: string[] = ['connect', 'get', 'post', 'put', 'delete', 'patch', 'trace', 'head'];
 
 describe('Http Methods', () => {
   let app: App;

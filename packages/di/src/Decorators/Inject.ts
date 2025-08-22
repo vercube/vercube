@@ -9,11 +9,6 @@ import { IOC } from '../Types/IOCTypes';
  */
 export function Inject(key: IOC.ServiceKey): Function {
   return (target: IDecoratedPrototype, propertyName: string) => {
-    IOCEngine.registerInject(
-      target,
-      propertyName,
-      key,
-      IOC.DependencyType.STANDARD,
-    );
+    IOCEngine.registerInject(target, propertyName, key, IOC.DependencyType.STANDARD);
   };
 }

@@ -26,9 +26,7 @@ class OnConnectionAttemptDecorator extends BaseDecorator {
 
   public override created(): void {
     if (!this.gWebsocketService) {
-      console.warn(
-        'OnConnectionAttemptDecorator::WebsocketService is not registered',
-      );
+      console.warn('OnConnectionAttemptDecorator::WebsocketService is not registered');
       return;
     }
 
@@ -37,21 +35,15 @@ class OnConnectionAttemptDecorator extends BaseDecorator {
 
     const namespace = meta?.__meta?.namespace as string;
     if (!namespace) {
-      console.warn(
-        'OnConnectionAttemptDecorator::Unable to find namespace. Did you use @Namespace()?',
-      );
+      console.warn('OnConnectionAttemptDecorator::Unable to find namespace. Did you use @Namespace()?');
       return;
     }
 
     const originalMethod = this.instance[this.propertyName].bind(this.instance);
 
-    this.gWebsocketService.registerHandler(
-      WebsocketTypes.HandlerAction.CONNECTION,
-      namespace,
-      {
-        callback: originalMethod,
-      },
-    );
+    this.gWebsocketService.registerHandler(WebsocketTypes.HandlerAction.CONNECTION, namespace, {
+      callback: originalMethod,
+    });
   }
 }
 

@@ -35,10 +35,7 @@ describe('[auth] Decorators', () => {
   it('should define metadata for the class method', () => {
     const service = container.get(MetadataResolver);
     const instance = container.get(TestClass);
-    const middlewares = service.resolveMiddlewares(
-      Object.getPrototypeOf(instance),
-      'testMethod',
-    );
+    const middlewares = service.resolveMiddlewares(Object.getPrototypeOf(instance), 'testMethod');
 
     expect(middlewares).toBeDefined();
     expect(middlewares).toHaveLength(1);
@@ -52,10 +49,7 @@ describe('[auth] Decorators', () => {
   it('should define metadata for the class', () => {
     const service = container.get(MetadataResolver);
     const instance = container.get(TestClass2);
-    const middlewares = service.resolveMiddlewares(
-      Object.getPrototypeOf(instance),
-      '',
-    );
+    const middlewares = service.resolveMiddlewares(Object.getPrototypeOf(instance), '');
 
     expect(middlewares).toBeDefined();
     expect(middlewares).toHaveLength(1);
@@ -70,10 +64,7 @@ describe('[auth] Decorators', () => {
   it('should define metadata for the class', () => {
     const service = container.get(MetadataResolver);
     const instance = container.get(TestClass3);
-    const middlewares = service.resolveMiddlewares(
-      Object.getPrototypeOf(instance),
-      '',
-    );
+    const middlewares = service.resolveMiddlewares(Object.getPrototypeOf(instance), '');
 
     expect(middlewares).toBeDefined();
     expect(middlewares).toHaveLength(1);
@@ -85,10 +76,7 @@ describe('[auth] Decorators', () => {
   it('should define metadata for the class method', () => {
     const service = container.get(MetadataResolver);
     const instance = container.get(TestClass4);
-    const middlewares = service.resolveMiddlewares(
-      Object.getPrototypeOf(instance),
-      'testMethod',
-    );
+    const middlewares = service.resolveMiddlewares(Object.getPrototypeOf(instance), 'testMethod');
 
     expect(middlewares).toBeDefined();
   });
@@ -96,10 +84,7 @@ describe('[auth] Decorators', () => {
   it('should define metadata for the class method with authentication', () => {
     const service = container.get(MetadataResolver);
     const instance = container.get(TestClass);
-    const middlewares = service.resolveMiddlewares(
-      Object.getPrototypeOf(instance),
-      'testMethod',
-    );
+    const middlewares = service.resolveMiddlewares(Object.getPrototypeOf(instance), 'testMethod');
 
     expect(middlewares).toBeDefined();
     expect(middlewares).toHaveLength(1);
@@ -111,10 +96,7 @@ describe('[auth] Decorators', () => {
   it('should define metadata for the class with authentication', () => {
     const service = container.get(MetadataResolver);
     const instance = container.get(TestClass2);
-    const middlewares = service.resolveMiddlewares(
-      Object.getPrototypeOf(instance),
-      '',
-    );
+    const middlewares = service.resolveMiddlewares(Object.getPrototypeOf(instance), '');
 
     expect(middlewares).toBeDefined();
     expect(middlewares).toHaveLength(1);
@@ -126,14 +108,8 @@ describe('[auth] Decorators', () => {
   it('should define metadata for the class method with user injection', async () => {
     const service = container.get(MetadataResolver);
     const instance = container.get(TestClass5);
-    const method = service.resolveMethod(
-      Object.getPrototypeOf(instance),
-      'testMethod',
-    );
-    const args = await service.resolveArgs(
-      method.args,
-      {} as RouterTypes.RouterEvent,
-    );
+    const method = service.resolveMethod(Object.getPrototypeOf(instance), 'testMethod');
+    const args = await service.resolveArgs(method.args, {} as RouterTypes.RouterEvent);
 
     expect(args).toBeDefined();
     expect(args).toHaveLength(1);
@@ -144,14 +120,8 @@ describe('[auth] Decorators', () => {
   it('should define metadata for the class method with custom auth provider', async () => {
     const service = container.get(MetadataResolver);
     const instance = container.get(TestClass7);
-    const method = service.resolveMethod(
-      Object.getPrototypeOf(instance),
-      'testMethod',
-    );
-    const args = await service.resolveArgs(
-      method.args,
-      {} as RouterTypes.RouterEvent,
-    );
+    const method = service.resolveMethod(Object.getPrototypeOf(instance), 'testMethod');
+    const args = await service.resolveArgs(method.args, {} as RouterTypes.RouterEvent);
 
     expect(args).toBeDefined();
     expect(args).toHaveLength(1);
@@ -168,10 +138,7 @@ describe('[auth] Decorators', () => {
 
     const service = testContainer.get(MetadataResolver);
     const instance = testContainer.get(TestClass5);
-    const method = service.resolveMethod(
-      Object.getPrototypeOf(instance),
-      'testMethod',
-    );
+    const method = service.resolveMethod(Object.getPrototypeOf(instance), 'testMethod');
 
     // Get the resolver function
     const resolver = method.args[0]?.resolver;
@@ -205,10 +172,7 @@ describe('[auth] Decorators', () => {
 
     const service = testContainer.get(MetadataResolver);
     const instance = testContainer.get(TestClass5);
-    const method = service.resolveMethod(
-      Object.getPrototypeOf(instance),
-      'testMethod',
-    );
+    const method = service.resolveMethod(Object.getPrototypeOf(instance), 'testMethod');
 
     // Get the resolver function
     const resolver = method.args[0]?.resolver;
@@ -245,10 +209,7 @@ describe('[auth] Decorators', () => {
 
     const service = testContainer.get(MetadataResolver);
     const instance = testContainer.get(TestClass7);
-    const method = service.resolveMethod(
-      Object.getPrototypeOf(instance),
-      'testMethod',
-    );
+    const method = service.resolveMethod(Object.getPrototypeOf(instance), 'testMethod');
 
     // Get the resolver function
     const resolver = method.args[0]?.resolver;

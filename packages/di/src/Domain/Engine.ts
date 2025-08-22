@@ -26,10 +26,7 @@ export interface IClassMapEntry {
  * to store those informations in object prototype, but accessing this map is blazing fast with Map
  * container (<1ms).
  */
-const classMap: Map<IOC.Prototype, IClassMapEntry> = new Map<
-  IOC.Prototype,
-  IClassMapEntry
->();
+const classMap: Map<IOC.Prototype, IClassMapEntry> = new Map<IOC.Prototype, IClassMapEntry>();
 
 // we need to cache root object prototype, we will check it later on
 const ROOT_PROTO: object = Object.getPrototypeOf({});
@@ -70,9 +67,7 @@ function registerInject(
  * @param classType type of class to check
  * @returns class map entry or null if cannot be found
  */
-function getEntryForClass(
-  classType: IOC.Newable<unknown>,
-): IClassMapEntry | null {
+function getEntryForClass(classType: IOC.Newable<unknown>): IClassMapEntry | null {
   const entry: IClassMapEntry | undefined = classMap.get(classType.prototype);
   return entry === undefined ? null : entry;
 }
@@ -101,11 +96,7 @@ function getDeps(instance: IOC.Instance): IClassDep[] {
  * @param instance class instance to inject
  * @param method inject method, "lazy" queries dep during property access while "static" injects during class creation
  */
-function injectDeps(
-  container: Container,
-  instance: IOC.Instance,
-  method: IOC.InjectMethod,
-): void {
+function injectDeps(container: Container, instance: IOC.Instance, method: IOC.InjectMethod): void {
   // get class metadata, if there are no @Injects for this class, just skip
   let prototype: IOC.Prototype | null = Object.getPrototypeOf(instance);
   if (!prototype) {
@@ -130,10 +121,7 @@ function injectDeps(
 
         // this is a hack for derived classes which improperly override original @Injects()
         // this should be fixed in those bad classess itself so @TODO
-        if (
-          Object.prototype.hasOwnProperty.call(instance, propertyName) &&
-          instance[propertyName] !== undefined
-        ) {
+        if (Object.prototype.hasOwnProperty.call(instance, propertyName) && instance[propertyName] !== undefined) {
           continue;
         }
 
@@ -164,9 +152,7 @@ function injectDeps(
           }
 
           default: {
-            throw new Error(
-              `IOCEngine.injectDeps() - invalid inject method ${method}`,
-            );
+            throw new Error(`IOCEngine.injectDeps() - invalid inject method ${method}`);
           }
         }
       }

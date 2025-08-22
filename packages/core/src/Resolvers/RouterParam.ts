@@ -11,9 +11,6 @@ import { RouterTypes } from '../Types/RouterTypes';
  * // Returns the 'id' parameter value from routerEvent.params or null
  * ```
  */
-export function resolveRouterParam(
-  param: string,
-  event: RouterTypes.RouterEvent,
-): string | null {
+export function resolveRouterParam(param: string, event: RouterTypes.RouterEvent): string | null {
   return event.params?.[param] ?? null;
 }
