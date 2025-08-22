@@ -11,8 +11,9 @@
     "**/dist": true,
     "packages/**/dist": true
   },
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {
     "source.fixAll.oxc": "explicit"
-  },
-  "typescript.tsdk": "node_modules/typescript/lib"
+  }
 }
