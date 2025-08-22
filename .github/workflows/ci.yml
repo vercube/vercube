@@ -42,3 +42,7 @@ jobs:
 
       - name: Type check
         run: pnpm test:tscheck
+
+      - uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
