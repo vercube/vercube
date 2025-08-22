@@ -3,9 +3,7 @@ import { type Peer, type Message, defineHooks } from 'crossws';
 import { type ServerPlugin } from 'srvx';
 import { Container, initializeContainer } from '@vercube/di';
 import { type App, type ConfigTypes, createApp, HttpServer } from '@vercube/core';
-import { $WebsocketService } from '../../src/Symbols/WebsocketSymbols';
-import { WebsocketService } from '../../src/Services/WebsocketService';
-import { WebsocketTypes } from '../../src/Types/WebsocketTypes';
+import { $WebsocketService, WebsocketService, WebsocketTypes } from '../../src';
 
 vi.mock('srvx', () => ({
   serve: vi.fn().mockReturnValue({

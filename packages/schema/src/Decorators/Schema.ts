@@ -23,8 +23,7 @@ class SchemaDecorator extends BaseDecorator<SchemaDecoratorOptions> {
   @Inject(SchemaRegistry)
   private readonly gSchemaRegistry: SchemaRegistry;
 
-  public override async  created(): Promise<void> {
-
+  public override async created(): Promise<void> {
     // move to the end of the event loop
     await new Promise((resolve) => setTimeout(resolve, 0));
 

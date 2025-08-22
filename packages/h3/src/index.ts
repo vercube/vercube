@@ -1,4 +1,4 @@
-import { type App, HttpServer } from '@vercube/core';
+import { type App } from '@vercube/core';
 import { type EventHandler, type H3Event } from 'h3';
 
 /**
@@ -25,8 +25,5 @@ import { type EventHandler, type H3Event } from 'h3';
  */
 
 export function toH3(app: App): EventHandler {
-  return (event: H3Event) => {
-    const server = app.container.get(HttpServer);
-    return server.handleRequest(event.req);
-  };
+  return (event: H3Event) => app.fetch(event.req);
 }

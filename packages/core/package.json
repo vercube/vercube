@@ -32,6 +32,9 @@
     "rou3": "0.7.3",
     "srvx": "0.8.6"
   },
+  "devDependencies": {
+    "zod": "4.0.17"
+  },
   "publishConfig": {
     "access": "public"
   }

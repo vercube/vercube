@@ -34,7 +34,7 @@ class GetDecorator extends BaseDecorator<GetDecoratorOptions> {
    * This method constructs the full path for the route, registers the route
    * with the Router, and sets up the event handler for the GET request.
    */
-  public override created(): void {
+  public override created(): void {    
     initializeMetadata(this.prototype);
     const method = initializeMetadataMethod(this.prototype, this.propertyName);
     method.method = 'GET';

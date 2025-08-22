@@ -28,7 +28,7 @@ export class SchemaRegistry {
    * @async
    * @returns {Promise<unknown>} A promise that resolves to the generated OpenAPI components object.
    */
-  public async generateSchema(): Promise<unknown> {
+  public async generateSchema(): Promise<ReturnType<OpenApiGeneratorV3['generateDocument']>> {
     return new OpenApiGeneratorV3(this.fRegistry.definitions).generateDocument({
       openapi: '3.0.0',
       info: {

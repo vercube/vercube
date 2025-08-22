@@ -3,7 +3,7 @@ import { BaseMiddleware } from '../../Services/Middleware/BaseMiddleware';
 import { MetadataTypes } from '../../Types/MetadataTypes';
 import { initializeMetadata } from '../../Utils/Utils';
 
-interface MiddlewareDecoratorParams extends Omit<MetadataTypes.Middleware, 'middleware'> {
+interface MiddlewareDecoratorParams extends Omit<MetadataTypes.Middleware, 'middleware' | 'target'> {
 }
 
 /**
