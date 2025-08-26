@@ -97,8 +97,7 @@ export class HttpServer {
    * @returns {Promise<void>} A promise that resolves when the server is ready to listen
    */
   public async listen(): Promise<void> {
-    // TODO: waiting for the PR: https://github.com/h3js/srvx/pull/102
-    await (this.fServer as any).serve();
+    await this.fServer.serve();
     await this.fServer.ready();
   }
 
