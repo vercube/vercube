@@ -22,9 +22,7 @@ export async function getRolldownConfig(ctx?: ConfigTypes.BuildOptions): Promise
       index: input,
     },
 
-    resolve: {
-      tsconfigFilename: resolve(root, 'tsconfig.json'),
-    },
+    tsconfig: resolve(root, 'tsconfig.json'),
 
     define: {
       ...ctx?.define,
