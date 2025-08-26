@@ -1,5 +1,29 @@
 # Changelog
 
+## v0.0.23
+
+[compare changes](https://github.com/vercube/vercube/compare/v0.0.22...v0.0.23)
+
+### 🚀 Enhancements
+
+- **core:** Add missing tests ([e28609b](https://github.com/vercube/vercube/commit/e28609b))
+- **core**: Add prettier, oxlint, codecov and more ([#570](https://github.com/vercube/vercube/pull/570))
+
+### 🩹 Fixes
+
+- **devkit:** Fix rolldown build ([a93a00b](https://github.com/vercube/vercube/commit/a93a00b))
+
+### 📦 Build
+
+- Bump packages ([6c7ff92](https://github.com/vercube/vercube/commit/6c7ff92) [66f57d5](https://github.com/vercube/vercube/commit/66f57d5))
+
+### 🏡 Chore
+- **core:** Add missing srvx serve method ([219b608](https://github.com/vercube/vercube/commit/219b608))
+
+### ❤️ Contributors
+
+- Oskar Lebuda
+
 ## v0.0.22
 [compare changes](https://github.com/vercube/vercube/compare/v0.0.21...v0.0.22)
 
