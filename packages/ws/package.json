@@ -19,14 +19,14 @@
     "README.md"
   ],
   "devDependencies": {
-    "zod": "4.1.5"
+    "zod": "catalog:"
   },
   "dependencies": {
     "@vercube/core": "workspace:*",
     "@vercube/di": "workspace:*",
     "@vercube/logger": "workspace:*",
     "crossws": "0.4.1",
-    "srvx": "0.8.7"
+    "srvx": "catalog:"
   },
   "publishConfig": {
     "access": "public"
