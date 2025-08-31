@@ -48,7 +48,7 @@ importers:
         specifier: 3.6.2
         version: 3.6.2
       prettier-plugin-imports:
-        specifier: ^4.3.3
+        specifier: 4.3.3
         version: 4.3.3(@vue/compiler-sfc@3.5.18)(prettier@3.6.2)
       renovate:
         specifier: 41.91.1
@@ -303,7 +303,7 @@ importers:
         specifier: workspace:*
         version: link:../packages/ws
       serverless:
-        specifier: ^4.18.2
+        specifier: 4.18.2
         version: 4.18.2
       serverless-offline:
         specifier: 14.4.0
