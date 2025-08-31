@@ -4,6 +4,27 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+catalogs:
+  default:
+    '@standard-schema/spec':
+      specifier: 1.0.0
+      version: 1.0.0
+    consola:
+      specifier: 3.4.2
+      version: 3.4.2
+    defu:
+      specifier: 6.1.4
+      version: 6.1.4
+    pathe:
+      specifier: 2.0.3
+      version: 2.0.3
+    srvx:
+      specifier: 0.8.7
+      version: 0.8.7
+    zod:
+      specifier: 4.1.5
+      version: 4.1.5
+
 importers:
 
   .:
@@ -93,7 +114,7 @@ importers:
         specifier: 0.1.6
         version: 0.1.6
       consola:
-        specifier: 3.4.2
+        specifier: 'catalog:'
         version: 3.4.2
       giget:
         specifier: 2.0.0
@@ -102,7 +123,7 @@ importers:
         specifier: 0.6.1
         version: 0.6.1
       pathe:
-        specifier: 2.0.3
+        specifier: 'catalog:'
         version: 2.0.3
       std-env:
         specifier: 3.9.0
@@ -114,7 +135,7 @@ importers:
   packages/core:
     dependencies:
       '@standard-schema/spec':
-        specifier: 1.0.0
+        specifier: 'catalog:'
         version: 1.0.0
       '@vercube/di':
         specifier: workspace:*
@@ -126,20 +147,20 @@ importers:
         specifier: 3.2.0
         version: 3.2.0(magicast@0.3.5)
       defu:
-        specifier: 6.1.4
+        specifier: 'catalog:'
         version: 6.1.4
       pathe:
-        specifier: 2.0.3
+        specifier: 'catalog:'
         version: 2.0.3
       rou3:
         specifier: 0.7.3
         version: 0.7.3
       srvx:
-        specifier: 0.8.7
+        specifier: 'catalog:'
         version: 0.8.7
     devDependencies:
       zod:
-        specifier: 4.1.5
+        specifier: 'catalog:'
         version: 4.1.5
 
   packages/create-app:
@@ -157,7 +178,7 @@ importers:
         specifier: workspace:*
         version: link:../core
       consola:
-        specifier: 3.4.2
+        specifier: 'catalog:'
         version: 3.4.2
       dotenv:
         specifier: 17.2.1
@@ -172,7 +193,7 @@ importers:
         specifier: 0.86.0
         version: 0.86.0
       pathe:
-        specifier: 2.0.3
+        specifier: 'catalog:'
         version: 2.0.3
       rolldown:
         specifier: 1.0.0-beta.34
@@ -204,7 +225,7 @@ importers:
         specifier: 8.1.0
         version: 8.1.0(zod@4.1.5)
       '@standard-schema/spec':
-        specifier: 1.0.0
+        specifier: 'catalog:'
         version: 1.0.0
       '@vercube/core':
         specifier: workspace:*
@@ -213,10 +234,10 @@ importers:
         specifier: workspace:*
         version: link:../di
       defu:
-        specifier: 6.1.4
+        specifier: 'catalog:'
         version: 6.1.4
       zod:
-        specifier: 4.1.5
+        specifier: 'catalog:'
         version: 4.1.5
 
   packages/serverless:
@@ -266,11 +287,11 @@ importers:
         specifier: 0.4.1
         version: 0.4.1(srvx@0.8.7)
       srvx:
-        specifier: 0.8.7
+        specifier: 'catalog:'
         version: 0.8.7
     devDependencies:
       zod:
-        specifier: 4.1.5
+        specifier: 'catalog:'
         version: 4.1.5
 
   playground:
@@ -312,7 +333,7 @@ importers:
         specifier: 2.8.1
         version: 2.8.1
       zod:
-        specifier: 4.1.5
+        specifier: 'catalog:'
         version: 4.1.5
     devDependencies:
       '@vercube/cli':

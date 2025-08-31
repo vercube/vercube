@@ -28,10 +28,10 @@
   "dependencies": {
     "@vercube/devkit": "workspace:*",
     "citty": "0.1.6",
-    "consola": "3.4.2",
+    "consola": "catalog:",
     "giget": "2.0.0",
     "nypm": "0.6.1",
-    "pathe": "2.0.3",
+    "pathe": "catalog:",
     "std-env": "3.9.0",
     "tinyexec": "1.0.1"
   },
