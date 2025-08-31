@@ -1,10 +1,12 @@
+import codspeedPlugin from '@codspeed/vitest-plugin';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
+  plugins: [codspeedPlugin()],
   test: {
     globals: true,
     environment: 'node',
-    include: ['packages/**/test/**/*.test.ts'],
+    include: ['packages/**/test/**/*.test.ts', 'packages/**/test/**/*.bench.ts'],
     projects: ['packages/*'],
     coverage: {
       reporter: ['text', 'json', 'html'],

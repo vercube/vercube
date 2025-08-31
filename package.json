@@ -13,6 +13,7 @@
     "dev": "nx watch --all --exclude=playground -- nx run \\$NX_PROJECT_NAME:build",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "test:bench": "vitest bench --run",
     "test:tscheck": "tsc --noEmit",
     "test:lint": "oxlint . && prettier --check .",
     "lint:fix": "oxlint --fix . && prettier --write .",
@@ -33,11 +34,12 @@
     ]
   },
   "devDependencies": {
+    "@codspeed/vitest-plugin": "4.0.1",
     "@commitlint/cli": "19.8.1",
     "@commitlint/config-conventional": "19.8.1",
     "@nx/js": "21.4.1",
     "@oxc-project/runtime": "0.86.0",
-    "@trivago/prettier-plugin-sort-imports": "^5.2.2",
+    "@trivago/prettier-plugin-sort-imports": "5.2.2",
     "@types/node": "24.3.0",
     "@vitest/coverage-v8": "3.2.4",
     "@vitest/ui": "3.2.4",
