@@ -1,3 +1,16 @@
 {
-  "extends": ["github>unjs/renovate-config"]
+  "extends": ["config:recommended", "group:allNonMajor", ":semanticCommitTypeAll(chore)"],
+  "meteor": { "enabled": false },
+  "rangeStrategy": "bump",
+  "npm": { "commitMessageTopic": "{{prettyDepType}} {{depName}}" },
+  "ignorePaths": ["playground/**"],
+  "ignoreDeps": ["node"],
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "automerge": true,
+      "automergeSchedule": ["after 1am and before 2am"],
+      "schedule": ["after 2am and before 3am"]
+    }
+  ]
 }

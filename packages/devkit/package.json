@@ -23,13 +23,13 @@
     "README.md"
   ],
   "dependencies": {
-    "@oxc-project/runtime": "0.82.3",
+    "@oxc-project/runtime": "0.86.0",
     "@vercube/core": "workspace:*",
     "consola": "3.4.2",
     "dotenv": "17.2.1",
     "hookable": "5.5.3",
-    "oxc-parser": "0.82.3",
-    "oxc-transform": "0.82.3",
+    "oxc-parser": "0.86.0",
+    "oxc-transform": "0.86.0",
     "pathe": "2.0.3",
     "rolldown": "1.0.0-beta.34",
     "unplugin-isolated-decl": "0.15.1"
