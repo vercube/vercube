@@ -1,6 +1,7 @@
 packages:
   - playground
   - packages/*
+  - examples/*
 
 catalog:
   '@standard-schema/spec': 1.0.0
