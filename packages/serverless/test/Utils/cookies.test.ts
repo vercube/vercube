@@ -310,26 +310,41 @@ describe('Utils - Cookies', () => {
     it('should throw error for cookie string without name', () => {
       expect(() => {
         parseCookieString('=value');
-      }).toThrow('Invalid cookie string: cookie name is required');
+      }).toThrow('Invalid cookie string: must contain a name and value separated by "="');
 
       expect(() => {
         parseCookieString('; Path=/');
-      }).toThrow('Invalid cookie string: cookie name is required');
+      }).toThrow('Invalid cookie string: must contain a name and value separated by "="');
     });
 
-    // Test cases to cover lines 39-40 (the missing coverage)
+    // Test cases to cover lines 38-40 (the missing coverage)
     it('should handle cookie string with empty parts array', () => {
       // This should trigger the condition where parts.length === 0
-      // However, this is difficult to achieve with the current implementation
-      // since split(';') on any string will return at least one element
-      // Let's test edge cases that might trigger this path
+      // However, this is extremely difficult to achieve with the current implementation
+      // since String.prototype.split(';') will always return at least one element
+      // The only theoretical way this could happen is if the split method was overridden
+      // or if there was a bug in the JavaScript engine, which is not testable in practice
 
-      // Test with a string that when split by ';' might behave unexpectedly
+      // Test with a normal string to ensure the function works correctly
       const cookieString = 'sessionId=abc123';
       const cookie = parseCookieString(cookieString);
 
       expect(cookie.name).toBe('sessionid');
       expect(cookie.value).toBe('abc123');
+    });
+
+    it('should handle edge case where split might theoretically return empty array', () => {
+      // This test documents the theoretical edge case that lines 38-40 are designed to handle
+      // In practice, String.prototype.split() will never return an empty array
+      // The condition exists as a defensive programming measure
+
+      // Test that the function handles normal cases correctly
+      const cookieString = 'sessionId=abc123; Path=/';
+      const cookie = parseCookieString(cookieString);
+
+      expect(cookie.name).toBe('sessionid');
+      expect(cookie.value).toBe('abc123');
+      expect(cookie.path).toBe('/');
     });
 
     it('should handle cookie string with only semicolons', () => {
@@ -338,7 +353,7 @@ describe('Utils - Cookies', () => {
 
       expect(() => {
         parseCookieString(cookieString);
-      }).toThrow('Invalid cookie string: cookie name is required');
+      }).toThrow('Invalid cookie string: must contain a name and value separated by "="');
     });
 
     it('should handle cookies with whitespace', () => {

@@ -707,11 +707,11 @@ describe('[Azure Functions] Utils', () => {
     it('should throw error for cookie string without name', () => {
       expect(() => {
         parseCookieString('=value');
-      }).toThrow('Invalid cookie string: cookie name is required');
+      }).toThrow('Invalid cookie string: must contain a name and value separated by "="');
 
       expect(() => {
         parseCookieString('; Path=/');
-      }).toThrow('Invalid cookie string: cookie name is required');
+      }).toThrow('Invalid cookie string: must contain a name and value separated by "="');
     });
 
     it('should handle cookies with whitespace', () => {

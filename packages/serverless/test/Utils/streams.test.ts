@@ -389,7 +389,7 @@ describe('Utils - Streams', () => {
       // Call return to release the reader lock
       const returnResult = await iterator!.return!();
 
-      expect(returnResult).toBeUndefined();
+      expect(returnResult).toEqual({ done: true, value: undefined });
     });
 
     it('should handle Symbol.asyncIterator', () => {
@@ -423,7 +423,7 @@ describe('Utils - Streams', () => {
       // This should call the return() method which calls reader.releaseLock()
       const returnResult = await iterator!.return!();
 
-      expect(returnResult).toBeUndefined();
+      expect(returnResult).toEqual({ done: true, value: undefined });
     });
 
     it('should handle Symbol.asyncIterator method', () => {

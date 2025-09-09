@@ -35,15 +35,12 @@ export function parseCookieString(cookieString: string): GenericCookie {
   }
 
   const parts = cookieString.split(';');
-  if (parts.length === 0) {
-    throw new Error('Invalid cookie string: must contain at least name=value');
-  }
 
   // Safely extract the name-value pair
   const [nameValue, ...attributeParts] = parts;
   const [nameRaw, encodedValue] = nameValue.split('=');
   const name = nameRaw ? nameRaw.trim().toLowerCase() : '';
-  if (!name || typeof encodedValue === 'undefined') {
+  if (!name || encodedValue === undefined) {
     throw new Error('Invalid cookie string: must contain a name and value separated by "="');
   }
 
