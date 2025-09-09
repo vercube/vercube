@@ -1,18 +1,6 @@
 import { stringifyQuery } from 'ufo';
+import { DEFAULT_HOSTNAME, DEFAULT_METHOD, getHeaderValue, HEADER_KEYS, HTTP_PROTOCOL, HTTPS_PROTOCOL } from '../../../Utils';
 import type { APIGatewayProxyEvent, APIGatewayProxyEventV2 } from 'aws-lambda';
-
-// Constants for better maintainability
-const DEFAULT_METHOD = 'GET';
-const DEFAULT_HOSTNAME = '.';
-const HTTP_PROTOCOL = 'http';
-const HTTPS_PROTOCOL = 'https';
-
-// Header keys for case-insensitive access
-const HEADER_KEYS = {
-  HOST: ['host', 'Host'],
-  X_FORWARDED_PROTO: ['X-Forwarded-Proto', 'x-forwarded-proto'],
-  COOKIE: 'cookie',
-} as const;
 
 /**
  * Type guard to check if an event is APIGatewayProxyEventV2
@@ -26,26 +14,6 @@ function isV2Event(event: APIGatewayProxyEvent | APIGatewayProxyEventV2): event 
  */
 function isV1Event(event: APIGatewayProxyEvent | APIGatewayProxyEventV2): event is APIGatewayProxyEvent {
   return 'httpMethod' in event;
-}
-
-/**
- * Safely gets a header value with case-insensitive fallback
- */
-function getHeaderValue(
-  headers: Record<string, string | undefined> | null | undefined,
-  keys: readonly string[],
-): string | undefined {
-  if (!headers) {
-    return undefined;
-  }
-
-  for (const key of keys) {
-    const value = headers[key];
-    if (value !== undefined) {
-      return value;
-    }
-  }
-  return undefined;
 }
 
 /**

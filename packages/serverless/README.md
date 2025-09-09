@@ -34,10 +34,11 @@ The `@vercube/serverless` module provides unified, provider-agnostic adapters fo
 ### ✅ Key Features
 
 - **AWS Lambda Integration** - Full support for API Gateway v1 and v2
+- **Azure Functions Integration** - Complete support for Azure Functions HTTP triggers
 - **Zero Configuration** - Works out-of-the-box with existing Vercube apps
 - **Type Safety** - Complete TypeScript support with proper type definitions
 - **Binary Support** - Automatic handling of binary content with base64 encoding
-- **Cookie Support** - Proper cookie handling for both API Gateway versions
+- **Cookie Support** - Proper cookie handling for both API Gateway versions and Azure Functions
 - **Error Handling** - Robust error handling and validation
 - **Performance Optimized** - Efficient request/response conversion
 
@@ -64,6 +65,30 @@ import { toServerlessHandler } from '@vercube/serverless/aws-lambda';
 
 const app = createApp();
 export const handler = toServerlessHandler(app);
+```
+
+### Azure Functions Integration
+
+Deploy your Vercube application to Azure Functions:
+
+```ts
+// httpTrigger.ts
+import { createApp } from '@vercube/core';
+import { toServerlessHandler } from '@vercube/serverless/azure-functions';
+import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
+
+const vercubeApp = createApp();
+const handler = toServerlessHandler(vercubeApp);
+
+export async function httpTrigger(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
+  return await handler(request);
+}
+
+app.http('httpTrigger', {
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'],
+  authLevel: 'anonymous',
+  handler: httpTrigger,
+});
 ```
 
 ### Serverless Framework Configuration
@@ -101,6 +126,16 @@ Full support for AWS Lambda with API Gateway integration:
 - **Cookies** - Proper cookie handling for both API Gateway versions
 - **Headers** - Complete header conversion and processing
 
+### Azure Functions
+
+Complete support for Azure Functions HTTP triggers:
+
+- **HTTP Triggers** - Full compatibility with Azure Functions HTTP triggers
+- **Request/Response Conversion** - Seamless conversion between Azure Functions and web standards
+- **Cookie Support** - Proper handling of Set-Cookie headers and cookie parsing
+- **Headers** - Complete header conversion and processing
+- **Streaming Support** - Efficient handling of request/response bodies with AsyncIterableIterator
+
 ---
 
 ## 📋 API Reference
@@ -117,11 +152,21 @@ Converts a Vercube App instance into a serverless handler function.
 
 - An async function that accepts serverless events and returns platform-specific responses
 
-**Example:**
+**Examples:**
 
 ```ts
+// AWS Lambda
 import { createApp } from '@vercube/core';
 import { toServerlessHandler } from '@vercube/serverless/aws-lambda';
+
+const app = createApp();
+export const handler = toServerlessHandler(app);
+```
+
+```ts
+// Azure Functions
+import { createApp } from '@vercube/core';
+import { toServerlessHandler } from '@vercube/serverless/azure-functions';
 
 const app = createApp();
 export const handler = toServerlessHandler(app);
@@ -144,8 +189,8 @@ The serverless adapters handle automatic conversion between platform-specific ev
 
 - **Status Code** - Mapped from Response status
 - **Headers** - Converted to platform-specific format
-- **Body** - Encoded appropriately (text vs binary)
-- **Cookies** - Handled for both API Gateway versions
+- **Body** - Encoded appropriately (text vs binary for AWS, AsyncIterableIterator for Azure)
+- **Cookies** - Handled for both API Gateway versions and Azure Functions
 
 ---
 
@@ -154,7 +199,8 @@ The serverless adapters handle automatic conversion between platform-specific ev
 - **Streaming Support** - Efficient handling of large request/response bodies
 - **Memory Optimization** - Minimal memory footprint for serverless environments
 - **Cold Start Optimization** - Fast initialization and request processing
-- **Binary Content** - Optimized base64 encoding for binary responses
+- **Binary Content** - Optimized base64 encoding for binary responses (AWS Lambda)
+- **AsyncIterableIterator** - Efficient streaming for Azure Functions responses
 
 ---
 
@@ -191,6 +237,7 @@ This module is inspired by:
 - [Nitro AWS Lambda Preset](https://nitro.build/presets/aws-lambda)
 - [Hono AWS Lambda Adapter](https://hono.dev/guides/aws-lambda)
 - [Vercel Serverless Functions](https://vercel.com/docs/functions)
+- [hono-azurefunc-adapter](https://github.com/Marplex/hono-azurefunc-adapter)
 
 ---
 

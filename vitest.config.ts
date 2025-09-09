@@ -23,6 +23,9 @@ export default defineConfig({
         'packages/**/Types/**',
         // bundlers
         'packages/devkit/src/Bundlers/**',
+        // adapters as external dependencies
+        'packages/serverless/src/Adapters/**/index.ts',
+        'packages/serverless/src/index.ts',
       ],
     },
   },

@@ -11,14 +11,13 @@ export const buildCommand: CommandDef = defineCommand({
     entry: {
       type: 'string',
       description: 'Entry file',
-      default: './src/index.ts',
     },
   },
   run: async (ctx) => {
     // create new app
     const app = await createVercube({
       build: {
-        entry: ctx.args.entry,
+        entry: ctx?.args?.entry ?? undefined,
       },
     });
 
