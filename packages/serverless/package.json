@@ -16,7 +16,8 @@
   "exports": {
     ".": "./dist/index.mjs",
     "./package.json": "./package.json",
-    "./aws-lambda": "./dist/Adapters/aws-lambda/index.mjs"
+    "./aws-lambda": "./dist/Adapters/aws-lambda/index.mjs",
+    "./azure-functions": "./dist/Adapters/azure-functions/index.mjs"
   },
   "types": "./dist/index.d.mts",
   "files": [

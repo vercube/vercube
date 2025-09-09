@@ -1,18 +1,5 @@
 // oxlint-disable no-array-for-each
-// Constants for better maintainability
-const DEFAULT_BODY = '';
-const DEFAULT_CONTENT_TYPE = '';
-const UTF8_ENCODING = 'utf8';
-const BASE64_ENCODING = 'base64';
-
-// Content type patterns for text detection
-const TEXT_CONTENT_TYPE_PATTERNS = [
-  /^text\//,
-  /^application\/(json|javascript|xml|xml\+text|x-www-form-urlencoded)$/,
-  /^application\/.*\+json$/,
-  /^application\/.*\+xml$/,
-  /utf-?8/,
-] as const;
+import { BASE64_ENCODING, DEFAULT_BODY, DEFAULT_CONTENT_TYPE, isTextType, toBuffer, UTF8_ENCODING } from '../../../Utils';
 
 /**
  * AWS Lambda response structure for API Gateway integration
@@ -129,64 +116,4 @@ export async function convertBodyToAWSResponse(response: Response): Promise<AWSR
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     throw new Error(`Failed to convert response body: ${errorMessage}`);
   }
-}
-
-/**
- * Determines if a content type should be treated as text content.
- *
- * This function uses a set of patterns to identify text-based content types:
- * - Content types starting with "text/" (e.g., text/plain, text/html)
- * - JavaScript, JSON, or XML content types
- * - Content types containing UTF-8 encoding specification
- *
- * The function performs case-insensitive matching to handle various content type
- * formats and specifications.
- *
- * @param contentType - The content type string to evaluate (e.g., "text/plain", "application/json")
- * @returns True if the content type should be treated as text, false otherwise
- */
-function isTextType(contentType: string = DEFAULT_CONTENT_TYPE): boolean {
-  if (!contentType) {
-    return false;
-  }
-
-  return TEXT_CONTENT_TYPE_PATTERNS.some((pattern) => pattern.test(contentType));
-}
-
-/**
- * Converts a ReadableStream to a Buffer using Web Streams API.
- *
- * This function reads all chunks from a ReadableStream and concatenates them
- * into a single Buffer. It uses the modern Web Streams API with WritableStream
- * to efficiently process the stream data without blocking.
- *
- * The function handles stream errors gracefully and provides proper cleanup
- * of stream resources. It's designed to work with Response.body streams
- * from fetch API responses.
- *
- * @param data - The ReadableStream to convert to a Buffer
- * @returns A promise that resolves to a Buffer containing all stream data
- * @throws {Error} If the stream cannot be read or an error occurs during processing
- */
-function toBuffer(data: ReadableStream): Promise<Buffer> {
-  return new Promise<Buffer>((resolve, reject) => {
-    const chunks: Buffer[] = [];
-
-    // Create a WritableStream to collect chunks
-    const writableStream = new WritableStream({
-      write(chunk: Buffer) {
-        chunks.push(chunk);
-      },
-      close() {
-        // Concatenate all chunks into a single buffer
-        resolve(Buffer.concat(chunks));
-      },
-      abort(reason: any) {
-        reject(new Error('Stream aborted: ' + String(reason)));
-      },
-    });
-
-    // Pipe the readable stream to the writable stream
-    data.pipeTo(writableStream).catch(reject);
-  });
 }

@@ -18,9 +18,7 @@ export async function getRolldownConfig(ctx?: ConfigTypes.BuildOptions): Promise
 
   return {
     // Define the input options
-    input: {
-      index: input,
-    },
+    input: typeof input === 'string' ? { index: input } : input,
 
     tsconfig: resolve(root, 'tsconfig.json'),
 

@@ -58,7 +58,7 @@ export namespace ConfigTypes {
     /**
      * The entry point file for the application build.
      */
-    entry?: string;
+    entry?: string | string[];
 
     /**
      * Defines to pass to the build.
