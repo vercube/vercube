@@ -59,7 +59,8 @@ export function streamToAsyncIterator(readable: Response['body']): AsyncIterable
       return reader.read();
     },
     return() {
-      return reader.releaseLock();
+      reader.releaseLock();
+      return Promise.resolve({ done: true, value: undefined });
     },
     [Symbol.asyncIterator]() {
       return this;
