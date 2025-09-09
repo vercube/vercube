@@ -69,7 +69,7 @@ describe('Utils - Content Type', () => {
       expect(isTextType('image/jpeg')).toBe(false);
       expect(isTextType('image/png')).toBe(false);
       expect(isTextType('image/gif')).toBe(false);
-      expect(isTextType('image/svg+xml')).toBe(false); // This should be true due to +xml
+      expect(isTextType('image/svg+xml')).toBe(false); // image/*+xml is not considered text by isTextType
       expect(isTextType('video/mp4')).toBe(false);
       expect(isTextType('audio/mpeg')).toBe(false);
       expect(isTextType('application/pdf')).toBe(false);
