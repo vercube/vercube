@@ -39,14 +39,18 @@ export function parseCookieString(cookieString: string): GenericCookie {
     throw new Error('Invalid cookie string: must contain at least name=value');
   }
 
-  const [[name, encodedValue], ...attributesArray] = parts
-    .map((part) => part.split('='))
-    .map(([key, value]) => [key.trim().toLowerCase(), value ?? 'true']);
-
-  if (!name) {
-    throw new Error('Invalid cookie string: cookie name is required');
+  // Safely extract the name-value pair
+  const [nameValue, ...attributeParts] = parts;
+  const [nameRaw, encodedValue] = nameValue.split('=');
+  const name = nameRaw ? nameRaw.trim().toLowerCase() : '';
+  if (!name || typeof encodedValue === 'undefined') {
+    throw new Error('Invalid cookie string: must contain a name and value separated by "="');
   }
 
+  // Process attributes
+  const attributesArray = attributeParts
+    .map((part) => part.split('='))
+    .map(([key, value]) => [key.trim().toLowerCase(), value ?? 'true']);
   const attrs: Record<string, string> = Object.fromEntries(attributesArray);
 
   return {
