@@ -35,10 +35,9 @@ describe('Utils - Streams', () => {
       const chunks = ['Hello', ', ', 'World', '!'];
       const stream = new ReadableStream({
         start(controller) {
-          // oxlint-disable-next-line no-array-for-each
-          chunks.forEach((chunk) => {
+          for (const chunk of chunks) {
             controller.enqueue(new TextEncoder().encode(chunk));
-          });
+          }
           controller.close();
         },
       });
