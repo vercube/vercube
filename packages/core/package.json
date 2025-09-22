@@ -29,12 +29,12 @@
     "c12": "3.3.0",
     "defu": "catalog:",
     "pathe": "catalog:",
-    "rou3": "0.7.3",
+    "rou3": "0.7.5",
     "srvx": "catalog:"
   },
   "devDependencies": {
-    "zod": "catalog:",
-    "rolldown": "catalog:"
+    "rolldown": "catalog:",
+    "zod": "catalog:"
   },
   "publishConfig": {
     "access": "public"
