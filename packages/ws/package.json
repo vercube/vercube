@@ -1,6 +1,6 @@
 {
   "name": "@vercube/ws",
-  "version": "0.0.23",
+  "version": "0.0.24",
   "description": "Websocket module for Vercube framework",
   "packageManager": "pnpm@10.13.1",
   "repository": "@vercube/ws",
