@@ -1,5 +1,29 @@
 # Changelog
 
+## v0.0.23...v0.0.24
+
+[compare changes](https://github.com/vercube/vercube/compare/v0.0.23...v0.0.24)
+
+### 🚀 Enhancements
+- **serverless**: Add support for Azure Functions [#574](https://github.com/vercube/vercube/pull/574)
+- **core:** Add pnpm catalog mode ([3eb9352](https://github.com/vercube/vercube/commit/3eb9352)) ([968c0a3](https://github.com/vercube/vercube/commit/968c0a3)) ([01cc44c](https://github.com/vercube/vercube/commit/01cc44c)) ([52edc3c](https://github.com/vercube/vercube/commit/52edc3c))
+- **core:** Add codspeed tests ([cc23e45](https://github.com/vercube/vercube/commit/cc23e45))
+- **core:** Fix bench tests ([b3f5a32](https://github.com/vercube/vercube/commit/b3f5a32))
+- **rolldown:** Extend config with custom plugins, dts toggle and tsc… ([#575](https://github.com/vercube/vercube/pull/575))
+
+### 🩹 Fixes
+- Lock file ([89fedaf](https://github.com/vercube/vercube/commit/89fedaf))
+
+### 📦 Build
+- Bump packages and fix renovate ([f3f4d1d](https://github.com/vercube/vercube/commit/f3f4d1d))
+- Update pnpm ([465c728](https://github.com/vercube/vercube/commit/465c728)) ([e1b27b6](https://github.com/vercube/vercube/commit/e1b27b6)) ([4c68c88](https://github.com/vercube/vercube/commit/4c68c88)) ([851fe78](https://github.com/vercube/vercube/commit/851fe78)) ([5f56d86](https://github.com/vercube/vercube/commit/5f56d86)) ([cdb8c97](https://github.com/vercube/vercube/commit/cdb8c97))
+
+
+### ❤️ Contributors
+
+- Oskar Lebuda
+- WronskiPrzemyslaw
+
 ## v0.0.23
 
 [compare changes](https://github.com/vercube/vercube/compare/v0.0.22...v0.0.23)
