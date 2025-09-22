@@ -15,12 +15,26 @@ export async function getRolldownConfig(ctx?: ConfigTypes.BuildOptions): Promise
   const pkg = (await import(resolve(root, 'package.json'), { with: { type: 'json' } })).default;
   const input = ctx?.entry ?? 'src/index.ts';
   const output = ctx?.output?.dir ?? 'dist';
+  const tsconfig = ctx?.tsconfig ?? 'tsconfig.json';
+  const dts = ctx?.dts ?? true;
+  const customPlugins = ctx?.plugins ?? [];
+
+  const defaultPlugins = [];
+
+  if (dts) {
+    defaultPlugins.push(
+      UnpluginIsolatedDecl({
+        transformer: 'oxc',
+        patchCjsDefaultExport: true,
+      }),
+    );
+  }
 
   return {
     // Define the input options
     input: typeof input === 'string' ? { index: input } : input,
 
-    tsconfig: resolve(root, 'tsconfig.json'),
+    tsconfig: resolve(root, tsconfig),
 
     define: {
       ...ctx?.define,
@@ -49,11 +63,6 @@ export async function getRolldownConfig(ctx?: ConfigTypes.BuildOptions): Promise
       }
     },
 
-    plugins: [
-      UnpluginIsolatedDecl({
-        transformer: 'oxc',
-        patchCjsDefaultExport: true,
-      }),
-    ],
+    plugins: [...defaultPlugins, ...customPlugins],
   };
 }

@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 import type { LoggerTypes } from '@vercube/logger';
 import type { DotenvOptions } from 'c12';
+import type { RolldownPluginOption } from 'rolldown';
 
 /**
  * Namespace containing configuration type definitions for the Vercube framework.
@@ -64,6 +65,21 @@ export namespace ConfigTypes {
      * Defines to pass to the build.
      */
     define?: Record<string, string>;
+
+    /**
+     * Path to the tsconfig file to use for the build.
+     */
+    tsconfig?: string;
+
+    /**
+     * Flag to indicate if declaration files should be generated.
+     */
+    dts?: boolean;
+
+    /**
+     * Additional plugins to use in the bundler.
+     */
+    plugins?: RolldownPluginOption[];
 
     /**
      * Output configuration for build artifacts.

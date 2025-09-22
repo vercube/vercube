@@ -33,7 +33,8 @@
     "srvx": "catalog:"
   },
   "devDependencies": {
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "rolldown": "catalog:"
   },
   "publishConfig": {
     "access": "public"
