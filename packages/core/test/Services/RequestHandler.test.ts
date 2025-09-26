@@ -40,6 +40,15 @@ class MockAfterMiddlewareWithError extends BaseMiddleware {
   }
 }
 
+class MockCorsMiddleware extends BaseMiddleware {
+  public async onResponse(request: Request, response: Response, handlerResponse: any): Promise<Response | void> {
+    response.headers.set('Access-Control-Allow-Origin', '*');
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    response.headers.set('Access-Control-Allow-Headers', '*');
+    return new Response(null, { status: 204, headers: response.headers });
+  }
+}
+
 // Mock controller
 class MockController {
   public testMethod(arg1: string, arg2: number): string {
@@ -661,6 +670,36 @@ describe('RequestHandler', () => {
 
       expect(result.status).toBe(201);
       expect(result.statusText).toBe('OK'); // Should preserve base statusText
+    });
+
+    it('should handle preflight request correctly', async () => {
+      const preflightRequest = new Request('http://localhost/test', {
+        method: 'OPTIONS',
+        headers: {
+          Origin: 'http://example.com',
+          'Access-Control-Request-Method': 'POST',
+          'Access-Control-Request-Headers': 'X-Custom-Header',
+        },
+      });
+
+      const globalMiddlewares: MetadataTypes.Middleware[] = [
+        {
+          target: '__global__',
+          middleware: MockCorsMiddleware,
+          priority: 1,
+        },
+      ];
+
+      // Set global middlewares
+      mockGlobalMiddlewareRegistry.middlewares = globalMiddlewares;
+
+      const response = await requestHandler.handlePreflight(preflightRequest);
+
+      expect(response).toBeInstanceOf(Response);
+      expect(response.status).toBe(204);
+      expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*');
+      expect(response.headers.get('Access-Control-Allow-Methods')).toBe('GET, POST, PUT, DELETE, OPTIONS');
+      expect(response.headers.get('Access-Control-Allow-Headers')).toBe('*');
     });
   });
 });
