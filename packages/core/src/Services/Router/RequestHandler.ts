@@ -90,6 +90,77 @@ export class RequestHandler {
   }
 
   /**
+   * This method processes preflight requests by executing global middlewares
+   * and returning an appropriate response. It's typically used for handling CORS.
+   *
+   * The request handling lifecycle:
+   * 1. Execute "before" global middlewares
+   * 2. Execute "after" global middlewares
+   * 3. Format and return the final response
+   *
+   * @param request - The incoming HTTP request
+   * @returns {Promise<Response>} The HTTP response
+   */
+  public async handlePreflight(request: Request): Promise<Response> {
+    try {
+      let fakeResponse = new FastResponse(undefined, {
+        headers: {
+          'Content-Type': request.headers.get('Content-Type') ?? 'application/json',
+        },
+      });
+
+      const globalMiddlewares = this.gGlobalMiddlewareRegistry.middlewares;
+
+      const middlewares = globalMiddlewares.map((m) => ({
+        ...m,
+        middleware: this.gContainer.resolve(m.middleware),
+      }));
+
+      for await (const hook of middlewares) {
+        try {
+          let hookResponse = await hook.middleware.onRequest?.(request, fakeResponse, {
+            middlewareArgs: hook.args,
+            methodArgs: [],
+          });
+
+          if (hookResponse instanceof Response) {
+            return hookResponse;
+          } else if (hookResponse !== null) {
+            fakeResponse = this.processOverrideResponse(hookResponse!, fakeResponse);
+          }
+
+          hookResponse = await hook.middleware.onResponse?.(request, fakeResponse, {
+            middlewareArgs: hook.args,
+            methodArgs: [],
+          });
+
+          if (hookResponse instanceof Response) {
+            return hookResponse;
+          } else if (hookResponse !== null) {
+            fakeResponse = this.processOverrideResponse(hookResponse!, fakeResponse);
+          }
+        } catch (error) {
+          const internalError = this.gContainer.get(ErrorHandlerProvider).handleError(error);
+
+          if (internalError instanceof Response) {
+            return internalError;
+          }
+        }
+      }
+
+      const response = new Response(null, {
+        status: fakeResponse.status ?? 204,
+        statusText: fakeResponse.statusText ?? 'No Content',
+        headers: fakeResponse.headers,
+      });
+
+      return response;
+    } catch (error) {
+      return this.gContainer.get(ErrorHandlerProvider).handleError(error);
+    }
+  }
+
+  /**
    * Processes an HTTP request through the middleware chain and route handler
    *
    * The request handling lifecycle:
