@@ -41,6 +41,10 @@ class MockAfterMiddlewareWithError extends BaseMiddleware {
 }
 
 class MockCorsMiddleware extends BaseMiddleware {
+  public async onRequest(request: Request, response: Response, args: any): Promise<Response | void> {
+    return undefined;
+  }
+
   public async onResponse(request: Request, response: Response, handlerResponse: any): Promise<Response | void> {
     response.headers.set('Access-Control-Allow-Origin', '*');
     response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -700,6 +704,50 @@ describe('RequestHandler', () => {
       expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*');
       expect(response.headers.get('Access-Control-Allow-Methods')).toBe('GET, POST, PUT, DELETE, OPTIONS');
       expect(response.headers.get('Access-Control-Allow-Headers')).toBe('*');
+    });
+
+    // handle preflight with no CORS middleware
+    it('should handle preflight request with no CORS middleware', async () => {
+      const preflightRequest = new Request('http://localhost/test', {
+        method: 'OPTIONS',
+      });
+
+      const response = await requestHandler.handlePreflight(preflightRequest);
+
+      expect(response).toBeInstanceOf(Response);
+      expect(response.headers.get('Access-Control-Allow-Origin')).toBeNull();
+      expect(response.headers.get('Access-Control-Allow-Methods')).toBeNull();
+      expect(response.headers.get('Access-Control-Allow-Headers')).toBeNull();
+    });
+
+    it('should handle error in preflight request', async () => {
+      const preflightRequest = new Request('http://localhost/test', {
+        method: 'OPTIONS',
+      });
+
+      const globalMiddlewares: MetadataTypes.Middleware[] = [
+        {
+          target: '__global__',
+          middleware: MockCorsMiddleware,
+          priority: 1,
+        },
+      ];
+
+      // Set global middlewares
+      mockGlobalMiddlewareRegistry.middlewares = globalMiddlewares;
+
+      // Mock the CORS middleware to throw an error
+      vi.spyOn(MockCorsMiddleware.prototype, 'onResponse').mockImplementation(() => {
+        throw new Error('CORS Middleware Error');
+      });
+
+      const errorResponse = new Response('Error', { status: 500 });
+      mockErrorHandler.handleError.mockReturnValue(errorResponse);
+
+      const response = await requestHandler.handlePreflight(preflightRequest);
+
+      expect(mockErrorHandler.handleError).toHaveBeenCalled();
+      expect(response).toBe(errorResponse);
     });
   });
 });
