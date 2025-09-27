@@ -120,6 +120,11 @@ export class HttpServer {
         method: request.method,
       });
 
+      // handle preflight request
+      if (!route && request.method === 'OPTIONS') {
+        return this.gRequestHandler.handlePreflight(request);
+      }
+
       // if no route is found, try to serve static file
       if (!route) {
         const response = await this.gStaticRequestHandler.handleRequest(request);

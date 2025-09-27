@@ -279,5 +279,46 @@ describe('HttpServer', () => {
       expect(mockErrorHandler.handleError).toHaveBeenCalledWith(staticError);
       expect(result).toBe(errorResponse);
     });
+
+    it('should handle preflight OPTIONS request', async () => {
+      const preflightRequest = new Request('http://localhost/test', {
+        method: 'OPTIONS',
+      });
+      const preflightResponse = new Response(null, { status: 204 });
+
+      mockRouter.resolve.mockReturnValue(null);
+      mockRequestHandler.handlePreflight = vi.fn().mockResolvedValue(preflightResponse);
+
+      const result = await httpServer.handleRequest(preflightRequest);
+
+      expect(mockRouter.resolve).toHaveBeenCalledWith({
+        path: preflightRequest.url,
+        method: preflightRequest.method,
+      });
+      expect(mockRequestHandler.handlePreflight).toHaveBeenCalledWith(preflightRequest);
+      expect(result).toBe(preflightResponse);
+    });
+
+    it('should use defined OPTIONS route if available', async () => {
+      const optionsRequest = new Request('http://localhost/test', {
+        method: 'OPTIONS',
+      });
+      const mockRoute = { path: '/test', method: 'OPTIONS' };
+      const expectedResponse = new Response('OK');
+
+      mockRouter.resolve.mockReturnValue(mockRoute);
+      mockRequestHandler.handleRequest.mockResolvedValue(expectedResponse);
+      mockErrorHandler.handlePreflight = vi.fn();
+
+      const result = await httpServer.handleRequest(optionsRequest);
+
+      expect(mockRouter.resolve).toHaveBeenCalledWith({
+        path: optionsRequest.url,
+        method: optionsRequest.method,
+      });
+      expect(mockRequestHandler.handleRequest).toHaveBeenCalled();
+      expect(mockErrorHandler.handlePreflight).not.toHaveBeenCalled();
+      expect(result).toBe(expectedResponse);
+    });
   });
 });

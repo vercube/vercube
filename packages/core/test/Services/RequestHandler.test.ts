@@ -40,6 +40,16 @@ class MockAfterMiddlewareWithError extends BaseMiddleware {
   }
 }
 
+class MockCorsMiddleware extends BaseMiddleware {
+  public async onRequest(request: Request, response: Response, args: any): Promise<Response | void> {
+    return undefined;
+  }
+
+  public async onResponse(request: Request, response: Response, handlerResponse: any): Promise<Response | void> {
+    return undefined;
+  }
+}
+
 // Mock controller
 class MockController {
   public testMethod(arg1: string, arg2: number): string {
@@ -89,7 +99,7 @@ describe('RequestHandler', () => {
     container.bind(RequestHandler);
 
     requestHandler = container.get(RequestHandler);
-    vi.clearAllMocks();
+    vi.resetAllMocks();
   });
 
   describe('prepareHandler', () => {
@@ -661,6 +671,192 @@ describe('RequestHandler', () => {
 
       expect(result.status).toBe(201);
       expect(result.statusText).toBe('OK'); // Should preserve base statusText
+    });
+
+    it('should handle preflight request correctly', async () => {
+      const preflightRequest = new Request('http://localhost/test', {
+        method: 'OPTIONS',
+      });
+
+      const globalMiddlewares: MetadataTypes.Middleware[] = [
+        {
+          target: '__global__',
+          middleware: MockCorsMiddleware,
+          priority: 1,
+        },
+      ];
+
+      // Set global middlewares
+      mockGlobalMiddlewareRegistry.middlewares = globalMiddlewares;
+
+      // Mock the CORS middleware to set CORS headers
+      vi.spyOn(MockCorsMiddleware.prototype, 'onResponse').mockImplementation((req: Request, res: Response) => {
+        return new Promise((resolve) => {
+          res.headers.set('Access-Control-Allow-Origin', '*');
+          res.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+          res.headers.set('Access-Control-Allow-Headers', '*');
+          resolve(new Response(null, { status: 204, headers: res.headers }));
+        });
+      });
+
+      const response = await requestHandler.handlePreflight(preflightRequest);
+
+      expect(response).toBeInstanceOf(Response);
+      expect(response.status).toBe(204);
+      expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*');
+      expect(response.headers.get('Access-Control-Allow-Methods')).toBe('GET, POST, PUT, DELETE, OPTIONS');
+      expect(response.headers.get('Access-Control-Allow-Headers')).toBe('*');
+    });
+
+    // handle preflight with no CORS middleware
+    it('should handle preflight request with no CORS middleware', async () => {
+      const preflightRequest = new Request('http://localhost/test', {
+        method: 'OPTIONS',
+      });
+
+      const response = await requestHandler.handlePreflight(preflightRequest);
+
+      expect(response).toBeInstanceOf(Response);
+      expect(response.headers.get('Access-Control-Allow-Origin')).toBeNull();
+      expect(response.headers.get('Access-Control-Allow-Methods')).toBeNull();
+      expect(response.headers.get('Access-Control-Allow-Headers')).toBeNull();
+    });
+
+    it('should handle error in preflight request', async () => {
+      const preflightRequest = new Request('http://localhost/test', {
+        method: 'OPTIONS',
+      });
+
+      const globalMiddlewares: MetadataTypes.Middleware[] = [
+        {
+          target: '__global__',
+          middleware: MockCorsMiddleware,
+          priority: 1,
+        },
+      ];
+
+      // Set global middlewares
+      mockGlobalMiddlewareRegistry.middlewares = globalMiddlewares;
+
+      // Mock the CORS middleware to throw an error
+      vi.spyOn(MockCorsMiddleware.prototype, 'onResponse').mockImplementation(() => {
+        throw new Error('CORS Middleware Error');
+      });
+
+      const errorResponse = new Response('Error', { status: 500 });
+      mockErrorHandler.handleError.mockReturnValue(errorResponse);
+
+      const response = await requestHandler.handlePreflight(preflightRequest);
+
+      expect(mockErrorHandler.handleError).toHaveBeenCalled();
+      expect(response).toBe(errorResponse);
+    });
+
+    it('should handle exception in preflight request', async () => {
+      const preflightRequest = new Request('http://localhost/test', {
+        method: 'OPTIONS',
+      });
+
+      const globalMiddlewares: MetadataTypes.Middleware[] = [
+        {
+          target: '__global__',
+          middleware: MockCorsMiddleware,
+          priority: 1,
+        },
+      ];
+
+      // Set global middlewares
+      mockGlobalMiddlewareRegistry.middlewares = globalMiddlewares;
+
+      // Mock the CORS middleware to throw an exception
+      vi.spyOn(MockCorsMiddleware.prototype, 'onResponse').mockImplementation(() => {
+        throw new Error('CORS Middleware Exception');
+      });
+
+      const errorResponse = new Response('Error', { status: 500 });
+      mockErrorHandler.handleError.mockReturnValue(errorResponse);
+
+      const response = await requestHandler.handlePreflight(preflightRequest);
+
+      expect(mockErrorHandler.handleError).toHaveBeenCalled();
+      expect(response).toBe(errorResponse);
+    });
+
+    it('handle error in handlePreflight', async () => {
+      const preflightRequest = new Request('http://localhost/test', {
+        method: 'OPTIONS',
+      });
+
+      const globalMiddlewares: MetadataTypes.Middleware[] = [
+        {
+          target: '__global__',
+          middleware: MockCorsMiddleware,
+          priority: 1,
+        },
+      ];
+
+      // Set global middlewares
+      mockGlobalMiddlewareRegistry.middlewares = globalMiddlewares;
+
+      // Mock container to throw error on resolve
+      vi.spyOn(container, 'resolve').mockImplementation(() => {
+        throw new Error('Container Resolve Error');
+      });
+
+      const errorResponse = new Response('Error', { status: 500 });
+      mockErrorHandler.handleError.mockReturnValue(errorResponse);
+
+      const response = await requestHandler.handlePreflight(preflightRequest);
+
+      expect(mockErrorHandler.handleError).toHaveBeenCalled();
+      expect(response).toBe(errorResponse);
+    });
+
+    it('should handle onRequest returning response in preflight request', async () => {
+      const preflightRequest = new Request('http://localhost/test', {
+        method: 'OPTIONS',
+      });
+
+      const globalMiddlewares: MetadataTypes.Middleware[] = [
+        {
+          target: '__global__',
+          middleware: MockCorsMiddleware,
+          priority: 1,
+        },
+      ];
+
+      // Set global middlewares
+      mockGlobalMiddlewareRegistry.middlewares = globalMiddlewares;
+
+      // Mock the onRequest to return a response
+      vi.spyOn(MockCorsMiddleware.prototype, 'onRequest').mockResolvedValue(new Response('Preflight Response', { status: 200 }));
+
+      const response = await requestHandler.handlePreflight(preflightRequest);
+
+      expect(response).toBeInstanceOf(Response);
+      expect(response.status).toBe(200);
+      expect(await response.text()).toBe('Preflight Response');
+    });
+
+    it('should handle onResponse returning undefined in preflight request', async () => {
+      const preflightRequest = new Request('http://localhost/test', {
+        method: 'OPTIONS',
+      });
+
+      const globalMiddlewares: MetadataTypes.Middleware[] = [
+        {
+          target: '__global__',
+          middleware: MockCorsMiddleware,
+          priority: 1,
+        },
+      ];
+
+      // Set global middlewares
+      mockGlobalMiddlewareRegistry.middlewares = globalMiddlewares;
+
+      const response = await requestHandler.handlePreflight(preflightRequest);
+
+      expect(response).toBeInstanceOf(Response);
     });
   });
 });
