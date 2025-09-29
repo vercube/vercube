@@ -79,14 +79,14 @@ describe('Query Resolvers', () => {
       const event = createMockEvent('http://localhost/test?id=123&count=456');
       const result = resolveQueryParam('id', event);
 
-      expect(result).toBe('123');
+      expect(result).toBe(123);
     });
 
     it('should handle boolean-like query parameters', () => {
       const event = createMockEvent('http://localhost/test?active=true&enabled=false');
       const result = resolveQueryParam('active', event);
 
-      expect(result).toBe('true');
+      expect(result).toBe(true);
     });
 
     it('should handle complex query parameter values', () => {
@@ -104,8 +104,8 @@ describe('Query Resolvers', () => {
 
       expect(result).toEqual({
         name: 'John',
-        age: '30',
-        active: 'true',
+        age: 30,
+        active: true,
       });
     });
 
@@ -148,7 +148,7 @@ describe('Query Resolvers', () => {
 
       expect(result).toEqual({
         name: '',
-        age: '30',
+        age: 30,
         empty: '',
       });
     });
@@ -168,9 +168,9 @@ describe('Query Resolvers', () => {
       const result = resolveQueryParams(event);
 
       expect(result).toEqual({
-        id: '123',
-        count: '456',
-        price: '99.99',
+        id: 123,
+        count: 456,
+        price: 99.99,
       });
     });
 
@@ -179,9 +179,9 @@ describe('Query Resolvers', () => {
       const result = resolveQueryParams(event);
 
       expect(result).toEqual({
-        active: 'true',
-        enabled: 'false',
-        visible: '1',
+        active: true,
+        enabled: false,
+        visible: 1,
       });
     });
 
