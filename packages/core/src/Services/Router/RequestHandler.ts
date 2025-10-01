@@ -140,11 +140,8 @@ export class RequestHandler {
             fakeResponse = this.processOverrideResponse(hookResponse!, fakeResponse);
           }
         } catch (error) {
-          const internalError = this.gContainer.get(ErrorHandlerProvider).handleError(error);
-
-          if (internalError instanceof Response) {
-            return internalError;
-          }
+          const internalError = await Promise.resolve(this.gContainer.get(ErrorHandlerProvider).handleError(error));
+          return internalError;
         }
       }
 
@@ -213,11 +210,8 @@ export class RequestHandler {
               return hookResponse;
             }
           } catch (error) {
-            const internalError = this.gContainer.get(ErrorHandlerProvider).handleError(error);
-
-            if (internalError instanceof Response) {
-              return internalError;
-            }
+            const internalError = await Promise.resolve(this.gContainer.get(ErrorHandlerProvider).handleError(error));
+            return internalError;
           }
         }
       }
@@ -248,11 +242,8 @@ export class RequestHandler {
               fakeResponse = this.processOverrideResponse(hookResponse!, fakeResponse);
             }
           } catch (error) {
-            const internalError = this.gContainer.get(ErrorHandlerProvider).handleError(error);
-
-            if (internalError instanceof Response) {
-              return internalError;
-            }
+            const internalError = await Promise.resolve(this.gContainer.get(ErrorHandlerProvider).handleError(error));
+            return internalError;
           }
         }
       }
