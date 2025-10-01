@@ -8,6 +8,6 @@ catalog:
   consola: 3.4.2
   defu: 6.1.4
   pathe: 2.0.3
-  rolldown: 1.0.0-beta.39
-  srvx: 0.8.7
+  rolldown: 1.0.0-beta.41
+  srvx: 0.8.9
   zod: 4.1.11
