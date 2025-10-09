@@ -610,6 +610,50 @@ describe('RequestHandler', () => {
       expect(result.status).toBe(200);
       expect(await result.text()).toBe('"Default response"');
     });
+
+    it('should return handlerResponse directly when it is already a Response instance', async () => {
+      const customResponse = new Response('Custom Response', {
+        status: 201,
+        statusText: 'Created',
+        headers: { 'X-Custom-Header': 'test-value' },
+      });
+
+      const mockInstanceWithResponseReturn = {
+        testMethod: vi.fn().mockReturnValue(customResponse),
+      };
+
+      mockRoute.data.instance = mockInstanceWithResponseReturn;
+
+      const result = await requestHandler.handleRequest(mockRequest, mockRoute);
+
+      expect(result).toBe(customResponse);
+      expect(result.status).toBe(201);
+      expect(result.statusText).toBe('Created');
+      expect(result.headers.get('X-Custom-Header')).toBe('test-value');
+      expect(await result.text()).toBe('Custom Response');
+    });
+
+    it('should return async handlerResponse directly when it is already a Response instance', async () => {
+      const customResponse = new Response('Async Custom Response', {
+        status: 202,
+        statusText: 'Accepted',
+        headers: { 'X-Async-Header': 'async-value' },
+      });
+
+      const mockInstanceWithAsyncResponseReturn = {
+        testMethod: vi.fn().mockResolvedValue(customResponse),
+      };
+
+      mockRoute.data.instance = mockInstanceWithAsyncResponseReturn;
+
+      const result = await requestHandler.handleRequest(mockRequest, mockRoute);
+
+      expect(result).toBe(customResponse);
+      expect(result.status).toBe(202);
+      expect(result.statusText).toBe('Accepted');
+      expect(result.headers.get('X-Async-Header')).toBe('async-value');
+      expect(await result.text()).toBe('Async Custom Response');
+    });
   });
 
   describe('processOverrideResponse', () => {
