@@ -1,5 +1,27 @@
 # Changelog
 
+## v0.0.24...v0.0.25
+
+[compare changes](https://github.com/vercube/vercube/compare/v0.0.24...v0.0.25)
+
+### 🚀 Enhancements
+
+- **core:** Add preflight handling ([#576](https://github.com/vercube/vercube/pull/576))
+
+### 🩹 Fixes
+
+- **error-handling:** Wrap handleError in Promise.resolve to stop unauthorized requests ([#578](https://github.com/vercube/vercube/pull/578))
+- Stream response ([#579](https://github.com/vercube/vercube/pull/579))
+
+### 📦 Build
+
+- Bump packages ([e77d47b](https://github.com/vercube/vercube/commit/e77d47b)) ([ed9df50](https://github.com/vercube/vercube/commit/ed9df50))
+
+### ❤️ Contributors
+
+- Oskar Lebuda
+- WronskiPrzemyslaw
+
 ## v0.0.23...v0.0.24
 
 [compare changes](https://github.com/vercube/vercube/compare/v0.0.23...v0.0.24)
