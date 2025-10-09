@@ -248,7 +248,12 @@ export class RequestHandler {
         }
       }
 
-      // 6. Set response
+      // 6. If handlerResponse is already instance if Response, return it
+      if (handlerResponse instanceof Response) {
+        return handlerResponse;
+      }
+
+      // 7. Otherwise prepare new response
       const body = fakeResponse?.body ?? JSON.stringify(handlerResponse);
 
       const response = new Response(body, {
