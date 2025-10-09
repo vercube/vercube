@@ -1,6 +1,6 @@
 {
   "name": "@vercube/auth",
-  "version": "0.0.24",
+  "version": "0.0.25",
   "description": "Auth module for Vercube framework",
   "packageManager": "pnpm@10.13.1",
   "repository": {
