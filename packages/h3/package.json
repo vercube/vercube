@@ -24,7 +24,7 @@
   ],
   "dependencies": {
     "@vercube/core": "workspace:*",
-    "h3": "npm:h3-nightly@2x"
+    "h3": "beta"
   },
   "publishConfig": {
     "access": "public"
