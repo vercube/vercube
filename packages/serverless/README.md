@@ -87,6 +87,7 @@ export async function httpTrigger(request: HttpRequest, context: InvocationConte
 app.http('httpTrigger', {
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'],
   authLevel: 'anonymous',
+  route: '{*proxy}',
   handler: httpTrigger,
 });
 ```

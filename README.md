@@ -42,6 +42,10 @@ You can also try Vercube instantly using our online templates:
   <img src="https://img.shields.io/badge/Open%20in-CodeSandbox-blue?style=for-the-badge&logo=codesandbox" alt="Open in CodeSandbox">
 </a>
 
+<br/>
+
+You can also use one of our [examples](https://github.com/vercube/vercube/tree/main/examples/)
+
 ## <a name="documentation">📖 Documentation</a>
 
 Comprehensive documentation is available at [vercube.dev](https://vercube.dev). There you'll find detailed module descriptions, project information, guides, and everything else you need to know about Vercube.

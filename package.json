@@ -9,8 +9,8 @@
     "node": ">=22"
   },
   "scripts": {
-    "build": "nx run-many -t build --exclude=playground",
-    "dev": "nx watch --all --exclude=playground -- nx run \\$NX_PROJECT_NAME:build",
+    "build": "nx run-many -t build --exclude=@examples/*",
+    "dev": "nx watch --all --exclude=@examples/* -- nx run \\$NX_PROJECT_NAME:build",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:bench": "vitest bench --run",
@@ -22,7 +22,7 @@
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs",
-    "playground": "cd playground && pnpm dev",
+    "playground": "pnpm --filter @examples/base dev",
     "bench": "node .bench/_run.mjs",
     "release": "pnpm release:nx",
     "release:nx": "pnpm nx release --yes"
@@ -37,8 +37,8 @@
     "@codspeed/vitest-plugin": "5.0.1",
     "@commitlint/cli": "20.1.0",
     "@commitlint/config-conventional": "20.0.0",
-    "@nx/js": "21.6.4",
-    "@oxc-project/runtime": "0.94.0",
+    "@nx/js": "21.6.2",
+    "@oxc-project/runtime": "catalog:",
     "@trivago/prettier-plugin-sort-imports": "5.2.2",
     "@types/node": "24.7.1",
     "@vitest/coverage-v8": "3.2.4",

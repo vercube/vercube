@@ -1,5 +1,4 @@
 packages:
-  - playground
   - packages/*
   - examples/*
 
@@ -11,6 +10,7 @@ catalog:
   rolldown: 1.0.0-beta.42
   srvx: 0.8.15
   zod: 4.1.12
+  '@oxc-project/runtime': 0.89.0
 
 ignoredBuiltDependencies:
   - better-sqlite3
