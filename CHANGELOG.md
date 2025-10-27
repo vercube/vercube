@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.0.25...v0.0.26
+
+[compare changes](https://github.com/vercube/vercube/compare/v0.0.25...v0.0.26)
+
+### 🚀 Enhancements
+
+- Add support for global class maps ([#580](https://github.com/vercube/vercube/pull/580))
+
+### 📦 Build
+
+- Bump packages ([5b5a310](https://github.com/vercube/vercube/commit/5b5a310))
+
+### ❤️ Contributors
+
+- Oskar Lebuda
+
 ## v0.0.24...v0.0.25
 
 [compare changes](https://github.com/vercube/vercube/compare/v0.0.24...v0.0.25)
