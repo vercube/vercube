@@ -21,15 +21,33 @@ export interface IClassMapEntry {
   deps: IClassDep[];
 }
 
+declare const globalThis: {
+  __IOCClassMap: Map<IOC.Prototype, IClassMapEntry>;
+};
+
 /**
  * This map holds metadata for ALL classes in system along with their dependencies. Original idea was
  * to store those informations in object prototype, but accessing this map is blazing fast with Map
  * container (<1ms).
  */
 const classMap: Map<IOC.Prototype, IClassMapEntry> = new Map<IOC.Prototype, IClassMapEntry>();
+globalThis.__IOCClassMap = globalThis.__IOCClassMap ?? classMap;
 
 // we need to cache root object prototype, we will check it later on
 const ROOT_PROTO: object = Object.getPrototypeOf({});
+
+/**
+ * Retrieves the class dependency metadata map used for IOC injection purposes.
+ *
+ * This function checks for a global `classMap` property on `globalThis` (allowing for shared class metadata between
+ * multiple contexts or modules, e.g., in hot-reloading environments), and falls back to the internal `classMap` instance
+ * if one does not exist. The returned map associates class prototypes with their corresponding inject metadata entries.
+ *
+ * @returns {Map<IOC.Prototype, IClassMapEntry>} The map of class prototypes to injection metadata entries.
+ */
+function getMapper(): Map<IOC.Prototype, IClassMapEntry> {
+  return globalThis.__IOCClassMap;
+}
 
 /**
  * This method registers @Inject() in particular class.
@@ -45,13 +63,13 @@ function registerInject(
   type: IOC.DependencyType,
 ): void {
   // find entry for this class, create new one if not found
-  let entry: IClassMapEntry | undefined = classMap.get(prototype);
+  let entry: IClassMapEntry | undefined = getMapper().get(prototype);
   if (!entry) {
     const newEntry: IClassMapEntry = {
       deps: [],
     };
     entry = newEntry;
-    classMap.set(prototype, entry);
+    getMapper().set(prototype, entry);
   }
 
   const newDep: IClassDep = {
@@ -68,7 +86,7 @@ function registerInject(
  * @returns class map entry or null if cannot be found
  */
 function getEntryForClass(classType: IOC.Newable<unknown>): IClassMapEntry | null {
-  const entry: IClassMapEntry | undefined = classMap.get(classType.prototype);
+  const entry: IClassMapEntry | undefined = getMapper().get(classType.prototype);
   return entry === undefined ? null : entry;
 }
 
@@ -85,7 +103,7 @@ function getDeps(instance: IOC.Instance): IClassDep[] {
   }
 
   // return data
-  const entry: IClassMapEntry | undefined = classMap.get(prototype);
+  const entry: IClassMapEntry | undefined = getMapper().get(prototype);
   return entry !== undefined && entry.deps !== undefined ? entry.deps : [];
 }
 
@@ -111,7 +129,7 @@ function injectDeps(container: Container, instance: IOC.Instance, method: IOC.In
    */
   do {
     // get entry for "current prototype"
-    const entry: IClassMapEntry | undefined = classMap.get(prototype);
+    const entry: IClassMapEntry | undefined = getMapper().get(prototype);
     if (entry) {
       // iterate over all dependencies for this class..
       for (const iter of entry.deps) {
