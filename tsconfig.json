@@ -1,7 +1,6 @@
 {
   "compilerOptions": {
     "rootDir": ".",
-    "baseUrl": ".",
     "declaration": false,
     "target": "ESNext",
     "module": "ESNext",
@@ -23,10 +22,9 @@
     "lib": ["dom", "es6", "es2017", "es2019", "ESNext"],
     "typeRoots": ["node_modules/@types"],
     "paths": {
-      "@vercube/*": ["packages/*/src"],
-      "@vercube/logger/providers/*": ["packages/logger/src/Drivers/*"]
+      "@vercube/*": ["./packages/*/src"]
     }
   },
-  "include": ["packages/**/*.ts"],
+  "include": ["./packages/**/*.ts"],
   "exclude": ["node_modules"]
 }
