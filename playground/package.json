@@ -4,7 +4,7 @@
   "type": "module",
   "version": "0.0.0",
   "description": "Playground for Vercube framework",
-  "packageManager": "pnpm@10.13.1",
+  "packageManager": "pnpm@10.20.0",
   "scripts": {
     "build": "vercube build",
     "build:serverless": "vercube build --entry ./src/serverless.ts",
@@ -21,6 +21,7 @@
     "@vercube/di": "workspace:*",
     "@vercube/h3": "workspace:*",
     "@vercube/logger": "workspace:*",
+    "@vercube/mcp": "workspace:*",
     "@vercube/schema": "workspace:*",
     "@vercube/serverless": "workspace:*",
     "@vercube/storage": "workspace:*",

@@ -1,9 +1,4 @@
 {
-  "eslint.workingDirectories": [
-    {
-      "mode": "auto"
-    }
-  ],
   "editor.tabSize": 2,
   "typescript.enablePromptUseWorkspaceTsdk": true,
   "search.exclude": {
