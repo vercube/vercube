@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.0.26...v0.0.27
+
+[compare changes](https://github.com/vercube/vercube/compare/v0.0.26...v0.0.27)
+
+### 🚀 Enhancements
+
+- Add mcp package ([#581](https://github.com/vercube/vercube/pull/581))
+
+### 📦 Build
+
+- Bump packages ([94b70af](https://github.com/vercube/vercube/commit/94b70af))
+
+### ❤️ Contributors
+
+- @OskarLebuda
+
 ## v0.0.25...v0.0.26
 
 [compare changes](https://github.com/vercube/vercube/compare/v0.0.25...v0.0.26)
