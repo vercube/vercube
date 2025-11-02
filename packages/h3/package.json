@@ -1,6 +1,6 @@
 {
   "name": "@vercube/h3",
-  "version": "0.0.27",
+  "version": "0.0.28",
   "description": "H3  module for Vercube framework",
   "packageManager": "pnpm@10.20.0",
   "repository": {
