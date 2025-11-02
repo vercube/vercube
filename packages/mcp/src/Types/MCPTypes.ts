@@ -1,5 +1,5 @@
 import type { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
-import type { ZodObject } from 'zod/v3';
+import type { z } from 'zod/v3';
 
 /**
  * Types and interfaces used for MCP tool registration and manifest generation.
@@ -25,13 +25,15 @@ export namespace MCPTypes {
     description?: string;
     /**
      * Optional input schema definition (can be any structured type, e.g., Zod or JSON Schema).
+     * TODO: change this to proper type after modulecontextprotocol/sdk is updated to use zod v4
      */
-    inputSchema?: ZodObject<any>;
+    inputSchema?: any;
 
     /**
      * Optional output schema definition (can be any structured type, e.g., Zod or JSON Schema).
+     * TODO: change this to proper type after modulecontextprotocol/sdk is updated to use zod v4
      */
-    outputSchema?: ZodObject<any>;
+    outputSchema?: any;
 
     /**
      * Optional annotations for the tool.

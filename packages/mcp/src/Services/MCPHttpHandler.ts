@@ -93,6 +93,18 @@ export class MCPHttpHandler {
   }
 
   /**
+   * Extracts the shape from a Zod schema if it's a ZodObject.
+   * Returns undefined if the schema is not a ZodObject.
+   *
+   * @param schema - The Zod schema to extract shape from
+   * @returns The shape of the ZodObject or undefined
+   * @private
+   */
+  private getSchemaShape(schema: any): z.ZodRawShape | undefined {
+    return 'shape' in schema ? schema.shape : undefined;
+  }
+
+  /**
    * Creates an MCP request handler function with all current tools registered.
    *
    * This method uses `createMcpHandler` from the mcp-handler package to create a request handler
@@ -123,10 +135,11 @@ export class MCPHttpHandler {
             name,
             {
               description: description ?? 'Vercube MCP tool',
-              inputSchema: inputSchema?.shape ?? undefined,
-              outputSchema: outputSchema?.shape ?? undefined,
+              inputSchema: inputSchema ? this.getSchemaShape(inputSchema) : undefined,
+              outputSchema: outputSchema ? this.getSchemaShape(outputSchema) : undefined,
               annotations,
             },
+            // @ts-expect-error TODO: change this to proper type after modulecontextprotocol/sdk is updated to use zod v4
             async (args: unknown, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>): Promise<CallToolResult> => {
               try {
                 const result = await entry.handler(args, _extra);
