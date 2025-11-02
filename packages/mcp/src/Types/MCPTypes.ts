@@ -1,5 +1,4 @@
 import type { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
-import type { z } from 'zod/v3';
 
 /**
  * Types and interfaces used for MCP tool registration and manifest generation.

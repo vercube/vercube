@@ -2,7 +2,6 @@
 import type { RequestHandlerExtra } from '@modelcontextprotocol/sdk/shared/protocol.js';
 import type { ServerNotification, ServerRequest } from '@modelcontextprotocol/sdk/types.js';
 import type { MaybePromise } from '@vercube/core';
-import type { ZodObject } from 'zod/v3';
 
 /**
  * Abstract base class for MCP tools.
@@ -10,8 +9,9 @@ import type { ZodObject } from 'zod/v3';
  * @typeParam TArgs - Zod raw shape describing the expected arguments schema
  * for the tool. Implementations should validate incoming
  * arguments against this shape.
+ * TODO: change this to proper type after modulecontextprotocol/sdk is updated to use zod v4
  */
-export abstract class Tool<TArgs = ZodObject<any>, TOutput = ZodObject<any>> {
+export abstract class Tool<TArgs = any, TOutput = any> {
   /**
    * Execute the tool's logic.
    *
