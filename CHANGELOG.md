@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.0.27...v0.0.28
+
+[compare changes](https://github.com/vercube/vercube/compare/v0.0.27...v0.0.28)
+
+### 🩹 Fixes
+
+- **mcp:** Change input/output type because of zod compatibility ([3f67708](https://github.com/vercube/vercube/commit/3f67708))
+
+### ❤️ Contributors
+
+- @OskarLebuda
+
 ## v0.0.26...v0.0.27
 
 [compare changes](https://github.com/vercube/vercube/compare/v0.0.26...v0.0.27)
