@@ -476,6 +476,73 @@ describe('RequestHandler', () => {
       expect(result.statusText).toBe('Created');
     });
 
+    it('should handle before middleware returning ResponseInit (not Response)', async () => {
+      const baseResponse = new Response('Base', { status: 200 });
+      const mockMiddleware = {
+        onRequest: vi.fn().mockResolvedValue({ status: 202, statusText: 'Accepted' }),
+      };
+
+      mockRoute.data.middlewares.beforeMiddlewares = [
+        {
+          middleware: mockMiddleware,
+          priority: 1,
+          target: 'testMethod',
+        },
+      ];
+
+      const result = await requestHandler.handleRequest(mockRequest, mockRoute);
+
+      expect(result.status).toBe(202);
+      expect(result.statusText).toBe('Accepted');
+    });
+
+    it('should handle before middleware returning different Response object (not early return)', async () => {
+      // Create a base response that will be different from middleware response
+      const baseResponse = new Response('Base', { status: 200 });
+      const middlewareResponse = new Response('Middleware', { status: 201 });
+
+      const mockMiddleware = {
+        onRequest: vi.fn().mockResolvedValue(middlewareResponse),
+      };
+
+      mockRoute.data.middlewares.beforeMiddlewares = [
+        {
+          middleware: mockMiddleware,
+          priority: 1,
+          target: 'testMethod',
+        },
+      ];
+
+      const result = await requestHandler.handleRequest(mockRequest, mockRoute);
+
+      // The middleware response should be used (not early return, but different from base)
+      expect(result.status).toBe(201);
+      expect(await result.text()).toBe('Middleware');
+    });
+
+    it('should handle after middleware returning different Response object (not early return)', async () => {
+      // Create a base response that will be different from middleware response
+      const middlewareResponse = new Response('Middleware', { status: 201 });
+
+      const mockMiddleware = {
+        onResponse: vi.fn().mockResolvedValue(middlewareResponse),
+      };
+
+      mockRoute.data.middlewares.afterMiddlewares = [
+        {
+          middleware: mockMiddleware,
+          priority: 1,
+          target: 'testMethod',
+        },
+      ];
+
+      const result = await requestHandler.handleRequest(mockRequest, mockRoute);
+
+      // The middleware response should be used (not early return, but different from base)
+      expect(result.status).toBe(201);
+      expect(await result.text()).toBe('Middleware');
+    });
+
     it('should handle request with custom content type', async () => {
       const customRequest = new Request('http://localhost/test', {
         headers: { 'Content-Type': 'text/plain' },

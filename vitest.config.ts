@@ -26,6 +26,8 @@ export default defineConfig({
         // adapters as external dependencies
         'packages/serverless/src/Adapters/**/index.ts',
         'packages/serverless/src/index.ts',
+        // hooks
+        'packages/**/src/Hooks/**',
       ],
     },
   },
