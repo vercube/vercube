@@ -1,6 +1,6 @@
 {
   "name": "@vercube/mcp",
-  "version": "0.0.29",
+  "version": "0.0.30",
   "description": "Model Context Protocol integration for the Vercube framework",
   "packageManager": "pnpm@10.20.0",
   "repository": {
