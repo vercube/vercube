@@ -1,0 +1,16 @@
+meta {
+  name: Get Token
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{url}}/api/request-context/token
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer user-456
+}
+

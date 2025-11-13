@@ -9,6 +9,7 @@ import { HttpServer } from '../Services/HttpServer/HttpServer';
 import { MetadataResolver } from '../Services/Metadata/MetadataResolver';
 import { GlobalMiddlewareRegistry } from '../Services/Middleware/GlobalMiddlewareRegistry';
 import { PluginsRegistry } from '../Services/Plugins/PluginsRegistry';
+import { RequestContextService } from '../Services/RequestContext/RequestContextService';
 import { RequestHandler } from '../Services/Router/RequestHandler';
 import { Router } from '../Services/Router/Router';
 import { StaticRequestHandler } from '../Services/Router/StaticRequestHandler';
@@ -45,6 +46,7 @@ export function createContainer(config: ConfigTypes.Config): Container {
   container.bind(RequestHandler);
   container.bind(RuntimeConfig);
   container.bind(GlobalMiddlewareRegistry);
+  container.bind(RequestContextService);
 
   // bind validation providers
   // use StandardSchema as default

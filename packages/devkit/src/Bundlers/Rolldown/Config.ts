@@ -36,16 +36,18 @@ export async function getRolldownConfig(ctx?: ConfigTypes.BuildOptions): Promise
 
     tsconfig: resolve(root, tsconfig),
 
-    define: {
-      ...ctx?.define,
-    },
-
     external: [
       ...builtinModules,
       ...builtinModules.map((m) => `node:${m}`),
       ...Object.keys(pkg.dependencies || {}),
       '@vercube/cli',
     ],
+
+    transform: {
+      define: {
+        ...ctx?.define,
+      },
+    },
 
     // Define the output options
     output: {
