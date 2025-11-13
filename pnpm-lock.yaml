@@ -233,6 +233,9 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: 1.20.2
         version: 1.20.2
+      '@vercube/auth':
+        specifier: workspace:*
+        version: link:../auth
       '@vercube/core':
         specifier: workspace:*
         version: link:../core

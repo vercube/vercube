@@ -1,3 +1,4 @@
+import { Auth } from '@vercube/auth';
 import { Connect, Controller, Delete, Get, Head, NotFoundError, Options, Patch, Post, Put, Request, Trace } from '@vercube/core';
 import { Inject } from '@vercube/di';
 import { MCPHttpHandler } from '../Services/MCPHttpHandler';
@@ -22,6 +23,7 @@ export class MCPController {
    * @param {Request} request - The incoming HTTP request.
    * @returns {Promise<Response>} The response from the handler or a 404 response.
    */
+  @Auth()
   @Get('/**')
   @Post('/**')
   @Put('/**')

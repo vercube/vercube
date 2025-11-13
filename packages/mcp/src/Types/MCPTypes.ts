@@ -1,4 +1,5 @@
-import type { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
+import type { RequestHandlerExtra } from '@modelcontextprotocol/sdk/shared/protocol.js';
+import type { ServerNotification, ServerRequest, ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
 
 /**
  * Types and interfaces used for MCP tool registration and manifest generation.
@@ -69,4 +70,6 @@ export namespace MCPTypes {
    * Alias for per-tool metadata inside the manifest.
    */
   export type ToolManifestTool = ToolMetadata;
+
+  export type Context = RequestHandlerExtra<ServerRequest, ServerNotification>;
 }

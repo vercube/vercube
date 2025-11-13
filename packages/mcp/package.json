@@ -29,6 +29,7 @@
   ],
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.20.2",
+    "@vercube/auth": "workspace:*",
     "@vercube/core": "workspace:*",
     "@vercube/di": "workspace:*",
     "@vercube/logger": "workspace:*",
