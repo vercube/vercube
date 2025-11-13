@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.0.29...v0.0.30
+
+[compare changes](https://github.com/vercube/vercube/compare/v0.0.29...v0.0.30)
+
+### 🩹 Fixes
+
+- **mcp:** Add missing auth ([a285ed0](https://github.com/vercube/vercube/commit/a285ed0))
+
+### ❤️ Contributors
+
+- @OskarLebuda
+
 ## v0.0.27...v0.0.29
 
 [compare changes](https://github.com/vercube/vercube/compare/v0.0.27...v0.0.29)
