@@ -1,6 +1,6 @@
 {
   "name": "@vercube/schema",
-  "version": "0.0.30",
+  "version": "0.0.31",
   "description": "Schema (swagger) module for Vercube framework",
   "packageManager": "pnpm@10.20.0",
   "repository": {
