@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.0.31...v0.0.32
+
+[compare changes](https://github.com/vercube/vercube/compare/v0.0.31...v0.0.32)
+
+### 🩹 Fixes
+
+- **core:** Change request context name ([7983e62](https://github.com/vercube/vercube/commit/7983e62))
+
+### ❤️ Contributors
+
+- @OskarLebuda
+
 ## v0.0.30...v0.0.31
 
 [compare changes](https://github.com/vercube/vercube/compare/v0.0.30...v0.0.31)
