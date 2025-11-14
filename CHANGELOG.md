@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.0.32...v0.0.33
+
+[compare changes](https://github.com/vercube/vercube/compare/v0.0.32...v0.0.33)
+
+### 🩹 Fixes
+
+- **core:** Fix problem with double parse response ([f9e95d8](https://github.com/vercube/vercube/commit/f9e95d8))
+
+
+### ❤️ Contributors
+
+- @OskarLebuda
+
 ## v0.0.31...v0.0.32
 
 [compare changes](https://github.com/vercube/vercube/compare/v0.0.31...v0.0.32)
