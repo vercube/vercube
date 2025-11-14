@@ -1,11 +1,11 @@
-import { Controller, Get, Middleware, Post, RequestContextService, Status } from '@vercube/core';
+import { Controller, Get, Middleware, Post, RequestContext, Status } from '@vercube/core';
 import { Inject } from '@vercube/di';
 import { Logger } from '@vercube/logger';
 import { RequestContextMiddleware } from '../Middlewares/RequestContextMiddleware';
 
 /**
  * Controller demonstrating the usage of Request Context.
- * This controller shows how to use RequestContextService to access
+ * This controller shows how to use RequestContext to access
  * request-specific data stored in the context by middleware.
  */
 @Controller('/api/request-context')
@@ -14,13 +14,13 @@ export class RequestContextController {
   @Inject(Logger)
   private gLogger!: Logger;
 
-  @Inject(RequestContextService)
-  private gRequestContextService!: RequestContextService;
+  @Inject(RequestContext)
+  private gRequestContext!: RequestContext;
 
   /**
    * Example endpoint that retrieves user ID from request context.
    * The user ID is set by RequestContextMiddleware based on the bearer token.
-   * Uses RequestContextService.get() to retrieve the value.
+   * Uses RequestContext.get() to retrieve the value.
    *
    * @returns User information
    */
@@ -29,7 +29,7 @@ export class RequestContextController {
     userId: string | undefined;
     message: string;
   }> {
-    const userId = this.gRequestContextService.get<string>('userId');
+    const userId = this.gRequestContext.get<string>('userId');
 
     this.gLogger.info('RequestContextController::getUser', `User ID from context: ${userId}`);
 
@@ -48,7 +48,7 @@ export class RequestContextController {
 
   /**
    * Example endpoint that retrieves bearer token from request context.
-   * Uses RequestContextService.get() to retrieve the value.
+   * Uses RequestContext.get() to retrieve the value.
    *
    * @returns Token information (without exposing the full token for security)
    */
@@ -57,7 +57,7 @@ export class RequestContextController {
     tokenPrefix: string;
     message: string;
   }> {
-    const token = this.gRequestContextService.get<string>('bearerToken');
+    const token = this.gRequestContext.get<string>('bearerToken');
 
     if (!token) {
       return {
@@ -77,7 +77,7 @@ export class RequestContextController {
 
   /**
    * Example endpoint that retrieves multiple values from request context.
-   * Shows how to use RequestContextService directly in the handler.
+   * Shows how to use RequestContext directly in the handler.
    *
    * @returns Request metadata from context
    */
@@ -90,11 +90,11 @@ export class RequestContextController {
     processingTime: number | undefined;
     allKeys: string[];
   }> {
-    const requestId = this.gRequestContextService.get<string>('requestId');
-    const requestMethod = this.gRequestContextService.get<string>('requestMethod');
-    const requestUrl = this.gRequestContextService.get<string>('requestUrl');
-    const requestStartTime = this.gRequestContextService.get<number>('requestStartTime');
-    const allKeys = this.gRequestContextService.keys();
+    const requestId = this.gRequestContext.get<string>('requestId');
+    const requestMethod = this.gRequestContext.get<string>('requestMethod');
+    const requestUrl = this.gRequestContext.get<string>('requestUrl');
+    const requestStartTime = this.gRequestContext.get<number>('requestStartTime');
+    const allKeys = this.gRequestContext.keys();
 
     const processingTime = requestStartTime ? Date.now() - requestStartTime : undefined;
 
@@ -125,7 +125,7 @@ export class RequestContextController {
     userId: string;
     message: string;
   }> {
-    const userId = this.gRequestContextService.getOrDefault<string>('userId', 'guest');
+    const userId = this.gRequestContext.getOrDefault<string>('userId', 'guest');
 
     return {
       userId,
@@ -135,7 +135,7 @@ export class RequestContextController {
 
   /**
    * Example endpoint that demonstrates setting values in context from the handler.
-   * This shows that you can modify context during request processing using RequestContextService.set().
+   * This shows that you can modify context during request processing using RequestContext.set().
    *
    * @returns Information about the operation
    */
@@ -146,10 +146,10 @@ export class RequestContextController {
   }> {
     // Set a custom value in the context
     const customValue = `custom-${Date.now()}`;
-    this.gRequestContextService.set('customValue', customValue);
+    this.gRequestContext.set('customValue', customValue);
 
     // This value is now available for other parts of the request processing
-    const retrievedValue = this.gRequestContextService.get<string>('customValue');
+    const retrievedValue = this.gRequestContext.get<string>('customValue');
 
     this.gLogger.info('RequestContextController::setCustomValue', `Set custom value: ${retrievedValue}`);
 
@@ -172,8 +172,8 @@ export class RequestContextController {
     keys: string[];
     message: string;
   }> {
-    const allContext = this.gRequestContextService.getAll();
-    const keys = this.gRequestContextService.keys();
+    const allContext = this.gRequestContext.getAll();
+    const keys = this.gRequestContext.keys();
 
     // Convert Map to object for JSON serialization
     const contextObject: Record<string, unknown> = {};
@@ -199,7 +199,7 @@ export class RequestContextController {
     requestId: string | undefined;
     message: string;
   }> {
-    const requestId = this.gRequestContextService.get<string>('requestId');
+    const requestId = this.gRequestContext.get<string>('requestId');
 
     return {
       requestId,

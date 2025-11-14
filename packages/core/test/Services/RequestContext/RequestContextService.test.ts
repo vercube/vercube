@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { RequestContextService } from '../../../src/Services/RequestContext/RequestContextService';
+import { RequestContext } from '../../../src/Services/Router/RequestContext';
 
-describe('RequestContextService', () => {
-  let service: RequestContextService;
+describe('RequestContext', () => {
+  let service: RequestContext;
 
   beforeEach(() => {
-    service = new RequestContextService();
+    service = new RequestContext();
   });
 
   describe('run', () => {
@@ -55,7 +55,7 @@ describe('RequestContextService', () => {
       // Context should be cleaned up, so accessing outside should throw
       expect(() => {
         service.get('test');
-      }).toThrow('RequestContextService.get() called outside of request context');
+      }).toThrow('RequestContext.get() called outside of request context');
     });
 
     it('should handle errors and still clean up context', async () => {
@@ -69,7 +69,7 @@ describe('RequestContextService', () => {
       // Context should still be cleaned up even after error
       expect(() => {
         service.get('test');
-      }).toThrow('RequestContextService.get() called outside of request context');
+      }).toThrow('RequestContext.get() called outside of request context');
     });
 
     it('should return the result of the function', async () => {
@@ -100,7 +100,7 @@ describe('RequestContextService', () => {
     it('should throw error when called outside context', () => {
       expect(() => {
         service.set('key', 'value');
-      }).toThrow('RequestContextService.set() called outside of request context');
+      }).toThrow('RequestContext.set() called outside of request context');
     });
 
     it('should handle different value types', async () => {
@@ -141,7 +141,7 @@ describe('RequestContextService', () => {
     it('should throw error when called outside context', () => {
       expect(() => {
         service.get('key');
-      }).toThrow('RequestContextService.get() called outside of request context');
+      }).toThrow('RequestContext.get() called outside of request context');
     });
 
     it('should preserve type information', async () => {

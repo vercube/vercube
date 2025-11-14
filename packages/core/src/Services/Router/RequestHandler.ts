@@ -3,7 +3,7 @@ import { FastResponse } from '../../Types/CommonTypes';
 import { ErrorHandlerProvider } from '../ErrorHandler/ErrorHandlerProvider';
 import { MetadataResolver } from '../Metadata/MetadataResolver';
 import { GlobalMiddlewareRegistry } from '../Middleware/GlobalMiddlewareRegistry';
-import { RequestContextService } from '../RequestContext/RequestContextService';
+import { RequestContext } from './RequestContext';
 import type { MetadataTypes } from '../../Types/MetadataTypes';
 import type { RouterTypes } from '../../Types/RouterTypes';
 
@@ -259,9 +259,9 @@ export class RequestHandler {
    * @private
    */
   private async runWithContext<T>(fn: () => Promise<T>): Promise<T> {
-    const requestContextService = this.gContainer.getOptional(RequestContextService);
-    if (requestContextService) {
-      return requestContextService.run(fn);
+    const requestContext = this.gContainer.getOptional(RequestContext);
+    if (requestContext) {
+      return requestContext.run(fn);
     }
     return fn();
   }

@@ -5,7 +5,7 @@ import { ErrorHandlerProvider } from '../../src/Services/ErrorHandler/ErrorHandl
 import { MetadataResolver } from '../../src/Services/Metadata/MetadataResolver';
 import { BaseMiddleware } from '../../src/Services/Middleware/BaseMiddleware';
 import { GlobalMiddlewareRegistry } from '../../src/Services/Middleware/GlobalMiddlewareRegistry';
-import { RequestContextService } from '../../src/Services/RequestContext/RequestContextService';
+import { RequestContext } from '../../src/Services/Router/RequestContext';
 import { RequestHandler } from '../../src/Services/Router/RequestHandler';
 import type { MetadataTypes } from '../../src/Types/MetadataTypes';
 import type { RouterTypes } from '../../src/Types/RouterTypes';
@@ -977,13 +977,13 @@ describe('RequestHandler', () => {
   });
 
   describe('RequestContext integration', () => {
-    let requestContextService: RequestContextService;
+    let requestContext: RequestContext;
     let mockRequest: Request;
     let mockRoute: RouterTypes.RouteMatched<RouterTypes.RouterHandler>;
 
     beforeEach(() => {
-      requestContextService = new RequestContextService();
-      container.bindInstance(RequestContextService, requestContextService);
+      requestContext = new RequestContext();
+      container.bindInstance(RequestContext, requestContext);
 
       mockRequest = new Request('http://localhost/test');
 
@@ -1005,7 +1005,7 @@ describe('RequestHandler', () => {
     it('should initialize request context for each request', async () => {
       const middlewareWithContext = {
         onRequest: vi.fn(async (request: Request, response: Response) => {
-          requestContextService.set('userId', '123');
+          requestContext.set('userId', '123');
         }),
       };
 
@@ -1022,8 +1022,8 @@ describe('RequestHandler', () => {
       expect(middlewareWithContext.onRequest).toHaveBeenCalled();
       // Context should be cleaned up after request
       expect(() => {
-        requestContextService.get('userId');
-      }).toThrow('RequestContextService.get() called outside of request context');
+        requestContext.get('userId');
+      }).toThrow('RequestContext.get() called outside of request context');
     });
 
     it('should make context available during request processing', async () => {
@@ -1031,13 +1031,13 @@ describe('RequestHandler', () => {
 
       const middlewareWithContext = {
         onRequest: vi.fn(async (request: Request, response: Response) => {
-          requestContextService.set('userId', '123');
+          requestContext.set('userId', '123');
         }),
       };
 
       const handlerWithContext = {
         testMethod: vi.fn(() => {
-          contextValue = requestContextService.get('userId');
+          contextValue = requestContext.get('userId');
           return 'success';
         }),
       };
@@ -1061,7 +1061,7 @@ describe('RequestHandler', () => {
 
       const handlerWithContext = {
         testMethod: vi.fn(() => {
-          const requestId = requestContextService.get<string>('requestId');
+          const requestId = requestContext.get<string>('requestId');
           results.push(requestId || 'no-id');
           return 'success';
         }),
@@ -1069,13 +1069,13 @@ describe('RequestHandler', () => {
 
       const middleware1 = {
         onRequest: vi.fn(async () => {
-          requestContextService.set('requestId', 'request1');
+          requestContext.set('requestId', 'request1');
         }),
       };
 
       const middleware2 = {
         onRequest: vi.fn(async () => {
-          requestContextService.set('requestId', 'request2');
+          requestContext.set('requestId', 'request2');
         }),
       };
 
@@ -1132,10 +1132,10 @@ describe('RequestHandler', () => {
           // Simulate extracting token from Authorization header
           const authHeader = request.headers.get('Authorization');
           if (authHeader) {
-            requestContextService.set('bearerToken', authHeader);
+            requestContext.set('bearerToken', authHeader);
             // Extract user ID from token (simplified)
             const userId = authHeader.replace('Bearer token-user-', '');
-            requestContextService.set('userId', userId);
+            requestContext.set('userId', userId);
           }
         }),
       };
@@ -1145,18 +1145,18 @@ describe('RequestHandler', () => {
           // Simulate extracting token from Authorization header
           const authHeader = request.headers.get('Authorization');
           if (authHeader) {
-            requestContextService.set('bearerToken', authHeader);
+            requestContext.set('bearerToken', authHeader);
             // Extract user ID from token (simplified)
             const userId = authHeader.replace('Bearer token-user-', '');
-            requestContextService.set('userId', userId);
+            requestContext.set('userId', userId);
           }
         }),
       };
 
       const handlerWithAuth = {
         testMethod: vi.fn(() => {
-          const token = requestContextService.get<string>('bearerToken');
-          const userId = requestContextService.get<string>('userId');
+          const token = requestContext.get<string>('bearerToken');
+          const userId = requestContext.get<string>('userId');
           results.push({ token: token || 'no-token', userId: userId || 'no-user' });
           return { token, userId };
         }),
@@ -1235,8 +1235,8 @@ describe('RequestHandler', () => {
 
       // Verify context is cleaned up after requests
       expect(() => {
-        requestContextService.get('bearerToken');
-      }).toThrow('RequestContextService.get() called outside of request context');
+        requestContext.get('bearerToken');
+      }).toThrow('RequestContext.get() called outside of request context');
     });
 
     it('should clean up context even when request throws error', async () => {
@@ -1248,7 +1248,7 @@ describe('RequestHandler', () => {
 
       const middlewareWithContext = {
         onRequest: vi.fn(async () => {
-          requestContextService.set('userId', '123');
+          requestContext.set('userId', '123');
         }),
       };
 
@@ -1267,11 +1267,11 @@ describe('RequestHandler', () => {
 
       // Context should still be cleaned up after error
       expect(() => {
-        requestContextService.get('userId');
-      }).toThrow('RequestContextService.get() called outside of request context');
+        requestContext.get('userId');
+      }).toThrow('RequestContext.get() called outside of request context');
     });
 
-    it('should work without RequestContextService registered', async () => {
+    it('should work without RequestContext registered', async () => {
       const containerWithoutContext = new Container();
       containerWithoutContext.bindMock(MetadataResolver, mockMetadataResolver);
       containerWithoutContext.bindMock(GlobalMiddlewareRegistry, mockGlobalMiddlewareRegistry);
@@ -1293,7 +1293,7 @@ describe('RequestHandler', () => {
 
       class PreflightMiddlewareWithContext extends BaseMiddleware {
         public async onRequest(request: Request, response: Response): Promise<void> {
-          requestContextService.set('preflight', 'true');
+          requestContext.set('preflight', 'true');
         }
       }
 
@@ -1309,8 +1309,8 @@ describe('RequestHandler', () => {
 
       // Context should be cleaned up after preflight
       expect(() => {
-        requestContextService.get('preflight');
-      }).toThrow('RequestContextService.get() called outside of request context');
+        requestContext.get('preflight');
+      }).toThrow('RequestContext.get() called outside of request context');
     });
   });
 });

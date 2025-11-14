@@ -4,7 +4,7 @@ import { AsyncLocalStorage } from 'node:async_hooks';
  * Request context storage using AsyncLocalStorage.
  * This allows storing request-specific data that is automatically cleaned up after the request completes.
  */
-export class RequestContextService {
+export class RequestContext {
   /** The storage for the request context */
   private readonly fStorage: AsyncLocalStorage<Map<string, unknown>>;
 
@@ -47,7 +47,7 @@ export class RequestContextService {
 
     if (!context) {
       throw new Error(
-        'RequestContextService.set() called outside of request context. The context is automatically initialized by RequestHandler.',
+        'RequestContext.set() called outside of request context. The context is automatically initialized by RequestHandler.',
       );
     }
 
@@ -66,7 +66,7 @@ export class RequestContextService {
 
     if (!context) {
       throw new Error(
-        'RequestContextService.get() called outside of request context. The context is automatically initialized by RequestHandler.',
+        'RequestContext.get() called outside of request context. The context is automatically initialized by RequestHandler.',
       );
     }
 
