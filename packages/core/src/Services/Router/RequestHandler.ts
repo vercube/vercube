@@ -214,8 +214,8 @@ export class RequestHandler {
       // 3. Call every actions
       for (const action of actions) {
         const actionResponse = action.handler(request, fakeResponse);
-        if (actionResponse !== null) {
-          fakeResponse = this.processOverrideResponse(actionResponse!, fakeResponse);
+        if (actionResponse != null) {
+          fakeResponse = this.processOverrideResponse(actionResponse, fakeResponse);
         }
       }
 
@@ -394,8 +394,8 @@ export class RequestHandler {
         // Execute onRequest hook if requested
         if (executeRequest) {
           const requestResult = await this.executeMiddlewareRequest(hook, request, currentResponse, methodArgs);
-          if (requestResult instanceof Response && requestResult !== currentResponse) {
-            // Middleware returned a new Response for early termination
+          if (requestResult instanceof Response) {
+            // Middleware returned a Response for early termination
             return { earlyReturn: requestResult, response: currentResponse };
           }
           if (requestResult !== null && requestResult !== currentResponse) {
@@ -406,8 +406,8 @@ export class RequestHandler {
         // Execute onResponse hook if requested
         if (executeResponse) {
           const responseResult = await this.executeMiddlewareResponse(hook, request, currentResponse, handlerResponse);
-          if (responseResult instanceof Response && responseResult !== currentResponse) {
-            // Middleware returned a new Response for early termination
+          if (responseResult instanceof Response) {
+            // Middleware returned a Response for early termination
             return { earlyReturn: responseResult, response: currentResponse };
           }
           if (responseResult !== null && responseResult !== currentResponse) {

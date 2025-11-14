@@ -496,14 +496,15 @@ describe('RequestHandler', () => {
       expect(result.statusText).toBe('Accepted');
     });
 
-    it('should handle before middleware returning different Response object (not early return)', async () => {
-      // Create a base response that will be different from middleware response
-      const baseResponse = new Response('Base', { status: 200 });
-      const middlewareResponse = new Response('Middleware', { status: 201 });
+    it('should handle before middleware returning Response object as early return', async () => {
+      // When middleware returns a Response, it should always be treated as early return
+      const middlewareResponse = new Response('Middleware Early Return', { status: 401 });
 
       const mockMiddleware = {
         onRequest: vi.fn().mockResolvedValue(middlewareResponse),
       };
+
+      const handlerSpy = vi.spyOn(mockInstance, 'testMethod');
 
       mockRoute.data.middlewares.beforeMiddlewares = [
         {
@@ -515,14 +516,16 @@ describe('RequestHandler', () => {
 
       const result = await requestHandler.handleRequest(mockRequest, mockRoute);
 
-      // The middleware response should be used (not early return, but different from base)
-      expect(result.status).toBe(201);
-      expect(await result.text()).toBe('Middleware');
+      // The middleware response should be used as early return
+      expect(result.status).toBe(401);
+      expect(await result.text()).toBe('Middleware Early Return');
+      // Handler should not be called when middleware returns Response
+      expect(handlerSpy).not.toHaveBeenCalled();
     });
 
-    it('should handle after middleware returning different Response object (not early return)', async () => {
-      // Create a base response that will be different from middleware response
-      const middlewareResponse = new Response('Middleware', { status: 201 });
+    it('should handle after middleware returning Response object as early return', async () => {
+      // When middleware returns a Response, it should always be treated as early return
+      const middlewareResponse = new Response('Middleware Early Return', { status: 403 });
 
       const mockMiddleware = {
         onResponse: vi.fn().mockResolvedValue(middlewareResponse),
@@ -538,9 +541,10 @@ describe('RequestHandler', () => {
 
       const result = await requestHandler.handleRequest(mockRequest, mockRoute);
 
-      // The middleware response should be used (not early return, but different from base)
-      expect(result.status).toBe(201);
-      expect(await result.text()).toBe('Middleware');
+      // The middleware response should be used as early return
+      expect(result.status).toBe(403);
+      expect(await result.text()).toBe('Middleware Early Return');
+      // Note: Handler is called before onResponse, so we can't verify it wasn't called
     });
 
     it('should handle request with custom content type', async () => {
