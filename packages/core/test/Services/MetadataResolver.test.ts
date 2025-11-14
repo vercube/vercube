@@ -1,3 +1,4 @@
+import { Container } from '@vercube/di';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { resolveRequestBody } from '../../src/Resolvers/Body';
 import { getRequestHeader, getRequestHeaders } from '../../src/Resolvers/Headers';
