@@ -22,7 +22,6 @@ import { Emit, Message, Namespace } from '@vercube/ws';
 import { FirstMiddleware } from '../Middlewares/FirstMiddleware';
 import { SecondMiddleware } from '../Middlewares/SecondMiddleware';
 import { BasicAuthenticationProvider } from '../Services/BasicAuthenticationProvider';
-import { DummyAuthorizationProvider } from '../Services/DummyAuthorizationProvider';
 import type { AppTypes } from '../Types/AppTypes';
 
 const schema = z.object({
@@ -93,6 +92,7 @@ export default class PlaygroundController {
    * @returns {Promise<{ message: string }>} A promise that resolves to an object containing a greeting message.
    */
   @Auth()
+  @Middleware(SecondMiddleware)
   @Get('/authenticate')
   public async authenticate(): Promise<{ message: string }> {
     return { message: 'Hello, world!' };
@@ -115,16 +115,6 @@ export default class PlaygroundController {
   @Get('/authorize')
   @Auth({ roles: ['admin'] })
   public async authorize(): Promise<{ message: string }> {
-    return { message: 'Hello, world!' };
-  }
-
-  /**
-   * Handles GET requests to the /dummy-authorization.
-   * @returns {Promise<{ message: string }>} A promise that resolves to an object containing a greeting message.
-   */
-  @Get('/dummy-authorization')
-  @Auth({ roles: ['admin'], provider: DummyAuthorizationProvider })
-  public async dummyAuthorization(): Promise<{ message: string }> {
     return { message: 'Hello, world!' };
   }
 
@@ -234,5 +224,11 @@ export default class PlaygroundController {
     const something = this.gRuntimeConfig.runtimeConfig?.something?.enabled;
 
     return { message: `Something is ${something ? 'enabled' : 'disabled'}` };
+  }
+
+  @Post('/body-error')
+  @Middleware(SecondMiddleware)
+  public async bodyError(@Body() body: unknown): Promise<{ message: string }> {
+    return { message: 'Hello, world!' };
   }
 }
