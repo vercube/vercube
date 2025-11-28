@@ -20,7 +20,7 @@
     "./package.json": "./package.json"
   },
   "scripts": {
-    "build": "tsdown --config tsdown.config.ts"
+    "build": "tsdown --config tsdown.config.ts --config-loader=unrun"
   },
   "types": "./dist/index.d.mts",
   "files": [

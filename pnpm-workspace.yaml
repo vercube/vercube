@@ -8,9 +8,10 @@ catalog:
   consola: 3.4.2
   defu: 6.1.4
   pathe: 2.0.3
-  rolldown: 1.0.0-beta.45
-  srvx: 0.9.4
-  zod: 4.1.12
+  rolldown: 1.0.0-beta.52
+  srvx: 0.9.6
+  zod: 4.1.13
+  c12: 3.3.2
 
 ignoredBuiltDependencies:
   - better-sqlite3

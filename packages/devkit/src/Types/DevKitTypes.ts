@@ -13,6 +13,7 @@ export namespace DevKitTypes {
     'bundler-watch:init': () => HookResult;
     'bundler-watch:start': () => HookResult;
     'bundler-watch:end': () => HookResult;
+    'bundler-watch:restart': () => HookResult;
     'bundler-watch:error': (_error: Error) => HookResult;
   }
 

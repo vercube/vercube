@@ -33,7 +33,7 @@
     "nypm": "0.6.2",
     "pathe": "catalog:",
     "std-env": "3.10.0",
-    "tinyexec": "1.0.1"
+    "tinyexec": "1.0.2"
   },
   "publishConfig": {
     "access": "public"

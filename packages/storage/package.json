@@ -25,14 +25,14 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsdown --config tsdown.config.ts"
+    "build": "tsdown --config tsdown.config.ts --config-loader=unrun"
   },
   "dependencies": {
     "@vercube/di": "workspace:*",
     "@vercube/logger": "workspace:*"
   },
   "optionalDependencies": {
-    "@aws-sdk/client-s3": "3.921.0"
+    "@aws-sdk/client-s3": "3.940.0"
   },
   "publishConfig": {
     "access": "public"

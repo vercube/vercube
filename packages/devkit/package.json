@@ -23,16 +23,18 @@
     "README.md"
   ],
   "dependencies": {
-    "@oxc-project/runtime": "0.96.0",
+    "@oxc-project/runtime": "0.99.0",
     "@vercube/core": "workspace:*",
+    "chokidar": "5.0.0",
+    "c12": "catalog:",
     "consola": "catalog:",
     "dotenv": "17.2.3",
     "hookable": "5.5.3",
-    "oxc-parser": "0.96.0",
-    "oxc-transform": "0.96.0",
+    "oxc-parser": "0.99.0",
+    "oxc-transform": "0.99.0",
     "pathe": "catalog:",
     "rolldown": "catalog:",
-    "unplugin-isolated-decl": "0.15.3"
+    "unplugin-isolated-decl": "0.15.6"
   },
   "publishConfig": {
     "access": "public"

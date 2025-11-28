@@ -36,7 +36,7 @@
     "aws-apigw-lambda"
   ],
   "scripts": {
-    "build": "tsdown --config tsdown.config.ts"
+    "build": "tsdown --config tsdown.config.ts --config-loader=unrun"
   },
   "dependencies": {
     "@vercube/core": "workspace:*",
@@ -44,8 +44,8 @@
     "ufo": "1.6.1"
   },
   "devDependencies": {
-    "@azure/functions": "4.8.0",
-    "@types/aws-lambda": "8.10.157"
+    "@azure/functions": "4.9.0",
+    "@types/aws-lambda": "8.10.159"
   },
   "publishConfig": {
     "access": "public"
