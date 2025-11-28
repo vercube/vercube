@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.0.33...v0.0.34
+
+[compare changes](https://github.com/vercube/vercube/compare/v0.0.33...v0.0.34)
+
+### 🚀 Enhancements
+
+- **dev:** Add watch for config files ([63deff5](https://github.com/vercube/vercube/commit/63deff5))
+
+### ❤️ Contributors
+
+- @OskarLebuda
+
 ## v0.0.32...v0.0.33
 
 [compare changes](https://github.com/vercube/vercube/compare/v0.0.32...v0.0.33)
