@@ -25,10 +25,6 @@
       "@vercube/*": ["./packages/*/src"]
     }
   },
-  "include": [
-    "./packages/**/*.ts",
-    "./scripts/**/*.ts",
-    "./tsdown.config.ts"
-  ],
+  "include": ["./packages/**/*.ts", "./scripts/**/*.ts", "./tsdown.config.ts"],
   "exclude": ["node_modules"]
 }
