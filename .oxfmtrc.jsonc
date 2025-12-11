@@ -1,0 +1,35 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+
+  // Ignore patterns
+  "ignorePatterns": [
+    "docs",
+    "pnpm-lock.yaml",
+    "CHANGELOG.md",
+    "*.json", // json files are not supported by oxfmt yet
+  ],
+
+  // Roles
+  "singleQuote": true,
+  "semi": true,
+  "trailingComma": "all",
+  "tabWidth": 2,
+  "printWidth": 130,
+
+  // Experimental: Sort imports
+  "experimentalSortImports": {
+    "groups": [
+      ["^node:", "value"], // node: imports first (regex pattern has priority)
+      ["builtin", "value"], // Builtin modules (without node: prefix)
+      ["external", "value"], // External packages (value imports only)
+      ["^@vercube/", "value"], // @vercube value imports (more specific, so it overrides external)
+      ["^./", "^../", "value"], // Relative path value imports (./ and ../)
+      ["type"], // All type imports at the end
+    ],
+    "internalPattern": ["^@vercube/"],
+    "ignoreCase": true,
+    "newlinesBetween": false,
+    "order": "asc",
+    "sortSideEffects": false,
+  },
+}

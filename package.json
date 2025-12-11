@@ -15,8 +15,8 @@
     "test:coverage": "vitest run --coverage",
     "test:bench": "vitest bench --run",
     "test:tscheck": "tsgo --noEmit",
-    "test:lint": "oxlint . && prettier --check .",
-    "lint:fix": "oxlint --fix . && prettier --write .",
+    "test:lint": "oxlint . && oxfmt --check",
+    "lint:fix": "oxlint --fix . && oxfmt --no-error-on-unmatched-pattern",
     "pre-commit": "lint-staged",
     "postinstall": "simple-git-hooks",
     "docs:dev": "vitepress dev docs",
@@ -30,7 +30,7 @@
   "lint-staged": {
     "*.{js,ts}": [
       "oxlint --fix",
-      "prettier --write"
+      "oxfmt --no-error-on-unmatched-pattern"
     ]
   },
   "devDependencies": {
@@ -39,7 +39,6 @@
     "@commitlint/config-conventional": "20.2.0",
     "@nx/js": "22.2.1",
     "@oxc-project/runtime": "0.102.0",
-    "@trivago/prettier-plugin-sort-imports": "6.0.0",
     "@types/node": "25.0.0",
     "@typescript/native-preview": "7.0.0-dev.20251211.1",
     "@vitest/coverage-v8": "4.0.15",
@@ -47,9 +46,8 @@
     "changelogen": "0.6.2",
     "lint-staged": "16.2.7",
     "nx": "22.2.1",
+    "oxfmt": "^0.17.0",
     "oxlint": "1.32.0",
-    "prettier": "3.7.4",
-    "prettier-plugin-imports": "4.3.3",
     "renovate": "42.46.0",
     "simple-git-hooks": "2.13.1",
     "tsdown": "0.17.2",

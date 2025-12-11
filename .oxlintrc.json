@@ -1808,6 +1808,9 @@
     "YUI_config": "writeable"
   },
   "ignorePatterns": [
+    "docs",
+    "pnpm-lock.yaml",
+    "CHANGELOG.md",
     "dist",
     "coverage",
     "**/.output",
