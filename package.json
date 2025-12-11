@@ -15,7 +15,7 @@
     "test:coverage": "vitest run --coverage",
     "test:bench": "vitest bench --run",
     "test:tscheck": "tsgo --noEmit",
-    "test:lint": "oxlint . && oxfmt --check",
+    "test:lint": "oxlint . --type-check && oxfmt --check",
     "lint:fix": "oxlint --fix . && oxfmt --no-error-on-unmatched-pattern",
     "pre-commit": "lint-staged",
     "postinstall": "simple-git-hooks",

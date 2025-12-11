@@ -139,7 +139,6 @@ export class MCPHttpHandler {
               outputSchema: outputSchema ? this.getSchemaShape(outputSchema) : undefined,
               annotations,
             },
-            // @ts-expect-error TODO: change this to proper type after modulecontextprotocol/sdk is updated to use zod v4
             async (args: unknown, _extra: RequestHandlerExtra<ServerRequest, ServerNotification>): Promise<CallToolResult> => {
               try {
                 const result = await entry.handler(args, _extra);
