@@ -11,6 +11,7 @@ const packageJson = await getPackageJson(process.cwd());
 
 // return config for tsdown
 export default defineConfig({
+  cwd: process.cwd(),
   entry: Object.values(entries),
   fixedExtension: true,
   dts: true,

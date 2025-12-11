@@ -5,13 +5,13 @@ packages:
 
 catalog:
   '@standard-schema/spec': 1.0.0
+  c12: 3.3.2
   consola: 3.4.2
   defu: 6.1.4
   pathe: 2.0.3
-  rolldown: 1.0.0-beta.52
-  srvx: 0.9.6
+  rolldown: 1.0.0-beta.54
+  srvx: 0.9.8
   zod: 4.1.13
-  c12: 3.3.2
 
 ignoredBuiltDependencies:
   - better-sqlite3
