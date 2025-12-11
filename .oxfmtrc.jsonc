@@ -6,6 +6,7 @@
     "docs",
     "pnpm-lock.yaml",
     "CHANGELOG.md",
+    ".github",
     "*.json", // json files are not supported by oxfmt yet
   ],
 
