@@ -1,30 +1,18 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-
   "extends": ["config:base"],
-
   "enabledManagers": ["npm"],
-
   "rangeStrategy": "replace",
-
   "timezone": "Europe/Warsaw",
-  "schedule": ["after 00:00 and before 02:00 every day"],
-
-  "labels": ["dependencies"],
-  "assignees": ["OskarLebuda"],
-  "reviewers": ["OskarLebuda"],
-
   "prConcurrentLimit": 10,
   "prHourlyLimit": 2,
-
+  "mode": "full",
+  "prCreation": "auto",
   "dependencyDashboard": true,
-  "dependencyDashboardAutoclose": true,
-
+  "dependencyDashboardAutoclose": false,
   "lockFileMaintenance": {
-    "enabled": true,
-    "schedule": ["before 03:00 on sunday"]
+    "enabled": true
   },
-
   "packageRules": [
     {
       "description": "Production dependencies – separate majors",
