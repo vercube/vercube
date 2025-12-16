@@ -7,8 +7,8 @@ settings:
 catalogs:
   default:
     '@standard-schema/spec':
-      specifier: 1.0.0
-      version: 1.0.0
+      specifier: 1.1.0
+      version: 1.1.0
     c12:
       specifier: 3.3.2
       version: 3.3.2
@@ -139,7 +139,7 @@ importers:
     dependencies:
       '@standard-schema/spec':
         specifier: 'catalog:'
-        version: 1.0.0
+        version: 1.1.0
       '@vercube/di':
         specifier: workspace:*
         version: link:../di
@@ -262,7 +262,7 @@ importers:
         version: 8.2.0(zod@4.2.1)
       '@standard-schema/spec':
         specifier: 'catalog:'
-        version: 1.0.0
+        version: 1.1.0
       '@vercube/core':
         specifier: workspace:*
         version: link:../core
@@ -3264,6 +3264,9 @@ packages:
 
   '@standard-schema/spec@1.0.0':
     resolution: {integrity: sha512-m2bOd0f2RT9k8QJx1JN85cZYyH1RqFBdlwtkSlf4tBDYLCiiZnv1fIIwacK6cqwXavOydf0NPToMQgpKq+dVlA==}
+
+  '@standard-schema/spec@1.1.0':
+    resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
 
   '@szmarczak/http-timer@4.0.6':
     resolution: {integrity: sha512-4BAffykYOgO+5nzBWYwE3W90sBgLJoUPRWWcL8wlyiM8IB8ipJz3UMJ9KXQd1RKQXpKp8Tutn80HZtWsu2u76w==}
@@ -11334,6 +11337,8 @@ snapshots:
       tslib: 2.8.1
 
   '@standard-schema/spec@1.0.0': {}
+
+  '@standard-schema/spec@1.1.0': {}
 
   '@szmarczak/http-timer@4.0.6':
     dependencies:
