@@ -34,7 +34,7 @@
     "oxc-transform": "0.103.0",
     "pathe": "catalog:",
     "rolldown": "catalog:",
-    "unplugin-isolated-decl": "0.15.6"
+    "unplugin-isolated-decl": "0.15.7"
   },
   "publishConfig": {
     "access": "public"
