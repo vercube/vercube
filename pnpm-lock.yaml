@@ -10,8 +10,8 @@ catalogs:
       specifier: 1.1.0
       version: 1.1.0
     c12:
-      specifier: 3.3.2
-      version: 3.3.2
+      specifier: 3.3.3
+      version: 3.3.3
     consola:
       specifier: 3.4.2
       version: 3.4.2
@@ -148,7 +148,7 @@ importers:
         version: link:../logger
       c12:
         specifier: 'catalog:'
-        version: 3.3.2(magicast@0.5.1)
+        version: 3.3.3(magicast@0.5.1)
       defu:
         specifier: 'catalog:'
         version: 6.1.4
@@ -185,7 +185,7 @@ importers:
         version: link:../core
       c12:
         specifier: 'catalog:'
-        version: 3.3.2(magicast@0.5.1)
+        version: 3.3.3(magicast@0.5.1)
       chokidar:
         specifier: 5.0.0
         version: 5.0.0
@@ -3920,6 +3920,14 @@ packages:
 
   c12@3.3.2:
     resolution: {integrity: sha512-QkikB2X5voO1okL3QsES0N690Sn/K9WokXqUsDQsWy5SnYb+psYQFGA10iy1bZHj3fjISKsI67Q90gruvWWM3A==}
+    peerDependencies:
+      magicast: '*'
+    peerDependenciesMeta:
+      magicast:
+        optional: true
+
+  c12@3.3.3:
+    resolution: {integrity: sha512-750hTRvgBy5kcMNPdh95Qo+XUBeGo8C7nsKSmedDmaQI+E0r82DwHeM6vBewDe4rGFbnxoa4V9pw+sPh5+Iz8Q==}
     peerDependencies:
       magicast: '*'
     peerDependenciesMeta:
@@ -12243,6 +12251,23 @@ snapshots:
   c12@3.3.2(magicast@0.5.1):
     dependencies:
       chokidar: 4.0.3
+      confbox: 0.2.2
+      defu: 6.1.4
+      dotenv: 17.2.3
+      exsolve: 1.0.8
+      giget: 2.0.0
+      jiti: 2.6.1
+      ohash: 2.0.11
+      pathe: 2.0.3
+      perfect-debounce: 2.0.0
+      pkg-types: 2.3.0
+      rc9: 2.1.2
+    optionalDependencies:
+      magicast: 0.5.1
+
+  c12@3.3.3(magicast@0.5.1):
+    dependencies:
+      chokidar: 5.0.0
       confbox: 0.2.2
       defu: 6.1.4
       dotenv: 17.2.3
