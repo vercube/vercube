@@ -2,7 +2,7 @@
   "name": "@vercube/ws",
   "version": "0.0.34",
   "description": "Websocket module for Vercube framework",
-  "packageManager": "pnpm@10.26.1",
+  "packageManager": "pnpm@10.26.2",
   "repository": "@vercube/ws",
   "license": "MIT",
   "sideEffects": false,
