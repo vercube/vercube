@@ -26,7 +26,7 @@
     "@vercube/serverless": "workspace:*",
     "@vercube/storage": "workspace:*",
     "@vercube/ws": "workspace:*",
-    "serverless": "4.29.0",
+    "serverless": "4.29.3",
     "serverless-offline": "14.4.0",
     "tslib": "2.8.1",
     "zod": "catalog:"
