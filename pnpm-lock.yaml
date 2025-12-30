@@ -363,11 +363,11 @@ importers:
         specifier: workspace:*
         version: link:../packages/ws
       serverless:
-        specifier: 4.29.0
-        version: 4.29.0
+        specifier: 4.29.3
+        version: 4.29.3
       serverless-offline:
         specifier: 14.4.0
-        version: 14.4.0(serverless@4.29.0)
+        version: 14.4.0(serverless@4.29.3)
       tslib:
         specifier: 2.8.1
         version: 2.8.1
@@ -2517,10 +2517,6 @@ packages:
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [x64]
     os: [win32]
-
-  '@oxc-project/runtime@0.105.0':
-    resolution: {integrity: sha512-XqTS6uvJkw8ZhgVKtXZS6F1Rsogk/EM9C237+8b596qpuP3tf0XUdohMM1lBCTCEvyyB2N1M5Q+S1hiFHqCRag==}
-    engines: {node: ^20.19.0 || >=22.12.0}
 
   '@oxc-project/runtime@0.106.0':
     resolution: {integrity: sha512-5SW18pzHX3JRVSw07MoTLEB9yZ9/VTr0C/kdMA1202647roYTGs1HP53UHsY5GOQzkExClCqV3eBURl5mHcD2A==}
@@ -6679,8 +6675,8 @@ packages:
     peerDependencies:
       serverless: ^4.0.0
 
-  serverless@4.29.0:
-    resolution: {integrity: sha512-gqcqCVazCPhFODdPcxco3bWUqIZ2DMv2mIZY9qzJ05IpMr0nAIodgLcaeKoCoPZy5QU5Mgizl4JiMianN54hBQ==}
+  serverless@4.29.3:
+    resolution: {integrity: sha512-PUyPwo1HsduTGgrHep7TVT8PAxGU5YaMlY6M8GMQlWQnayVGSPtFTiuSrG7RfpzU2gCGl1cJdLMwr1YSWwvydQ==}
     engines: {node: '>=18.0.0'}
     hasBin: true
 
@@ -10981,8 +10977,6 @@ snapshots:
 
   '@oxc-parser/binding-win32-x64-msvc@0.106.0':
     optional: true
-
-  '@oxc-project/runtime@0.105.0': {}
 
   '@oxc-project/runtime@0.106.0': {}
 
@@ -15754,7 +15748,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  serverless-offline@14.4.0(serverless@4.29.0):
+  serverless-offline@14.4.0(serverless@4.29.3):
     dependencies:
       '@aws-sdk/client-lambda': 3.950.0
       '@hapi/boom': 10.0.1
@@ -15778,7 +15772,7 @@ snapshots:
       node-fetch: 3.3.2
       node-schedule: 2.1.1
       p-memoize: 7.1.1
-      serverless: 4.29.0
+      serverless: 4.29.3
       tree-kill: 1.2.2
       tsx: 4.21.0
       velocityjs: 2.1.5
@@ -15789,7 +15783,7 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  serverless@4.29.0:
+  serverless@4.29.3:
     dependencies:
       axios: 1.13.2
       axios-proxy-builder: 0.1.2
