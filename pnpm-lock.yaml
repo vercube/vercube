@@ -25,8 +25,8 @@ catalogs:
       specifier: 1.0.0-beta.57
       version: 1.0.0-beta.57
     srvx:
-      specifier: 0.9.8
-      version: 0.9.8
+      specifier: 0.10.0
+      version: 0.10.0
     zod:
       specifier: 4.2.1
       version: 4.2.1
@@ -160,7 +160,7 @@ importers:
         version: 0.7.12
       srvx:
         specifier: 'catalog:'
-        version: 0.9.8
+        version: 0.10.0
     devDependencies:
       rolldown:
         specifier: 'catalog:'
@@ -223,7 +223,7 @@ importers:
         version: link:../core
       h3:
         specifier: beta
-        version: 2.0.0-beta.5(crossws@0.4.1(srvx@0.9.8))
+        version: 2.0.0-beta.5(crossws@0.4.1(srvx@0.10.0))
 
   packages/logger:
     dependencies:
@@ -321,10 +321,10 @@ importers:
         version: link:../logger
       crossws:
         specifier: 0.4.1
-        version: 0.4.1(srvx@0.9.8)
+        version: 0.4.1(srvx@0.10.0)
       srvx:
         specifier: 'catalog:'
-        version: 0.9.8
+        version: 0.10.0
     devDependencies:
       zod:
         specifier: 'catalog:'
@@ -2517,10 +2517,6 @@ packages:
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [x64]
     os: [win32]
-
-  '@oxc-project/runtime@0.105.0':
-    resolution: {integrity: sha512-XqTS6uvJkw8ZhgVKtXZS6F1Rsogk/EM9C237+8b596qpuP3tf0XUdohMM1lBCTCEvyyB2N1M5Q+S1hiFHqCRag==}
-    engines: {node: ^20.19.0 || >=22.12.0}
 
   '@oxc-project/runtime@0.106.0':
     resolution: {integrity: sha512-5SW18pzHX3JRVSw07MoTLEB9yZ9/VTr0C/kdMA1202647roYTGs1HP53UHsY5GOQzkExClCqV3eBURl5mHcD2A==}
@@ -6824,13 +6820,13 @@ packages:
   sprintf-js@1.1.3:
     resolution: {integrity: sha512-Oo+0REFV59/rz3gfJNKQiBlwfHaSESl1pcGyABQsnnIfWOFt6JNj5gCog2U6MLZ//IGYD+nA8nI+mTShREReaA==}
 
-  srvx@0.8.16:
-    resolution: {integrity: sha512-hmcGW4CgroeSmzgF1Ihwgl+Ths0JqAJ7HwjP2X7e3JzY7u4IydLMcdnlqGQiQGUswz+PO9oh/KtCpOISIvs9QQ==}
+  srvx@0.10.0:
+    resolution: {integrity: sha512-NqIsR+wQCfkvvwczBh8J8uM4wTZx41K2lLSEp/3oMp917ODVVMtW5Me4epCmQ3gH8D+0b+/t4xxkUKutyhimTA==}
     engines: {node: '>=20.16.0'}
     hasBin: true
 
-  srvx@0.9.8:
-    resolution: {integrity: sha512-RZaxTKJEE/14HYn8COLuUOJAt0U55N9l1Xf6jj+T0GoA01EUH1Xz5JtSUOI+EHn+AEgPCVn7gk6jHJffrr06fQ==}
+  srvx@0.8.16:
+    resolution: {integrity: sha512-hmcGW4CgroeSmzgF1Ihwgl+Ths0JqAJ7HwjP2X7e3JzY7u4IydLMcdnlqGQiQGUswz+PO9oh/KtCpOISIvs9QQ==}
     engines: {node: '>=20.16.0'}
     hasBin: true
 
@@ -10982,8 +10978,6 @@ snapshots:
   '@oxc-parser/binding-win32-x64-msvc@0.106.0':
     optional: true
 
-  '@oxc-project/runtime@0.105.0': {}
-
   '@oxc-project/runtime@0.106.0': {}
 
   '@oxc-project/types@0.103.0': {}
@@ -12814,9 +12808,9 @@ snapshots:
       shebang-command: 2.0.0
       which: 2.0.2
 
-  crossws@0.4.1(srvx@0.9.8):
+  crossws@0.4.1(srvx@0.10.0):
     optionalDependencies:
-      srvx: 0.9.8
+      srvx: 0.10.0
 
   css-select@5.2.2:
     dependencies:
@@ -13626,14 +13620,14 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  h3@2.0.0-beta.5(crossws@0.4.1(srvx@0.9.8)):
+  h3@2.0.0-beta.5(crossws@0.4.1(srvx@0.10.0)):
     dependencies:
       cookie-es: 2.0.0
       fetchdts: 0.1.7
       rou3: 0.7.12
       srvx: 0.8.16
     optionalDependencies:
-      crossws: 0.4.1(srvx@0.9.8)
+      crossws: 0.4.1(srvx@0.10.0)
 
   handlebars@4.7.8:
     dependencies:
@@ -15963,9 +15957,9 @@ snapshots:
 
   sprintf-js@1.1.3: {}
 
-  srvx@0.8.16: {}
+  srvx@0.10.0: {}
 
-  srvx@0.9.8: {}
+  srvx@0.8.16: {}
 
   ssri@13.0.0:
     dependencies:
