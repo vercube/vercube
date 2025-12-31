@@ -2,7 +2,7 @@
   "name": "@vercube/h3",
   "version": "0.0.34",
   "description": "H3  module for Vercube framework",
-  "packageManager": "pnpm@10.26.2",
+  "packageManager": "pnpm@10.27.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/vercube/vercube.git",
