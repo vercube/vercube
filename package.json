@@ -35,8 +35,8 @@
   },
   "devDependencies": {
     "@codspeed/vitest-plugin": "5.0.1",
-    "@commitlint/cli": "20.2.0",
-    "@commitlint/config-conventional": "20.2.0",
+    "@commitlint/cli": "20.3.0",
+    "@commitlint/config-conventional": "20.3.0",
     "@nx/js": "22.3.3",
     "@oxc-project/runtime": "0.106.0",
     "@types/node": "25.0.3",
