@@ -19,9 +19,6 @@
     "lint:fix": "oxlint --fix . && oxfmt --no-error-on-unmatched-pattern",
     "pre-commit": "lint-staged",
     "postinstall": "simple-git-hooks",
-    "docs:dev": "vitepress dev docs",
-    "docs:build": "vitepress build docs",
-    "docs:preview": "vitepress preview docs",
     "playground": "cd playground && pnpm dev",
     "bench": "node .bench/_run.mjs",
     "release": "pnpm release:nx",
@@ -52,7 +49,6 @@
     "simple-git-hooks": "2.13.1",
     "tsdown": "0.18.4",
     "tslib": "2.8.1",
-    "vitepress": "1.6.4",
     "vitest": "4.0.16"
   },
   "simple-git-hooks": {
