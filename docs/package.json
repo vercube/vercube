@@ -1,0 +1,20 @@
+{
+  "name": "@vercube/docs",
+  "version": "1.0.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vercube/vercube.git",
+    "directory": "docs"
+  },
+  "homepage": "https://vercube.dev",
+  "description": "Documentation for Vercube in raw markdown",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    "./*": "./*"
+  },
+  "files": [
+    "**/*.md",
+    "**/*.yml"
+  ]
+}

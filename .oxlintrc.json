@@ -198,7 +198,6 @@
     "no-empty-function": "off"
   },
   "ignorePatterns": [
-    "docs",
     "pnpm-lock.yaml",
     "CHANGELOG.md",
     "dist",
