@@ -1,5 +1,5 @@
-import { createApp } from '@vercube/core';
 import { useContainer } from '@/boot/Container';
+import { createApp } from '@vercube/core';
 
 async function main() {
   const app = await createApp();

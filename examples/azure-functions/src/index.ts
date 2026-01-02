@@ -1,6 +1,6 @@
+import { useContainer } from '@/boot/Container';
 import { createApp } from '@vercube/core';
 import { toServerlessHandler } from '@vercube/serverless/azure-functions';
-import { useContainer } from '@/boot/Container';
 import type { HttpRequest, HttpResponseInit } from '@azure/functions';
 import type { ServerlessHandler } from '@vercube/serverless';
 
