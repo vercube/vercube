@@ -1,5 +1,110 @@
 # Changelog
 
+## v0.0.33...v0.0.34
+
+[compare changes](https://github.com/vercube/vercube/compare/v0.0.33...v0.0.34)
+
+### 🚀 Enhancements
+
+- **dev:** Add watch for config files ([63deff5](https://github.com/vercube/vercube/commit/63deff5))
+
+### ❤️ Contributors
+
+- @OskarLebuda
+
+## v0.0.32...v0.0.33
+
+[compare changes](https://github.com/vercube/vercube/compare/v0.0.32...v0.0.33)
+
+### 🩹 Fixes
+
+- **core:** Fix problem with double parse response ([f9e95d8](https://github.com/vercube/vercube/commit/f9e95d8))
+
+
+### ❤️ Contributors
+
+- @OskarLebuda
+
+## v0.0.31...v0.0.32
+
+[compare changes](https://github.com/vercube/vercube/compare/v0.0.31...v0.0.32)
+
+### 🩹 Fixes
+
+- **core:** Change request context name ([7983e62](https://github.com/vercube/vercube/commit/7983e62))
+
+### ❤️ Contributors
+
+- @OskarLebuda
+
+## v0.0.30...v0.0.31
+
+[compare changes](https://github.com/vercube/vercube/compare/v0.0.30...v0.0.31)
+
+### 🚀 Enhancements
+
+- **core:** Add request context ([#582](https://github.com/vercube/vercube/pull/582))
+
+### ❤️ Contributors
+
+- @OskarLebuda
+
+## v0.0.29...v0.0.30
+
+[compare changes](https://github.com/vercube/vercube/compare/v0.0.29...v0.0.30)
+
+### 🩹 Fixes
+
+- **mcp:** Add missing auth ([a285ed0](https://github.com/vercube/vercube/commit/a285ed0))
+
+### ❤️ Contributors
+
+- @OskarLebuda
+
+## v0.0.27...v0.0.29
+
+[compare changes](https://github.com/vercube/vercube/compare/v0.0.27...v0.0.29)
+
+### 🩹 Fixes
+
+- **mcp:** Change input/output type because of zod compatibility ([6abf7f2](https://github.com/vercube/vercube/commit/6abf7f2)) ([3f67708](https://github.com/vercube/vercube/commit/3f67708))
+
+### ❤️ Contributors
+
+- @OskarLebuda
+
+## v0.0.26...v0.0.27
+
+[compare changes](https://github.com/vercube/vercube/compare/v0.0.26...v0.0.27)
+
+### 🚀 Enhancements
+
+- Add mcp package ([#581](https://github.com/vercube/vercube/pull/581))
+
+### 📦 Build
+
+- Bump packages ([94b70af](https://github.com/vercube/vercube/commit/94b70af))
+
+### ❤️ Contributors
+
+- @OskarLebuda
+
+## v0.0.25...v0.0.26
+
+[compare changes](https://github.com/vercube/vercube/compare/v0.0.25...v0.0.26)
+
+### 🚀 Enhancements
+
+- Add support for global class maps ([#580](https://github.com/vercube/vercube/pull/580))
+
+### 📦 Build
+
+- Bump packages ([5b5a310](https://github.com/vercube/vercube/commit/5b5a310))
+
+### ❤️ Contributors
+
+- Oskar Lebuda
+
 ## v0.0.24...v0.0.25
 
 [compare changes](https://github.com/vercube/vercube/compare/v0.0.24...v0.0.25)

@@ -5,6 +5,7 @@ import { ErrorHandlerProvider } from '../../src/Services/ErrorHandler/ErrorHandl
 import { MetadataResolver } from '../../src/Services/Metadata/MetadataResolver';
 import { BaseMiddleware } from '../../src/Services/Middleware/BaseMiddleware';
 import { GlobalMiddlewareRegistry } from '../../src/Services/Middleware/GlobalMiddlewareRegistry';
+import { RequestContext } from '../../src/Services/Router/RequestContext';
 import { RequestHandler } from '../../src/Services/Router/RequestHandler';
 import type { MetadataTypes } from '../../src/Types/MetadataTypes';
 import type { RouterTypes } from '../../src/Types/RouterTypes';
@@ -475,6 +476,77 @@ describe('RequestHandler', () => {
       expect(result.statusText).toBe('Created');
     });
 
+    it('should handle before middleware returning ResponseInit (not Response)', async () => {
+      const baseResponse = new Response('Base', { status: 200 });
+      const mockMiddleware = {
+        onRequest: vi.fn().mockResolvedValue({ status: 202, statusText: 'Accepted' }),
+      };
+
+      mockRoute.data.middlewares.beforeMiddlewares = [
+        {
+          middleware: mockMiddleware,
+          priority: 1,
+          target: 'testMethod',
+        },
+      ];
+
+      const result = await requestHandler.handleRequest(mockRequest, mockRoute);
+
+      expect(result.status).toBe(202);
+      expect(result.statusText).toBe('Accepted');
+    });
+
+    it('should handle before middleware returning Response object as early return', async () => {
+      // When middleware returns a Response, it should always be treated as early return
+      const middlewareResponse = new Response('Middleware Early Return', { status: 401 });
+
+      const mockMiddleware = {
+        onRequest: vi.fn().mockResolvedValue(middlewareResponse),
+      };
+
+      const handlerSpy = vi.spyOn(mockInstance, 'testMethod');
+
+      mockRoute.data.middlewares.beforeMiddlewares = [
+        {
+          middleware: mockMiddleware,
+          priority: 1,
+          target: 'testMethod',
+        },
+      ];
+
+      const result = await requestHandler.handleRequest(mockRequest, mockRoute);
+
+      // The middleware response should be used as early return
+      expect(result.status).toBe(401);
+      expect(await result.text()).toBe('Middleware Early Return');
+      // Handler should not be called when middleware returns Response
+      expect(handlerSpy).not.toHaveBeenCalled();
+    });
+
+    it('should handle after middleware returning Response object as early return', async () => {
+      // When middleware returns a Response, it should always be treated as early return
+      const middlewareResponse = new Response('Middleware Early Return', { status: 403 });
+
+      const mockMiddleware = {
+        onResponse: vi.fn().mockResolvedValue(middlewareResponse),
+      };
+
+      mockRoute.data.middlewares.afterMiddlewares = [
+        {
+          middleware: mockMiddleware,
+          priority: 1,
+          target: 'testMethod',
+        },
+      ];
+
+      const result = await requestHandler.handleRequest(mockRequest, mockRoute);
+
+      // The middleware response should be used as early return
+      expect(result.status).toBe(403);
+      expect(await result.text()).toBe('Middleware Early Return');
+      // Note: Handler is called before onResponse, so we can't verify it wasn't called
+    });
+
     it('should handle request with custom content type', async () => {
       const customRequest = new Request('http://localhost/test', {
         headers: { 'Content-Type': 'text/plain' },
@@ -901,6 +973,344 @@ describe('RequestHandler', () => {
       const response = await requestHandler.handlePreflight(preflightRequest);
 
       expect(response).toBeInstanceOf(Response);
+    });
+  });
+
+  describe('RequestContext integration', () => {
+    let requestContext: RequestContext;
+    let mockRequest: Request;
+    let mockRoute: RouterTypes.RouteMatched<RouterTypes.RouterHandler>;
+
+    beforeEach(() => {
+      requestContext = new RequestContext();
+      container.bindInstance(RequestContext, requestContext);
+
+      mockRequest = new Request('http://localhost/test');
+
+      mockRoute = {
+        data: {
+          instance: mockInstance,
+          propertyName: 'testMethod',
+          args: [],
+          actions: [],
+          middlewares: {
+            beforeMiddlewares: [],
+            afterMiddlewares: [],
+          },
+        },
+        params: {},
+      };
+    });
+
+    it('should initialize request context for each request', async () => {
+      const middlewareWithContext = {
+        onRequest: vi.fn(async (request: Request, response: Response) => {
+          requestContext.set('userId', '123');
+        }),
+      };
+
+      mockRoute.data.middlewares.beforeMiddlewares = [
+        {
+          middleware: middlewareWithContext,
+          priority: 1,
+          target: 'testMethod',
+        },
+      ];
+
+      await requestHandler.handleRequest(mockRequest, mockRoute);
+
+      expect(middlewareWithContext.onRequest).toHaveBeenCalled();
+      // Context should be cleaned up after request
+      expect(() => {
+        requestContext.get('userId');
+      }).toThrow('RequestContext.get() called outside of request context');
+    });
+
+    it('should make context available during request processing', async () => {
+      let contextValue: string | undefined;
+
+      const middlewareWithContext = {
+        onRequest: vi.fn(async (request: Request, response: Response) => {
+          requestContext.set('userId', '123');
+        }),
+      };
+
+      const handlerWithContext = {
+        testMethod: vi.fn(() => {
+          contextValue = requestContext.get('userId');
+          return 'success';
+        }),
+      };
+
+      mockRoute.data.instance = handlerWithContext;
+      mockRoute.data.middlewares.beforeMiddlewares = [
+        {
+          middleware: middlewareWithContext,
+          priority: 1,
+          target: 'testMethod',
+        },
+      ];
+
+      await requestHandler.handleRequest(mockRequest, mockRoute);
+
+      expect(contextValue).toBe('123');
+    });
+
+    it('should isolate context between concurrent requests', async () => {
+      const results: string[] = [];
+
+      const handlerWithContext = {
+        testMethod: vi.fn(() => {
+          const requestId = requestContext.get<string>('requestId');
+          results.push(requestId || 'no-id');
+          return 'success';
+        }),
+      };
+
+      const middleware1 = {
+        onRequest: vi.fn(async () => {
+          requestContext.set('requestId', 'request1');
+        }),
+      };
+
+      const middleware2 = {
+        onRequest: vi.fn(async () => {
+          requestContext.set('requestId', 'request2');
+        }),
+      };
+
+      const route1 = {
+        ...mockRoute,
+        data: {
+          ...mockRoute.data,
+          instance: handlerWithContext,
+          middlewares: {
+            beforeMiddlewares: [
+              {
+                middleware: middleware1,
+                priority: 1,
+                target: 'testMethod',
+              },
+            ],
+            afterMiddlewares: [],
+          },
+        },
+      };
+
+      const route2 = {
+        ...mockRoute,
+        data: {
+          ...mockRoute.data,
+          instance: handlerWithContext,
+          middlewares: {
+            beforeMiddlewares: [
+              {
+                middleware: middleware2,
+                priority: 1,
+                target: 'testMethod',
+              },
+            ],
+            afterMiddlewares: [],
+          },
+        },
+      };
+
+      await Promise.all([requestHandler.handleRequest(mockRequest, route1), requestHandler.handleRequest(mockRequest, route2)]);
+
+      expect(results).toContain('request1');
+      expect(results).toContain('request2');
+    });
+
+    it('should isolate bearer tokens between concurrent requests', async () => {
+      const bearerToken1 = 'Bearer token-user-123';
+      const bearerToken2 = 'Bearer token-user-456';
+      const results: Array<{ token: string; userId: string }> = [];
+
+      // Middleware that extracts bearer token and user ID from request
+      const authMiddleware1 = {
+        onRequest: vi.fn(async (request: Request, response: Response) => {
+          // Simulate extracting token from Authorization header
+          const authHeader = request.headers.get('Authorization');
+          if (authHeader) {
+            requestContext.set('bearerToken', authHeader);
+            // Extract user ID from token (simplified)
+            const userId = authHeader.replace('Bearer token-user-', '');
+            requestContext.set('userId', userId);
+          }
+        }),
+      };
+
+      const authMiddleware2 = {
+        onRequest: vi.fn(async (request: Request, response: Response) => {
+          // Simulate extracting token from Authorization header
+          const authHeader = request.headers.get('Authorization');
+          if (authHeader) {
+            requestContext.set('bearerToken', authHeader);
+            // Extract user ID from token (simplified)
+            const userId = authHeader.replace('Bearer token-user-', '');
+            requestContext.set('userId', userId);
+          }
+        }),
+      };
+
+      const handlerWithAuth = {
+        testMethod: vi.fn(() => {
+          const token = requestContext.get<string>('bearerToken');
+          const userId = requestContext.get<string>('userId');
+          results.push({ token: token || 'no-token', userId: userId || 'no-user' });
+          return { token, userId };
+        }),
+      };
+
+      const request1 = new Request('http://localhost/test', {
+        headers: {
+          Authorization: bearerToken1,
+        },
+      });
+
+      const request2 = new Request('http://localhost/test', {
+        headers: {
+          Authorization: bearerToken2,
+        },
+      });
+
+      const route1 = {
+        ...mockRoute,
+        data: {
+          ...mockRoute.data,
+          instance: handlerWithAuth,
+          middlewares: {
+            beforeMiddlewares: [
+              {
+                middleware: authMiddleware1,
+                priority: 1,
+                target: 'testMethod',
+              },
+            ],
+            afterMiddlewares: [],
+          },
+        },
+      };
+
+      const route2 = {
+        ...mockRoute,
+        data: {
+          ...mockRoute.data,
+          instance: handlerWithAuth,
+          middlewares: {
+            beforeMiddlewares: [
+              {
+                middleware: authMiddleware2,
+                priority: 1,
+                target: 'testMethod',
+              },
+            ],
+            afterMiddlewares: [],
+          },
+        },
+      };
+
+      // Execute both requests concurrently with delays to ensure they overlap
+      await Promise.all([
+        requestHandler.handleRequest(request1, route1).then(() => new Promise((resolve) => setTimeout(resolve, 5))),
+        requestHandler.handleRequest(request2, route2).then(() => new Promise((resolve) => setTimeout(resolve, 5))),
+      ]);
+
+      // Verify that each request got its own token and user ID
+      expect(results).toHaveLength(2);
+      const token1Result = results.find((r) => r.token === bearerToken1);
+      const token2Result = results.find((r) => r.token === bearerToken2);
+
+      expect(token1Result).toBeDefined();
+      expect(token1Result?.userId).toBe('123');
+      expect(token1Result?.token).toBe(bearerToken1);
+
+      expect(token2Result).toBeDefined();
+      expect(token2Result?.userId).toBe('456');
+      expect(token2Result?.token).toBe(bearerToken2);
+
+      // Verify tokens are different
+      expect(token1Result?.token).not.toBe(token2Result?.token);
+      expect(token1Result?.userId).not.toBe(token2Result?.userId);
+
+      // Verify context is cleaned up after requests
+      expect(() => {
+        requestContext.get('bearerToken');
+      }).toThrow('RequestContext.get() called outside of request context');
+    });
+
+    it('should clean up context even when request throws error', async () => {
+      const errorHandler = {
+        testMethod: vi.fn(() => {
+          throw new Error('Handler error');
+        }),
+      };
+
+      const middlewareWithContext = {
+        onRequest: vi.fn(async () => {
+          requestContext.set('userId', '123');
+        }),
+      };
+
+      mockRoute.data.instance = errorHandler;
+      mockRoute.data.middlewares.beforeMiddlewares = [
+        {
+          middleware: middlewareWithContext,
+          priority: 1,
+          target: 'testMethod',
+        },
+      ];
+
+      mockErrorHandler.handleError.mockReturnValue(new Response('Error', { status: 500 }));
+
+      await requestHandler.handleRequest(mockRequest, mockRoute);
+
+      // Context should still be cleaned up after error
+      expect(() => {
+        requestContext.get('userId');
+      }).toThrow('RequestContext.get() called outside of request context');
+    });
+
+    it('should work without RequestContext registered', async () => {
+      const containerWithoutContext = new Container();
+      containerWithoutContext.bindMock(MetadataResolver, mockMetadataResolver);
+      containerWithoutContext.bindMock(GlobalMiddlewareRegistry, mockGlobalMiddlewareRegistry);
+      containerWithoutContext.bindMock(ErrorHandlerProvider, mockErrorHandler);
+      containerWithoutContext.bind(RequestHandler);
+
+      const handlerWithoutContext = containerWithoutContext.get(RequestHandler);
+
+      const result = await handlerWithoutContext.handleRequest(mockRequest, mockRoute);
+
+      expect(result).toBeInstanceOf(Response);
+      expect(result.status).toBe(200);
+    });
+
+    it('should initialize context for preflight requests', async () => {
+      const preflightRequest = new Request('http://localhost/test', {
+        method: 'OPTIONS',
+      });
+
+      class PreflightMiddlewareWithContext extends BaseMiddleware {
+        public async onRequest(request: Request, response: Response): Promise<void> {
+          requestContext.set('preflight', 'true');
+        }
+      }
+
+      mockGlobalMiddlewareRegistry.middlewares = [
+        {
+          target: '__global__',
+          middleware: PreflightMiddlewareWithContext,
+          priority: 1,
+        },
+      ];
+
+      await requestHandler.handlePreflight(preflightRequest);
+
+      // Context should be cleaned up after preflight
+      expect(() => {
+        requestContext.get('preflight');
+      }).toThrow('RequestContext.get() called outside of request context');
     });
   });
 });

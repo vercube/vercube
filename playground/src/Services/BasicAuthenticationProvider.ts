@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { AuthProvider } from '@vercube/auth';
-import { MaybePromise } from '@vercube/core';
+import type { MaybePromise } from '@vercube/core';
 
 export class BasicAuthenticationProvider extends AuthProvider {
   /**

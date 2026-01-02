@@ -32,7 +32,7 @@
       "options": {
         "commands": [
           {
-            "command": "tsdown --config ../../tsdown.config.ts"
+            "command": "tsdown --config ../../tsdown.config.ts --config-loader=unrun"
           }
         ],
         "cwd": "{projectRoot}"

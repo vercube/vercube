@@ -1,16 +1,48 @@
 {
-  "extends": ["config:recommended", "group:allNonMajor", ":semanticCommitTypeAll(chore)"],
-  "meteor": { "enabled": false },
-  "rangeStrategy": "bump",
-  "npm": { "commitMessageTopic": "{{prettyDepType}} {{depName}}" },
-  "ignorePaths": ["playground/**"],
-  "ignoreDeps": ["node"],
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:base"],
+  "enabledManagers": ["npm"],
+  "rangeStrategy": "replace",
+  "timezone": "Europe/Warsaw",
+  "prConcurrentLimit": 10,
+  "prHourlyLimit": 2,
+  "mode": "full",
+  "prCreation": "auto",
+  "dependencyDashboard": true,
+  "dependencyDashboardAutoclose": false,
+  "lockFileMaintenance": {
+    "enabled": true
+  },
   "packageRules": [
     {
-      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
-      "automerge": true,
-      "automergeSchedule": ["after 1am and before 2am"],
-      "schedule": ["after 2am and before 3am"]
+      "description": "Production dependencies – separate majors",
+      "matchDepTypes": ["dependencies"],
+      "matchUpdateTypes": ["major"],
+      "groupName": "major prod dependencies",
+      "commitMessagePrefix": "fix: ",
+      "labels": ["dependencies", "major"]
+    },
+    {
+      "description": "Production dependencies – group minor and patch",
+      "matchDepTypes": ["dependencies"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "minor and patch prod dependencies",
+      "commitMessagePrefix": "fix: ",
+      "labels": ["dependencies", "minor/patch"]
+    },
+    {
+      "description": "Dev dependencies",
+      "matchDepTypes": ["devDependencies"],
+      "groupName": "dev dependencies",
+      "commitMessagePrefix": "chore: ",
+      "labels": ["dev-dependency"]
+    },
+    {
+      "description": "Lockfile maintenance",
+      "matchUpdateTypes": ["lockFileMaintenance"],
+      "groupName": "lockfile maintenance",
+      "commitMessagePrefix": "chore: ",
+      "labels": ["lockfile"]
     }
   ]
 }

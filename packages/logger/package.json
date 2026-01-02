@@ -1,8 +1,8 @@
 {
   "name": "@vercube/logger",
-  "version": "0.0.25",
+  "version": "0.0.34",
   "description": "Logger module for Vercube framework",
-  "packageManager": "pnpm@10.13.1",
+  "packageManager": "pnpm@10.27.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/vercube/vercube.git",
@@ -20,7 +20,7 @@
     "./package.json": "./package.json"
   },
   "scripts": {
-    "build": "tsdown --config tsdown.config.ts"
+    "build": "tsdown --config tsdown.config.ts --config-loader=unrun"
   },
   "types": "./dist/index.d.mts",
   "files": [

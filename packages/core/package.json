@@ -1,8 +1,8 @@
 {
   "name": "@vercube/core",
-  "version": "0.0.25",
+  "version": "0.0.34",
   "description": "Core module for Vercube framework",
-  "packageManager": "pnpm@10.13.1",
+  "packageManager": "pnpm@10.27.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/vercube/vercube.git",
@@ -26,10 +26,10 @@
     "@standard-schema/spec": "catalog:",
     "@vercube/di": "workspace:*",
     "@vercube/logger": "workspace:*",
-    "c12": "3.3.0",
+    "c12": "catalog:",
     "defu": "catalog:",
     "pathe": "catalog:",
-    "rou3": "0.7.7",
+    "rou3": "0.7.12",
     "srvx": "catalog:"
   },
   "devDependencies": {

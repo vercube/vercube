@@ -1,0 +1,42 @@
+{
+  "name": "@vercube/mcp",
+  "version": "0.0.34",
+  "description": "Model Context Protocol integration for the Vercube framework",
+  "packageManager": "pnpm@10.27.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vercube/vercube.git",
+    "directory": "packages/mcp"
+  },
+  "license": "MIT",
+  "sideEffects": false,
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "exports": {
+    ".": "./dist/index.mjs",
+    "./package.json": "./package.json"
+  },
+  "types": "./dist/index.d.mts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "keywords": [
+    "vercube",
+    "mcp",
+    "model-context-protocol"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.25.1",
+    "@vercube/auth": "workspace:*",
+    "@vercube/core": "workspace:*",
+    "@vercube/di": "workspace:*",
+    "@vercube/logger": "workspace:*",
+    "mcp-handler": "1.0.4",
+    "zod": "catalog:"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

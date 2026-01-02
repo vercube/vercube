@@ -24,6 +24,7 @@ describe('Utils - Headers', () => {
 
     it('should handle empty headers', () => {
       const mockHeaders: LoopableHeader = {
+        // oxlint-disable-next-line no-unused-vars
         forEach: (callback: (value: string, key: string) => void) => {
           // No headers
         },

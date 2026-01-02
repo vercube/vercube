@@ -1,8 +1,8 @@
 {
   "name": "@vercube/cli",
-  "version": "0.0.25",
+  "version": "0.0.34",
   "description": "CLI module for Vercube framework",
-  "packageManager": "pnpm@10.13.1",
+  "packageManager": "pnpm@10.27.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/vercube/vercube.git",
@@ -32,8 +32,8 @@
     "giget": "2.0.0",
     "nypm": "0.6.2",
     "pathe": "catalog:",
-    "std-env": "3.9.0",
-    "tinyexec": "1.0.1"
+    "std-env": "3.10.0",
+    "tinyexec": "1.0.2"
   },
   "publishConfig": {
     "access": "public"

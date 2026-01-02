@@ -9,11 +9,15 @@ import type { IDecoratedInstance } from '../Utils/Utils';
  * simpler and (probably) more performant on larger scales.
  */
 export class Container {
+  // this is the context of the container
+  protected fContext: string | undefined;
+
   // determines if container is locked or not; this is BC feature that should be removed in the future
   protected fLocked: boolean = false;
 
   // default IOC params
   protected fDefaultParams: IOC.ContainerParams = {
+    context: undefined,
     createLocked: false,
   };
 
@@ -35,8 +39,10 @@ export class Container {
   /**
    * Constructor for container.
    * @param params initial params for container
+   * @param context the context of the container
    */
   constructor(params?: Partial<IOC.ContainerParams>) {
+    this.fContext = params?.context ?? 'default';
     this.fLocked = params?.createLocked ?? false;
     this.fDefaultParams = Object.assign(this.fDefaultParams, params);
     this.fInjectMethod = params?.injectMethod ?? IOC.InjectMethod.STATIC;
@@ -58,6 +64,14 @@ export class Container {
    */
   public get events(): ContainerEvents {
     return this.fContainerEvents;
+  }
+
+  /**
+   * Returns the context of the container.
+   * @returns {string} the context of the container
+   */
+  public get context(): string | undefined {
+    return this.fContext;
   }
 
   /**

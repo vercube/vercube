@@ -1,6 +1,8 @@
 import { defineConfig } from 'tsdown';
-import { transformExports } from '../../scripts/utils';
-import defaultConfig from '../../tsdown.config';
+// @ts-expect-error - allowImportingTsExtensions is enabled in tsconfig.json TSDown does not support it
+import { transformExports } from '../../scripts/utils.ts';
+// @ts-expect-error - allowImportingTsExtensions is enabled in tsconfig.json TSDown does not support it
+import defaultConfig from '../../tsdown.config.ts';
 
 // return config for tsdown
 export default defineConfig({

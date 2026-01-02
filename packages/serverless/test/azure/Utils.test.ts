@@ -157,6 +157,7 @@ describe('[Azure Functions] Utils', () => {
 
     it('should handle empty headers', () => {
       const mockHeaders = {
+        // oxlint-disable-next-line no-unused-vars
         forEach: (callback: (value: string, key: string) => void) => {
           // No headers
         },

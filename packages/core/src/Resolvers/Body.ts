@@ -22,7 +22,8 @@ import type { RouterTypes } from '../Types/RouterTypes';
  * - Throws BadRequestError for malformed JSON
  */
 export async function resolveRequestBody(event: RouterTypes.RouterEvent): Promise<unknown> {
-  const text = await event.request.text();
+  // we have to clone the request to avoid the "Response body object should not be disturbed or locked" error
+  const text = await event.request.clone().text();
   if (!text) {
     return undefined;
   }

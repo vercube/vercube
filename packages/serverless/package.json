@@ -1,8 +1,8 @@
 {
   "name": "@vercube/serverless",
-  "version": "0.0.25",
+  "version": "0.0.34",
   "description": "Serverless module for Vercube framework",
-  "packageManager": "pnpm@10.13.1",
+  "packageManager": "pnpm@10.27.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/vercube/vercube.git",
@@ -39,7 +39,7 @@
     "azure-function-http"
   ],
   "scripts": {
-    "build": "tsdown --config tsdown.config.ts"
+    "build": "tsdown --config tsdown.config.ts --config-loader=unrun"
   },
   "dependencies": {
     "@vercube/core": "workspace:*",
@@ -47,8 +47,8 @@
     "ufo": "1.6.1"
   },
   "devDependencies": {
-    "@azure/functions": "4.8.0",
-    "@types/aws-lambda": "8.10.155"
+    "@azure/functions": "4.10.0",
+    "@types/aws-lambda": "8.10.159"
   },
   "publishConfig": {
     "access": "public"

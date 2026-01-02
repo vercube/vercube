@@ -52,6 +52,7 @@ export * from './Services/Router/Router';
 export * from './Services/Config/RuntimeConfig';
 export * from './Services/Validation/ValidationProvider';
 export * from './Services/Validation/StandardSchemaValidationProvider';
+export * from './Services/Router/RequestContext';
 
 // Errors
 export * from './Errors/HttpError';

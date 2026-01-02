@@ -1,8 +1,8 @@
 {
   "name": "@vercube/devkit",
-  "version": "0.0.25",
+  "version": "0.0.34",
   "description": "Devkit  module for Vercube framework",
-  "packageManager": "pnpm@10.13.1",
+  "packageManager": "pnpm@10.27.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/vercube/vercube.git",
@@ -25,14 +25,16 @@
   "dependencies": {
     "@oxc-project/runtime": "catalog:",
     "@vercube/core": "workspace:*",
+    "c12": "catalog:",
+    "chokidar": "5.0.0",
     "consola": "catalog:",
     "dotenv": "17.2.3",
-    "hookable": "5.5.3",
-    "oxc-parser": "0.94.0",
-    "oxc-transform": "0.94.0",
+    "hookable": "6.0.1",
+    "oxc-parser": "0.106.0",
+    "oxc-transform": "0.106.0",
     "pathe": "catalog:",
     "rolldown": "catalog:",
-    "unplugin-isolated-decl": "0.15.2"
+    "unplugin-isolated-decl": "0.15.7"
   },
   "publishConfig": {
     "access": "public"

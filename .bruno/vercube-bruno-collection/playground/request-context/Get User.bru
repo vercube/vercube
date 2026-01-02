@@ -1,0 +1,16 @@
+meta {
+  name: Get User
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{url}}/api/request-context/user
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer user-123
+}
+

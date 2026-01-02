@@ -16,7 +16,7 @@ describe('S3Storage', () => {
 
   beforeEach(async () => {
     mockSend = vi.fn();
-    vi.spyOn(S3Client.prototype, 'send').mockImplementation(mockSend);
+    vi.spyOn(S3Client.prototype, 'send').mockImplementation(mockSend as any);
 
     storage = new S3Storage();
     await storage.initialize({

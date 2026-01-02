@@ -26,16 +26,6 @@ class MockHeaders {
   }
 }
 
-// Mock HttpRequest interface for testing
-interface MockHttpRequest {
-  method: string;
-  url: string;
-  headers: MockHeaders;
-  body?: any;
-  query: URLSearchParams;
-  params: Record<string, string>;
-}
-
 describe('[Azure Functions] Request Utils', () => {
   describe('convertEventToRequest', () => {
     it('should convert Azure Functions HttpRequest to Request', () => {

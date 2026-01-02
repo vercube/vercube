@@ -9,7 +9,7 @@ export namespace IOC {
    * This is a key that we use to identify service. Symbol is new way of doing it, however we
    * also keep standard/abstract classes for backward compatability.
    */
-  export type ServiceKey<T = unknown> = symbol | Newable<T> | Abstract<T>;
+  export type ServiceKey<T = unknown> = string | symbol | Newable<T> | Abstract<T>;
 
   /**
    * This type holds implementation that might be used in class.
@@ -69,6 +69,7 @@ export namespace IOC {
   export interface ContainerParams {
     createLocked: boolean;
     injectMethod?: IOC.InjectMethod;
+    context?: string;
   }
 
   /**

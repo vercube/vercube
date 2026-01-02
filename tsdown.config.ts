@@ -1,18 +1,17 @@
 import { builtinModules } from 'node:module';
-import { resolve } from 'node:path';
 import { defineConfig } from 'tsdown';
-import { getPackageEntries } from './scripts/utils';
+// @ts-expect-error - allowImportingTsExtensions is enabled in tsconfig.json TSDown does not support it
+import { getPackageEntries, getPackageJson } from './scripts/utils.ts';
 
 // get entries as auto-detected from package.json export field
 const entries = await getPackageEntries(process.cwd());
 
 // get package.json
-const packageJson = await import(resolve(process.cwd(), 'package.json'), {
-  with: { type: 'json' },
-});
+const packageJson = await getPackageJson(process.cwd());
 
 // return config for tsdown
 export default defineConfig({
+  cwd: process.cwd(),
   entry: Object.values(entries),
   fixedExtension: true,
   dts: true,
