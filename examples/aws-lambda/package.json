@@ -1,0 +1,24 @@
+{
+  "name": "@examples/aws-lambda",
+  "version": "1.0.0",
+  "description": "Base example for Vercube",
+  "packageManager": "pnpm@10.27.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vercube build",
+    "dev": "vercube dev",
+    "prestart": "vercube build",
+    "start": "serverless offline --stage local --noPrependStageInUrl --host 0.0.0.0"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@oxc-project/runtime": "catalog:",
+    "@vercube/cli": "workspace:*",
+    "@vercube/core": "workspace:*",
+    "@vercube/di": "workspace:*",
+    "@vercube/serverless": "workspace:*",
+    "serverless": "3",
+    "serverless-offline": "14.4.0"
+  }
+}

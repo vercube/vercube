@@ -9,8 +9,8 @@
     "node": ">=22"
   },
   "scripts": {
-    "build": "nx run-many -t build --exclude=playground",
-    "dev": "nx watch --all --exclude=playground -- nx run \\$NX_PROJECT_NAME:build",
+    "build": "nx run-many -t build --exclude=@examples/*",
+    "dev": "nx watch --all --exclude=@examples/* -- nx run \\$NX_PROJECT_NAME:build",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:bench": "vitest bench --run",
@@ -20,7 +20,6 @@
     "pre-commit": "lint-staged",
     "postinstall": "simple-git-hooks",
     "playground": "cd playground && pnpm dev",
-    "bench": "node .bench/_run.mjs",
     "release": "pnpm release:nx",
     "release:nx": "pnpm nx release --yes"
   },

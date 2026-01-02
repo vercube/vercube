@@ -1,0 +1,19 @@
+{
+  "name": "@examples/base",
+  "version": "1.0.0",
+  "description": "Base example for Vercube",
+  "packageManager": "pnpm@10.27.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vercube build",
+    "dev": "vercube dev"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@oxc-project/runtime": "catalog:",
+    "@vercube/cli": "workspace:*",
+    "@vercube/core": "workspace:*",
+    "@vercube/di": "workspace:*"
+  }
+}

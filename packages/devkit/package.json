@@ -23,7 +23,7 @@
     "README.md"
   ],
   "dependencies": {
-    "@oxc-project/runtime": "0.106.0",
+    "@oxc-project/runtime": "catalog:",
     "@vercube/core": "workspace:*",
     "c12": "catalog:",
     "chokidar": "5.0.0",

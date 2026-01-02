@@ -33,7 +33,10 @@
     "aws-serverless",
     "aws-api-gateway",
     "aws-apigw",
-    "aws-apigw-lambda"
+    "aws-apigw-lambda",
+    "azure-functions",
+    "azure-function",
+    "azure-function-http"
   ],
   "scripts": {
     "build": "tsdown --config tsdown.config.ts --config-loader=unrun"

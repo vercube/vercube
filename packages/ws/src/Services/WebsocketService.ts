@@ -4,7 +4,7 @@ import { Logger } from '@vercube/logger';
 import { defineHooks } from 'crossws';
 import { plugin } from 'crossws/server';
 import { WebsocketTypes } from '../Types/WebsocketTypes';
-import type { Message, Peer, WSError } from 'crossws';
+import type { WSError, WSMessage, WSPeer } from '../Types/WebsocketTypes';
 
 /**
  * WebsocketService class responsible for dealing with Websocket connections.
@@ -32,7 +32,7 @@ export class WebsocketService {
   /**
    * Internal namespace registry
    */
-  private fNamespaces: Record<string, Peer[]> = {};
+  private fNamespaces: Record<string, WSPeer[]> = {};
 
   /**
    * Internal handlers registry
@@ -99,11 +99,11 @@ export class WebsocketService {
   /**
    * Broadcast a message to all peers in the same namespace (including the sender).
    *
-   * @param {Peer} peer - The sender peer (used to determine the namespace).
+   * @param {WSPeer} peer - The sender peer (used to determine the namespace).
    * @param {unknown} message - The message to broadcast.
    * @returns {void}
    */
-  public broadcast(peer: Peer, message: unknown): void {
+  public broadcast(peer: WSPeer, message: unknown): void {
     const namespace = peer.namespace?.toLowerCase();
     if (!namespace) return;
 
@@ -118,22 +118,22 @@ export class WebsocketService {
   /**
    * Emit a message to a single peer.
    *
-   * @param {Peer} peer - The peer to send the message to.
+   * @param {WSPeer} peer - The peer to send the message to.
    * @param {unknown} message - The message to send.
    * @returns {void}
    */
-  public emit(peer: Peer, message: unknown): void {
+  public emit(peer: WSPeer, message: unknown): void {
     peer.send(message);
   }
 
   /**
    * Broadcast a message to all peers in the same namespace except the sender.
    *
-   * @param {Peer} peer - The sender peer (used to determine the namespace).
+   * @param {WSPeer} peer - The sender peer (used to determine the namespace).
    * @param {unknown} message - The message to broadcast.
    * @returns {void}
    */
-  public broadcastOthers(peer: Peer, message: unknown): void {
+  public broadcastOthers(peer: WSPeer, message: unknown): void {
     const namespace = peer.namespace?.toLowerCase();
     if (!namespace) return;
 
@@ -194,17 +194,17 @@ export class WebsocketService {
           this.fNamespaces[namespace].push(peer);
         }
       },
-      message: async (peer: Peer, message: Message) => {
+      message: async (peer: WSPeer, message: WSMessage) => {
         await this.handleMessage(peer, message);
       },
-      close: async (peer: Peer) => {
+      close: async (peer: WSPeer) => {
         const namespace = peer.namespace?.toLowerCase();
         if (namespace && this.fNamespaces[namespace]) {
           const peers = this.fNamespaces[namespace];
           this.fNamespaces[namespace] = peers.filter((p) => p.id !== peer.id);
         }
       },
-      error: async (peer: Peer, error: WSError) => {
+      error: async (peer: WSPeer, error: WSError) => {
         this.gLogger?.error('WebsocketService::initialize', `Error: ${error.message}`, {
           peer,
         });
@@ -218,11 +218,11 @@ export class WebsocketService {
   /**
    * Handle an incoming websocket message for a peer.
    *
-   * @param {Peer} peer - The peer receiving the message.
+   * @param {WSPeer} peer - The peer receiving the message.
    * @param {Message} rawMessage - The raw websocket message.
    * @returns {Promise<void>}
    */
-  private async handleMessage(peer: Peer, rawMessage: Message): Promise<void> {
+  private async handleMessage(peer: WSPeer, rawMessage: WSMessage): Promise<void> {
     try {
       const msg = JSON.parse(rawMessage.text());
       const namespace = peer.namespace?.toLowerCase();
