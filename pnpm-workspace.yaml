@@ -4,6 +4,7 @@ packages:
 
 catalog:
   '@standard-schema/spec': 1.1.0
+  '@oxc-project/runtime': 0.106.0
   c12: 3.3.3
   consola: 3.4.2
   defu: 6.1.4

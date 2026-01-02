@@ -2,7 +2,7 @@
   "name": "@examples/ws",
   "version": "1.0.0",
   "description": "Websockets example for Vercube",
-  "packageManager": "pnpm@10.13.1",
+  "packageManager": "pnpm@10.27.0",
   "private": true,
   "type": "module",
   "scripts": {

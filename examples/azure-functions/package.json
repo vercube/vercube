@@ -2,7 +2,7 @@
   "name": "@examples/azure-functions",
   "version": "1.0.0",
   "description": "Base example for Vercube",
-  "packageManager": "pnpm@10.15.1",
+  "packageManager": "pnpm@10.27.0",
   "private": true,
   "type": "module",
   "main": "dist/*.mjs",
@@ -13,9 +13,9 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@azure/functions": "4.8.0",
-    "@vercube/core": "workspace:*",
+    "@azure/functions": "4.10.0",
     "@vercube/cli": "workspace:*",
+    "@vercube/core": "workspace:*",
     "@vercube/di": "workspace:*",
     "@vercube/serverless": "workspace:*",
     "azure-functions-core-tools": "4.x"

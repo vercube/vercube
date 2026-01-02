@@ -2,7 +2,7 @@
   "name": "@examples/base",
   "version": "1.0.0",
   "description": "Base example for Vercube",
-  "packageManager": "pnpm@10.13.1",
+  "packageManager": "pnpm@10.27.0",
   "private": true,
   "type": "module",
   "scripts": {

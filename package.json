@@ -20,7 +20,6 @@
     "pre-commit": "lint-staged",
     "postinstall": "simple-git-hooks",
     "playground": "cd playground && pnpm dev",
-    "bench": "node .bench/_run.mjs",
     "release": "pnpm release:nx",
     "release:nx": "pnpm nx release --yes"
   },
