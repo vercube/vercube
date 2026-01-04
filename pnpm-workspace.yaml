@@ -11,7 +11,7 @@ catalog:
   pathe: 2.0.3
   rolldown: 1.0.0-beta.58
   srvx: 0.10.0
-  zod: 4.3.4
+  zod: 4.3.5
 
 ignoredBuiltDependencies:
   - better-sqlite3
