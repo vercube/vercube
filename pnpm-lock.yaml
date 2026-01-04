@@ -328,8 +328,8 @@ importers:
         specifier: workspace:*
         version: link:../logger
       mcp-handler:
-        specifier: 1.0.4
-        version: 1.0.4(@modelcontextprotocol/sdk@1.25.1(hono@4.11.1)(zod@4.3.4))
+        specifier: 1.0.5
+        version: 1.0.5(@modelcontextprotocol/sdk@1.25.1(hono@4.11.1)(zod@4.3.4))
       zod:
         specifier: 'catalog:'
         version: 4.3.4
@@ -337,8 +337,8 @@ importers:
   packages/schema:
     dependencies:
       '@asteasolutions/zod-to-openapi':
-        specifier: 8.2.0
-        version: 8.2.0(zod@4.3.4)
+        specifier: 8.3.3
+        version: 8.3.3(zod@4.3.4)
       '@standard-schema/spec':
         specifier: 'catalog:'
         version: 1.1.0
@@ -417,8 +417,8 @@ packages:
   '@arcanis/slice-ansi@1.1.1':
     resolution: {integrity: sha512-xguP2WR2Dv0gQ7Ykbdb7BNCnPnIPB94uTi0Z2NvkRBEnhbwjOQ7QyQKJXrVQg4qDpiD9hA5l5cCwy/z2OXgc3w==}
 
-  '@asteasolutions/zod-to-openapi@8.2.0':
-    resolution: {integrity: sha512-u05zNUirlukJAf9oEHmxSF31L1XQhz9XdpVILt7+xhrz65oQqBpiOWFkGvRWL0IpjOUJ878idKoNmYPxrFnkeg==}
+  '@asteasolutions/zod-to-openapi@8.3.3':
+    resolution: {integrity: sha512-H3GveJktzn84NalGFn1B9D7CJru0lNkzia3dSCmOY9u2QQPQktlAwE8O/8pJXAJTufkt3t80qCqx2rI/G1f17w==}
     peerDependencies:
       zod: ^4.0.0
 
@@ -5838,11 +5838,11 @@ packages:
     resolution: {integrity: sha512-/IXtbwEk5HTPyEwyKX6hGkYXxM9nbj64B+ilVJnC/R6B0pH5G4V3b0pVbL7DBj4tkhBAppbQUlf6F6Xl9LHu1g==}
     engines: {node: '>= 0.4'}
 
-  mcp-handler@1.0.4:
-    resolution: {integrity: sha512-bp5Xp6jKF8H3vh3Xadr83YZxHekKCXcbenTIej3DR0MK8GpQDMHNU/RDBvIRbs/7VRViPPkjMcWLsx+WYVICNw==}
+  mcp-handler@1.0.5:
+    resolution: {integrity: sha512-ZJwo35WK8h4UGyADpXTSWYC6xkiy06/wTqqWxn1lCHv7fRlHxo5LRqpe20dlACJhRH8oLm2D/PlrukGPSjTVyg==}
     hasBin: true
     peerDependencies:
-      '@modelcontextprotocol/sdk': ^1.22.0
+      '@modelcontextprotocol/sdk': ^1.25.1
       next: '>=13.0.0'
     peerDependenciesMeta:
       next:
@@ -8107,7 +8107,7 @@ snapshots:
     dependencies:
       grapheme-splitter: 1.0.4
 
-  '@asteasolutions/zod-to-openapi@8.2.0(zod@4.3.4)':
+  '@asteasolutions/zod-to-openapi@8.3.3(zod@4.3.4)':
     dependencies:
       openapi3-ts: 4.5.0
       zod: 4.3.4
@@ -15219,7 +15219,7 @@ snapshots:
 
   math-intrinsics@1.1.0: {}
 
-  mcp-handler@1.0.4(@modelcontextprotocol/sdk@1.25.1(hono@4.11.1)(zod@4.3.4)):
+  mcp-handler@1.0.5(@modelcontextprotocol/sdk@1.25.1(hono@4.11.1)(zod@4.3.4)):
     dependencies:
       '@modelcontextprotocol/sdk': 1.25.1(hono@4.11.1)(zod@4.3.4)
       chalk: 5.6.2
