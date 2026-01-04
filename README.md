@@ -4,19 +4,18 @@
   <br>
 
 # Vercube
+
 ### Next generation HTTP framework
 
-  ![NPM Version](https://img.shields.io/npm/v/%40vercube%2Fcore?style=for-the-badge&logo=npm&logoColor=rgba(255%2C%20255%2C%20255%2C%200.6)&labelColor=%23000&color=%232e2e2e&link=https%3A%2F%2Fwww.npmjs.com%2Fpackage%2F%40vercube%2Fcore)
-  ![GitHub License](https://img.shields.io/github/license/vercube/vercube?style=for-the-badge&logo=gitbook&logoColor=rgba(255%2C%20255%2C%20255%2C%200.6)&labelColor=%23000&color=%232f2f2f)
-  ![Codecov](https://img.shields.io/codecov/c/github/vercube/vercube?style=for-the-badge&logo=vitest&logoColor=rgba(255%2C%20255%2C%20255%2C%200.6)&labelColor=%23000&color=%232f2f2f)
+![NPM Version](<https://img.shields.io/npm/v/%40vercube%2Fcore?style=for-the-badge&logo=npm&logoColor=rgba(255%2C%20255%2C%20255%2C%200.6)&labelColor=%23000&color=%232e2e2e&link=https%3A%2F%2Fwww.npmjs.com%2Fpackage%2F%40vercube%2Fcore>)
+![GitHub License](<https://img.shields.io/github/license/vercube/vercube?style=for-the-badge&logo=gitbook&logoColor=rgba(255%2C%20255%2C%20255%2C%200.6)&labelColor=%23000&color=%232f2f2f>)
+![Codecov](<https://img.shields.io/codecov/c/github/vercube/vercube?style=for-the-badge&logo=vitest&logoColor=rgba(255%2C%20255%2C%20255%2C%200.6)&labelColor=%23000&color=%232f2f2f>)
 
-  **An ultra-efficient JavaScript server framework that runs anywhere - Node.js, Bun, or Deno - with unmatched flexibility and complete configurability for developers who refuse to sacrifice speed or control.**
+**An ultra-efficient JavaScript server framework that runs anywhere - Node.js, Bun, or Deno - with unmatched flexibility and complete configurability for developers who refuse to sacrifice speed or control.**
 
-  [Website](https://vercube.dev) • [Documentation](https://vercube.dev/docs/getting-started)
+[Website](https://vercube.dev) • [Documentation](https://vercube.dev/docs/getting-started)
 
 </div>
-
-
 
 ## ✨ Features
 
@@ -78,7 +77,7 @@ type CreateUserDto = z.infer<typeof CreateUserSchema>;
 
 @Controller('/users')
 export class UserController {
-  
+
   @Inject(UserService)
   private userService!: UserService;
 
@@ -103,14 +102,14 @@ More examples available in the [examples directory](https://github.com/vercube/v
 
 ## 📦 Packages
 
-| Package | Description |
-|---------|-------------|
-| [@vercube/core](https://www.npmjs.com/package/@vercube/core) | Core framework with routing, DI, and middleware |
-| [@vercube/auth](https://www.npmjs.com/package/@vercube/auth) | Authentication decorators and middleware |
-| [@vercube/logger](https://www.npmjs.com/package/@vercube/logger) | Flexible logging with multiple drivers |
-| [@vercube/storage](https://www.npmjs.com/package/@vercube/storage) | File storage abstraction layer |
-| [@vercube/ws](https://www.npmjs.com/package/@vercube/ws) | WebSocket support |
-| [@vercube/serverless](https://www.npmjs.com/package/@vercube/serverless) | AWS Lambda & Azure Functions adapters |
+| Package                                                                  | Description                                     |
+| ------------------------------------------------------------------------ | ----------------------------------------------- |
+| [@vercube/core](https://www.npmjs.com/package/@vercube/core)             | Core framework with routing, DI, and middleware |
+| [@vercube/auth](https://www.npmjs.com/package/@vercube/auth)             | Authentication decorators and middleware        |
+| [@vercube/logger](https://www.npmjs.com/package/@vercube/logger)         | Flexible logging with multiple drivers          |
+| [@vercube/storage](https://www.npmjs.com/package/@vercube/storage)       | File storage abstraction layer                  |
+| [@vercube/ws](https://www.npmjs.com/package/@vercube/ws)                 | WebSocket support                               |
+| [@vercube/serverless](https://www.npmjs.com/package/@vercube/serverless) | AWS Lambda & Azure Functions adapters           |
 
 ## 📖 Documentation
 
