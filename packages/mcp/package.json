@@ -33,7 +33,7 @@
     "@vercube/core": "workspace:*",
     "@vercube/di": "workspace:*",
     "@vercube/logger": "workspace:*",
-    "mcp-handler": "1.0.4",
+    "mcp-handler": "1.0.5",
     "zod": "catalog:"
   },
   "publishConfig": {
