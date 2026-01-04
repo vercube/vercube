@@ -337,8 +337,8 @@ importers:
   packages/schema:
     dependencies:
       '@asteasolutions/zod-to-openapi':
-        specifier: 8.3.3
-        version: 8.3.3(zod@4.3.5)
+        specifier: 8.4.0
+        version: 8.4.0(zod@4.3.5)
       '@standard-schema/spec':
         specifier: 'catalog:'
         version: 1.1.0
@@ -417,8 +417,8 @@ packages:
   '@arcanis/slice-ansi@1.1.1':
     resolution: {integrity: sha512-xguP2WR2Dv0gQ7Ykbdb7BNCnPnIPB94uTi0Z2NvkRBEnhbwjOQ7QyQKJXrVQg4qDpiD9hA5l5cCwy/z2OXgc3w==}
 
-  '@asteasolutions/zod-to-openapi@8.3.3':
-    resolution: {integrity: sha512-H3GveJktzn84NalGFn1B9D7CJru0lNkzia3dSCmOY9u2QQPQktlAwE8O/8pJXAJTufkt3t80qCqx2rI/G1f17w==}
+  '@asteasolutions/zod-to-openapi@8.4.0':
+    resolution: {integrity: sha512-Ckp971tmTw4pnv+o7iK85ldBHBKk6gxMaoNyLn3c2Th/fKoTG8G3jdYuOanpdGqwlDB0z01FOjry2d32lfTqrA==}
     peerDependencies:
       zod: ^4.0.0
 
@@ -8107,7 +8107,7 @@ snapshots:
     dependencies:
       grapheme-splitter: 1.0.4
 
-  '@asteasolutions/zod-to-openapi@8.3.3(zod@4.3.5)':
+  '@asteasolutions/zod-to-openapi@8.4.0(zod@4.3.5)':
     dependencies:
       openapi3-ts: 4.5.0
       zod: 4.3.5
