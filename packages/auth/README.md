@@ -1,34 +1,38 @@
 <div align="center">
-  <a href="https://vercube.dev/"><img src="https://github.com/OskarLebuda/vue-lazy-hydration/raw/main/.github/assets/logo.png?raw=true" alt="Vite logo" width="200"></a>
+  <img src="https://raw.githubusercontent.com/vercube/vercube/refs/heads/main/.github/assets/cover.png" width="100%" alt="Vercube - Unleash your server development." />
   <br>
   <br>
 
-# Vercube
+# @vercube/auth
+### Authentication for Vercube apps
 
-Next generation HTTP framework
+  ![NPM Version](https://img.shields.io/npm/v/%40vercube%2Fauth?style=for-the-badge&logo=npm&logoColor=rgba(255%2C%20255%2C%20255%2C%200.6)&labelColor=%23000&color=%232e2e2e&link=https%3A%2F%2Fwww.npmjs.com%2Fpackage%2F%40vercube%2Fauth)
+  ![GitHub License](https://img.shields.io/github/license/vercube/vercube?style=for-the-badge&logo=gitbook&logoColor=rgba(255%2C%20255%2C%20255%2C%200.6)&labelColor=%23000&color=%232f2f2f)
+  ![Codecov](https://img.shields.io/codecov/c/github/vercube/vercube?style=for-the-badge&logo=vitest&logoColor=rgba(255%2C%20255%2C%20255%2C%200.6)&labelColor=%23000&color=%232f2f2f)
 
-  <a href="https://www.npmjs.com/package/@vercube/auth">
-    <img src="https://img.shields.io/npm/v/%40vercube%2Fauth?style=for-the-badge&logo=npm&color=%23767eff" alt="npm"/>
-  </a>
-  <a href="https://www.npmjs.com/package/@vercube/auth">
-    <img src="https://img.shields.io/npm/dm/%40vercube%2Fauth?style=for-the-badge&logo=npm&color=%23767eff" alt="npm"/>
-  </a>
-  <a href="https://github.com/vercube/vercube/blob/main/LICENSE" target="_blank">
-    <img src="https://img.shields.io/npm/l/%40vercube%2Fauth?style=for-the-badge&color=%23767eff" alt="License"/>
-  </a>
-  <a href="https://codecov.io/gh/vercube/vercube" target="_blank">
-    <img src="https://img.shields.io/codecov/c/github/vercube/vercube?style=for-the-badge&color=%23767eff" alt="Coverage"/>
-  </a>
-  <br/>
-  <br/>
+  **Flexible authentication module - protect your endpoints with `@Auth()`, inject users with `@User()`, and implement any auth strategy you need (JWT, sessions, API keys, whatever).**
+
+  [Website](https://vercube.dev) • [Documentation](https://vercube.dev/docs/getting-started)
+
 </div>
 
-An ultra-efficient JavaScript server framework that runs anywhere - Node.js, Bun, or Deno - with unmatched flexibility and complete configurability for developers who refuse to sacrifice speed or control.
+## ✨ Features
 
-## <a name="module">Auth module</a>
+- **Provider-based** - implement your own auth logic by extending `AuthProvider`
+- **Simple decorators** - `@Auth()` protects routes, `@User()` gives you the current user
+- **Role-based access** - `@Auth({ roles: ['admin'] })` restricts by role
+- **Type-safe** - full TypeScript support with generic user types
 
-The Auth module provides a flexible and extensible authentication and authorization system for Vercube applications. It offers a unified interface for different authentication implementations through a dependency injection-based architecture.
+## 📦 Installation
 
-## <a name="documentation">📖 Documentation</a>
+```bash
+pnpm add @vercube/auth
+```
 
-Comprehensive documentation is available at [vercube.dev](https://vercube.dev). There you'll find detailed module descriptions, project information, guides, and everything else you need to know about Vercube.
+## 📖 Usage
+
+Check out the full [documentation](https://vercube.dev/docs/modules/auth/overview)
+
+## 📜 License
+
+[MIT](https://github.com/vercube/vercube/blob/main/LICENSE)

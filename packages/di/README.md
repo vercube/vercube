@@ -1,34 +1,38 @@
 <div align="center">
-  <a href="https://vercube.dev/"><img src="https://github.com/OskarLebuda/vue-lazy-hydration/raw/main/.github/assets/logo.png?raw=true" alt="Vite logo" width="200"></a>
+  <img src="https://raw.githubusercontent.com/vercube/vercube/refs/heads/main/.github/assets/cover.png" width="100%" alt="Vercube - Unleash your server development." />
   <br>
   <br>
 
-# Vercube
+# @vercube/di
+### Dependency Injection container
 
-Next generation HTTP framework
+  ![NPM Version](https://img.shields.io/npm/v/%40vercube%2Fdi?style=for-the-badge&logo=npm&logoColor=rgba(255%2C%20255%2C%20255%2C%200.6)&labelColor=%23000&color=%232e2e2e&link=https%3A%2F%2Fwww.npmjs.com%2Fpackage%2F%40vercube%2Fdi)
+  ![GitHub License](https://img.shields.io/github/license/vercube/vercube?style=for-the-badge&logo=gitbook&logoColor=rgba(255%2C%20255%2C%20255%2C%200.6)&labelColor=%23000&color=%232f2f2f)
+  ![Codecov](https://img.shields.io/codecov/c/github/vercube/vercube?style=for-the-badge&logo=vitest&logoColor=rgba(255%2C%20255%2C%20255%2C%200.6)&labelColor=%23000&color=%232f2f2f)
 
-  <a href="https://www.npmjs.com/package/@vercube/cli">
-    <img src="https://img.shields.io/npm/v/%40vercube%2Fdi?style=for-the-badge&logo=npm&color=%23767eff" alt="npm"/>
-  </a>
-  <a href="https://www.npmjs.com/package/@vercube/cli">
-    <img src="https://img.shields.io/npm/dm/%40vercube%2Fdi?style=for-the-badge&logo=npm&color=%23767eff" alt="npm"/>
-  </a>
-  <a href="https://github.com/vercube/vercube/blob/main/LICENSE" target="_blank">
-    <img src="https://img.shields.io/npm/l/%40vercube%2Fdi?style=for-the-badge&color=%23767eff" alt="License"/>
-  </a>
-  <a href="https://codecov.io/gh/vercube/vercube" target="_blank">
-    <img src="https://img.shields.io/codecov/c/github/vercube/vercube?style=for-the-badge&color=%23767eff" alt="Coverage"/>
-  </a>
-  <br/>
-  <br/>
+  **IoC container that powers Vercube - bind services, inject dependencies, swap implementations for tests. Simple `@Inject` and you're done.**
+
+  [Website](https://vercube.dev) • [Documentation](https://vercube.dev/docs/getting-started)
+
 </div>
 
-An ultra-efficient JavaScript server framework that runs anywhere - Node.js, Bun, or Deno - with unmatched flexibility and complete configurability for developers who refuse to sacrifice speed or control.
+## ✨ Features
 
-## <a name="module">Dependencie Injection Module</a>
+- **Property injection** - `@Inject(Service)` on any class property
+- **Flexible binding** - singletons, transients, or existing instances
+- **Interface support** - bind interfaces to implementations with symbols
+- **Testing friendly** - `bindMock` makes unit tests a breeze
 
-The Dependency Injection (DI) module provides a powerful and flexible dependency injection system for Vercube applications. It enables loose coupling between components and makes your application more maintainable and testable.
+## 📦 Installation
 
-## <a name="documentation">📖 Documentation</a>
+```bash
+pnpm add @vercube/di
+```
 
-Comprehensive documentation is available at [vercube.dev](https://vercube.dev). There you'll find detailed module descriptions, project information, guides, and everything else you need to know about Vercube.
+## 📖 Usage
+
+Check out the full [documentation](https://vercube.dev/docs/core-features/container)
+
+## 📜 License
+
+[MIT](https://github.com/vercube/vercube/blob/main/LICENSE)
