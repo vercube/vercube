@@ -53,14 +53,8 @@ Open [http://localhost:3000](http://localhost:3000) - you're ready to go! 🚀
 
 ### Try It Online
 
-<a href="https://stackblitz.com/edit/vercube-starter" target="_blank">
-  <img src="https://img.shields.io/badge/open_in-StackBlitz-blue?style=for-the-badge&logo=stackblitz&logoColor=rgba(255%2C%20255%2C%20255%2C%200.6)&labelColor=%23000&color=%232f2f2f
-" alt="Open in StackBlitz">
-</a>
-<a href="https://codesandbox.io/p/devbox/vercube-starter-97s34j" target="_blank">
-  <img src="https://img.shields.io/badge/open_in-CodeSandbox-blue?style=for-the-badge&logo=stackblitz&logoColor=rgba(255%2C%20255%2C%20255%2C%200.6)&labelColor=%23000&color=%232f2f2f
-" alt="Open in CodeSandbox">
-</a>
+[![Open in StackBlitz](<https://img.shields.io/badge/open_in-StackBlitz-blue?style=for-the-badge&logo=stackblitz&logoColor=rgba(255%2C%20255%2C%20255%2C%200.6)&labelColor=%23000&color=%232f2f2f>)](https://stackblitz.com/edit/vercube-starter)
+[![Open in CodeSandbox](<https://img.shields.io/badge/open_in-CodeSandbox-blue?style=for-the-badge&logo=stackblitz&logoColor=rgba(255%2C%20255%2C%20255%2C%200.6)&labelColor=%23000&color=%232f2f2f>)](https://codesandbox.io/p/devbox/vercube-starter-97s34j)
 
 ## 📝 Example
 
@@ -105,7 +99,8 @@ More examples available in the [examples directory](https://github.com/vercube/v
 
 | Package                                                                  | Description                                     |
 | ------------------------------------------------------------------------ | ----------------------------------------------- |
-| [@vercube/core](https://www.npmjs.com/package/@vercube/core)             | Core framework with routing, DI, and middleware |
+| [@vercube/core](https://www.npmjs.com/package/@vercube/core)             | Core framework with routing and middleware      |
+| [@vercube/di](https://www.npmjs.com/package/@vercube/di)                 | Lightweight dependency injection container      |
 | [@vercube/auth](https://www.npmjs.com/package/@vercube/auth)             | Authentication decorators and middleware        |
 | [@vercube/logger](https://www.npmjs.com/package/@vercube/logger)         | Flexible logging with multiple drivers          |
 | [@vercube/storage](https://www.npmjs.com/package/@vercube/storage)       | File storage abstraction layer                  |
