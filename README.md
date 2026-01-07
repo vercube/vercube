@@ -97,15 +97,15 @@ More examples available in the [examples directory](https://github.com/vercube/v
 
 ## 📦 Packages
 
-| Package                                                                  | Description                                     |
-| ------------------------------------------------------------------------ | ----------------------------------------------- |
-| [@vercube/core](https://www.npmjs.com/package/@vercube/core)             | Core framework with routing and middleware      |
-| [@vercube/di](https://www.npmjs.com/package/@vercube/di)                 | Lightweight dependency injection container      |
-| [@vercube/auth](https://www.npmjs.com/package/@vercube/auth)             | Authentication decorators and middleware        |
-| [@vercube/logger](https://www.npmjs.com/package/@vercube/logger)         | Flexible logging with multiple drivers          |
-| [@vercube/storage](https://www.npmjs.com/package/@vercube/storage)       | File storage abstraction layer                  |
-| [@vercube/ws](https://www.npmjs.com/package/@vercube/ws)                 | WebSocket support                               |
-| [@vercube/serverless](https://www.npmjs.com/package/@vercube/serverless) | AWS Lambda & Azure Functions adapters           |
+| Package                                                                  | Description                                |
+| ------------------------------------------------------------------------ | ------------------------------------------ |
+| [@vercube/core](https://www.npmjs.com/package/@vercube/core)             | Core framework with routing and middleware |
+| [@vercube/di](https://www.npmjs.com/package/@vercube/di)                 | Lightweight dependency injection container |
+| [@vercube/auth](https://www.npmjs.com/package/@vercube/auth)             | Authentication decorators and middleware   |
+| [@vercube/logger](https://www.npmjs.com/package/@vercube/logger)         | Flexible logging with multiple drivers     |
+| [@vercube/storage](https://www.npmjs.com/package/@vercube/storage)       | File storage abstraction layer             |
+| [@vercube/ws](https://www.npmjs.com/package/@vercube/ws)                 | WebSocket support                          |
+| [@vercube/serverless](https://www.npmjs.com/package/@vercube/serverless) | AWS Lambda & Azure Functions adapters      |
 
 ## 📖 Documentation
 
