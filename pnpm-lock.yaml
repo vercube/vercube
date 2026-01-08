@@ -313,8 +313,8 @@ importers:
   packages/mcp:
     dependencies:
       '@modelcontextprotocol/sdk':
-        specifier: 1.25.1
-        version: 1.25.1(hono@4.11.1)(zod@4.3.5)
+        specifier: 1.25.2
+        version: 1.25.2(hono@4.11.1)(zod@4.3.5)
       '@vercube/auth':
         specifier: workspace:*
         version: link:../auth
@@ -329,7 +329,7 @@ importers:
         version: link:../logger
       mcp-handler:
         specifier: 1.0.6
-        version: 1.0.6(@modelcontextprotocol/sdk@1.25.1(hono@4.11.1)(zod@4.3.5))
+        version: 1.0.6(@modelcontextprotocol/sdk@1.25.2(hono@4.11.1)(zod@4.3.5))
       zod:
         specifier: 'catalog:'
         version: 4.3.5
@@ -2040,8 +2040,8 @@ packages:
   '@kwsites/promise-deferred@1.1.1':
     resolution: {integrity: sha512-GaHYm+c0O9MjZRu0ongGBRbinu8gVAMd2UZjji6jVmqKtZluZnptXGWhz1E8j8D2HJ3f/yMxKAUC0b+57wncIw==}
 
-  '@modelcontextprotocol/sdk@1.25.1':
-    resolution: {integrity: sha512-yO28oVFFC7EBoiKdAn+VqRm+plcfv4v0xp6osG/VsCB0NlPZWi87ajbCZZ8f/RvOFLEu7//rSRmuZZ7lMoe3gQ==}
+  '@modelcontextprotocol/sdk@1.25.2':
+    resolution: {integrity: sha512-LZFeo4F9M5qOhC/Uc1aQSrBHxMrvxett+9KLHt7OhcExtoiRN9DKgbZffMP/nxjutWDQpfMDfP3nkHI4X9ijww==}
     engines: {node: '>=18'}
     peerDependencies:
       '@cfworker/json-schema': ^4.1.1
@@ -11470,7 +11470,7 @@ snapshots:
 
   '@kwsites/promise-deferred@1.1.1': {}
 
-  '@modelcontextprotocol/sdk@1.25.1(hono@4.11.1)(zod@4.3.5)':
+  '@modelcontextprotocol/sdk@1.25.2(hono@4.11.1)(zod@4.3.5)':
     dependencies:
       '@hono/node-server': 1.19.7(hono@4.11.1)
       ajv: 8.17.1
@@ -15750,9 +15750,9 @@ snapshots:
 
   math-intrinsics@1.1.0: {}
 
-  mcp-handler@1.0.6(@modelcontextprotocol/sdk@1.25.1(hono@4.11.1)(zod@4.3.5)):
+  mcp-handler@1.0.6(@modelcontextprotocol/sdk@1.25.2(hono@4.11.1)(zod@4.3.5)):
     dependencies:
-      '@modelcontextprotocol/sdk': 1.25.1(hono@4.11.1)(zod@4.3.5)
+      '@modelcontextprotocol/sdk': 1.25.2(hono@4.11.1)(zod@4.3.5)
       chalk: 5.6.2
       commander: 11.1.0
       redis: 4.7.1
