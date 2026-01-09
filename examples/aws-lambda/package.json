@@ -18,7 +18,7 @@
     "@vercube/core": "workspace:*",
     "@vercube/di": "workspace:*",
     "@vercube/serverless": "workspace:*",
-    "serverless": "4.29.4",
+    "serverless": "4.30.0",
     "serverless-offline": "14.4.0"
   }
 }
