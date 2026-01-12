@@ -30,6 +30,9 @@ export function convertResponseToAzureFunctionsResponse(response: Response): Htt
     cookies,
     headers,
     status: response.status,
+    // Azure Functions runtime accepts AsyncIterableIterator<Uint8Array> as a valid body type,
+    // but TypeScript's BodyInit type (as of @azure/functions 4.11.0) doesn't include it.
+    // This type assertion is safe because the runtime handles it correctly.
     body: streamToAsyncIterator(response.body) as unknown as BodyInit | undefined,
   };
 }
