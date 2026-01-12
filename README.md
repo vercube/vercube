@@ -72,7 +72,6 @@ type CreateUserDto = z.infer<typeof CreateUserSchema>;
 
 @Controller('/users')
 export class UserController {
-
   @Inject(UserService)
   private userService!: UserService;
 
