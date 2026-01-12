@@ -30,6 +30,6 @@ export function convertResponseToAzureFunctionsResponse(response: Response): Htt
     cookies,
     headers,
     status: response.status,
-    body: streamToAsyncIterator(response.body),
+    body: streamToAsyncIterator(response.body) as unknown as BodyInit | undefined,
   };
 }
