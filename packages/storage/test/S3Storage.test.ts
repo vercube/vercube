@@ -212,7 +212,6 @@ describe('S3Storage', () => {
         expect.objectContaining({
           operation: 'getItem',
           errorName: 'AccessDenied',
-          errorMessage: 'Access Denied',
           bucket: 'test-bucket',
           statusCode: 403,
         }),
@@ -241,7 +240,6 @@ describe('S3Storage', () => {
         expect.objectContaining({
           operation: 'hasItem',
           errorName: 'NetworkError',
-          errorMessage: 'Network error occurred',
           bucket: 'test-bucket',
           statusCode: 500,
         }),

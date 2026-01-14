@@ -68,7 +68,6 @@ export class S3Storage implements Storage<S3BaseOptions> {
       this.logger?.error('S3Storage::getItem failed', {
         operation: 'getItem',
         errorName: error.name,
-        errorMessage: error.message,
         bucket: this.bucket,
         statusCode: error.$metadata?.httpStatusCode,
       });
@@ -148,7 +147,6 @@ export class S3Storage implements Storage<S3BaseOptions> {
       this.logger?.error('S3Storage::hasItem failed', {
         operation: 'hasItem',
         errorName: error.name,
-        errorMessage: error.message,
         bucket: this.bucket,
         statusCode: error.$metadata?.httpStatusCode,
       });
