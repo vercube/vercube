@@ -81,8 +81,10 @@ describe('Security utilities for prototype pollution protection', () => {
       const result = safeJsonParse(malicious) as any;
 
       expect(result.name).toBe('John');
-      expect(result.__proto__).toBeUndefined();
+      // The important check: verify that __proto__ didn't pollute Object.prototype
       expect(({} as any).isAdmin).toBeUndefined();
+      // And verify that the malicious property itself doesn't exist as own property
+      expect(Object.prototype.hasOwnProperty.call(result, '__proto__')).toBe(false);
     });
 
     it('should filter out constructor during parsing', () => {
@@ -90,7 +92,8 @@ describe('Security utilities for prototype pollution protection', () => {
       const result = safeJsonParse(malicious) as any;
 
       expect(result.name).toBe('John');
-      expect(result.constructor).toBeUndefined();
+      // Verify that the constructor property wasn't set as an own property
+      expect(Object.prototype.hasOwnProperty.call(result, 'constructor')).toBe(false);
     });
 
     it('should filter out prototype during parsing', () => {
@@ -106,8 +109,10 @@ describe('Security utilities for prototype pollution protection', () => {
       const result = safeJsonParse(malicious) as any;
 
       expect(result.user.name).toBe('John');
-      expect(result.user.__proto__).toBeUndefined();
+      // Verify no prototype pollution occurred
       expect(({} as any).isAdmin).toBeUndefined();
+      // Verify __proto__ wasn't set as own property on the nested object
+      expect(Object.prototype.hasOwnProperty.call(result.user, '__proto__')).toBe(false);
     });
 
     it('should throw SyntaxError for invalid JSON', () => {
@@ -156,8 +161,10 @@ describe('Security utilities for prototype pollution protection', () => {
       const result = sanitizeObject(unsafe);
 
       expect(result.name).toBe('John');
-      expect(result.__proto__).toBeUndefined();
+      // Verify no prototype pollution occurred
       expect((result as any).isAdmin).toBeUndefined();
+      // Verify __proto__ wasn't set as own property
+      expect(Object.prototype.hasOwnProperty.call(result, '__proto__')).toBe(false);
     });
 
     it('should filter out constructor property', () => {

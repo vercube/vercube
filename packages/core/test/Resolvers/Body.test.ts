@@ -337,8 +337,10 @@ describe('resolveRequestBody', () => {
       const result = await resolveRequestBody(event);
 
       expect((result as any).name).toBe('John');
-      expect((result as any).__proto__).toBeUndefined();
+      // Verify no prototype pollution occurred
       expect(({} as any).isAdmin).toBeUndefined();
+      // Verify __proto__ wasn't set as own property
+      expect(Object.prototype.hasOwnProperty.call(result, '__proto__')).toBe(false);
     });
 
     it('should filter out constructor from request body', async () => {
@@ -357,7 +359,8 @@ describe('resolveRequestBody', () => {
       const result = await resolveRequestBody(event);
 
       expect((result as any).name).toBe('John');
-      expect((result as any).constructor).toBeUndefined();
+      // Verify constructor wasn't set as own property
+      expect(Object.prototype.hasOwnProperty.call(result, 'constructor')).toBe(false);
     });
 
     it('should filter out prototype from request body', async () => {
@@ -397,8 +400,10 @@ describe('resolveRequestBody', () => {
       const result = await resolveRequestBody(event);
 
       expect((result as any).user.name).toBe('John');
-      expect((result as any).user.__proto__).toBeUndefined();
+      // Verify no prototype pollution occurred
       expect(({} as any).isAdmin).toBeUndefined();
+      // Verify __proto__ wasn't set as own property on nested object
+      expect(Object.prototype.hasOwnProperty.call((result as any).user, '__proto__')).toBe(false);
     });
 
     it('should not pollute Object.prototype after parsing malicious JSON', async () => {

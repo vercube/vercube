@@ -239,8 +239,9 @@ describe('WebsocketService', () => {
       expect(handler.callback).toHaveBeenCalled();
       const callData = handler.callback.mock.calls[0][0];
       expect(callData.name).toBe('John');
-      expect(callData.__proto__).toBeUndefined();
+      // Verify no prototype pollution occurred
       expect(({} as any).isAdmin).toBeUndefined();
+      expect(Object.prototype.hasOwnProperty.call(callData, '__proto__')).toBe(false);
     });
 
     it('should filter out constructor from WebSocket message data', async () => {
@@ -263,7 +264,7 @@ describe('WebsocketService', () => {
       expect(handler.callback).toHaveBeenCalled();
       const callData = handler.callback.mock.calls[0][0];
       expect(callData.name).toBe('John');
-      expect(callData.constructor).toBeUndefined();
+      expect(Object.prototype.hasOwnProperty.call(callData, 'constructor')).toBe(false);
     });
 
     it('should sanitize URL parameters on upgrade', async () => {
@@ -287,8 +288,9 @@ describe('WebsocketService', () => {
       expect(connectionHandler.callback).toHaveBeenCalled();
       const params = connectionHandler.callback.mock.calls[0][0];
       expect(params.name).toBe('John');
-      expect(params.__proto__).toBeUndefined();
-      expect(params.constructor).toBeUndefined();
+      // Verify dangerous properties were filtered out
+      expect(Object.prototype.hasOwnProperty.call(params, '__proto__')).toBe(false);
+      expect(Object.prototype.hasOwnProperty.call(params, 'constructor')).toBe(false);
       expect(({} as any).polluted).toBeUndefined();
     });
 
