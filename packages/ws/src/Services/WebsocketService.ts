@@ -157,7 +157,7 @@ export class WebsocketService {
       upgrade: async (request: Request) => {
         const url = new URL(request.url);
         const namespace = url.pathname;
-        const unsafeParameters = Object.fromEntries(url.searchParams.entries());
+        const unsafeParameters = Object.fromEntries(url.searchParams);
         // Sanitize URL parameters to prevent prototype pollution
         const parameters = sanitizeObject(unsafeParameters);
         const isNamespaceRegistered = !!this.fNamespaces?.[namespace?.toLowerCase()] as boolean;
@@ -226,7 +226,7 @@ export class WebsocketService {
    */
   private async handleMessage(peer: WSPeer, rawMessage: WSMessage): Promise<void> {
     try {
-      const msg = safeJsonParse(rawMessage.text());
+      const msg = safeJsonParse(rawMessage.text()) as any;
       const namespace = peer.namespace?.toLowerCase();
       const event = msg.event;
       const data = msg.data;
