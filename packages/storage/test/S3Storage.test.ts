@@ -32,42 +32,36 @@ describe('S3Storage', () => {
   describe('initialization', () => {
     it('should initialize without credentials (for IAM role support)', async () => {
       const storageWithoutCreds = new S3Storage();
-      await expect(
-        storageWithoutCreds.initialize({
-          region: 'us-east-1',
-          bucket: 'test-bucket',
-          // No credentials - should use IAM role or default credential chain
-        }),
-      ).resolves.not.toThrow();
+      await storageWithoutCreds.initialize({
+        region: 'us-east-1',
+        bucket: 'test-bucket',
+        // No credentials - should use IAM role or default credential chain
+      });
     });
 
     it('should initialize with explicit credentials', async () => {
       const storageWithCreds = new S3Storage();
-      await expect(
-        storageWithCreds.initialize({
-          region: 'us-east-1',
-          bucket: 'test-bucket',
-          credentials: {
-            accessKeyId: 'test-key',
-            secretAccessKey: 'test-secret',
-          },
-        }),
-      ).resolves.not.toThrow();
+      await storageWithCreds.initialize({
+        region: 'us-east-1',
+        bucket: 'test-bucket',
+        credentials: {
+          accessKeyId: 'test-key',
+          secretAccessKey: 'test-secret',
+        },
+      });
     });
 
     it('should initialize with STS temporary credentials', async () => {
       const storageWithSTS = new S3Storage();
-      await expect(
-        storageWithSTS.initialize({
-          region: 'us-east-1',
-          bucket: 'test-bucket',
-          credentials: {
-            accessKeyId: 'temp-key',
-            secretAccessKey: 'temp-secret',
-            sessionToken: 'temp-session-token',
-          },
-        }),
-      ).resolves.not.toThrow();
+      await storageWithSTS.initialize({
+        region: 'us-east-1',
+        bucket: 'test-bucket',
+        credentials: {
+          accessKeyId: 'temp-key',
+          secretAccessKey: 'temp-secret',
+          sessionToken: 'temp-session-token',
+        },
+      });
     });
   });
 
