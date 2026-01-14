@@ -5,6 +5,58 @@ import type { Readable } from 'node:stream';
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
+/**
+ * Configuration options for S3 storage.
+ * Extends AWS S3ClientConfig with required bucket name.
+ * 
+ * @property {string} bucket - The S3 bucket name (required)
+ * @property {string} region - AWS region (e.g., 'us-east-1') (required)
+ * @property {object} credentials - AWS credentials (optional)
+ * 
+ * @remarks
+ * **Authentication Methods:**
+ * 
+ * 1. **IAM Roles (Recommended for AWS environments):**
+ *    Omit the credentials field to use IAM roles automatically.
+ *    This is the most secure method for Lambda, EC2, ECS, etc.
+ *    ```ts
+ *    { bucket: 'my-bucket', region: 'us-east-1' }
+ *    ```
+ * 
+ * 2. **Explicit Credentials:**
+ *    Provide credentials explicitly (use with AWS Secrets Manager for security).
+ *    ```ts
+ *    {
+ *      bucket: 'my-bucket',
+ *      region: 'us-east-1',
+ *      credentials: {
+ *        accessKeyId: 'YOUR_ACCESS_KEY',
+ *        secretAccessKey: 'YOUR_SECRET_KEY'
+ *      }
+ *    }
+ *    ```
+ * 
+ * 3. **STS Temporary Credentials:**
+ *    Use temporary credentials from AWS STS AssumeRole.
+ *    ```ts
+ *    {
+ *      bucket: 'my-bucket',
+ *      region: 'us-east-1',
+ *      credentials: {
+ *        accessKeyId: tempCreds.AccessKeyId,
+ *        secretAccessKey: tempCreds.SecretAccessKey,
+ *        sessionToken: tempCreds.SessionToken
+ *      }
+ *    }
+ *    ```
+ * 
+ * When credentials are not provided, AWS SDK uses the default credential provider chain:
+ * - IAM roles (Lambda execution role, EC2 instance profile, ECS task role)
+ * - Environment variables (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
+ * - Shared credentials file (~/.aws/credentials)
+ * - ECS container credentials
+ * - EC2 instance metadata service
+ */
 export interface S3BaseOptions extends S3ClientConfig {
   bucket: string;
 }
@@ -12,6 +64,34 @@ export interface S3BaseOptions extends S3ClientConfig {
 /**
  * S3 storage implementation of the Storage interface.
  * Provides key-value operations backed by AWS S3.
+ * 
+ * @remarks
+ * **Security Best Practices:**
+ * - Use IAM roles in AWS environments (Lambda, EC2, ECS) instead of explicit credentials
+ * - Store credentials in AWS Secrets Manager if explicit credentials are required
+ * - Never hardcode credentials in source code
+ * - Use environment-specific configurations (IAM roles for production, credentials for local dev)
+ * - Grant minimum required S3 permissions (principle of least privilege)
+ * 
+ * @example
+ * ```ts
+ * // Recommended: Using IAM roles (no credentials)
+ * const storage = new S3Storage();
+ * await storage.initialize({
+ *   bucket: 'my-app-bucket',
+ *   region: 'us-east-1'
+ * });
+ * 
+ * // Alternative: Using explicit credentials from environment
+ * await storage.initialize({
+ *   bucket: 'my-app-bucket',
+ *   region: 'us-east-1',
+ *   credentials: {
+ *     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+ *     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+ *   }
+ * });
+ * ```
  *
  * @implements {Storage}
  */
@@ -21,9 +101,23 @@ export class S3Storage implements Storage<S3BaseOptions> {
 
   /**
    * Initializes the S3 storage client.
-   *
+   * 
    * @param {S3BaseOptions} options - Configuration options for the S3 client.
    * @returns {Promise<void>} A promise that resolves when initialization is complete.
+   * 
+   * @remarks
+   * The AWS SDK automatically handles credential resolution when credentials are not explicitly provided.
+   * In AWS environments (Lambda, EC2, ECS), IAM roles are used automatically, providing enhanced security
+   * without manual credential management.
+   * 
+   * Priority of credential sources (when credentials field is omitted):
+   * 1. IAM roles (Lambda execution role, EC2 instance profile, ECS task role)
+   * 2. Environment variables (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
+   * 3. Shared credentials file (~/.aws/credentials)
+   * 4. ECS container credentials
+   * 5. EC2 instance metadata service
+   * 
+   * When credentials are explicitly provided in options, they take precedence over all other sources.
    */
   public async initialize(options: S3BaseOptions): Promise<void> {
     this.s3 = new S3Client({ ...options });
