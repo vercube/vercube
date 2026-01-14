@@ -163,22 +163,27 @@ describe('S3Storage', () => {
   });
 
   describe('error handling with logger', () => {
-    it('should log errors when logger is available on getItem', async () => {
-      const mockLogger = {
-        error: vi.fn(),
-        warn: vi.fn(),
-        info: vi.fn(),
-        debug: vi.fn(),
-        configure: vi.fn(),
-      };
-      
-      // Create a new storage instance with a logger
+    const createMockLogger = () => ({
+      error: vi.fn(),
+      warn: vi.fn(),
+      info: vi.fn(),
+      debug: vi.fn(),
+      configure: vi.fn(),
+    });
+
+    const createStorageWithLogger = async (logger: any) => {
       const storageWithLogger = new S3Storage();
       await storageWithLogger.initialize({
         region: 'us-east-1',
         bucket: 'test-bucket',
-        logger: mockLogger,
+        logger,
       });
+      return storageWithLogger;
+    };
+
+    it('should log errors when logger is available on getItem', async () => {
+      const mockLogger = createMockLogger();
+      const storageWithLogger = await createStorageWithLogger(mockLogger);
 
       const mockError = {
         name: 'AccessDenied',
@@ -189,7 +194,7 @@ describe('S3Storage', () => {
 
       try {
         await storageWithLogger.getItem('key');
-      } catch (error) {
+      } catch {
         // Expected to throw
       }
 
@@ -206,20 +211,8 @@ describe('S3Storage', () => {
     });
 
     it('should log errors when logger is available on hasItem', async () => {
-      const mockLogger = {
-        error: vi.fn(),
-        warn: vi.fn(),
-        info: vi.fn(),
-        debug: vi.fn(),
-        configure: vi.fn(),
-      };
-      
-      const storageWithLogger = new S3Storage();
-      await storageWithLogger.initialize({
-        region: 'us-east-1',
-        bucket: 'test-bucket',
-        logger: mockLogger,
-      });
+      const mockLogger = createMockLogger();
+      const storageWithLogger = await createStorageWithLogger(mockLogger);
 
       const mockError = {
         name: 'NetworkError',
@@ -230,7 +223,7 @@ describe('S3Storage', () => {
 
       try {
         await storageWithLogger.hasItem('key');
-      } catch (error) {
+      } catch {
         // Expected to throw
       }
 
