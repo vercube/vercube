@@ -300,7 +300,7 @@ describe('WebsocketService', () => {
       const maliciousMessage = createMockMessage({
         event: 'attack',
         data: {
-          __proto__: { wsPoiluted: true },
+          __proto__: { wsPolluted: true },
         },
       });
 
@@ -310,9 +310,9 @@ describe('WebsocketService', () => {
       });
       await service['handleMessage'](peer, maliciousMessage);
 
-      expect((Object.prototype as any).wsPoiluted).toBeUndefined();
+      expect((Object.prototype as any).wsPolluted).toBeUndefined();
       const newObj = {};
-      expect((newObj as any).wsPoiluted).toBeUndefined();
+      expect((newObj as any).wsPolluted).toBeUndefined();
     });
   });
 });
