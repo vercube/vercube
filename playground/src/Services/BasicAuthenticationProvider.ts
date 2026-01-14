@@ -22,7 +22,18 @@ export class BasicAuthenticationProvider extends AuthProvider {
       return 'Invalid authentication method';
     }
 
-    const [user, pass] = Buffer.from(token, 'base64').toString().split(':');
+    // Validate token exists
+    if (!token) {
+      return 'Invalid authentication token';
+    }
+
+    const decoded = Buffer.from(token, 'base64').toString();
+    const [user, pass] = decoded.split(':');
+
+    // Validate decoded credentials
+    if (!user || !pass) {
+      return 'Invalid authentication credentials';
+    }
 
     // Use timing-safe comparison to prevent timing attacks
     const expectedUser = 'test';
@@ -33,7 +44,7 @@ export class BasicAuthenticationProvider extends AuthProvider {
     const passMatches = pass.length === expectedPass.length && timingSafeEqual(Buffer.from(pass), Buffer.from(expectedPass));
 
     if (!userMatches || !passMatches) {
-      return 'Invalid username of password';
+      return 'Invalid username or password';
     }
 
     return null;
