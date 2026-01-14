@@ -1,4 +1,5 @@
 import { BadRequestError } from '../Errors/Http/BadRequestError';
+import { safeJsonParse } from '../Utils/Security';
 import type { RouterTypes } from '../Types/RouterTypes';
 
 /**
@@ -30,7 +31,7 @@ export async function resolveRequestBody(event: RouterTypes.RouterEvent): Promis
 
   // TODO: add support for more content types
   try {
-    return JSON.parse(text);
+    return safeJsonParse(text);
   } catch {
     throw new BadRequestError('Invalid JSON body');
   }

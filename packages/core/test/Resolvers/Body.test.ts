@@ -319,4 +319,105 @@ describe('resolveRequestBody', () => {
       });
     });
   });
+
+  describe('prototype pollution protection', () => {
+    it('should filter out __proto__ from request body', async () => {
+      const maliciousJson = JSON.stringify({
+        name: 'John',
+        __proto__: { isAdmin: true },
+      });
+
+      const request = new Request('http://localhost/test', {
+        method: 'POST',
+        body: maliciousJson,
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      const event = createMockEvent(request);
+      const result = await resolveRequestBody(event);
+
+      expect((result as any).name).toBe('John');
+      expect((result as any).__proto__).toBeUndefined();
+      expect(({} as any).isAdmin).toBeUndefined();
+    });
+
+    it('should filter out constructor from request body', async () => {
+      const maliciousJson = JSON.stringify({
+        name: 'John',
+        constructor: { prototype: { polluted: true } },
+      });
+
+      const request = new Request('http://localhost/test', {
+        method: 'POST',
+        body: maliciousJson,
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      const event = createMockEvent(request);
+      const result = await resolveRequestBody(event);
+
+      expect((result as any).name).toBe('John');
+      expect((result as any).constructor).toBeUndefined();
+    });
+
+    it('should filter out prototype from request body', async () => {
+      const maliciousJson = JSON.stringify({
+        name: 'John',
+        prototype: { polluted: true },
+      });
+
+      const request = new Request('http://localhost/test', {
+        method: 'POST',
+        body: maliciousJson,
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      const event = createMockEvent(request);
+      const result = await resolveRequestBody(event);
+
+      expect((result as any).name).toBe('John');
+      expect((result as any).prototype).toBeUndefined();
+    });
+
+    it('should prevent nested prototype pollution attempts', async () => {
+      const maliciousJson = JSON.stringify({
+        user: {
+          name: 'John',
+          __proto__: { isAdmin: true },
+        },
+      });
+
+      const request = new Request('http://localhost/test', {
+        method: 'POST',
+        body: maliciousJson,
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      const event = createMockEvent(request);
+      const result = await resolveRequestBody(event);
+
+      expect((result as any).user.name).toBe('John');
+      expect((result as any).user.__proto__).toBeUndefined();
+      expect(({} as any).isAdmin).toBeUndefined();
+    });
+
+    it('should not pollute Object.prototype after parsing malicious JSON', async () => {
+      const maliciousJson = JSON.stringify({
+        __proto__: { polluted: true },
+      });
+
+      const request = new Request('http://localhost/test', {
+        method: 'POST',
+        body: maliciousJson,
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      const event = createMockEvent(request);
+      await resolveRequestBody(event);
+
+      expect((Object.prototype as any).polluted).toBeUndefined();
+      const newObj = {};
+      expect((newObj as any).polluted).toBeUndefined();
+    });
+  });
 });
