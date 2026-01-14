@@ -64,34 +64,55 @@ describe('DefaultConfig', () => {
 
       await expect(async () => {
         await import('../../src/Config/DefaultConfig');
-      }).rejects.toThrow('SESSION SECRET ERROR');
+      }).rejects.toThrow(
+        'SESSION SECRET ERROR: In production mode, you must set a strong SECRET environment variable. ' +
+          'Using a dynamically generated secret is insecure and will cause session data to be lost on server restart. ' +
+          'Please set the SECRET environment variable to a strong, randomly generated string (at least 32 characters). ' +
+          'Example: SECRET=your-strong-random-secret-here-at-least-32-chars',
+      );
     });
 
     it('should include helpful guidance in production error message', async () => {
       process.env.NODE_ENV = 'production';
       delete process.env.SECRET;
 
-      await expect(async () => {
+      try {
         await import('../../src/Config/DefaultConfig');
-      }).rejects.toThrow('must set a strong SECRET environment variable');
+        throw new Error('Expected error to be thrown');
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        expect(errorMessage).toContain('SESSION SECRET ERROR');
+        expect(errorMessage).toContain('production mode');
+        expect(errorMessage).toContain('SECRET environment variable');
+      }
     });
 
     it('should mention security implications in error message', async () => {
       process.env.NODE_ENV = 'production';
       delete process.env.SECRET;
 
-      await expect(async () => {
+      try {
         await import('../../src/Config/DefaultConfig');
-      }).rejects.toThrow('dynamically generated secret is insecure');
+        throw new Error('Expected error to be thrown');
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        expect(errorMessage).toContain('dynamically generated secret is insecure');
+        expect(errorMessage).toContain('session data to be lost on server restart');
+      }
     });
 
     it('should provide example in error message', async () => {
       process.env.NODE_ENV = 'production';
       delete process.env.SECRET;
 
-      await expect(async () => {
+      try {
         await import('../../src/Config/DefaultConfig');
-      }).rejects.toThrow('Example: SECRET=');
+        throw new Error('Expected error to be thrown');
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        expect(errorMessage).toContain('Example: SECRET=');
+        expect(errorMessage).toContain('at least 32 characters');
+      }
     });
   });
 

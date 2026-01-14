@@ -9,7 +9,7 @@ import type { ConfigTypes } from '../Types/ConfigTypes';
  */
 function getSessionSecret(): string {
   const isProduction = process.env.NODE_ENV === 'production';
-  const envSecret = process.env?.SECRET;
+  const envSecret = process.env.SECRET;
 
   if (isProduction && !envSecret) {
     throw new Error(
