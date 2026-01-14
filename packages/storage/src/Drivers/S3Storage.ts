@@ -30,9 +30,10 @@ export class S3Storage implements Storage<S3BaseOptions> {
    * @returns {Promise<void>} A promise that resolves when initialization is complete.
    */
   public async initialize(options: S3BaseOptions): Promise<void> {
-    this.s3 = new S3Client({ ...options });
-    this.bucket = options.bucket;
-    this.logger = options.logger;
+    const { bucket, logger, ...s3Options } = options;
+    this.s3 = new S3Client(s3Options);
+    this.bucket = bucket;
+    this.logger = logger;
   }
 
   /**
