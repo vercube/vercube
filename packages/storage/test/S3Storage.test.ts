@@ -57,10 +57,18 @@ describe('S3Storage', () => {
       expect(result).toBeUndefined();
     });
 
-    it('should throw for other errors', async () => {
-      mockSend.mockRejectedValueOnce({ name: 'OtherError' });
-      await expect(storage.getItem('key')).rejects.toEqual({
-        name: 'OtherError',
+    it('should throw StorageError for other errors', async () => {
+      const mockError = { 
+        name: 'AccessDenied',
+        message: 'Access Denied',
+        $metadata: { httpStatusCode: 403 }
+      };
+      mockSend.mockRejectedValueOnce(mockError);
+      
+      await expect(storage.getItem('key')).rejects.toMatchObject({
+        name: 'StorageError',
+        operation: 'getItem',
+        message: expect.stringContaining('AccessDenied'),
       });
     });
   });
@@ -88,10 +96,18 @@ describe('S3Storage', () => {
       expect(result).toBe(false);
     });
 
-    it('should throw on other errors', async () => {
-      mockSend.mockRejectedValueOnce({ name: 'OtherError' });
-      await expect(storage.hasItem('key')).rejects.toEqual({
-        name: 'OtherError',
+    it('should throw StorageError on other errors', async () => {
+      const mockError = {
+        name: 'ServiceUnavailable',
+        message: 'Service Unavailable',
+        $metadata: { httpStatusCode: 503 }
+      };
+      mockSend.mockRejectedValueOnce(mockError);
+      
+      await expect(storage.hasItem('key')).rejects.toMatchObject({
+        name: 'StorageError',
+        operation: 'hasItem',
+        message: expect.stringContaining('ServiceUnavailable'),
       });
     });
   });
@@ -143,6 +159,114 @@ describe('S3Storage', () => {
       });
       const size = await storage.size();
       expect(size).toBe(2);
+    });
+  });
+
+  describe('error handling with logger', () => {
+    it('should log errors when logger is available on getItem', async () => {
+      const mockLogger = {
+        error: vi.fn(),
+        warn: vi.fn(),
+        info: vi.fn(),
+        debug: vi.fn(),
+        configure: vi.fn(),
+      };
+      
+      // Create a new storage instance with a logger
+      const storageWithLogger = new S3Storage();
+      await storageWithLogger.initialize({
+        region: 'us-east-1',
+        bucket: 'test-bucket',
+        logger: mockLogger,
+      });
+
+      const mockError = {
+        name: 'AccessDenied',
+        message: 'Access Denied',
+        $metadata: { httpStatusCode: 403 },
+      };
+      mockSend.mockRejectedValueOnce(mockError);
+
+      try {
+        await storageWithLogger.getItem('key');
+      } catch (error) {
+        // Expected to throw
+      }
+
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'S3Storage::getItem failed',
+        expect.objectContaining({
+          operation: 'getItem',
+          errorName: 'AccessDenied',
+          errorMessage: 'Access Denied',
+          bucket: 'test-bucket',
+          statusCode: 403,
+        }),
+      );
+    });
+
+    it('should log errors when logger is available on hasItem', async () => {
+      const mockLogger = {
+        error: vi.fn(),
+        warn: vi.fn(),
+        info: vi.fn(),
+        debug: vi.fn(),
+        configure: vi.fn(),
+      };
+      
+      const storageWithLogger = new S3Storage();
+      await storageWithLogger.initialize({
+        region: 'us-east-1',
+        bucket: 'test-bucket',
+        logger: mockLogger,
+      });
+
+      const mockError = {
+        name: 'NetworkError',
+        message: 'Network error occurred',
+        $metadata: { httpStatusCode: 500 },
+      };
+      mockSend.mockRejectedValueOnce(mockError);
+
+      try {
+        await storageWithLogger.hasItem('key');
+      } catch (error) {
+        // Expected to throw
+      }
+
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'S3Storage::hasItem failed',
+        expect.objectContaining({
+          operation: 'hasItem',
+          errorName: 'NetworkError',
+          errorMessage: 'Network error occurred',
+          bucket: 'test-bucket',
+          statusCode: 500,
+        }),
+      );
+    });
+
+    it('should include error metadata in StorageError', async () => {
+      const mockError = {
+        name: 'InternalError',
+        message: 'Internal server error',
+        $metadata: { httpStatusCode: 500 },
+      };
+      mockSend.mockRejectedValueOnce(mockError);
+
+      try {
+        await storage.getItem('key');
+        throw new Error('Should have thrown');
+      } catch (error: any) {
+        expect(error.name).toBe('StorageError');
+        expect(error.operation).toBe('getItem');
+        expect(error.cause).toBe(mockError);
+        expect(error.metadata).toEqual({
+          bucket: 'test-bucket',
+          errorName: 'InternalError',
+          statusCode: 500,
+        });
+      }
     });
   });
 });
