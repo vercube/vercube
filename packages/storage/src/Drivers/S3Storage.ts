@@ -1,6 +1,8 @@
 import { DeleteObjectCommand, GetObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { StorageError } from '../Errors/StorageError';
 import type { Storage } from '../Service/Storage';
 import type { ListObjectsV2CommandOutput, S3ClientConfig } from '@aws-sdk/client-s3';
+import type { Logger } from '@vercube/logger';
 import type { Readable } from 'node:stream';
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
@@ -59,6 +61,7 @@ import type { Readable } from 'node:stream';
  */
 export interface S3BaseOptions extends S3ClientConfig {
   bucket: string;
+  logger?: Logger;
 }
 
 /**
@@ -96,6 +99,7 @@ export interface S3BaseOptions extends S3ClientConfig {
  * @implements {Storage}
  */
 export class S3Storage implements Storage<S3BaseOptions> {
+  private logger?: Logger;
   private s3: S3Client;
   private bucket: string;
 
@@ -120,8 +124,10 @@ export class S3Storage implements Storage<S3BaseOptions> {
    * When credentials are explicitly provided in options, they take precedence over all other sources.
    */
   public async initialize(options: S3BaseOptions): Promise<void> {
-    this.s3 = new S3Client({ ...options });
-    this.bucket = options.bucket;
+    const { bucket, logger, ...s3Options } = options;
+    this.s3 = new S3Client(s3Options);
+    this.bucket = bucket;
+    this.logger = logger;
   }
 
   /**
@@ -130,7 +136,7 @@ export class S3Storage implements Storage<S3BaseOptions> {
    * @template T
    * @param {string} key - The key whose value should be retrieved.
    * @returns {Promise<T | undefined>} The stored value parsed as type T, or undefined if the key does not exist.
-   * @throws Will rethrow any S3 error except for missing key (`NoSuchKey`).
+   * @throws {StorageError} Wraps any S3 error except for missing key (`NoSuchKey`) with sanitized error information.
    */
   public async getItem<T = unknown>(key: string): Promise<T> {
     try {
@@ -151,7 +157,21 @@ export class S3Storage implements Storage<S3BaseOptions> {
       if (error.name === 'NoSuchKey') {
         return undefined as T;
       }
-      throw error;
+
+      // Log sanitized error information
+      this.logger?.error('S3Storage::getItem failed', {
+        operation: 'getItem',
+        errorName: error.name,
+        bucket: this.bucket,
+        statusCode: error.$metadata?.httpStatusCode,
+      });
+
+      // Wrap the error with StorageError
+      throw new StorageError(`Failed to retrieve item from S3: ${error.name}`, 'getItem', error, {
+        bucket: this.bucket,
+        errorName: error.name,
+        statusCode: error.$metadata?.httpStatusCode,
+      });
     }
   }
 
@@ -196,7 +216,7 @@ export class S3Storage implements Storage<S3BaseOptions> {
    *
    * @param {string} key - The key to check.
    * @returns {Promise<boolean>} True if the key exists, false otherwise.
-   * @throws Will rethrow any S3 error except for missing key (`NoSuchKey`).
+   * @throws {StorageError} Wraps any S3 error except for missing key (`NoSuchKey`) with sanitized error information.
    */
   public async hasItem(key: string): Promise<boolean> {
     try {
@@ -211,7 +231,21 @@ export class S3Storage implements Storage<S3BaseOptions> {
       if (error.name === 'NoSuchKey') {
         return false;
       }
-      throw error;
+
+      // Log sanitized error information
+      this.logger?.error('S3Storage::hasItem failed', {
+        operation: 'hasItem',
+        errorName: error.name,
+        bucket: this.bucket,
+        statusCode: error.$metadata?.httpStatusCode,
+      });
+
+      // Wrap the error with StorageError
+      throw new StorageError(`Failed to check item existence in S3: ${error.name}`, 'hasItem', error, {
+        bucket: this.bucket,
+        errorName: error.name,
+        statusCode: error.$metadata?.httpStatusCode,
+      });
     }
   }
 
