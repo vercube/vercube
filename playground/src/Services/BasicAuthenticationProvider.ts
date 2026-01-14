@@ -1,7 +1,14 @@
+import { timingSafeEqual } from 'node:crypto';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { AuthProvider } from '@vercube/auth';
 import type { MaybePromise } from '@vercube/core';
 
+/**
+ * @deprecated Basic authentication is deprecated due to security concerns.
+ * Please use more secure authentication mechanisms such as JWT or OAuth.
+ * This implementation uses timing-safe comparison to prevent timing attacks,
+ * but basic auth itself transmits credentials that can be easily intercepted.
+ */
 export class BasicAuthenticationProvider extends AuthProvider {
   /**
    * Authenticates based on the HTTP event
@@ -17,7 +24,15 @@ export class BasicAuthenticationProvider extends AuthProvider {
 
     const [user, pass] = Buffer.from(token, 'base64').toString().split(':');
 
-    if (user !== 'test' || pass !== 'test') {
+    // Use timing-safe comparison to prevent timing attacks
+    const expectedUser = 'test';
+    const expectedPass = 'test';
+
+    // Ensure both strings are the same length for timingSafeEqual
+    const userMatches = user.length === expectedUser.length && timingSafeEqual(Buffer.from(user), Buffer.from(expectedUser));
+    const passMatches = pass.length === expectedPass.length && timingSafeEqual(Buffer.from(pass), Buffer.from(expectedPass));
+
+    if (!userMatches || !passMatches) {
       return 'Invalid username of password';
     }
 
