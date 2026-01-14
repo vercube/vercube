@@ -1,9 +1,9 @@
 import { DeleteObjectCommand, GetObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { StorageError } from '../Errors/StorageError';
 import type { Storage } from '../Service/Storage';
 import type { ListObjectsV2CommandOutput, S3ClientConfig } from '@aws-sdk/client-s3';
-import type { Readable } from 'node:stream';
 import type { Logger } from '@vercube/logger';
-import { StorageError } from '../Errors/StorageError';
+import type { Readable } from 'node:stream';
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
@@ -73,16 +73,11 @@ export class S3Storage implements Storage<S3BaseOptions> {
       });
 
       // Wrap the error with StorageError
-      throw new StorageError(
-        `Failed to retrieve item from S3: ${error.name}`,
-        'getItem',
-        error,
-        {
-          bucket: this.bucket,
-          errorName: error.name,
-          statusCode: error.$metadata?.httpStatusCode,
-        },
-      );
+      throw new StorageError(`Failed to retrieve item from S3: ${error.name}`, 'getItem', error, {
+        bucket: this.bucket,
+        errorName: error.name,
+        statusCode: error.$metadata?.httpStatusCode,
+      });
     }
   }
 
@@ -152,16 +147,11 @@ export class S3Storage implements Storage<S3BaseOptions> {
       });
 
       // Wrap the error with StorageError
-      throw new StorageError(
-        `Failed to check item existence in S3: ${error.name}`,
-        'hasItem',
-        error,
-        {
-          bucket: this.bucket,
-          errorName: error.name,
-          statusCode: error.$metadata?.httpStatusCode,
-        },
-      );
+      throw new StorageError(`Failed to check item existence in S3: ${error.name}`, 'hasItem', error, {
+        bucket: this.bucket,
+        errorName: error.name,
+        statusCode: error.$metadata?.httpStatusCode,
+      });
     }
   }
 

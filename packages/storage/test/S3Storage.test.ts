@@ -59,13 +59,13 @@ describe('S3Storage', () => {
     });
 
     it('should throw StorageError for other errors', async () => {
-      const mockError = { 
+      const mockError = {
         name: 'AccessDenied',
         message: 'Access Denied',
-        $metadata: { httpStatusCode: 403 }
+        $metadata: { httpStatusCode: 403 },
       };
       mockSend.mockRejectedValueOnce(mockError);
-      
+
       await expect(storage.getItem('key')).rejects.toMatchObject({
         name: 'StorageError',
         operation: 'getItem',
@@ -101,10 +101,10 @@ describe('S3Storage', () => {
       const mockError = {
         name: 'ServiceUnavailable',
         message: 'Service Unavailable',
-        $metadata: { httpStatusCode: 503 }
+        $metadata: { httpStatusCode: 503 },
       };
       mockSend.mockRejectedValueOnce(mockError);
-      
+
       await expect(storage.hasItem('key')).rejects.toMatchObject({
         name: 'StorageError',
         operation: 'hasItem',
