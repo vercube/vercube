@@ -2,6 +2,7 @@ import { Readable } from 'node:stream';
 import { DeleteObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { S3Storage } from '../src/Drivers/S3Storage';
+import { StorageError } from '../src/Errors/StorageError';
 
 function ReadableFromString(str: string): Readable {
   const stream = new Readable();
@@ -163,7 +164,15 @@ describe('S3Storage', () => {
   });
 
   describe('error handling with logger', () => {
-    const createMockLogger = () => ({
+    interface MockLogger {
+      error: ReturnType<typeof vi.fn>;
+      warn: ReturnType<typeof vi.fn>;
+      info: ReturnType<typeof vi.fn>;
+      debug: ReturnType<typeof vi.fn>;
+      configure: ReturnType<typeof vi.fn>;
+    }
+
+    const createMockLogger = (): MockLogger => ({
       error: vi.fn(),
       warn: vi.fn(),
       info: vi.fn(),
@@ -171,12 +180,12 @@ describe('S3Storage', () => {
       configure: vi.fn(),
     });
 
-    const createStorageWithLogger = async (logger: any) => {
+    const createStorageWithLogger = async (logger: MockLogger) => {
       const storageWithLogger = new S3Storage();
       await storageWithLogger.initialize({
         region: 'us-east-1',
         bucket: 'test-bucket',
-        logger,
+        logger: logger as any,
       });
       return storageWithLogger;
     };
@@ -250,11 +259,13 @@ describe('S3Storage', () => {
       try {
         await storage.getItem('key');
         throw new Error('Should have thrown');
-      } catch (error: any) {
-        expect(error.name).toBe('StorageError');
-        expect(error.operation).toBe('getItem');
-        expect(error.cause).toBe(mockError);
-        expect(error.metadata).toEqual({
+      } catch (error: unknown) {
+        expect(error).toBeInstanceOf(StorageError);
+        const storageError = error as StorageError;
+        expect(storageError.name).toBe('StorageError');
+        expect(storageError.operation).toBe('getItem');
+        expect(storageError.cause).toBe(mockError);
+        expect(storageError.metadata).toEqual({
           bucket: 'test-bucket',
           errorName: 'InternalError',
           statusCode: 500,
