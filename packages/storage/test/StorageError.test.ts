@@ -49,7 +49,7 @@ describe('StorageError', () => {
     const originalCaptureStackTrace = Error.captureStackTrace;
 
     // Ensure captureStackTrace exists (it does in V8/Node.js)
-    if (Error.captureStackTrace) {
+    if (Error.captureStackTrace != null) {
       const storageError = new StorageError('Test error', 'testOp');
 
       expect(storageError.stack).toBeDefined();
