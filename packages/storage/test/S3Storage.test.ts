@@ -29,6 +29,42 @@ describe('S3Storage', () => {
     vi.restoreAllMocks();
   });
 
+  describe('initialization', () => {
+    it('should initialize without credentials (for IAM role support)', async () => {
+      const storageWithoutCreds = new S3Storage();
+      await storageWithoutCreds.initialize({
+        region: 'us-east-1',
+        bucket: 'test-bucket',
+        // No credentials - should use IAM role or default credential chain
+      });
+    });
+
+    it('should initialize with explicit credentials', async () => {
+      const storageWithCreds = new S3Storage();
+      await storageWithCreds.initialize({
+        region: 'us-east-1',
+        bucket: 'test-bucket',
+        credentials: {
+          accessKeyId: 'test-key',
+          secretAccessKey: 'test-secret',
+        },
+      });
+    });
+
+    it('should initialize with STS temporary credentials', async () => {
+      const storageWithSTS = new S3Storage();
+      await storageWithSTS.initialize({
+        region: 'us-east-1',
+        bucket: 'test-bucket',
+        credentials: {
+          accessKeyId: 'temp-key',
+          secretAccessKey: 'temp-secret',
+          sessionToken: 'temp-session-token',
+        },
+      });
+    });
+  });
+
   describe('setItem', () => {
     it('should send PutObjectCommand with correct params', async () => {
       mockSend.mockResolvedValueOnce({});
