@@ -35,9 +35,9 @@ describe('S3Storage', () => {
       await expect(
         storageWithoutCreds.initialize({
           region: 'us-east-1',
-          bucket: 'test-bucket'
+          bucket: 'test-bucket',
           // No credentials - should use IAM role or default credential chain
-        })
+        }),
       ).resolves.not.toThrow();
     });
 
@@ -49,9 +49,9 @@ describe('S3Storage', () => {
           bucket: 'test-bucket',
           credentials: {
             accessKeyId: 'test-key',
-            secretAccessKey: 'test-secret'
-          }
-        })
+            secretAccessKey: 'test-secret',
+          },
+        }),
       ).resolves.not.toThrow();
     });
 
@@ -64,9 +64,9 @@ describe('S3Storage', () => {
           credentials: {
             accessKeyId: 'temp-key',
             secretAccessKey: 'temp-secret',
-            sessionToken: 'temp-session-token'
-          }
-        })
+            sessionToken: 'temp-session-token',
+          },
+        }),
       ).resolves.not.toThrow();
     });
   });
