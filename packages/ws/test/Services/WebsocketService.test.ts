@@ -217,4 +217,102 @@ describe('WebsocketService', () => {
 
     expect(errorLog).toHaveBeenCalled();
   });
+
+  describe('prototype pollution protection', () => {
+    it('should filter out __proto__ from WebSocket message data', async () => {
+      const handler = { callback: vi.fn() };
+      const peer = createMockPeer('123', '/secure');
+      const maliciousMessage = createMockMessage({
+        event: 'update',
+        data: {
+          name: 'John',
+          __proto__: { isAdmin: true },
+        },
+      });
+
+      service.registerHandler(WebsocketTypes.HandlerAction.MESSAGE, '/secure', {
+        callback: handler.callback,
+        event: 'update',
+      });
+      await service['handleMessage'](peer, maliciousMessage);
+
+      expect(handler.callback).toHaveBeenCalled();
+      const callData = handler.callback.mock.calls[0][0];
+      expect(callData.name).toBe('John');
+      // Verify no prototype pollution occurred
+      expect(({} as any).isAdmin).toBeUndefined();
+      expect(Object.prototype.hasOwnProperty.call(callData, '__proto__')).toBe(false);
+    });
+
+    it('should filter out constructor from WebSocket message data', async () => {
+      const handler = { callback: vi.fn() };
+      const peer = createMockPeer('456', '/secure');
+      const maliciousMessage = createMockMessage({
+        event: 'update',
+        data: {
+          name: 'John',
+          constructor: { prototype: { polluted: true } },
+        },
+      });
+
+      service.registerHandler(WebsocketTypes.HandlerAction.MESSAGE, '/secure', {
+        callback: handler.callback,
+        event: 'update',
+      });
+      await service['handleMessage'](peer, maliciousMessage);
+
+      expect(handler.callback).toHaveBeenCalled();
+      const callData = handler.callback.mock.calls[0][0];
+      expect(callData.name).toBe('John');
+      expect(Object.prototype.hasOwnProperty.call(callData, 'constructor')).toBe(false);
+    });
+
+    it('should sanitize URL parameters on upgrade', async () => {
+      service.registerNamespace('/secure');
+      service.initialize();
+
+      const pluginSpy = vi.mocked(container.get(HttpServer).addPlugin);
+      const serverPlugin = pluginSpy.mock.calls[0][0] as MockedServerPlugin;
+      const hooks = serverPlugin.__hooks;
+
+      // Create a connection handler to verify sanitized parameters
+      const connectionHandler = { callback: vi.fn().mockResolvedValue(true) };
+      service.registerHandler(WebsocketTypes.HandlerAction.CONNECTION, '/secure', {
+        callback: connectionHandler.callback,
+      });
+
+      // Attempt to pass malicious URL parameters
+      const maliciousUrl = 'http://localhost/secure?name=John&__proto__=polluted&constructor=bad';
+      const result = await hooks?.upgrade?.(new Request(maliciousUrl));
+
+      expect(connectionHandler.callback).toHaveBeenCalled();
+      const params = connectionHandler.callback.mock.calls[0][0];
+      expect(params.name).toBe('John');
+      // Verify dangerous properties were filtered out
+      expect(Object.prototype.hasOwnProperty.call(params, '__proto__')).toBe(false);
+      expect(Object.prototype.hasOwnProperty.call(params, 'constructor')).toBe(false);
+      expect(({} as any).polluted).toBeUndefined();
+    });
+
+    it('should not pollute Object.prototype via WebSocket messages', async () => {
+      const handler = { callback: vi.fn() };
+      const peer = createMockPeer('789', '/secure');
+      const maliciousMessage = createMockMessage({
+        event: 'attack',
+        data: {
+          __proto__: { wsPolluted: true },
+        },
+      });
+
+      service.registerHandler(WebsocketTypes.HandlerAction.MESSAGE, '/secure', {
+        callback: handler.callback,
+        event: 'attack',
+      });
+      await service['handleMessage'](peer, maliciousMessage);
+
+      expect((Object.prototype as any).wsPolluted).toBeUndefined();
+      const newObj = {};
+      expect((newObj as any).wsPolluted).toBeUndefined();
+    });
+  });
 });

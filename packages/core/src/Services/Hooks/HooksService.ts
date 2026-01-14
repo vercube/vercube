@@ -21,6 +21,7 @@
  *
  * Everything 100% typechecked.
  */
+import { safeAssign } from '../../Utils/Security';
 import type { HooksTypes } from '../../Types/HooksTypes';
 
 /**
@@ -161,15 +162,9 @@ export class HooksService {
   private objectToClass<T>(ClassConstructor: HooksTypes.HookType<T>, data: HooksTypes.HookData<T>): T {
     const instance: T = new ClassConstructor();
 
-    // rewrite data keys to instance
+    // rewrite data keys to instance using safe assignment to prevent prototype pollution
     if (data) {
-      for (const key of Object.keys(data)) {
-        // copy all properties to convert it to class instance
-
-        const rawInstance: any = instance;
-        const rawData: any = data;
-        rawInstance[key] = rawData[key];
-      }
+      safeAssign(instance, data);
     }
 
     return instance;

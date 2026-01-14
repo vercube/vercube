@@ -220,4 +220,87 @@ describe('HooksService', () => {
     expect(method1Done).toBe(true);
     expect(method2Done).toBe(true);
   });
+
+  describe('prototype pollution protection', () => {
+    it('should filter out __proto__ when converting object to class', async () => {
+      class TestEvent {
+        public name?: string;
+        public value?: number;
+      }
+
+      const testEventListener = vi.fn();
+      const hooks = container.get(HooksService);
+      hooks.on(TestEvent, testEventListener);
+
+      await hooks.trigger(TestEvent, {
+        name: 'test',
+        __proto__: { isAdmin: true },
+      } as any);
+
+      expect(testEventListener).toHaveBeenCalled();
+      const payload = testEventListener.mock.calls[0][0];
+      expect(payload.name).toBe('test');
+      expect(payload.__proto__).not.toEqual({ isAdmin: true });
+      expect(({} as any).isAdmin).toBeUndefined();
+    });
+
+    it('should filter out constructor when converting object to class', async () => {
+      class TestEvent {
+        public name?: string;
+      }
+
+      const testEventListener = vi.fn();
+      const hooks = container.get(HooksService);
+      hooks.on(TestEvent, testEventListener);
+
+      await hooks.trigger(TestEvent, {
+        name: 'test',
+        constructor: { prototype: { polluted: true } },
+      } as any);
+
+      expect(testEventListener).toHaveBeenCalled();
+      const payload = testEventListener.mock.calls[0][0];
+      expect(payload.name).toBe('test');
+      expect((payload as any).constructor).not.toEqual({ prototype: { polluted: true } });
+    });
+
+    it('should filter out prototype when converting object to class', async () => {
+      class TestEvent {
+        public name?: string;
+      }
+
+      const testEventListener = vi.fn();
+      const hooks = container.get(HooksService);
+      hooks.on(TestEvent, testEventListener);
+
+      await hooks.trigger(TestEvent, {
+        name: 'test',
+        prototype: { polluted: true },
+      } as any);
+
+      expect(testEventListener).toHaveBeenCalled();
+      const payload = testEventListener.mock.calls[0][0];
+      expect(payload.name).toBe('test');
+      expect((payload as any).prototype).toBeUndefined();
+    });
+
+    it('should not pollute Object.prototype via hooks trigger', async () => {
+      class TestEvent {
+        public data?: any;
+      }
+
+      const testEventListener = vi.fn();
+      const hooks = container.get(HooksService);
+      hooks.on(TestEvent, testEventListener);
+
+      await hooks.trigger(TestEvent, {
+        data: 'safe',
+        __proto__: { hookPolluted: true },
+      } as any);
+
+      expect((Object.prototype as any).hookPolluted).toBeUndefined();
+      const newObj = {};
+      expect((newObj as any).hookPolluted).toBeUndefined();
+    });
+  });
 });
