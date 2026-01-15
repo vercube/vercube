@@ -42,7 +42,7 @@
   "dependencies": {
     "@vercube/core": "workspace:*",
     "@vercube/di": "workspace:*",
-    "ufo": "1.6.2"
+    "ufo": "1.6.3"
   },
   "devDependencies": {
     "@azure/functions": "4.11.0",
