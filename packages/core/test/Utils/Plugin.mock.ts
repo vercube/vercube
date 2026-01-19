@@ -1,5 +1,5 @@
-import { BasePlugin } from '../../src';
 import type { App } from '../../src';
+import { BasePlugin } from '../../src';
 
 // oxlint-disable no-unused-vars
 

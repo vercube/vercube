@@ -1,5 +1,5 @@
-import { headersToObject } from '../../../Utils';
 import type { HttpRequest } from '@azure/functions';
+import { headersToObject } from '../../../Utils';
 
 /**
  * Converts an Azure Functions HttpRequest to a standard web Request object.

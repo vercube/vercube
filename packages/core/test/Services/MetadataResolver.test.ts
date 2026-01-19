@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { MetadataTypes } from '../../src/Types/MetadataTypes';
+import type { RouterTypes } from '../../src/Types/RouterTypes';
 import { resolveRequestBody } from '../../src/Resolvers/Body';
 import { getRequestHeader, getRequestHeaders } from '../../src/Resolvers/Headers';
 import { resolveQueryParam, resolveQueryParams } from '../../src/Resolvers/Query';
 import { resolveRouterParam } from '../../src/Resolvers/RouterParam';
 import { MetadataResolver } from '../../src/Services/Metadata/MetadataResolver';
-import type { MetadataTypes } from '../../src/Types/MetadataTypes';
-import type { RouterTypes } from '../../src/Types/RouterTypes';
 
 // Mock the resolver functions
 vi.mock('../../src/Resolvers/RouterParam', () => ({

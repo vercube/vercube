@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ConfigTypes } from '../../src/Types/ConfigTypes';
 import { App } from '../../src/Common/App';
 import { createApp } from '../../src/Common/CreateApp';
 import { defaultConfig } from '../../src/Config/DefaultConfig';
 import { RuntimeConfig } from '../../src/Services/Config/RuntimeConfig';
-import type { ConfigTypes } from '../../src/Types/ConfigTypes';
 
 vi.mock('srvx', () => ({
   serve: vi.fn().mockReturnValue({

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ToolRegistry } from '../../src/Services/ToolRegistry';
 import type { MCPTypes } from '../../src/Types/MCPTypes';
+import { ToolRegistry } from '../../src/Services/ToolRegistry';
 
 describe('ToolRegistry', () => {
   it('notifies subscribers on register and unregister events', () => {

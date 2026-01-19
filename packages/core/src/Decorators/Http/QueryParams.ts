@@ -1,8 +1,8 @@
 import { BaseDecorator, createDecorator } from '@vercube/di';
-import { ValidationMiddleware } from '../../Middleware/ValidationMiddleware';
-import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
 import type { MetadataTypes } from '../../Types/MetadataTypes';
 import type { ValidationTypes } from '../../Types/ValidationTypes';
+import { ValidationMiddleware } from '../../Middleware/ValidationMiddleware';
+import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
 
 interface QueryParamsDecoratorOptions {
   validationSchema?: ValidationTypes.Schema;

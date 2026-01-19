@@ -1,6 +1,6 @@
+import type { HttpResponseInit } from '@azure/functions';
 import { headersToObject, streamToAsyncIterator } from '../../../Utils';
 import { cookiesFromHeaders } from './Utils';
-import type { HttpResponseInit } from '@azure/functions';
 
 /**
  * Converts a standard web Response object to Azure Functions HttpResponseInit format.

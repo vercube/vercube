@@ -19,10 +19,10 @@ import { Logger } from '@vercube/logger';
 import { Schema, z } from '@vercube/schema';
 import { StorageManager } from '@vercube/storage';
 import { Emit, Message, Namespace } from '@vercube/ws';
+import type { AppTypes } from '../Types/AppTypes';
 import { FirstMiddleware } from '../Middlewares/FirstMiddleware';
 import { SecondMiddleware } from '../Middlewares/SecondMiddleware';
 import { BasicAuthenticationProvider } from '../Services/BasicAuthenticationProvider';
-import type { AppTypes } from '../Types/AppTypes';
 
 const schema = z.object({
   name: z.string().min(1, 'Name is required'),

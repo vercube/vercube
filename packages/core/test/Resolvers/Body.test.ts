@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { resolveRequestBody } from '../../src/Resolvers/Body';
 import type { RouterTypes } from '../../src/Types/RouterTypes';
+import { resolveRequestBody } from '../../src/Resolvers/Body';
 
 describe('resolveRequestBody', () => {
   const createMockEvent = (request: Request): RouterTypes.RouterEvent => ({

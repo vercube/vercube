@@ -1,5 +1,5 @@
-import generateRandomHash from '../Utils/InternalUtils';
 import type { ConfigTypes } from '../Types/ConfigTypes';
+import generateRandomHash from '../Utils/InternalUtils';
 
 /**
  * Gets the session secret from environment or generates one for development.

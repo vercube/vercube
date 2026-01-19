@@ -1,6 +1,7 @@
 import { Container } from '@vercube/di';
 import { BaseLogger, Logger } from '@vercube/logger';
 import { ConsoleProvider } from '@vercube/logger/drivers/ConsoleProvider';
+import type { ConfigTypes } from '../Types/ConfigTypes';
 import { RuntimeConfig } from '../Services/Config/RuntimeConfig';
 import { DefaultErrorHandlerProvider } from '../Services/ErrorHandler/DefaultErrorHandlerProvider';
 import { ErrorHandlerProvider } from '../Services/ErrorHandler/ErrorHandlerProvider';
@@ -15,7 +16,6 @@ import { Router } from '../Services/Router/Router';
 import { StaticRequestHandler } from '../Services/Router/StaticRequestHandler';
 import { StandardSchemaValidationProvider } from '../Services/Validation/StandardSchemaValidationProvider';
 import { ValidationProvider } from '../Services/Validation/ValidationProvider';
-import type { ConfigTypes } from '../Types/ConfigTypes';
 
 /**
  * Creates and configures a new dependency injection container for the application.

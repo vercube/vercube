@@ -1,8 +1,8 @@
 import { createReadStream } from 'node:fs';
 import { stat as statAsync } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
-import { mime } from '../../Utils/Mine';
 import type { ConfigTypes } from '../../Types/ConfigTypes';
+import { mime } from '../../Utils/Mine';
 
 /**
  * Handles serving static files over HTTP

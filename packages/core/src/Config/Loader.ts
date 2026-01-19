@@ -1,7 +1,7 @@
 import { loadConfig, setupDotenv } from 'c12';
 import { defu } from 'defu';
-import { defaultConfig } from './DefaultConfig';
 import type { ConfigTypes } from '../Types/ConfigTypes';
+import { defaultConfig } from './DefaultConfig';
 
 /**
  * Loads the configuration object for the application

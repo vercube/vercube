@@ -1,6 +1,6 @@
+import type { IDecoratedPrototype } from '../Utils/Utils';
 import { IOCEngine } from '../Domain/Engine';
 import { IOC } from '../Types/IOCTypes';
-import type { IDecoratedPrototype } from '../Utils/Utils';
 
 /**
  * Injects a dependency with particular key to service.

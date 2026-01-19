@@ -1,6 +1,6 @@
+import type { RouterTypes } from '../Types/RouterTypes';
 import { BadRequestError } from '../Errors/Http/BadRequestError';
 import { safeJsonParse } from '../Utils/Security';
-import type { RouterTypes } from '../Types/RouterTypes';
 
 /**
  * Resolves and parses the request body from a RouterEvent.

@@ -1,6 +1,6 @@
+import type { MaybePromise, MiddlewareOptions } from '../../src';
 import { Controller, Get, Middleware } from '../../src';
 import { BaseMiddleware } from '../../src/Services/Middleware/BaseMiddleware';
-import type { MaybePromise, MiddlewareOptions } from '../../src';
 
 export class TestMiddleware extends BaseMiddleware {
   public override onRequest(req: Request, res: Response, args: MiddlewareOptions<any>): MaybePromise<void | Response> {}

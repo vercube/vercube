@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { StaticRequestHandler } from '../../src/Services/Router/StaticRequestHandler';
 import type { ConfigTypes } from '../../src/Types/ConfigTypes';
+import { StaticRequestHandler } from '../../src/Services/Router/StaticRequestHandler';
 
 // Mock Node.js modules
 vi.mock('node:fs', () => ({

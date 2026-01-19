@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { getHeaderValue, headersToObject } from '../../src/Utils';
 import type { LoopableHeader } from '../../src/Utils';
+import { getHeaderValue, headersToObject } from '../../src/Utils';
 
 describe('Utils - Headers', () => {
   describe('headersToObject', () => {

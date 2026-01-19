@@ -1,9 +1,9 @@
 import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
+import type { RouteConfig } from '@asteasolutions/zod-to-openapi';
+import type { DeepPartial, MetadataTypes } from '@vercube/core';
 import { SchemaBodyResolver } from '../Resolvers/SchemaBodyResolver';
 import { SchemaQueryParamsResolver } from '../Resolvers/SchemaQueryParamsResolver';
 import { SchemaRegistry } from '../Services/SchemaRegistry';
-import type { RouteConfig } from '@asteasolutions/zod-to-openapi';
-import type { DeepPartial, MetadataTypes } from '@vercube/core';
 
 // oxlint-disable-next-line no-empty-object-type
 interface SchemaDecoratorOptions extends Omit<RouteConfig, 'method' | 'path'> {}

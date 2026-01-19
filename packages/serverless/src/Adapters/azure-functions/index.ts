@@ -1,8 +1,8 @@
-import { convertEventToRequest } from './Utils/Request';
-import { convertResponseToAzureFunctionsResponse } from './Utils/Response';
 import type { ServerlessHandler } from '../../Types/ServerlessTypes';
 import type { HttpRequest } from '@azure/functions';
 import type { App } from '@vercube/core';
+import { convertEventToRequest } from './Utils/Request';
+import { convertResponseToAzureFunctionsResponse } from './Utils/Response';
 
 /**
  * Converts a Vercube App instance into an Azure Functions handler function for HTTP integration.

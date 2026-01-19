@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { Logger } from '@vercube/logger';
 import { MCPHttpHandler } from '../../src/Services/MCPHttpHandler';
 import { ToolRegistry } from '../../src/Services/ToolRegistry';
-import type { Logger } from '@vercube/logger';
 
 const registerToolSpy = vi.fn();
 const mockRequestHandler = vi.fn(

@@ -1,6 +1,6 @@
 import consola from 'consola';
-import { getWatchFunc } from '../Utils/Utils';
 import type { DevKitTypes } from '../Types/DevKitTypes';
+import { getWatchFunc } from '../Utils/Utils';
 
 /**
  * Creates a watcher for the given application.

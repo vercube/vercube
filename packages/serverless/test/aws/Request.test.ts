@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { convertEventToRequest } from '../../src/Adapters/aws-lambda/Utils/Request';
 import type { APIGatewayProxyEvent, APIGatewayProxyEventV2 } from 'aws-lambda';
+import { convertEventToRequest } from '../../src/Adapters/aws-lambda/Utils/Request';
 
 describe('[AWS Lambda] Request Utils', () => {
   describe('convertEventToRequest', () => {

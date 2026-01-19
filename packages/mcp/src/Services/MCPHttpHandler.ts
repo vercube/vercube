@@ -1,13 +1,13 @@
 import { Inject } from '@vercube/di';
 import { Logger } from '@vercube/logger';
 import { createMcpHandler } from 'mcp-handler';
-import { version } from '../../package.json';
-import { ToolRegistry } from './ToolRegistry';
 import type { MCPTypes } from '../Types/MCPTypes';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { RequestHandlerExtra } from '@modelcontextprotocol/sdk/shared/protocol.js';
 import type { CallToolResult, ServerNotification, ServerRequest } from '@modelcontextprotocol/sdk/types.js';
 import type { z } from 'zod/v3';
+import { version } from '../../package.json';
+import { ToolRegistry } from './ToolRegistry';
 
 /**
  * HTTP request handler for the Model Context Protocol (MCP).

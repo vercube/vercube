@@ -1,6 +1,6 @@
 import { stringifyQuery } from 'ufo';
-import { DEFAULT_HOSTNAME, DEFAULT_METHOD, getHeaderValue, HEADER_KEYS, HTTP_PROTOCOL, HTTPS_PROTOCOL } from '../../../Utils';
 import type { APIGatewayProxyEvent, APIGatewayProxyEventV2 } from 'aws-lambda';
+import { DEFAULT_HOSTNAME, DEFAULT_METHOD, getHeaderValue, HEADER_KEYS, HTTP_PROTOCOL, HTTPS_PROTOCOL } from '../../../Utils';
 
 /**
  * Type guard to check if an event is APIGatewayProxyEventV2

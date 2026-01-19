@@ -1,6 +1,6 @@
 import { BaseDecorator, createDecorator } from '@vercube/di';
-import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
 import type { MetadataTypes } from '../../Types/MetadataTypes';
+import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
 
 interface HeaderDecoratorOptions {
   name: string;

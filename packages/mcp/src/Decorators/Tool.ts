@@ -1,7 +1,7 @@
 import { initializeMetadata, initializeMetadataMethod } from '@vercube/core';
 import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
-import { ToolRegistry } from '../Services/ToolRegistry';
 import type { MCPTypes } from '../Types/MCPTypes';
+import { ToolRegistry } from '../Services/ToolRegistry';
 
 /**
  * Options for configuring the MCPTool decorator.

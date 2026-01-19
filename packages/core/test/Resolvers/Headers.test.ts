@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { getRequestHeader, getRequestHeaders } from '../../src/Resolvers/Headers';
 import type { RouterTypes } from '../../src/Types/RouterTypes';
+import { getRequestHeader, getRequestHeaders } from '../../src/Resolvers/Headers';
 
 describe('Headers Resolvers', () => {
   const createMockEvent = (headers?: Record<string, string>): RouterTypes.RouterEvent => {

@@ -1,3 +1,4 @@
+import type { HooksTypes } from '../../Types/HooksTypes';
 /**
  * This module is responsible for managing type-safe hooks observer pattern.
  *
@@ -22,7 +23,6 @@
  * Everything 100% typechecked.
  */
 import { safeAssign } from '../../Utils/Security';
-import type { HooksTypes } from '../../Types/HooksTypes';
 
 /**
  * This class is responsible for managing events.
