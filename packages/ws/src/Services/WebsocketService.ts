@@ -3,8 +3,8 @@ import { Inject, InjectOptional } from '@vercube/di';
 import { Logger } from '@vercube/logger';
 import { defineHooks } from 'crossws';
 import { plugin } from 'crossws/server';
-import type { WSError, WSMessage, WSPeer } from '../Types/WebsocketTypes';
 import { WebsocketTypes } from '../Types/WebsocketTypes';
+import type { WSError, WSMessage, WSPeer } from '../Types/WebsocketTypes';
 
 /**
  * WebsocketService class responsible for dealing with Websocket connections.

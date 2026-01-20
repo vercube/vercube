@@ -1,6 +1,6 @@
 import { bench, describe } from 'vitest';
-import type { App } from '@vercube/core';
 import { createTestApp } from '../Utils/App.mock';
+import type { App } from '@vercube/core';
 
 const app: App = await createTestApp();
 

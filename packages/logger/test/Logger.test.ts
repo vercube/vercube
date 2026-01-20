@@ -1,8 +1,8 @@
 import { Container } from '@vercube/di';
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { LoggerTypes } from '../src';
 import { Logger } from '../src';
 import { MockLogger } from './MockLogger';
+import type { LoggerTypes } from '../src';
 
 describe('Logger', () => {
   let container: Container;

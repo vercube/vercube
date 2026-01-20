@@ -1,6 +1,6 @@
+import { cookiesFromHeaders as genericCookiesFromHeaders, parseCookieString as genericParseCookieString } from '../../../Utils';
 import type { GenericCookie } from '../../../Utils';
 import type { Cookie } from '@azure/functions';
-import { cookiesFromHeaders as genericCookiesFromHeaders, parseCookieString as genericParseCookieString } from '../../../Utils';
 
 /**
  * Extracts cookies from a Headers object and converts them to Azure Functions Cookie format.

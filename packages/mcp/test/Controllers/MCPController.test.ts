@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { MCPHttpHandler } from '../../src/Services/MCPHttpHandler';
 import { MCPController } from '../../src/Controllers/MCPController';
+import type { MCPHttpHandler } from '../../src/Services/MCPHttpHandler';
 
 describe('MCPController', () => {
   let controller: MCPController;

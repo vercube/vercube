@@ -1,6 +1,6 @@
 import { rolldown } from 'rolldown';
-import type { ConfigTypes } from '@vercube/core';
 import { getRolldownConfig } from './Config';
+import type { ConfigTypes } from '@vercube/core';
 
 /**
  * Builds the application using Rolldown bundler

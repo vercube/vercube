@@ -1,10 +1,10 @@
 import { createApp } from '@vercube/core';
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { App } from '@vercube/core';
 import { MCPPlugin } from '../../src';
 import { MCPController } from '../../src/Controllers/MCPController';
 import { MCPHttpHandler } from '../../src/Services/MCPHttpHandler';
 import { ToolRegistry } from '../../src/Services/ToolRegistry';
+import type { App } from '@vercube/core';
 
 describe('MCPPlugin', () => {
   let app: App;

@@ -1,9 +1,9 @@
 import { UnauthorizedError } from '@vercube/core';
 import { Container, Inject, InjectOptional } from '@vercube/di';
 import { Logger } from '@vercube/logger';
+import { AuthProvider } from '../Services/AuthProvider';
 import type { AuthTypes } from '../Types/AuthTypes';
 import type { BaseMiddleware, MiddlewareOptions } from '@vercube/core';
-import { AuthProvider } from '../Services/AuthProvider';
 
 /**
  * Middleware for auth

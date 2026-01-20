@@ -1,9 +1,9 @@
 import { DeleteObjectCommand, GetObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { StorageError } from '../Errors/StorageError';
 import type { Storage } from '../Service/Storage';
 import type { ListObjectsV2CommandOutput, S3ClientConfig } from '@aws-sdk/client-s3';
 import type { Logger } from '@vercube/logger';
 import type { Readable } from 'node:stream';
-import { StorageError } from '../Errors/StorageError';
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 

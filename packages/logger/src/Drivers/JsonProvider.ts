@@ -1,5 +1,5 @@
-import type { LoggerTypes } from '../Types/LoggerTypes';
 import { LoggerProvider } from '../Common/LoggerProvider';
+import type { LoggerTypes } from '../Types/LoggerTypes';
 
 /**
  * A logger implementation that formats log messages as JSON.

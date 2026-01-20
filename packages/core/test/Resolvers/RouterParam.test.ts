@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { RouterTypes } from '../../src/Types/RouterTypes';
 import { resolveRouterParam } from '../../src/Resolvers/RouterParam';
+import type { RouterTypes } from '../../src/Types/RouterTypes';
 
 describe('RouterParam Resolver', () => {
   const createMockEvent = (params?: Record<string, string>): RouterTypes.RouterEvent => ({

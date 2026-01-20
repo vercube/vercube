@@ -1,7 +1,7 @@
 import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
-import type { MetadataTypes } from '../../Types/MetadataTypes';
 import { MetadataResolver } from '../../Services/Metadata/MetadataResolver';
 import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
+import type { MetadataTypes } from '../../Types/MetadataTypes';
 
 interface ParamDecoratorOptions {
   // name of the route parameter

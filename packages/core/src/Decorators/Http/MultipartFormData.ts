@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 import { BaseDecorator, createDecorator } from '@vercube/di';
-import type { MetadataTypes } from '../../Types/MetadataTypes';
 import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
+import type { MetadataTypes } from '../../Types/MetadataTypes';
 
 /**
  * @class MultipartFormDataDecorator

@@ -1,5 +1,5 @@
-import type { ValidationTypes } from '../../Types/ValidationTypes';
 import { ValidationProvider } from './ValidationProvider';
+import type { ValidationTypes } from '../../Types/ValidationTypes';
 
 /**
  * StandardSchemaValidationProvider implements validation using StandardSchema schema validation

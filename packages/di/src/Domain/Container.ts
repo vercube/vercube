@@ -1,8 +1,8 @@
-import type { IDecoratedInstance } from '../Utils/Utils';
 import { IOC } from '../Types/IOCTypes';
 import { destroyDecorators, initializeDecorators } from '../Utils/Utils';
 import { ContainerEvents } from './ContainerEvents';
 import { IOCEngine } from './Engine';
+import type { IDecoratedInstance } from '../Utils/Utils';
 
 /**
  * This is new implementation of IOC Container. It mimics Inversify.js container a little bit but its

@@ -3,9 +3,9 @@ import { Container, initializeContainer } from '@vercube/di';
 import { defineHooks } from 'crossws';
 import { type ServerPlugin } from 'srvx';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { $WebsocketService, WebsocketService, WebsocketTypes } from '../../src';
 import type { App, ConfigTypes } from '@vercube/core';
 import type { Message, Peer } from 'crossws';
-import { $WebsocketService, WebsocketService, WebsocketTypes } from '../../src';
 
 // oxlint-disable no-unused-vars
 

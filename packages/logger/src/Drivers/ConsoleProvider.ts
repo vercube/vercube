@@ -1,6 +1,6 @@
-import type { LoggerTypes } from '../Types/LoggerTypes';
 import { LoggerProvider } from '../Common/LoggerProvider';
 import { LOG_LEVEL_COLORS } from '../Utils/Utils';
+import type { LoggerTypes } from '../Types/LoggerTypes';
 
 /**
  * ConsoleProvider class for logging messages to the console.

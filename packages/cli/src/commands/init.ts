@@ -7,10 +7,10 @@ import { installDependencies } from 'nypm';
 import { relative, resolve } from 'pathe';
 import { hasTTY } from 'std-env';
 import { x } from 'tinyexec';
+import { vercubeIcon } from '../utils/logo';
 import type { CommandDef } from 'citty';
 import type { ConsolaInstance } from 'consola';
 import type { PackageManagerName } from 'nypm';
-import { vercubeIcon } from '../utils/logo';
 
 /* eslint-disable unicorn/no-process-exit */
 

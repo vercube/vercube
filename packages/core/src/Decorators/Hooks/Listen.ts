@@ -1,6 +1,6 @@
 import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
-import type { HooksTypes } from '../../Types/HooksTypes';
 import { HooksService } from '../../Services/Hooks/HooksService';
+import type { HooksTypes } from '../../Types/HooksTypes';
 
 interface IListenDecoratorParams {
   hookType: HooksTypes.HookType<unknown>;

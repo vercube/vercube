@@ -1,9 +1,9 @@
 import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
-import type { MetadataTypes } from '../../Types/MetadataTypes';
 import { MetadataResolver } from '../../Services/Metadata/MetadataResolver';
 import { RequestHandler } from '../../Services/Router/RequestHandler';
 import { Router } from '../../Services/Router/Router';
 import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
+import type { MetadataTypes } from '../../Types/MetadataTypes';
 
 interface ConnectDecoratorOptions {
   path: string;

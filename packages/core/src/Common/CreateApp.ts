@@ -1,10 +1,10 @@
 import { initializeContainer } from '@vercube/di';
-import type { MaybePromise } from '../Types/CommonTypes';
-import type { ConfigTypes } from '../Types/ConfigTypes';
 import { App } from '../Common/App';
 import { createContainer } from '../Common/Container';
 import { loadVercubeConfig } from '../Config/Loader';
 import { RuntimeConfig } from '../Services/Config/RuntimeConfig';
+import type { MaybePromise } from '../Types/CommonTypes';
+import type { ConfigTypes } from '../Types/ConfigTypes';
 
 export interface CreateAppOptions {
   cfg?: ConfigTypes.Config;

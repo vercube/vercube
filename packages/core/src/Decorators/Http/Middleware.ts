@@ -1,7 +1,7 @@
-import type { MetadataTypes } from '../../Types/MetadataTypes';
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 import { BaseMiddleware } from '../../Services/Middleware/BaseMiddleware';
 import { initializeMetadata } from '../../Utils/Utils';
+import type { MetadataTypes } from '../../Types/MetadataTypes';
 
 interface MiddlewareDecoratorParams extends Omit<MetadataTypes.Middleware, 'middleware' | 'target'> {}
 

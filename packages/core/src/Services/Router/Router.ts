@@ -1,10 +1,10 @@
 import { Inject } from '@vercube/di';
 import { addRoute, createRouter, findRoute } from 'rou3';
-import type { RouterTypes } from '../../Types/RouterTypes';
-import type { RouterContext } from 'rou3';
 import { RouterAfterInitHook } from '../../Hooks/Router/RouterAfterInitHook';
 import { RouterBeforeInitHook } from '../../Hooks/Router/RouterBeforeInitHook';
 import { HooksService } from '../Hooks/HooksService';
+import type { RouterTypes } from '../../Types/RouterTypes';
+import type { RouterContext } from 'rou3';
 
 /**
  * Router service responsible for managing application routes

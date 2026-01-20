@@ -1,9 +1,9 @@
 import { watch as nodeWatch } from 'chokidar';
 import { resolve } from 'pathe';
 import { watch as rolldownWatch } from 'rolldown';
+import { getRolldownConfig } from './Config';
 import type { DevKitTypes } from '../../Types/DevKitTypes';
 import type { DotenvOptions } from 'c12';
-import { getRolldownConfig } from './Config';
 
 /**
  * Creates a watcher for rolldown

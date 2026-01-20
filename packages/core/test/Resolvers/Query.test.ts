@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { RouterTypes } from '../../src/Types/RouterTypes';
 import { resolveQueryParam, resolveQueryParams } from '../../src/Resolvers/Query';
+import type { RouterTypes } from '../../src/Types/RouterTypes';
 
 describe('Query Resolvers', () => {
   const createMockEvent = (url: string): RouterTypes.RouterEvent => ({

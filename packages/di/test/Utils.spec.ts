@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { IDecoratedInstance } from '../src';
 import {
   BaseDecorator,
   Container,
@@ -10,6 +9,7 @@ import {
   initializeContainer,
   initializeDecorators,
 } from '../src';
+import type { IDecoratedInstance } from '../src';
 
 describe('[Framework][IOC] Utils', () => {
   let container: Container;

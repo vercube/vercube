@@ -20,12 +20,14 @@
   // Experimental: Sort imports
   "experimentalSortImports": {
     "groups": [
-      ["^node:", "value"], // node: imports first (regex pattern has priority)
-      ["builtin", "value"], // Builtin modules (without node: prefix)
-      ["external", "value"], // External packages (value imports only)
-      ["^@vercube/", "value"], // @vercube value imports (more specific, so it overrides external)
-      ["^./", "^../", "value"], // Relative path value imports (./ and ../)
-      ["type"], // All type imports at the end
+      ["^node:"],
+      ["builtin"],
+      ["external"],
+      ["^@vercube/"],
+      ["parent"],
+      ["sibling"],
+      ["index"],
+      ["external-type", "internal-type", "parent-type", "sibling-type", "index-type"],
     ],
     "internalPattern": ["^@vercube/"],
     "ignoreCase": true,

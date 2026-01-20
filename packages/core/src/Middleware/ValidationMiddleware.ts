@@ -1,9 +1,9 @@
 import { InjectOptional } from '@vercube/di';
 import { Logger } from '@vercube/logger';
-import type { MiddlewareOptions } from '../Types/CommonTypes';
 import { BadRequestError } from '../Errors/Http/BadRequestError';
 import { BaseMiddleware } from '../Services/Middleware/BaseMiddleware';
 import { ValidationProvider } from '../Services/Validation/ValidationProvider';
+import type { MiddlewareOptions } from '../Types/CommonTypes';
 
 /**
  * Middleware for validating request data against a schema
