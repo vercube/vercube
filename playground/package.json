@@ -4,7 +4,7 @@
   "type": "module",
   "version": "0.0.0",
   "description": "Playground for Vercube framework",
-  "packageManager": "pnpm@10.28.0",
+  "packageManager": "pnpm@10.28.1",
   "scripts": {
     "build": "vercube build",
     "build:serverless": "vercube build --entry ./src/serverless.ts",
