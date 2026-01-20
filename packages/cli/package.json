@@ -29,7 +29,7 @@
     "@vercube/devkit": "workspace:*",
     "citty": "0.1.6",
     "consola": "catalog:",
-    "giget": "2.0.0",
+    "giget": "3.0.0",
     "nypm": "0.6.2",
     "pathe": "catalog:",
     "std-env": "3.10.0",
