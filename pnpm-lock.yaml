@@ -31,8 +31,8 @@ catalogs:
       specifier: 0.10.1
       version: 0.10.1
     zod:
-      specifier: 4.3.5
-      version: 4.3.5
+      specifier: 4.3.6
+      version: 4.3.6
 
 importers:
 
@@ -246,7 +246,7 @@ importers:
         version: 1.0.0-beta.60
       zod:
         specifier: 'catalog:'
-        version: 4.3.5
+        version: 4.3.6
 
   packages/create-app:
     dependencies:
@@ -314,7 +314,7 @@ importers:
     dependencies:
       '@modelcontextprotocol/sdk':
         specifier: 1.25.2
-        version: 1.25.2(hono@4.11.3)(zod@4.3.5)
+        version: 1.25.2(hono@4.11.3)(zod@4.3.6)
       '@vercube/auth':
         specifier: workspace:*
         version: link:../auth
@@ -329,16 +329,16 @@ importers:
         version: link:../logger
       mcp-handler:
         specifier: 1.0.7
-        version: 1.0.7(@modelcontextprotocol/sdk@1.25.2(hono@4.11.3)(zod@4.3.5))
+        version: 1.0.7(@modelcontextprotocol/sdk@1.25.2(hono@4.11.3)(zod@4.3.6))
       zod:
         specifier: 'catalog:'
-        version: 4.3.5
+        version: 4.3.6
 
   packages/schema:
     dependencies:
       '@asteasolutions/zod-to-openapi':
         specifier: 8.4.0
-        version: 8.4.0(zod@4.3.5)
+        version: 8.4.0(zod@4.3.6)
       '@standard-schema/spec':
         specifier: 'catalog:'
         version: 1.1.0
@@ -353,7 +353,7 @@ importers:
         version: 6.1.4
       zod:
         specifier: 'catalog:'
-        version: 4.3.5
+        version: 4.3.6
 
   packages/serverless:
     dependencies:
@@ -407,7 +407,7 @@ importers:
     devDependencies:
       zod:
         specifier: 'catalog:'
-        version: 4.3.5
+        version: 4.3.6
 
 packages:
 
@@ -6978,8 +6978,8 @@ packages:
   zod@3.25.76:
     resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
 
-  zod@4.3.5:
-    resolution: {integrity: sha512-k7Nwx6vuWx1IJ9Bjuf4Zt1PEllcwe7cls3VNzm4CQ1/hgtFUK2bRNG3rvnpPUhFjmqJKAKtjV576KnUkHocg/g==}
+  zod@4.3.6:
+    resolution: {integrity: sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg==}
 
   zwitch@2.0.4:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
@@ -6990,10 +6990,10 @@ snapshots:
     dependencies:
       grapheme-splitter: 1.0.4
 
-  '@asteasolutions/zod-to-openapi@8.4.0(zod@4.3.5)':
+  '@asteasolutions/zod-to-openapi@8.4.0(zod@4.3.6)':
     dependencies:
       openapi3-ts: 4.5.0
-      zod: 4.3.5
+      zod: 4.3.6
 
   '@aws-crypto/crc32@5.2.0':
     dependencies:
@@ -9839,7 +9839,7 @@ snapshots:
 
   '@kwsites/promise-deferred@1.1.1': {}
 
-  '@modelcontextprotocol/sdk@1.25.2(hono@4.11.3)(zod@4.3.5)':
+  '@modelcontextprotocol/sdk@1.25.2(hono@4.11.3)(zod@4.3.6)':
     dependencies:
       '@hono/node-server': 1.19.7(hono@4.11.3)
       ajv: 8.17.1
@@ -9855,8 +9855,8 @@ snapshots:
       json-schema-typed: 8.0.2
       pkce-challenge: 5.0.1
       raw-body: 3.0.2
-      zod: 4.3.5
-      zod-to-json-schema: 3.25.1(zod@4.3.5)
+      zod: 4.3.6
+      zod-to-json-schema: 3.25.1(zod@4.3.6)
     transitivePeerDependencies:
       - hono
       - supports-color
@@ -13164,9 +13164,9 @@ snapshots:
 
   math-intrinsics@1.1.0: {}
 
-  mcp-handler@1.0.7(@modelcontextprotocol/sdk@1.25.2(hono@4.11.3)(zod@4.3.5)):
+  mcp-handler@1.0.7(@modelcontextprotocol/sdk@1.25.2(hono@4.11.3)(zod@4.3.6)):
     dependencies:
-      '@modelcontextprotocol/sdk': 1.25.2(hono@4.11.3)(zod@4.3.5)
+      '@modelcontextprotocol/sdk': 1.25.2(hono@4.11.3)(zod@4.3.6)
       chalk: 5.6.2
       commander: 11.1.0
       redis: 4.7.1
@@ -15495,12 +15495,12 @@ snapshots:
 
   yocto-queue@1.2.2: {}
 
-  zod-to-json-schema@3.25.1(zod@4.3.5):
+  zod-to-json-schema@3.25.1(zod@4.3.6):
     dependencies:
-      zod: 4.3.5
+      zod: 4.3.6
 
   zod@3.25.76: {}
 
-  zod@4.3.5: {}
+  zod@4.3.6: {}
 
   zwitch@2.0.4: {}
