@@ -7,8 +7,8 @@ settings:
 catalogs:
   default:
     '@oxc-project/runtime':
-      specifier: 0.110.0
-      version: 0.110.0
+      specifier: 0.111.0
+      version: 0.111.0
     '@standard-schema/spec':
       specifier: 1.1.0
       version: 1.1.0
@@ -52,7 +52,7 @@ importers:
         version: 22.4.1(@babel/traverse@7.28.6)(nx@22.4.1)
       '@oxc-project/runtime':
         specifier: 'catalog:'
-        version: 0.110.0
+        version: 0.111.0
       '@types/node':
         specifier: 25.0.10
         version: 25.0.10
@@ -100,7 +100,7 @@ importers:
     dependencies:
       '@oxc-project/runtime':
         specifier: 'catalog:'
-        version: 0.110.0
+        version: 0.111.0
       '@vercube/cli':
         specifier: workspace:*
         version: link:../../packages/cli
@@ -145,7 +145,7 @@ importers:
     dependencies:
       '@oxc-project/runtime':
         specifier: 'catalog:'
-        version: 0.110.0
+        version: 0.111.0
       '@vercube/cli':
         specifier: workspace:*
         version: link:../../packages/cli
@@ -160,7 +160,7 @@ importers:
     dependencies:
       '@oxc-project/runtime':
         specifier: 'catalog:'
-        version: 0.110.0
+        version: 0.111.0
       '@vercube/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -258,7 +258,7 @@ importers:
     dependencies:
       '@oxc-project/runtime':
         specifier: 'catalog:'
-        version: 0.110.0
+        version: 0.111.0
       '@vercube/core':
         specifier: workspace:*
         version: link:../core
@@ -302,7 +302,7 @@ importers:
         version: link:../core
       h3:
         specifier: beta
-        version: 2.0.1-rc.11(crossws@0.4.3(srvx@0.10.1))
+        version: 2.0.0-beta.5(crossws@0.4.3(srvx@0.10.1))
 
   packages/logger:
     dependencies:
@@ -2227,8 +2227,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@oxc-project/runtime@0.110.0':
-    resolution: {integrity: sha512-4t5lYmPneAGKGN7zDhK2iQrn+Ax3DXLCNqVr3z6K2VqemKWfQTlLyzjgjilxZmwFAKe65qI4WG7Bsj05UgUHaA==}
+  '@oxc-project/runtime@0.111.0':
+    resolution: {integrity: sha512-Hssa3lXfhczG0Qx0XB6NXLQTKrKeWSPDxcHqddCmBVnOQnlgE8Z+omcPHiewvvvZjSw8RgUPQCU5a+rx/vZ1YA==}
     engines: {node: ^20.19.0 || >=22.12.0}
 
   '@oxc-project/types@0.110.0':
@@ -3795,6 +3795,9 @@ packages:
   convert-source-map@2.0.0:
     resolution: {integrity: sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg==}
 
+  cookie-es@2.0.0:
+    resolution: {integrity: sha512-RAj4E421UYRgqokKUmotqAwuplYw15qtdXfY+hGzgCJ/MBjCVZcSoHK/kH9kocfjRjcDME7IiDWR/1WX1TM2Pg==}
+
   cookie-signature@1.2.2:
     resolution: {integrity: sha512-D76uU73ulSXrD1UXF4KE2TMxVVwhsnCgfAyTg9k8P6KGZjlXKrOLe4dJQKI3Bxi5wjesZoFXJWElNWBjPZMbhg==}
     engines: {node: '>=6.6.0'}
@@ -4273,6 +4276,9 @@ packages:
     resolution: {integrity: sha512-7yAQpD2UMJzLi1Dqv7qFYnPbaPx7ZfFK6PiIxQ4PfkGPyNyl2Ugx+a/umUonmKqjhM4DnfbMvdX6otXq83soQQ==}
     engines: {node: ^12.20 || >= 14.13}
 
+  fetchdts@0.1.7:
+    resolution: {integrity: sha512-YoZjBdafyLIop9lSxXVI33oLD5kN31q4Td+CasofLLYeLXRFeOsuOw0Uo+XNRi9PZlbfdlN2GmRtm4tCEQ9/KA==}
+
   fflate@0.8.2:
     resolution: {integrity: sha512-cPJU47OaAoCbg0pBvzsgpTPhmhqI5eJjh/JIu8tPj5q+T7iLvW/JAYUqmE7KOB4R1ZyEhzBaIQpQpardBF5z8A==}
 
@@ -4540,8 +4546,8 @@ packages:
     resolution: {integrity: sha512-+CqsMbHPiSTdtSO14O51eMNlrp9N79gmeqmXeouJOhfucAedHw9noVe/n5uJk3tbKE6a+6ZCQg3RPhVhHByAIw==}
     engines: {node: '>=18'}
 
-  h3@2.0.1-rc.11:
-    resolution: {integrity: sha512-2myzjCqy32c1As9TjZW9fNZXtLqNedjFSrdFy2AjFBQQ3LzrnGoDdFDYfC0tV2e4vcyfJ2Sfo/F6NQhO2Ly/Mw==}
+  h3@2.0.0-beta.5:
+    resolution: {integrity: sha512-ApIkLH+nTxzCC0Nq/GN1v6jkvu2eOLfdTnTs6ghiuG1EYHWJBDLzhk5tn7SZMEUNsLUjG4qfmqzBx2LG9I7Q/w==}
     engines: {node: '>=20.11.1'}
     peerDependencies:
       crossws: ^0.4.1
@@ -6322,6 +6328,11 @@ packages:
 
   srvx@0.10.1:
     resolution: {integrity: sha512-A//xtfak4eESMWWydSRFUVvCTQbSwivnGCEf8YGPe2eHU0+Z6znfUTCPF0a7oV3sObSOcrXHlL6Bs9vVctfXdg==}
+    engines: {node: '>=20.16.0'}
+    hasBin: true
+
+  srvx@0.8.16:
+    resolution: {integrity: sha512-hmcGW4CgroeSmzgF1Ihwgl+Ths0JqAJ7HwjP2X7e3JzY7u4IydLMcdnlqGQiQGUswz+PO9oh/KtCpOISIvs9QQ==}
     engines: {node: '>=20.16.0'}
     hasBin: true
 
@@ -10250,7 +10261,7 @@ snapshots:
   '@oxc-parser/binding-win32-x64-msvc@0.110.0':
     optional: true
 
-  '@oxc-project/runtime@0.110.0': {}
+  '@oxc-project/runtime@0.111.0': {}
 
   '@oxc-project/types@0.110.0': {}
 
@@ -11849,6 +11860,8 @@ snapshots:
 
   convert-source-map@2.0.0: {}
 
+  cookie-es@2.0.0: {}
+
   cookie-signature@1.2.2: {}
 
   cookie@0.7.2: {}
@@ -12310,6 +12323,8 @@ snapshots:
       node-domexception: 1.0.0
       web-streams-polyfill: 3.3.3
 
+  fetchdts@0.1.7: {}
+
   fflate@0.8.2: {}
 
   figures@3.2.0:
@@ -12647,10 +12662,12 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  h3@2.0.1-rc.11(crossws@0.4.3(srvx@0.10.1)):
+  h3@2.0.0-beta.5(crossws@0.4.3(srvx@0.10.1)):
     dependencies:
+      cookie-es: 2.0.0
+      fetchdts: 0.1.7
       rou3: 0.7.12
-      srvx: 0.10.1
+      srvx: 0.8.16
     optionalDependencies:
       crossws: 0.4.3(srvx@0.10.1)
 
@@ -14919,6 +14936,8 @@ snapshots:
   sprintf-js@1.1.3: {}
 
   srvx@0.10.1: {}
+
+  srvx@0.8.16: {}
 
   ssri@13.0.0:
     dependencies:
