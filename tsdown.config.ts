@@ -15,6 +15,7 @@ export default defineConfig({
   entry: Object.values(entries),
   fixedExtension: true,
   dts: true,
+  inlineOnly: false,
   external: [
     ...builtinModules,
     ...builtinModules.map((m) => `node:${m}`),
