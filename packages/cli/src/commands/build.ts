@@ -2,7 +2,7 @@ import { build, createVercube } from '@vercube/devkit';
 import { defineCommand } from 'citty';
 import type { CommandDef } from 'citty';
 
-export const buildCommand: CommandDef = defineCommand({
+export const buildCommand = defineCommand({
   meta: {
     name: 'build',
     description: 'Build the project',
@@ -11,6 +11,7 @@ export const buildCommand: CommandDef = defineCommand({
     entry: {
       type: 'string',
       description: 'Entry file',
+      default: undefined,
     },
   },
   run: async (ctx) => {
@@ -24,4 +25,4 @@ export const buildCommand: CommandDef = defineCommand({
     // run build
     await build(app);
   },
-});
+}) as CommandDef;

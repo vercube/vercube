@@ -28,7 +28,7 @@ const pms: Record<PackageManagerName, undefined> = {
 
 const packageManagerOptions = Object.keys(pms) as PackageManagerName[];
 
-export const initCommand: CommandDef = defineCommand({
+export const initCommand = defineCommand({
   meta: {
     name: 'init',
     description: 'Initialize a new Vercube app',
@@ -66,9 +66,10 @@ export const initCommand: CommandDef = defineCommand({
     }
 
     consola.info(`Welcome to ${colors.bold('Vercube')}!`);
+    let dir = ctx.args.dir;
 
     if (ctx.args.dir === '') {
-      ctx.args.dir = await logger
+      dir = await logger
         .prompt('Where would you like to create your project?', {
           placeholder: './vercube-app',
           type: 'text',
@@ -79,7 +80,7 @@ export const initCommand: CommandDef = defineCommand({
     }
 
     const cwd = resolve(process.cwd());
-    let templateDownloadPath = resolve(cwd, ctx.args.dir);
+    let templateDownloadPath = resolve(cwd, dir);
     logger.info(`Creating a new project in ${colors.cyan(relative(cwd, templateDownloadPath) || templateDownloadPath)}.`);
 
     let shouldForce = Boolean(ctx.args.force);
@@ -179,8 +180,9 @@ export const initCommand: CommandDef = defineCommand({
       logger.success('Installation completed.');
     }
 
-    if (ctx.args.gitInit === undefined) {
-      ctx.args.gitInit = await logger
+    let gitInit = ctx.args.gitInit;
+    if (gitInit === undefined) {
+      gitInit = await logger
         .prompt('Initialize git repository?', {
           type: 'confirm',
           cancel: 'reject',
@@ -218,4 +220,4 @@ export const initCommand: CommandDef = defineCommand({
       startShell(template.dir);
     }
   },
-});
+}) as CommandDef;
