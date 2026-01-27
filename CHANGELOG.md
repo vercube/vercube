@@ -1,5 +1,125 @@
 # Changelog
 
+## v0.0.34...v0.0.35
+
+[compare changes](https://github.com/vercube/vercube/compare/v0.0.34...v0.0.35)
+
+### 🚀 Enhancements
+
+- Add oxfmt ([#587](https://github.com/vercube/vercube/pull/587))
+- **core:** Update lock file ([089f1fb](https://github.com/vercube/vercube/commit/089f1fb))
+- **ci:** Fix renovate config ([c80945a](https://github.com/vercube/vercube/commit/c80945a))
+- **core:** Update oxlint config ([d9a5a7d](https://github.com/vercube/vercube/commit/d9a5a7d))
+- **storage:** Add structured logging and custom error wrapping for S3Storage operations ([#674](https://github.com/vercube/vercube/pull/674))
+- **storage:** Add method for multiple keys get ([136af14](https://github.com/vercube/vercube/commit/136af14))
+- **storage:** Add missing test ([1951c75](https://github.com/vercube/vercube/commit/1951c75))
+
+### 🩹 Fixes
+
+- Update minor and patch prod dependencies to v0.103.0 ([#593](https://github.com/vercube/vercube/pull/593))
+- Update minor and patch prod dependencies ([#598](https://github.com/vercube/vercube/pull/598))
+- Update dependency @modelcontextprotocol/sdk to v1.25.1 ([#599](https://github.com/vercube/vercube/pull/599))
+- Update dependency serverless to v4.29.0 ([#604](https://github.com/vercube/vercube/pull/604))
+- Update dependency hookable to v6 ([#605](https://github.com/vercube/vercube/pull/605))
+- Update minor and patch prod dependencies to v0.104.0 ([#609](https://github.com/vercube/vercube/pull/609))
+- Update minor and patch prod dependencies to v0.105.0 ([#614](https://github.com/vercube/vercube/pull/614))
+- Update minor and patch prod dependencies to v0.106.0 ([#624](https://github.com/vercube/vercube/pull/624))
+- Update dependency serverless to v4.29.3 ([#626](https://github.com/vercube/vercube/pull/626))
+- Update dependency serverless to v4.29.4 ([#639](https://github.com/vercube/vercube/pull/639))
+- Update minor and patch prod dependencies ([#643](https://github.com/vercube/vercube/pull/643))
+- Update dependency @asteasolutions/zod-to-openapi to v8.4.0 ([#646](https://github.com/vercube/vercube/pull/646))
+- Update minor and patch prod dependencies ([#649](https://github.com/vercube/vercube/pull/649))
+- Update dependency ufo to v1.6.2 ([#650](https://github.com/vercube/vercube/pull/650))
+- Update dependency @modelcontextprotocol/sdk to v1.25.2 [SECURITY] ([#653](https://github.com/vercube/vercube/pull/653))
+- Update dependency serverless to v4.30.0 ([#656](https://github.com/vercube/vercube/pull/656))
+- Lock file ([8502528](https://github.com/vercube/vercube/commit/8502528))
+- Update dependency mcp-handler to v1.0.7 ([#658](https://github.com/vercube/vercube/pull/658))
+- Update minor and patch prod dependencies to v0.108.0 ([#665](https://github.com/vercube/vercube/pull/665))
+- **security:** Prevent timing attacks in BasicAuthenticationProvider ([#678](https://github.com/vercube/vercube/pull/678))
+- **storage:** Improve S3Storage security by using AWS Secrets Manager ([#673](https://github.com/vercube/vercube/pull/673))
+- **core:** Session handling vulnerabilities in production ([#677](https://github.com/vercube/vercube/pull/677))
+- **core:** Prototype pollution vulnerabilities in user input processing ([#679](https://github.com/vercube/vercube/pull/679))
+- Update dependency ufo to v1.6.3 ([#682](https://github.com/vercube/vercube/pull/682))
+- Update dependency serverless to v4.31.0 ([#683](https://github.com/vercube/vercube/pull/683))
+- Update dependency crossws to v0.4.3 ([#690](https://github.com/vercube/vercube/pull/690))
+- Update dependency giget to v3 ([#692](https://github.com/vercube/vercube/pull/692))
+- Core/serverless build ([9faf431](https://github.com/vercube/vercube/commit/9faf431))
+- Update minor and patch prod dependencies to v0.111.0 ([#694](https://github.com/vercube/vercube/pull/694))
+- **storage:** Fix types ([ff05a81](https://github.com/vercube/vercube/commit/ff05a81))
+- **storage:** Tests ([c0b4896](https://github.com/vercube/vercube/commit/c0b4896))
+
+### 📖 Documentation
+
+- Rewrite entire docs ([#638](https://github.com/vercube/vercube/pull/638))
+
+### 📦 Build
+
+- Bump packages ([675015c](https://github.com/vercube/vercube/commit/675015c))
+- **deps:** Bump @modelcontextprotocol/sdk from 1.25.1 to 1.25.2 ([#654](https://github.com/vercube/vercube/pull/654))
+- Bump packages ([c25fb2c](https://github.com/vercube/vercube/commit/c25fb2c))
+- Bump packages ([d1a74f2](https://github.com/vercube/vercube/commit/d1a74f2))
+- Bump packages ([86b6dcd](https://github.com/vercube/vercube/commit/86b6dcd))
+- Bump packages ([6f71502](https://github.com/vercube/vercube/commit/6f71502))
+- Bump deps ([8e9ba91](https://github.com/vercube/vercube/commit/8e9ba91))
+- Update packages ([71dda85](https://github.com/vercube/vercube/commit/71dda85))
+
+### 🏡 Chore
+
+- Update dev dependencies ([#589](https://github.com/vercube/vercube/pull/589))
+- Update dev dependencies ([#596](https://github.com/vercube/vercube/pull/596))
+- Update dev dependencies ([#603](https://github.com/vercube/vercube/pull/603))
+- Update dev dependencies ([#606](https://github.com/vercube/vercube/pull/606))
+- Update dev dependencies ([#610](https://github.com/vercube/vercube/pull/610))
+- Update dev dependencies ([#612](https://github.com/vercube/vercube/pull/612))
+- Update dev dependencies ([#615](https://github.com/vercube/vercube/pull/615))
+- Update dev dependencies ([#619](https://github.com/vercube/vercube/pull/619))
+- Update dev dependencies ([#620](https://github.com/vercube/vercube/pull/620))
+- Update dev dependencies ([#621](https://github.com/vercube/vercube/pull/621))
+- Update dev dependencies ([#622](https://github.com/vercube/vercube/pull/622))
+- Update dev dependencies ([#623](https://github.com/vercube/vercube/pull/623))
+- Update dev dependencies ([#625](https://github.com/vercube/vercube/pull/625))
+- Update dependency renovate to v42.68.4 ([#628](https://github.com/vercube/vercube/pull/628))
+- Update dev dependencies ([#632](https://github.com/vercube/vercube/pull/632))
+- Update dev dependencies ([#634](https://github.com/vercube/vercube/pull/634))
+- Update dev dependencies to v20.3.0 ([#635](https://github.com/vercube/vercube/pull/635))
+- Update dependency @typescript/native-preview to v7.0.0-dev.20260102.1 ([#636](https://github.com/vercube/vercube/pull/636))
+- Update dependency renovate to v42.70.2 ([#637](https://github.com/vercube/vercube/pull/637))
+- Update dev dependencies ([#642](https://github.com/vercube/vercube/pull/642))
+- Add github asset ([c001a87](https://github.com/vercube/vercube/commit/c001a87))
+- Update readme ([904a78f](https://github.com/vercube/vercube/commit/904a78f))
+- Apply automated updates ([8bc647a](https://github.com/vercube/vercube/commit/8bc647a))
+- Readme - add deepwiki ([8a2aa04](https://github.com/vercube/vercube/commit/8a2aa04))
+- Fix lint ([d5075a1](https://github.com/vercube/vercube/commit/d5075a1))
+- Update dependency @typescript/native-preview to v7.0.0-dev.20260104.1 ([#645](https://github.com/vercube/vercube/pull/645))
+- Add benchmark info and fix readme ([2f837d9](https://github.com/vercube/vercube/commit/2f837d9))
+- Apply automated updates ([1cfc6db](https://github.com/vercube/vercube/commit/1cfc6db))
+- Update dev dependencies ([#647](https://github.com/vercube/vercube/pull/647))
+- Update dependency tsdown to v0.19.0 ([#660](https://github.com/vercube/vercube/pull/660))
+- Update dev dependencies ([#661](https://github.com/vercube/vercube/pull/661))
+- Update dev dependencies ([#662](https://github.com/vercube/vercube/pull/662))
+- Update dependency renovate to v42.78.2 ([#663](https://github.com/vercube/vercube/pull/663))
+- Update dev dependencies ([#666](https://github.com/vercube/vercube/pull/666))
+- Update dev dependencies ([#668](https://github.com/vercube/vercube/pull/668))
+- Update dev dependencies ([#671](https://github.com/vercube/vercube/pull/671))
+- Update dev dependencies ([#676](https://github.com/vercube/vercube/pull/676))
+- Update dependency renovate to v42.81.5 ([#680](https://github.com/vercube/vercube/pull/680))
+- Update dev dependencies ([#685](https://github.com/vercube/vercube/pull/685))
+- Change vscode config ([9058cdd](https://github.com/vercube/vercube/commit/9058cdd))
+- Update dev dependencies ([#686](https://github.com/vercube/vercube/pull/686))
+- Update dev dependencies ([#688](https://github.com/vercube/vercube/pull/688))
+- Apply automated updates ([b1cb534](https://github.com/vercube/vercube/commit/b1cb534))
+- Fix oxfmt sort ([1dbcf53](https://github.com/vercube/vercube/commit/1dbcf53))
+- Update dev dependencies ([#691](https://github.com/vercube/vercube/pull/691))
+- Update dependency renovate to v42.86.0 ([#693](https://github.com/vercube/vercube/pull/693))
+- Update dev dependencies ([#696](https://github.com/vercube/vercube/pull/696))
+- Update dev dependencies ([#700](https://github.com/vercube/vercube/pull/700))
+- Release v0.0.35 [no ci] ([f4f3ee0](https://github.com/vercube/vercube/commit/f4f3ee0))
+
+### ❤️ Contributors
+
+- @OskarLebuda
+- Copilot ([@MicrosoftCopilot](https://github.com/MicrosoftCopilot))
+
 ## v0.0.33...v0.0.34
 
 [compare changes](https://github.com/vercube/vercube/compare/v0.0.33...v0.0.34)
