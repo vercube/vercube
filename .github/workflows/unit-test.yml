@@ -14,6 +14,6 @@ jobs:
     with:
       os-matrix: '"ubuntu-slim"'
       node-versions: '24'
-      build: pnpm build
+      build-for-lint: true
       typecheck: pnpm test:tscheck
       lint: pnpm test:lint
