@@ -9,6 +9,9 @@ describe('Storage', () => {
       public getItem<T = unknown>(): T {
         return {} as T;
       }
+      public getItems<T = unknown[]>(): T[] {
+        return [];
+      }
       public setItem(): void {}
       public deleteItem(): void {}
       public hasItem(): boolean {
@@ -33,6 +36,9 @@ describe('Storage', () => {
       public initialize(): void {}
       public getItem<T = unknown>(): T {
         return {} as T;
+      }
+      public getItems<T = unknown[]>(): T[] {
+        return [];
       }
       public setItem(): void {}
       public deleteItem(): void {}

@@ -6,6 +6,9 @@ export class TestStorage extends Storage {
   public getItem<T = unknown>(): T {
     return {} as T;
   }
+  public getItems<T = unknown[]>(): T[] {
+    return [];
+  }
   public setItem(): void {}
   public deleteItem(): void {}
   public hasItem(): boolean {
@@ -24,6 +27,9 @@ export class ErrorStorage extends Storage {
   public initialize = vi.fn().mockRejectedValue(new Error('Init failed'));
   public getItem<T = unknown>(): T {
     return {} as T;
+  }
+  public getItems<T = unknown[]>(): T[] {
+    return [];
   }
   public setItem(): void {}
   public deleteItem(): void {}
