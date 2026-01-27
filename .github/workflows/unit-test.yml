@@ -12,5 +12,8 @@ jobs:
   unit-test:
     uses: sxzz/workflows/.github/workflows/unit-test.yml@v1
     with:
+      os-matrix: '"ubuntu-slim"'
+      node-versions: '24'
+      build: pnpm build
       typecheck: pnpm test:tscheck
       lint: pnpm test:lint
