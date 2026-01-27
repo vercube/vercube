@@ -1,0 +1,13 @@
+name: Coverage
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  coverage:
+    uses: sxzz/workflows/.github/workflows/coverage.yml@v1
+    permissions:
+      id-token: write

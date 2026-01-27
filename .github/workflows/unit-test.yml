@@ -1,0 +1,19 @@
+name: Unit Test
+
+permissions: {}
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  unit-test:
+    uses: sxzz/workflows/.github/workflows/unit-test.yml@v1
+    with:
+      os-matrix: '"ubuntu-slim"'
+      node-versions: '24'
+      build-for-lint: true
+      typecheck: pnpm test:tscheck
+      lint: pnpm test:lint
