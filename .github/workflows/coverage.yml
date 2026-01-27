@@ -11,6 +11,3 @@ jobs:
     uses: sxzz/workflows/.github/workflows/coverage.yml@v1
     permissions:
       id-token: write
-    with:
-      typecheck: pnpm test:tscheck
-      lint: pnpm test:lint
