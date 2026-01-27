@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.0.35...v0.0.36
+
+[compare changes](https://github.com/vercube/vercube/compare/v0.0.35...v0.0.36)
+
+### 🩹 Fixes
+
+- **storage:** Fix types ([e9067cc](https://github.com/vercube/vercube/commit/e9067cc))
+
+### ❤️ Contributors
+
+- Oskar Lebuda
+
 ## v0.0.34...v0.0.35
 
 [compare changes](https://github.com/vercube/vercube/compare/v0.0.34...v0.0.35)
