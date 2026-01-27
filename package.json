@@ -1,6 +1,6 @@
 {
   "name": "vercube-monorepo",
-  "version": "0.0.0",
+  "version": "0.0.36",
   "description": "An ultra-efficient JavaScript server framework that runs anywhere - Node.js, Bun, or Deno - with unmatched flexibility and complete configurability for developers who refuse to sacrifice speed or control.",
   "packageManager": "pnpm@10.28.2",
   "type": "module",
@@ -20,8 +20,7 @@
     "pre-commit": "lint-staged",
     "postinstall": "simple-git-hooks",
     "playground": "cd playground && pnpm dev",
-    "release": "pnpm release:nx",
-    "release:nx": "pnpm nx release --yes"
+    "release": "bumpp"
   },
   "lint-staged": {
     "*.{js,ts}": [
@@ -39,7 +38,7 @@
     "@typescript/native-preview": "7.0.0-dev.20260127.1",
     "@vitest/coverage-v8": "4.0.18",
     "@vitest/ui": "4.0.18",
-    "changelogen": "0.6.2",
+    "bumpp": "10.4.0",
     "lint-staged": "16.2.7",
     "nx": "22.4.2",
     "oxfmt": "0.27.0",

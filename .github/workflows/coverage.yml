@@ -1,0 +1,16 @@
+name: Coverage
+
+permissions: {}
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  coverage:
+    uses: sxzz/workflows/.github/workflows/coverage.yml@v1
+    with:
+      typecheck: pnpm test:tscheck
+      lint: pnpm test:lint
