@@ -9,15 +9,15 @@
  * It supports basic operations like get, set, delete, and querying storage state.
  * Concrete implementations must provide the actual storage mechanism.
  */
-export abstract class Storage<T = undefined> {
+export abstract class Storage<InitOptions = undefined> {
   /**
    * Initializes the storage implementation.
    * Must be called before using any other storage operations.
    *
-   * @param {T} options - Initialization parameters. May be omitted if not required by the storage implementation.
+   * @param {InitOptions} options - Initialization parameters. May be omitted if not required by the storage implementation.
    * @returns {Promise<void>} A promise that resolves when initialization is complete.
    */
-  public abstract initialize(options: T): void | Promise<void>;
+  public abstract initialize(options: InitOptions): void | Promise<void>;
 
   /**
    * Retrieves a value from storage by its key
