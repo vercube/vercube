@@ -21,6 +21,10 @@ export namespace StorageTypes {
     key: string;
   }
 
+  export interface GetItems extends BaseOptions {
+    keys: string[];
+  }
+
   export interface SetItem<T = unknown, U = unknown> extends BaseOptions {
     key: string;
     value: T;

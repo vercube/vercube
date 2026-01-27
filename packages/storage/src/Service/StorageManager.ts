@@ -57,6 +57,19 @@ export class StorageManager {
   }
 
   /**
+   * Retrieves multiple items from the specified storage
+   * @template T - Type of the stored value
+   * @param {StorageTypes.GetItems} params - Parameters for retrieving multiple items
+   * @param {string} [params.storage] - Name of the storage to retrieve from, defaults to 'default'
+   * @param {string[]} params.keys - Keys of the items to retrieve
+   * @returns {Promise<T[]>} A promise that resolves with the stored values or empty array if not found
+   */
+  public async getItems<T = unknown>({ storage, keys }: StorageTypes.GetItems): Promise<T[]> {
+    const storageInstance = this.getStorage(storage);
+    return storageInstance?.getItems<T>(keys) ?? [];
+  }
+
+  /**
    * Stores an item in the specified storage
    * @template T - Type of the value to store
    * @param {StorageTypes.SetItem<T>} params - Parameters for storing an item

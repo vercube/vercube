@@ -28,6 +28,14 @@ export abstract class Storage<InitOptions = undefined> {
   public abstract getItem<T = unknown>(key: string): T | Promise<T>;
 
   /**
+   * Retrieves multiple items from storage by their keys
+   * @template T - The type of the stored value
+   * @param {string[]} keys - The keys to retrieve the values for
+   * @returns {Promise<T[]>} A promise that resolves with the stored values or empty array if not found
+   */
+  public abstract getItems<T = unknown>(keys: string[]): T[] | Promise<T[]>;
+
+  /**
    * Stores a value in storage with the specified key
    * @template T - The type of the value to store
    * @template U - The type of the optional options object
