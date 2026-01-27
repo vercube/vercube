@@ -110,6 +110,79 @@ describe('S3Storage', () => {
     });
   });
 
+  describe('getItems', () => {
+    it('should return empty array for empty keys array', async () => {
+      const result = await storage.getItems([]);
+      expect(result).toEqual([]);
+    });
+
+    it('should return parsed values when items exist', async () => {
+      const mockStream1 = ReadableFromString(JSON.stringify({ test: 'value1' }));
+      const mockStream2 = ReadableFromString(JSON.stringify({ test: 'value2' }));
+      mockSend.mockResolvedValueOnce({ Body: mockStream1 }).mockResolvedValueOnce({ Body: mockStream2 });
+
+      const result = await storage.getItems<{ test: string }>(['key1', 'key2']);
+      expect(result).toEqual([{ test: 'value1' }, { test: 'value2' }]);
+    });
+
+    it('should return undefined for missing keys', async () => {
+      mockSend
+        .mockResolvedValueOnce({ Body: ReadableFromString(JSON.stringify({ test: 'value1' })) })
+        .mockRejectedValueOnce({ name: 'NoSuchKey' });
+
+      const result = await storage.getItems(['key1', 'missing']);
+      expect(result).toEqual([{ test: 'value1' }, undefined]);
+    });
+
+    it('should return undefined for all missing keys', async () => {
+      mockSend.mockRejectedValueOnce({ name: 'NoSuchKey' }).mockRejectedValueOnce({ name: 'NoSuchKey' });
+
+      const result = await storage.getItems(['missing1', 'missing2']);
+      expect(result).toEqual([undefined, undefined]);
+    });
+
+    it('should throw StorageError for other errors', async () => {
+      const mockError = {
+        name: 'AccessDenied',
+        message: 'Access Denied',
+        $metadata: { httpStatusCode: 403 },
+      };
+      mockSend.mockRejectedValueOnce(mockError);
+
+      await expect(storage.getItems(['key'])).rejects.toMatchObject({
+        name: 'StorageError',
+        operation: 'getItem',
+        message: expect.stringContaining('AccessDenied'),
+      });
+    });
+
+    it('should handle mixed existing and missing keys', async () => {
+      const mockStream1 = ReadableFromString(JSON.stringify({ test: 'value1' }));
+      const mockStream3 = ReadableFromString(JSON.stringify({ test: 'value3' }));
+      mockSend
+        .mockResolvedValueOnce({ Body: mockStream1 })
+        .mockRejectedValueOnce({ name: 'NoSuchKey' })
+        .mockResolvedValueOnce({ Body: mockStream3 });
+
+      const result = await storage.getItems<{ test: string }>(['key1', 'missing', 'key3']);
+      expect(result).toEqual([{ test: 'value1' }, undefined, { test: 'value3' }]);
+    });
+
+    it('should fetch items in parallel', async () => {
+      const mockStream1 = ReadableFromString(JSON.stringify({ test: 'value1' }));
+      const mockStream2 = ReadableFromString(JSON.stringify({ test: 'value2' }));
+      const mockStream3 = ReadableFromString(JSON.stringify({ test: 'value3' }));
+      mockSend
+        .mockResolvedValueOnce({ Body: mockStream1 })
+        .mockResolvedValueOnce({ Body: mockStream2 })
+        .mockResolvedValueOnce({ Body: mockStream3 });
+
+      const result = await storage.getItems<{ test: string }>(['key1', 'key2', 'key3']);
+      expect(result).toEqual([{ test: 'value1' }, { test: 'value2' }, { test: 'value3' }]);
+      expect(mockSend).toHaveBeenCalledTimes(3);
+    });
+  });
+
   describe('deleteItem', () => {
     it('should send DeleteObjectCommand', async () => {
       mockSend.mockResolvedValueOnce({});

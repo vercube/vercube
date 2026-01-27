@@ -31,6 +31,16 @@ export class MemoryStorage implements Storage {
   }
 
   /**
+   * Retrieves multiple items from memory storage by their keys
+   * @template T - Type of the stored value
+   * @param {string[]} keys - The keys to retrieve the values for
+   * @returns {T[]} Array of stored values, with undefined for missing keys
+   */
+  public getItems<T = unknown>(keys: string[]): T[] {
+    return keys.map((key) => this.storage.get(key) as T);
+  }
+
+  /**
    * Stores a value in memory storage with the specified key
    * @template T - Type of the value to store
    * @template U - Type of the options object

@@ -176,6 +176,23 @@ export class S3Storage implements Storage<S3BaseOptions> {
   }
 
   /**
+   * Retrieves and parses multiple values from S3 storage by their keys.
+   *
+   * @template T
+   * @param {string[]} keys - The keys whose values should be retrieved.
+   * @returns {Promise<T[]>} An array of stored values parsed as type T, with undefined for missing keys.
+   * @throws {StorageError} Wraps any S3 error except for missing keys (`NoSuchKey`) with sanitized error information.
+   */
+  public async getItems<T = unknown>(keys: string[]): Promise<T[]> {
+    if (keys.length === 0) {
+      return [];
+    }
+
+    const items = await Promise.all(keys.map((key) => this.getItem<T>(key)));
+    return items;
+  }
+
+  /**
    * Stores a value in S3 storage under the specified key.
    *
    * @template T

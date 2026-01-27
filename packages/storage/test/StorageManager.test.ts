@@ -133,6 +133,108 @@ describe('StorageManager', () => {
       });
     });
 
+    describe('getItems', () => {
+      it('should return empty array for non-existent items', async () => {
+        const result = await storageManager.getItems({
+          keys: ['nonExistent1', 'nonExistent2'],
+        });
+        expect(result).toEqual([undefined, undefined]);
+      });
+
+      it('should return stored items', async () => {
+        const testValue1 = { test: 'value1' };
+        const testValue2 = { test: 'value2' };
+        await storageManager.setItem({
+          key: 'testKey1',
+          value: testValue1,
+        });
+        await storageManager.setItem({
+          key: 'testKey2',
+          value: testValue2,
+        });
+
+        const result = await storageManager.getItems({
+          keys: ['testKey1', 'testKey2'],
+        });
+        expect(result).toEqual([testValue1, testValue2]);
+      });
+
+      it('should return items with correct types', async () => {
+        await storageManager.setItem({
+          key: 'stringKey',
+          value: 'stringValue',
+        });
+        await storageManager.setItem({
+          key: 'numberKey',
+          value: 42,
+        });
+        await storageManager.setItem({
+          key: 'objectKey',
+          value: { key: 'value' },
+        });
+
+        const result = await storageManager.getItems({
+          keys: ['stringKey', 'numberKey', 'objectKey'],
+        });
+        expect(result[0]).toBe('stringValue');
+        expect(result[1]).toBe(42);
+        expect(result[2]).toEqual({ key: 'value' });
+      });
+
+      it('should return empty array when storage is undefined', async () => {
+        const result = await storageManager.getItems({
+          storage: 'nonExistentStorage',
+          keys: ['testKey1', 'testKey2'],
+        });
+        expect(result).toEqual([]);
+      });
+
+      it('should return items from custom storage', async () => {
+        await storageManager.mount({
+          name: 'custom',
+          storage: MemoryStorage,
+        });
+
+        const testValue1 = { test: 'value1' };
+        const testValue2 = { test: 'value2' };
+        await storageManager.setItem({
+          storage: 'custom',
+          key: 'testKey1',
+          value: testValue1,
+        });
+        await storageManager.setItem({
+          storage: 'custom',
+          key: 'testKey2',
+          value: testValue2,
+        });
+
+        const result = await storageManager.getItems({
+          storage: 'custom',
+          keys: ['testKey1', 'testKey2'],
+        });
+        expect(result).toEqual([testValue1, testValue2]);
+      });
+
+      it('should handle mixed existing and non-existing keys', async () => {
+        await storageManager.setItem({
+          key: 'existingKey',
+          value: 'existingValue',
+        });
+
+        const result = await storageManager.getItems({
+          keys: ['existingKey', 'nonExistentKey'],
+        });
+        expect(result).toEqual(['existingValue', undefined]);
+      });
+
+      it('should return empty array for empty keys array', async () => {
+        const result = await storageManager.getItems({
+          keys: [],
+        });
+        expect(result).toEqual([]);
+      });
+    });
+
     describe('setItem', () => {
       it('should store item with default storage', async () => {
         const testValue = { test: 'value' };
