@@ -1,7 +1,5 @@
 name: Coverage
 
-permissions: {}
-
 on:
   push:
     branches: [main]
@@ -12,7 +10,6 @@ jobs:
   coverage:
     uses: sxzz/workflows/.github/workflows/coverage.yml@v1
     permissions:
-      contents: write
       id-token: write
     with:
       typecheck: pnpm test:tscheck
