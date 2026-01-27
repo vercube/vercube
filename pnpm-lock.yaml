@@ -81,8 +81,8 @@ importers:
         specifier: 1.42.0
         version: 1.42.0
       renovate:
-        specifier: 42.92.14
-        version: 42.92.14(encoding@0.1.13)(typanion@3.14.0)
+        specifier: 42.93.0
+        version: 42.93.0(encoding@0.1.13)(typanion@3.14.0)
       simple-git-hooks:
         specifier: 2.13.1
         version: 2.13.1
@@ -6034,8 +6034,8 @@ packages:
   remark@15.0.1:
     resolution: {integrity: sha512-Eht5w30ruCXgFmxVUSlNWQ9iiimq07URKeFS3hNc8cUWy1llX4KDWfyEDZRycMc+znsN9Ux5/tJ/BFdgdOwA3A==}
 
-  renovate@42.92.14:
-    resolution: {integrity: sha512-e4wxH8hC/8y/4dcaArtSroOO/sF/EEnhr+q6Rg1iPJP/c9mO9GIFQAs37nSZLmJLLQZr2oyxKbeW/jZJ/AV4GA==}
+  renovate@42.93.0:
+    resolution: {integrity: sha512-nYfV166okH8tQ8bQFH4X0yLP8R8qdstTPg4DoS2fxiuDCxEZ5n1JdD03afHRfTry2bavRG3yCWS/oMHBIgCR8w==}
     engines: {node: ^22.13.0 || ^24.11.0, pnpm: ^10.0.0}
     hasBin: true
 
@@ -14422,7 +14422,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  renovate@42.92.14(encoding@0.1.13)(typanion@3.14.0):
+  renovate@42.93.0(encoding@0.1.13)(typanion@3.14.0):
     dependencies:
       '@aws-sdk/client-codecommit': 3.958.0
       '@aws-sdk/client-ec2': 3.958.0
