@@ -1,3 +1,5 @@
+import type { MaybePromise } from '@vercube/core';
+
 /**
  * Abstract base class for storage implementations
  * Provides a common interface for different storage providers
@@ -23,17 +25,17 @@ export abstract class Storage<InitOptions = undefined> {
    * Retrieves a value from storage by its key
    * @template T - The type of the stored value
    * @param {string} key - The key to retrieve the value for
-   * @returns {Promise<T>} A promise that resolves with the stored value
+   * @returns {MaybePromise<T | null>} A promise that resolves with the stored value
    */
-  public abstract getItem<T = unknown>(key: string): T | Promise<T>;
+  public abstract getItem<T = unknown>(key: string): MaybePromise<T | null>;
 
   /**
    * Retrieves multiple items from storage by their keys
    * @template T - The type of the stored value
    * @param {string[]} keys - The keys to retrieve the values for
-   * @returns {Promise<T[]>} A promise that resolves with the stored values or empty array if not found
+   * @returns {MaybePromise<T[]>} A promise that resolves with the stored values or empty array if not found
    */
-  public abstract getItems<T = unknown>(keys: string[]): T[] | Promise<T[]>;
+  public abstract getItems<T = unknown>(keys: string[]): MaybePromise<T[]>;
 
   /**
    * Stores a value in storage with the specified key
@@ -41,39 +43,39 @@ export abstract class Storage<InitOptions = undefined> {
    * @template U - The type of the optional options object
    * @param {string} key - The key under which to store the value
    * @param {T} value - The value to store
-   * @returns {Promise<void>} A promise that resolves when the value is stored
+   * @returns {MaybePromise<void>} A promise that resolves when the value is stored
    */
-  public abstract setItem<T = unknown, U = unknown>(key: string, value: T, options?: U): void | Promise<void>;
+  public abstract setItem<T = unknown, U = unknown>(key: string, value: T, options?: U): MaybePromise<void>;
 
   /**
    * Removes a value from storage by its key
    * @param {string} key - The key of the value to delete
-   * @returns {Promise<void>} A promise that resolves when the value is deleted
+   * @returns {MaybePromise<void>} A promise that resolves when the value is deleted
    */
-  public abstract deleteItem(key: string): void | Promise<void>;
+  public abstract deleteItem(key: string): MaybePromise<void>;
 
   /**
    * Checks if a value exists in storage for the given key
    * @param {string} key - The key to check
-   * @returns {Promise<boolean>} A promise that resolves to true if the key exists, false otherwise
+   * @returns {MaybePromise<boolean>} A promise that resolves to true if the key exists, false otherwise
    */
-  public abstract hasItem(key: string): boolean | Promise<boolean>;
+  public abstract hasItem(key: string): MaybePromise<boolean>;
 
   /**
    * Retrieves all keys currently stored in storage
-   * @returns {Promise<string[]>} A promise that resolves with an array of all stored keys
+   * @returns {MaybePromise<string[]>} A promise that resolves with an array of all stored keys
    */
-  public abstract getKeys(): string[] | Promise<string[]>;
+  public abstract getKeys(): MaybePromise<string[]>;
 
   /**
    * Removes all stored values from storage
    * @returns {Promise<void>} A promise that resolves when all values are cleared
    */
-  public abstract clear(): void | Promise<void>;
+  public abstract clear(): MaybePromise<void>;
 
   /**
    * Gets the number of key-value pairs stored in storage
    * @returns {Promise<number>} A promise that resolves with the number of stored items
    */
-  public abstract size(): number | Promise<number>;
+  public abstract size(): MaybePromise<number>;
 }
