@@ -9,8 +9,8 @@
     "node": ">=22"
   },
   "scripts": {
-    "build": "nx run-many -t build --exclude=@examples/*",
-    "dev": "nx watch --all --exclude=@examples/* -- nx run \\$NX_PROJECT_NAME:build",
+    "build": "turbo run build",
+    "dev": "turbo watch build",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:bench": "vitest bench --run",
@@ -32,7 +32,6 @@
     "@codspeed/vitest-plugin": "5.0.1",
     "@commitlint/cli": "20.3.1",
     "@commitlint/config-conventional": "20.3.1",
-    "@nx/js": "22.4.2",
     "@oxc-project/runtime": "catalog:",
     "@types/node": "25.0.10",
     "@typescript/native-preview": "7.0.0-dev.20260127.1",
@@ -40,7 +39,7 @@
     "@vitest/ui": "4.0.18",
     "bumpp": "10.4.0",
     "lint-staged": "16.2.7",
-    "nx": "22.4.2",
+    "turbo": "^2.5.0",
     "oxfmt": "0.27.0",
     "oxlint": "1.42.0",
     "renovate": "42.93.0",

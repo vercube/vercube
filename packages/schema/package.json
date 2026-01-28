@@ -27,6 +27,9 @@
     "schema",
     "swagger"
   ],
+  "scripts": {
+    "build": "tsdown --config ../../tsdown.config.ts --config-loader=unrun"
+  },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "8.4.0",
     "@standard-schema/spec": "catalog:",
