@@ -22,6 +22,9 @@
     "dist",
     "README.md"
   ],
+  "scripts": {
+    "build": "tsdown --config ../../tsdown.config.ts --config-loader=unrun"
+  },
   "dependencies": {
     "@vercube/core": "workspace:*",
     "h3": "beta"

@@ -25,6 +25,9 @@
   "bin": {
     "vercube": "./dist/index.mjs"
   },
+  "scripts": {
+    "build": "tsdown --config ../../tsdown.config.ts --config-loader=unrun"
+  },
   "dependencies": {
     "@vercube/devkit": "workspace:*",
     "citty": "0.2.0",

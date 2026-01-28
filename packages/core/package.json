@@ -22,6 +22,9 @@
     "dist",
     "README.md"
   ],
+  "scripts": {
+    "build": "tsdown --config ../../tsdown.config.ts --config-loader=unrun"
+  },
   "dependencies": {
     "@standard-schema/spec": "catalog:",
     "@vercube/di": "workspace:*",
