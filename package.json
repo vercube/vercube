@@ -9,8 +9,8 @@
     "node": ">=22"
   },
   "scripts": {
-    "build": "turbo run build",
-    "dev": "turbo watch build",
+    "build": "turbo run build --filter='./packages/*'",
+    "dev": "turbo watch build --filter='./packages/*'",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:bench": "vitest bench --run",
