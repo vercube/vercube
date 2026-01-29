@@ -3,15 +3,6 @@ import { defineCommand } from 'citty';
 import { cliFetch } from 'srvx/cli';
 import type { CommandDef } from 'citty';
 
-interface FetchOptions {
-  entry?: string;
-  url?: string;
-  method?: string;
-  headers?: string[];
-  data?: string;
-  verbose?: boolean;
-}
-
 export const fetchCommand: CommandDef = defineCommand({
   meta: {
     name: 'fetch',

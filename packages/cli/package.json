@@ -37,6 +37,7 @@
     "nypm": "0.6.4",
     "pathe": "catalog:",
     "std-env": "3.10.0",
+    "srvx": "catalog:",
     "tinyexec": "1.0.2"
   },
   "publishConfig": {
