@@ -201,6 +201,9 @@ importers:
       '@vercube/devkit':
         specifier: workspace:*
         version: link:../devkit
+      '@vercube/logger':
+        specifier: workspace:*
+        version: link:../logger
       citty:
         specifier: 0.2.0
         version: 0.2.0
