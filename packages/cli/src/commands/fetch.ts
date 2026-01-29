@@ -3,7 +3,7 @@ import { defineCommand } from 'citty';
 import { cliFetch } from 'srvx/cli';
 import type { CommandDef } from 'citty';
 
-export const fetchCommand: CommandDef = defineCommand({
+export const fetchCommand = defineCommand({
   meta: {
     name: 'fetch',
     description: 'Fetch a request from the application',
