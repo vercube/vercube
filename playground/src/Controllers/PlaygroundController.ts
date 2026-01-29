@@ -80,10 +80,6 @@ export default class PlaygroundController {
   @Get('/')
   @SetHeader('X-Test-Response-Header', '1')
   public async index(): Promise<{ message: string }> {
-    this.gLogger.debug('PlaygroundController::index', 'Debug method');
-    this.gLogger.info('PlaygroundController::index', 'Info method');
-    this.gLogger.warn('PlaygroundController::index', 'Warn method');
-    this.gLogger.error('PlaygroundController::index', 'Error method');
     return { message: 'Hello, world!' };
   }
 
