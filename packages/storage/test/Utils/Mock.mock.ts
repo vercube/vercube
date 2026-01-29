@@ -2,7 +2,7 @@ import { vi } from 'vitest';
 import { Storage } from '../../src/Service/Storage';
 
 export class TestStorage extends Storage {
-  public initialize = vi.fn().mockResolvedValue(undefined);
+  public initialize: () => void | Promise<void> = vi.fn().mockResolvedValue(undefined);
   public getItem<T = unknown>(): T {
     return {} as T;
   }
@@ -24,7 +24,7 @@ export class TestStorage extends Storage {
 }
 
 export class ErrorStorage extends Storage {
-  public initialize = vi.fn().mockRejectedValue(new Error('Init failed'));
+  public initialize: () => Promise<void> = vi.fn().mockRejectedValue(new Error('Init failed'));
   public getItem<T = unknown>(): T {
     return {} as T;
   }
