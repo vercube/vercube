@@ -1,6 +1,7 @@
 packages:
   - packages/*
   - examples/*
+  - playground
 
 catalog:
   '@oxc-project/runtime': 0.111.0

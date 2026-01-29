@@ -115,7 +115,9 @@ export class App {
     initializeContainer(this.container);
 
     // listen for incoming requests
-    await this.gHttpServer.listen();
+    if (process.env.VERCUBE_CLI_MODE !== 'true') {
+      await this.gHttpServer.listen();
+    }
 
     this.fIsInitialized = true;
   }

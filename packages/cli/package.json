@@ -29,7 +29,9 @@
     "build": "tsdown --config ../../tsdown.config.ts --config-loader=unrun"
   },
   "dependencies": {
+    "@vercube/di": "workspace:*",
     "@vercube/devkit": "workspace:*",
+    "@vercube/logger": "workspace:*",
     "citty": "0.2.0",
     "consola": "catalog:",
     "giget": "3.1.1",

@@ -10,7 +10,5 @@ export class FirstMiddleware implements BaseMiddleware {
    * @param {Request} request - The incoming HTTP request.
    * @returns {Promise<void>} - A promise that resolves when the processing is complete.
    */
-  public async onRequest(): Promise<void> {
-    console.log('First middleware');
-  }
+  public async onRequest(): Promise<void> {}
 }

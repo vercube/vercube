@@ -7,3 +7,6 @@ export * from './Build/Watch';
 
 /** Dev server */
 export * from './Server/DevServer';
+
+/** Utils */
+export { getServerAppInstance } from './Utils/Utils';

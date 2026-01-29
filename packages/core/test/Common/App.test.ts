@@ -1,5 +1,5 @@
 import { Container } from '@vercube/di';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { type App } from '../../src';
 import { HttpServer } from '../../src/Services/HttpServer/HttpServer';
 import { PluginsRegistry } from '../../src/Services/Plugins/PluginsRegistry';
@@ -70,6 +70,58 @@ describe('App', () => {
       await app.listen();
 
       await expect(app.listen()).rejects.toThrow('App is already initialized');
+    });
+
+    describe('VERCUBE_CLI_MODE', () => {
+      let originalEnv: string | undefined;
+
+      beforeEach(() => {
+        originalEnv = process.env.VERCUBE_CLI_MODE;
+      });
+
+      afterEach(() => {
+        if (originalEnv === undefined) {
+          delete process.env.VERCUBE_CLI_MODE;
+        } else {
+          process.env.VERCUBE_CLI_MODE = originalEnv;
+        }
+      });
+
+      it('should skip httpServer.listen() when VERCUBE_CLI_MODE is true', async () => {
+        process.env.VERCUBE_CLI_MODE = 'true';
+
+        const freshApp = await createTestApp({ cfg: config });
+        const httpServer = freshApp.container.get(HttpServer);
+        const listenSpy = vi.spyOn(httpServer, 'listen');
+
+        await freshApp.listen();
+
+        expect(listenSpy).not.toHaveBeenCalled();
+      });
+
+      it('should call httpServer.listen() when VERCUBE_CLI_MODE is not set', async () => {
+        delete process.env.VERCUBE_CLI_MODE;
+
+        const freshApp = await createTestApp({ cfg: config });
+        const httpServer = freshApp.container.get(HttpServer);
+        const listenSpy = vi.spyOn(httpServer, 'listen');
+
+        await freshApp.listen();
+
+        expect(listenSpy).toHaveBeenCalled();
+      });
+
+      it('should call httpServer.listen() when VERCUBE_CLI_MODE is not "true"', async () => {
+        process.env.VERCUBE_CLI_MODE = 'false';
+
+        const freshApp = await createTestApp({ cfg: config });
+        const httpServer = freshApp.container.get(HttpServer);
+        const listenSpy = vi.spyOn(httpServer, 'listen');
+
+        await freshApp.listen();
+
+        expect(listenSpy).toHaveBeenCalled();
+      });
     });
   });
 
