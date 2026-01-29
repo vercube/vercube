@@ -2,7 +2,7 @@
  * Dangerous property names that can lead to prototype pollution attacks.
  * These properties should never be set on objects from untrusted sources.
  */
-export const DANGEROUS_PROPERTIES = Object.freeze(['__proto__', 'constructor', 'prototype']);
+export const DANGEROUS_PROPERTIES: readonly string[] = Object.freeze(['__proto__', 'constructor', 'prototype']);
 
 /**
  * Checks if a property name is safe to use (not a prototype pollution vector).

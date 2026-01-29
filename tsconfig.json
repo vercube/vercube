@@ -1,7 +1,6 @@
 {
   "compilerOptions": {
     "rootDir": ".",
-    "declaration": false,
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "bundler",
@@ -19,6 +18,8 @@
     "importHelpers": true,
     "skipLibCheck": true,
     "verbatimModuleSyntax": true,
+    "isolatedDeclarations": false,
+    "declaration": true,
     "lib": ["dom", "es6", "es2017", "es2019", "ESNext"],
     "typeRoots": ["node_modules/@types"],
     "paths": {

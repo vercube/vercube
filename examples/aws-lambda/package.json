@@ -17,6 +17,7 @@
     "@vercube/cli": "workspace:*",
     "@vercube/core": "workspace:*",
     "@vercube/di": "workspace:*",
+    "@vercube/logger": "workspace:*",
     "@vercube/serverless": "workspace:*",
     "serverless": "4.31.0",
     "serverless-offline": "14.4.0"

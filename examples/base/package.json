@@ -14,6 +14,7 @@
     "@oxc-project/runtime": "catalog:",
     "@vercube/cli": "workspace:*",
     "@vercube/core": "workspace:*",
-    "@vercube/di": "workspace:*"
+    "@vercube/di": "workspace:*",
+    "@vercube/logger": "workspace:*"
   }
 }

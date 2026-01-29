@@ -14,6 +14,7 @@
     "@oxc-project/runtime": "catalog:",
     "@vercube/core": "workspace:*",
     "@vercube/di": "workspace:*",
+    "@vercube/logger": "workspace:*",
     "@vercube/ws": "workspace:*"
   },
   "devDependencies": {
