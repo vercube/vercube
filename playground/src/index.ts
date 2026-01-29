@@ -5,4 +5,10 @@ import { setup } from './Boot/Setup';
 const app = await createApp({ setup });
 app.container.expand(useContainer);
 
-await app.listen();
+if (import.meta.main) {
+  await app.listen();
+}
+
+export default {
+  fetch: app.fetch.bind(app),
+};

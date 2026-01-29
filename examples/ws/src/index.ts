@@ -2,12 +2,13 @@ import { useContainer } from '@/boot/Container';
 import { setup } from '@/boot/Setup';
 import { createApp } from '@vercube/core';
 
-async function main() {
-  const app = await createApp({ setup });
+const app = await createApp({ setup });
+app.container.expand(useContainer);
 
-  app.container.expand(useContainer);
-
+if (import.meta.main) {
   await app.listen();
 }
 
-await main();
+export default {
+  fetch: app.fetch.bind(app),
+};
