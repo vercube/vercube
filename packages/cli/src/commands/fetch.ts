@@ -30,13 +30,11 @@ export const fetchCommand = defineCommand({
       type: 'string',
       description: 'Add header (format: "Name: Value, Name: Value, ...")',
       alias: 'H',
-      default: '',
     },
     data: {
       type: 'string',
       description: 'Request body (use @- for stdin, @file for file)',
       alias: 'd',
-      default: '',
     },
     verbose: {
       type: 'boolean',
@@ -54,11 +52,11 @@ export const fetchCommand = defineCommand({
     await cliFetch({
       verbose: ctx.args.verbose,
       dir: app.config.build?.output?.dir ?? 'dist',
-      entry: ctx.args.entry ?? 'index.mjs',
+      entry: ctx.args.entry,
       url: ctx.args.url,
       method: ctx.args.method,
       headers: ctx.args.headers?.split(',') ?? [],
-      data: ctx.args.data === '' ? undefined : ctx.args.data,
+      data: ctx.args.data,
     });
   },
 }) as CommandDef;
