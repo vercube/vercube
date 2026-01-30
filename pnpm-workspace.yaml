@@ -11,7 +11,7 @@ catalog:
   defu: 6.1.4
   pathe: 2.0.3
   rolldown: 1.0.0-rc.2
-  srvx: 0.10.1
+  srvx: npm:srvx-nightly
   zod: 4.3.6
 
 ignoredBuiltDependencies:
