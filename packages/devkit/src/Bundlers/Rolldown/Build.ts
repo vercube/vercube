@@ -38,7 +38,7 @@ export async function build(ctx: ConfigTypes.BuildOptions): Promise<void> {
     consola.success({
       tag: 'build',
       message: colors.gray(
-        `Built ${colors.cyan(join(ctx?.output?.dir ?? '', result?.fileName ?? ''))} in ${(Buffer.byteLength(result?.code ?? '') / 1024).toFixed(2)}kb`,
+        `Built ${colors.cyan(join(ctx?.output?.dir ?? '', result?.fileName ?? ''))} - ${(Buffer.byteLength(result?.code ?? '') / 1024).toFixed(2)}kb`,
       ),
     });
   }
