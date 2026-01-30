@@ -1,10 +1,6 @@
 #!/usr/bin/env node
 import { defineCommand, runMain } from 'citty';
 import { version } from '../package.json';
-import { buildCommand } from './commands/build';
-import { devCommand } from './commands/dev';
-import { fetchCommand } from './commands/fetch';
-import { initCommand } from './commands/init';
 
 const main = defineCommand({
   meta: {
@@ -13,10 +9,10 @@ const main = defineCommand({
     description: 'Vercube CLI',
   },
   subCommands: {
-    build: buildCommand,
-    dev: devCommand,
-    init: initCommand,
-    fetch: fetchCommand,
+    build: () => import('./commands/build').then(({ buildCommand }) => buildCommand),
+    dev: () => import('./commands/dev').then(({ devCommand }) => devCommand),
+    init: () => import('./commands/init').then(({ initCommand }) => initCommand),
+    fetch: () => import('./commands/fetch').then(({ fetchCommand }) => fetchCommand),
   },
 });
 
