@@ -1,4 +1,7 @@
-import { rolldown } from 'rolldown';
+import { join } from 'node:path';
+import { consola } from 'consola';
+import { colors } from 'consola/utils';
+import { rolldown, type OutputChunk } from 'rolldown';
 import { getRolldownConfig } from './Config';
 import type { ConfigTypes } from '@vercube/core';
 
@@ -22,7 +25,21 @@ export async function build(ctx: ConfigTypes.BuildOptions): Promise<void> {
   // Process and write output to destination
   const outputs = Array.isArray(bundlerConfig.output) ? bundlerConfig.output : [bundlerConfig.output];
 
+  consola.info(`📦 Building \`${ctx.entry || '<no name>'}\``);
+
+  let results: OutputChunk[] = [];
+
   for (const output of outputs) {
-    await build.write(output);
+    const { output: result } = await build.write(output);
+    results.push(...(result as OutputChunk[]));
+  }
+
+  for (const result of results.filter((o) => o.type === 'chunk')) {
+    consola.success({
+      tag: 'build',
+      message: colors.gray(
+        `Built ${colors.cyan(join(ctx?.output?.dir ?? '', result?.fileName ?? ''))} in ${(Buffer.byteLength(result?.code ?? '') / 1024).toFixed(2)}kb`,
+      ),
+    });
   }
 }
