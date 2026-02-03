@@ -29,7 +29,7 @@ catalogs:
       version: 1.0.0-rc.2
     srvx:
       specifier: npm:srvx-nightly
-      version: 0.10.2-20260130-110918-262e6b2
+      version: 0.10.2-20260203-110922-8933e6b
     zod:
       specifier: 4.3.6
       version: 4.3.6
@@ -75,8 +75,8 @@ importers:
         specifier: 1.43.0
         version: 1.43.0
       renovate:
-        specifier: 43.2.2
-        version: 43.2.2(encoding@0.1.13)(typanion@3.14.0)
+        specifier: 43.2.3
+        version: 43.2.3(encoding@0.1.13)(typanion@3.14.0)
       simple-git-hooks:
         specifier: 2.13.1
         version: 2.13.1
@@ -221,7 +221,7 @@ importers:
         version: 2.0.3
       srvx:
         specifier: 'catalog:'
-        version: srvx-nightly@0.10.2-20260130-110918-262e6b2
+        version: srvx-nightly@0.10.2-20260203-110922-8933e6b
       std-env:
         specifier: 3.10.0
         version: 3.10.0
@@ -254,7 +254,7 @@ importers:
         version: 0.7.12
       srvx:
         specifier: 'catalog:'
-        version: srvx-nightly@0.10.2-20260130-110918-262e6b2
+        version: srvx-nightly@0.10.2-20260203-110922-8933e6b
     devDependencies:
       rolldown:
         specifier: 'catalog:'
@@ -415,10 +415,10 @@ importers:
         version: link:../logger
       crossws:
         specifier: 0.4.4
-        version: 0.4.4(srvx-nightly@0.10.2-20260130-110918-262e6b2)
+        version: 0.4.4(srvx-nightly@0.10.2-20260203-110922-8933e6b)
       srvx:
         specifier: 'catalog:'
-        version: srvx-nightly@0.10.2-20260130-110918-262e6b2
+        version: srvx-nightly@0.10.2-20260203-110922-8933e6b
     devDependencies:
       zod:
         specifier: 'catalog:'
@@ -5102,8 +5102,8 @@ packages:
   remark@15.0.1:
     resolution: {integrity: sha512-Eht5w30ruCXgFmxVUSlNWQ9iiimq07URKeFS3hNc8cUWy1llX4KDWfyEDZRycMc+znsN9Ux5/tJ/BFdgdOwA3A==}
 
-  renovate@43.2.2:
-    resolution: {integrity: sha512-Zp+cfHtAV15PJ9W5VJTC/Qndzw+i3pkpUOQPxpVfwUydMDjw0BpkaLfdqla5zhHxOdynoZOrnP/CIbx6/9FDEQ==}
+  renovate@43.2.3:
+    resolution: {integrity: sha512-KteKBL1OXYSBbSOkpeQdtDCrs9YTqs67f3MXN9rSEoNSPaDJuzAKNbnAdycW2TCUNpPBAjUklqaBswIIhaf40A==}
     engines: {node: ^24.11.0, pnpm: ^10.0.0}
     hasBin: true
 
@@ -5425,8 +5425,8 @@ packages:
   sprintf-js@1.1.3:
     resolution: {integrity: sha512-Oo+0REFV59/rz3gfJNKQiBlwfHaSESl1pcGyABQsnnIfWOFt6JNj5gCog2U6MLZ//IGYD+nA8nI+mTShREReaA==}
 
-  srvx-nightly@0.10.2-20260130-110918-262e6b2:
-    resolution: {integrity: sha512-p5yI+A5ybQ+WIkyjdePkws81diD+JqdYUdMQmQMlPjnuPfyBm4cZIVdL+k9NhoEOc+bXfoTx+LwC0HKE2nr4Ng==}
+  srvx-nightly@0.10.2-20260203-110922-8933e6b:
+    resolution: {integrity: sha512-JevSuFVINNaxppNkW2OILL+MILad4N262b3qrG/giik7oGOGGV4jQOzdIiXHdBwSIkVaCIZfEf84XgRLra75yA==}
     engines: {node: '>=20.16.0'}
     hasBin: true
 
@@ -9680,9 +9680,9 @@ snapshots:
       shebang-command: 2.0.0
       which: 2.0.2
 
-  crossws@0.4.4(srvx-nightly@0.10.2-20260130-110918-262e6b2):
+  crossws@0.4.4(srvx-nightly@0.10.2-20260203-110922-8933e6b):
     optionalDependencies:
-      srvx: srvx-nightly@0.10.2-20260130-110918-262e6b2
+      srvx: srvx-nightly@0.10.2-20260203-110922-8933e6b
 
   crossws@0.4.4(srvx@0.10.1):
     optionalDependencies:
@@ -11895,7 +11895,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  renovate@43.2.2(encoding@0.1.13)(typanion@3.14.0):
+  renovate@43.2.3(encoding@0.1.13)(typanion@3.14.0):
     dependencies:
       '@aws-sdk/client-codecommit': 3.980.0
       '@aws-sdk/client-ec2': 3.980.0
@@ -12487,7 +12487,7 @@ snapshots:
 
   sprintf-js@1.1.3: {}
 
-  srvx-nightly@0.10.2-20260130-110918-262e6b2: {}
+  srvx-nightly@0.10.2-20260203-110922-8933e6b: {}
 
   srvx@0.10.1:
     optional: true
