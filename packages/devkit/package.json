@@ -33,8 +33,8 @@
     "consola": "catalog:",
     "dotenv": "17.2.3",
     "hookable": "6.0.1",
-    "oxc-parser": "0.111.0",
-    "oxc-transform": "0.111.0",
+    "oxc-parser": "0.112.0",
+    "oxc-transform": "0.112.0",
     "pathe": "catalog:",
     "rolldown": "catalog:",
     "unplugin-isolated-decl": "0.15.7"
