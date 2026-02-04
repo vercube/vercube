@@ -42,6 +42,7 @@
   "dependencies": {
     "@vercube/core": "workspace:*",
     "@vercube/di": "workspace:*",
+    "srvx": "catalog:",
     "ufo": "1.6.3"
   },
   "devDependencies": {
