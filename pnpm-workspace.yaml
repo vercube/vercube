@@ -10,7 +10,7 @@ catalog:
   consola: 3.4.2
   defu: 6.1.4
   pathe: 2.0.3
-  rolldown: 1.0.0-rc.2
+  rolldown: 1.0.0-rc.3
   srvx: npm:srvx-nightly
   zod: 4.3.6
 
