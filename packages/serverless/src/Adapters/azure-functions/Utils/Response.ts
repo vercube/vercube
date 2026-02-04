@@ -1,4 +1,4 @@
-import { headersToObject, streamToAsyncIterator } from '../../../Utils';
+import { headersToObject } from '../../../Utils';
 import { cookiesFromHeaders } from './Utils';
 import type { HttpResponseInit } from '@azure/functions';
 
@@ -30,9 +30,8 @@ export function convertResponseToAzureFunctionsResponse(response: Response): Htt
     cookies,
     headers,
     status: response.status,
-    // Azure Functions runtime accepts AsyncIterableIterator<Uint8Array> as a valid body type,
-    // but TypeScript's BodyInit type (as of @azure/functions 4.11.0) doesn't include it.
-    // This type assertion is safe because the runtime handles it correctly.
-    body: streamToAsyncIterator(response.body) as unknown as BodyInit | undefined,
+    // Cast needed: web standard ReadableStream is compatible with Node.js stream/web ReadableStream
+    // but TypeScript sees them as different types
+    body: response.body as HttpResponseInit['body'],
   };
 }
