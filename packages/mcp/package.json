@@ -31,7 +31,7 @@
     "build": "tsdown --config ../../tsdown.config.ts --config-loader=unrun"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.25.3",
+    "@modelcontextprotocol/sdk": "1.26.0",
     "@vercube/auth": "workspace:*",
     "@vercube/core": "workspace:*",
     "@vercube/di": "workspace:*",
