@@ -1,27 +1,4 @@
-import generateRandomHash from '../Utils/InternalUtils';
 import type { ConfigTypes } from '../Types/ConfigTypes';
-
-/**
- * Gets the session secret from environment or generates one for development.
- * In production, requires the SECRET environment variable to be set.
- * @throws {Error} If in production and SECRET environment variable is not set
- * @returns {string} The session secret
- */
-function getSessionSecret(): string {
-  const isProduction = process.env.NODE_ENV === 'production';
-  const envSecret = process.env.SECRET;
-
-  if (isProduction && !envSecret) {
-    throw new Error(
-      'SESSION SECRET ERROR: In production mode, you must set a strong SECRET environment variable. ' +
-        'Using a dynamically generated secret is insecure and will cause session data to be lost on server restart. ' +
-        'Please set the SECRET environment variable to a strong, randomly generated string (at least 32 characters). ' +
-        'Example: SECRET=your-strong-random-secret-here-at-least-32-chars',
-    );
-  }
-
-  return envSecret ?? generateRandomHash();
-}
 
 /**
  * Default configuration for the Vercube application.
@@ -113,26 +90,5 @@ export const defaultConfig: ConfigTypes.Config = {
   /**
    * Empty runtime configuration
    */
-  runtime: {
-    /**
-     * Session configuration options.
-     */
-    session: {
-      /**
-       * The secret used to sign the session ID cookie.
-       * In production, this MUST be set via the SECRET environment variable.
-       */
-      secret: getSessionSecret(),
-
-      /**
-       * The name of the session ID cookie.
-       */
-      name: 'vercube_session',
-
-      /**
-       * The duration of time for the session to be active.
-       */
-      duration: 60 * 60 * 24 * 7, // 7 days as default
-    },
-  },
+  runtime: {},
 };

@@ -10,27 +10,7 @@ export namespace ConfigTypes {
   /**
    * Runtime configuration interface that can be modified during application execution.
    */
-  export interface RuntimeConfig {
-    /**
-     * Session configuration options.
-     */
-    session?: {
-      /**
-       * The secret used to sign the session ID cookie.
-       */
-      secret?: string;
-
-      /**
-       * The name of the session ID cookie.
-       */
-      name?: string;
-
-      /**
-       * The duration of time for the session to be active.
-       */
-      duration?: number;
-    };
-  }
+  export interface RuntimeConfig {}
 
   /**
    * Helper type to create a fully typed runtime configuration.
