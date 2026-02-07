@@ -40,5 +40,9 @@ export function toServerlessHandler(
       const response = await app.fetch(request);
       return response;
     },
-  });
+  }) as ServerlessHandler<
+    AWS.APIGatewayProxyEvent | AWS.APIGatewayProxyEventV2,
+    AWS.APIGatewayProxyResult | AWS.APIGatewayProxyResultV2,
+    AWS.Context
+  >;
 }

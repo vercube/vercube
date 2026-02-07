@@ -12,7 +12,7 @@ import { ErrorHandlerProvider } from './ErrorHandlerProvider';
  */
 export class DefaultErrorHandlerProvider extends ErrorHandlerProvider {
   @Inject(Logger)
-  private gLogger: Logger;
+  private gLogger!: Logger;
 
   /**
    * Handles an error that occurred during request processing

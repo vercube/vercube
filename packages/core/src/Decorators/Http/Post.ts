@@ -19,7 +19,7 @@ interface PostDecoratorOptions {
  */
 class PostDecorator extends BaseDecorator<PostDecoratorOptions> {
   @Inject(Router)
-  private gRouter: Router;
+  private gRouter!: Router;
 
   @Inject(MetadataResolver)
   private gMetadataResolver!: MetadataResolver;

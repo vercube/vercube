@@ -16,10 +16,10 @@ import type { MiddlewareOptions } from '../Types/CommonTypes';
  */
 export class ValidationMiddleware implements BaseMiddleware {
   @InjectOptional(Logger)
-  private gLogger: Logger | null;
+  private gLogger!: Logger | null;
 
   @InjectOptional(ValidationProvider)
-  private gValidationProvider: ValidationProvider | null;
+  private gValidationProvider!: ValidationProvider | null;
 
   /**
    * Middleware function that processes the HTTP event

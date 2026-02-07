@@ -19,7 +19,7 @@ interface TraceDecoratorOptions {
  */
 class TraceDecorator extends BaseDecorator<TraceDecoratorOptions> {
   @Inject(Router)
-  private gRouter: Router;
+  private gRouter!: Router;
 
   @Inject(RequestHandler)
   private gRequestHandler!: RequestHandler;

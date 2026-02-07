@@ -49,7 +49,7 @@ describe('HooksService', () => {
 
   it('should allow to pass payload in event and receive it on listener', () => {
     class TestEventWithPayload {
-      public value: number;
+      public value!: number;
     }
 
     let savedPayload: TestEventWithPayload = null!;

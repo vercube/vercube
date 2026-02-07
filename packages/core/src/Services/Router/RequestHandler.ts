@@ -37,7 +37,7 @@ export class RequestHandler {
   private gContainer!: Container;
 
   @Inject(GlobalMiddlewareRegistry)
-  private gGlobalMiddlewareRegistry: GlobalMiddlewareRegistry;
+  private gGlobalMiddlewareRegistry!: GlobalMiddlewareRegistry;
 
   /**
    * Prepares a route handler by resolving its metadata and middlewares

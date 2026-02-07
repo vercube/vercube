@@ -18,16 +18,16 @@ export class WebsocketService {
    * Http Server for injecting the server plugin
    */
   @Inject(HttpServer)
-  private readonly gHttpServer: HttpServer;
+  private readonly gHttpServer!: HttpServer;
 
   /**
    * Validation provider for running the schema validation
    */
   @InjectOptional(ValidationProvider)
-  private readonly gValidationProvider: ValidationProvider | null;
+  private readonly gValidationProvider!: ValidationProvider | null;
 
   @InjectOptional(Logger)
-  private readonly gLogger: Logger | null;
+  private readonly gLogger!: Logger | null;
 
   /**
    * Internal namespace registry

@@ -6,7 +6,7 @@ import type { LoggerTypes } from '../Types/LoggerTypes';
 
 export class BaseLogger implements Logger {
   @Inject(Container)
-  private gContainer: Container;
+  private gContainer!: Container;
 
   /**
    * Hold the active log levels for the logger.

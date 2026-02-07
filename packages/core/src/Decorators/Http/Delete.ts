@@ -20,7 +20,7 @@ interface DeleteDecoratorOptions {
  */
 class DeleteDecorator extends BaseDecorator<DeleteDecoratorOptions, MetadataTypes.Metadata> {
   @Inject(Router)
-  private gRouter: Router;
+  private gRouter!: Router;
 
   @Inject(RequestHandler)
   private gRequestHandler!: RequestHandler;

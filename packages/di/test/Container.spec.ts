@@ -7,7 +7,7 @@ class MySubclass extends MyClass {}
 
 class MyClassWithDep {
   @Inject(MyClass)
-  public myClass: MyClass;
+  public myClass!: MyClass;
 }
 
 let _singletonId: number = 0;
@@ -25,13 +25,13 @@ const $MyIdentityOtherClass = Identity('NewContainer.MyIdentityOtherClass');
 class MyIdentityOtherClass {}
 class MyIdentityClass {
   @Inject($MyIdentityOtherClass)
-  public myIdentityOtherClass: MyIdentityOtherClass;
+  public myIdentityOtherClass!: MyIdentityOtherClass;
 }
 
 class MyOptionalDependency {}
 class MyClassWithOptionalDependency {
   @InjectOptional(MyOptionalDependency)
-  public gMyOptionalDependecny: MyOptionalDependency | null;
+  public gMyOptionalDependecny!: MyOptionalDependency | null;
 }
 
 // Test classes for additional coverage
@@ -379,12 +379,12 @@ describe('[Framework][IOC] Container', () => {
 
     class ServiceB {
       @Inject(ServiceC)
-      public serviceC: ServiceC;
+      public serviceC!: ServiceC;
     }
 
     class ServiceA {
       @Inject(ServiceB)
-      public serviceB: ServiceB;
+      public serviceB!: ServiceB;
     }
 
     container.bind(ServiceA);
@@ -402,12 +402,12 @@ describe('[Framework][IOC] Container', () => {
 
     class MiddleService {
       @Inject(DeepService)
-      public deepService: DeepService;
+      public deepService!: DeepService;
     }
 
     class TopService {
       @Inject(MiddleService)
-      public middleService: MiddleService;
+      public middleService!: MiddleService;
     }
 
     container.bind(DeepService);
@@ -425,12 +425,12 @@ describe('[Framework][IOC] Container', () => {
 
     class MiddleService {
       @Inject(DeepService)
-      public deepService: DeepService;
+      public deepService!: DeepService;
     }
 
     class TopService {
       @Inject(MiddleService)
-      public middleService: MiddleService;
+      public middleService!: MiddleService;
     }
 
     container.bind(DeepService);

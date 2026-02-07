@@ -19,7 +19,7 @@ interface BroadcastDecoratorOptions {
  */
 class BroadcastDecorator extends BaseDecorator<BroadcastDecoratorOptions> {
   @InjectOptional($WebsocketService)
-  private gWebsocketService: WebsocketService;
+  private gWebsocketService!: WebsocketService;
 
   public override created(): void {
     if (!this.gWebsocketService) {

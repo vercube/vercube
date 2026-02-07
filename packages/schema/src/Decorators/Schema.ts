@@ -19,7 +19,7 @@ interface SchemaDecoratorOptions extends Omit<RouteConfig, 'method' | 'path'> {}
  */
 class SchemaDecorator extends BaseDecorator<SchemaDecoratorOptions> {
   @Inject(SchemaRegistry)
-  private readonly gSchemaRegistry: SchemaRegistry;
+  private readonly gSchemaRegistry!: SchemaRegistry;
 
   public override async created(): Promise<void> {
     // move to the end of the event loop

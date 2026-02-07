@@ -19,7 +19,7 @@ interface PutDecoratorOptions {
  */
 class PutDecorator extends BaseDecorator<PutDecoratorOptions> {
   @Inject(Router)
-  private gRouter: Router;
+  private gRouter!: Router;
 
   @Inject(RequestHandler)
   private gRequestHandler!: RequestHandler;

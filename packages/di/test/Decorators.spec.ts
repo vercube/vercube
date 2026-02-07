@@ -128,7 +128,7 @@ describe('[Framework][IOC] Decorators', () => {
       public injected: boolean = false;
 
       @Inject(MyInjectClass)
-      public inject: MyInjectClass;
+      public inject!: MyInjectClass;
     }
 
     it('should inject the correct class', () => {
@@ -147,7 +147,7 @@ describe('[Framework][IOC] Decorators', () => {
       public injected: boolean = false;
 
       @InjectOptional(MyInjectOptionalClass)
-      public inject: MyInjectOptionalClass | null;
+      public inject!: MyInjectOptionalClass | null;
     }
 
     it('should inject the correct class', () => {

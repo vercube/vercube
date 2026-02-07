@@ -8,7 +8,7 @@ import type { DevKitTypes } from '../Types/DevKitTypes';
  * @returns {DevKitTypes.BuildFunc} The build function for the specified bundler
  */
 export function getBuildFunc(bundler: string): DevKitTypes.BuildFunc {
-  return rolldownBuild;
+  return rolldownBuild as DevKitTypes.BuildFunc;
 }
 
 /**
@@ -17,5 +17,5 @@ export function getBuildFunc(bundler: string): DevKitTypes.BuildFunc {
  * @returns {DevKitTypes.WatchFunc} The watch function for the specified bundler
  */
 export function getWatchFunc(bundler: string): DevKitTypes.WatchFunc {
-  return rolldownWatch;
+  return rolldownWatch as DevKitTypes.WatchFunc;
 }

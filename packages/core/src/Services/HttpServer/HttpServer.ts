@@ -21,31 +21,31 @@ export class HttpServer {
    * DI container for resolving dependencies
    */
   @Inject(Container)
-  private gContainer: Container;
+  private gContainer!: Container;
 
   /**
    * Router service for resolving routes
    */
   @Inject(Router)
-  private gRouter: Router;
+  private gRouter!: Router;
 
   /**
    * Handler for processing HTTP requests
    */
   @Inject(RequestHandler)
-  private gRequestHandler: RequestHandler;
+  private gRequestHandler!: RequestHandler;
 
   /**
    * Static server for serving static files
    */
   @Inject(StaticRequestHandler)
-  private gStaticRequestHandler: StaticRequestHandler;
+  private gStaticRequestHandler!: StaticRequestHandler;
 
   /**
    * Underlying server instance
    * @private
    */
-  private fServer: Server;
+  private fServer!: Server;
 
   /**
    * List of plugins to be applied to the HTTP server
@@ -138,7 +138,7 @@ export class HttpServer {
 
       return this.gRequestHandler.handleRequest(request, route);
     } catch (error) {
-      return this.gContainer.get(ErrorHandlerProvider).handleError(error);
+      return this.gContainer.get(ErrorHandlerProvider).handleError(error instanceof Error ? error : new Error(String(error)));
     }
   }
 }
