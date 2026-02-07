@@ -13,8 +13,8 @@ catalogs:
       specifier: 1.1.0
       version: 1.1.0
     c12:
-      specifier: 3.3.3
-      version: 3.3.3
+      specifier: 4.0.0-beta.2
+      version: 4.0.0-beta.2
     consola:
       specifier: 3.4.2
       version: 3.4.2
@@ -242,7 +242,7 @@ importers:
         version: link:../logger
       c12:
         specifier: 'catalog:'
-        version: 3.3.3(magicast@0.5.1)
+        version: 4.0.0-beta.2(chokidar@5.0.0)(dotenv@17.2.4)(giget@3.1.2)(jiti@2.6.1)(magicast@0.5.1)
       defu:
         specifier: 'catalog:'
         version: 6.1.4
@@ -279,7 +279,7 @@ importers:
         version: link:../core
       c12:
         specifier: 'catalog:'
-        version: 3.3.3(magicast@0.5.1)
+        version: 4.0.0-beta.2(chokidar@5.0.0)(dotenv@17.2.4)(giget@3.1.2)(jiti@2.6.1)(magicast@0.5.1)
       chokidar:
         specifier: 5.0.0
         version: 5.0.0
@@ -2863,6 +2863,26 @@ packages:
       magicast:
         optional: true
 
+  c12@4.0.0-beta.2:
+    resolution: {integrity: sha512-u2MKpLudcF5rXP33y/tj42fBtd08SXc2BdyGJM0HC8jDNGP+CjmB3A9BnlnCywBlutgAABu1m63zHnqDUlmWjg==}
+    peerDependencies:
+      chokidar: ^5
+      dotenv: '*'
+      giget: '*'
+      jiti: '*'
+      magicast: '*'
+    peerDependenciesMeta:
+      chokidar:
+        optional: true
+      dotenv:
+        optional: true
+      giget:
+        optional: true
+      jiti:
+        optional: true
+      magicast:
+        optional: true
+
   cac@6.7.14:
     resolution: {integrity: sha512-b6Ilus+c3RrdDk+JhLKUAQfzzgLEPy6wcXqS7f/xe1EETvsDP6GORG7SFuOs6cID5YkqchW/LXZbX5bc8j7ZcQ==}
     engines: {node: '>=8'}
@@ -3025,6 +3045,9 @@ packages:
 
   confbox@0.2.2:
     resolution: {integrity: sha512-1NB+BKqhtNipMsov4xI/NnhCKp9XG9NamYp5PVm9klAT0fsrNPjaFICsCFhNhwZJKNh7zB/3q8qXz0E9oaMNtQ==}
+
+  confbox@0.2.4:
+    resolution: {integrity: sha512-ysOGlgTFbN2/Y6Cg3Iye8YKulHw+R2fNXHrgSmXISQdMnomY6eNDprVdW9R5xBguEqI954+S6709UyiO7B+6OQ==}
 
   consola@3.4.2:
     resolution: {integrity: sha512-5IKcdX0nnYavi6G7TtOhwkYzyjfJlatbjMjuLSfE2kYT5pMDOilZ4OvMhi637CcDICTmz3wARPoyhqyX1Y+XvA==}
@@ -4979,6 +5002,9 @@ packages:
 
   rc9@2.1.2:
     resolution: {integrity: sha512-btXCnMmRIBINM2LDZoEmOogIZU7Qe7zn4BpomSKZ/ykbLObuBdvG+mFq11DL6fjH1DRwHhrlgtYWG96bJiC7Cg==}
+
+  rc9@3.0.0:
+    resolution: {integrity: sha512-MGOue0VqscKWQ104udASX/3GYDcKyPI4j4F8gu/jHHzglpmy9a/anZK3PNe8ug6aZFl+9GxLtdhe3kVZuMaQbA==}
 
   rc@1.2.8:
     resolution: {integrity: sha512-y3bGgqKj3QBdxLbLkomlohkvsA8gdAiUQlSBJnBhfn+BPxg4bc62d8TcBW15wavDfgexCgccckhcZvywyQYPOw==}
@@ -9357,6 +9383,21 @@ snapshots:
     optionalDependencies:
       magicast: 0.5.1
 
+  c12@4.0.0-beta.2(chokidar@5.0.0)(dotenv@17.2.4)(giget@3.1.2)(jiti@2.6.1)(magicast@0.5.1):
+    dependencies:
+      confbox: 0.2.4
+      defu: 6.1.4
+      exsolve: 1.0.8
+      pathe: 2.0.3
+      pkg-types: 2.3.0
+      rc9: 3.0.0
+    optionalDependencies:
+      chokidar: 5.0.0
+      dotenv: 17.2.4
+      giget: 3.1.2
+      jiti: 2.6.1
+      magicast: 0.5.1
+
   cac@6.7.14: {}
 
   cacache@20.0.3:
@@ -9512,6 +9553,8 @@ snapshots:
     optional: true
 
   confbox@0.2.2: {}
+
+  confbox@0.2.4: {}
 
   consola@3.4.2: {}
 
@@ -11578,7 +11621,7 @@ snapshots:
 
   pkg-types@2.3.0:
     dependencies:
-      confbox: 0.2.2
+      confbox: 0.2.4
       exsolve: 1.0.8
       pathe: 2.0.3
 
@@ -11678,6 +11721,11 @@ snapshots:
       unpipe: 1.0.0
 
   rc9@2.1.2:
+    dependencies:
+      defu: 6.1.4
+      destr: 2.0.5
+
+  rc9@3.0.0:
     dependencies:
       defu: 6.1.4
       destr: 2.0.5
