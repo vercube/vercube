@@ -75,8 +75,8 @@ importers:
         specifier: 1.43.0
         version: 1.43.0
       renovate:
-        specifier: 43.4.2
-        version: 43.4.2(encoding@0.1.13)(typanion@3.14.0)
+        specifier: 43.4.3
+        version: 43.4.3(encoding@0.1.13)(typanion@3.14.0)
       simple-git-hooks:
         specifier: 2.13.1
         version: 2.13.1
@@ -5068,8 +5068,8 @@ packages:
   remark@15.0.1:
     resolution: {integrity: sha512-Eht5w30ruCXgFmxVUSlNWQ9iiimq07URKeFS3hNc8cUWy1llX4KDWfyEDZRycMc+znsN9Ux5/tJ/BFdgdOwA3A==}
 
-  renovate@43.4.2:
-    resolution: {integrity: sha512-h6P5SAbwj7GXJ442wMA6R0WcQuP3AA/FppHQO071D+xXU2hNazieQ4hlSMUbNKO7/ojT6vlAye8AT7JPdug5jA==}
+  renovate@43.4.3:
+    resolution: {integrity: sha512-8LySYzdU0XQphZBRx/kWv61Vtk8WriNe6QsTLJeNLHrr5OCjwZ17kzU3Wa3FVTA22FUc/5uR//eDrF7H5blycA==}
     engines: {node: ^24.11.0, pnpm: ^10.0.0}
     hasBin: true
 
@@ -7881,7 +7881,7 @@ snapshots:
 
   '@npmcli/fs@5.0.0':
     dependencies:
-      semver: 7.7.2
+      semver: 7.7.3
 
   '@one-ini/wasm@0.2.0': {}
 
@@ -9094,7 +9094,7 @@ snapshots:
       hpagent: 1.2.0
       micromatch: 4.0.8
       p-limit: 2.3.0
-      semver: 7.7.2
+      semver: 7.7.3
       strip-ansi: 6.0.1
       tar: 6.2.1
       tinylogic: 2.0.0
@@ -9350,7 +9350,7 @@ snapshots:
 
   builtins@5.1.0:
     dependencies:
-      semver: 7.7.2
+      semver: 7.7.3
 
   bumpp@10.4.1(magicast@0.5.1):
     dependencies:
@@ -9779,7 +9779,7 @@ snapshots:
       '@one-ini/wasm': 0.2.0
       commander: 14.0.3
       minimatch: 10.0.1
-      semver: 7.7.2
+      semver: 7.7.3
 
   ee-first@1.1.1: {}
 
@@ -10271,7 +10271,7 @@ snapshots:
       es6-error: 4.1.1
       matcher: 3.0.0
       roarr: 2.15.4
-      semver: 7.7.2
+      semver: 7.7.3
       serialize-error: 7.0.1
 
   global-directory@4.0.1:
@@ -11327,7 +11327,7 @@ snapshots:
 
   node-abi@3.87.0:
     dependencies:
-      semver: 7.7.2
+      semver: 7.7.3
     optional: true
 
   node-domexception@1.0.0: {}
@@ -11356,7 +11356,7 @@ snapshots:
       make-fetch-happen: 15.0.3
       nopt: 9.0.0
       proc-log: 6.1.0
-      semver: 7.7.2
+      semver: 7.7.3
       tar: 7.5.7
       tinyglobby: 0.2.15
       which: 6.0.0
@@ -11391,7 +11391,7 @@ snapshots:
     dependencies:
       hosted-git-info: 4.1.0
       is-core-module: 2.16.1
-      semver: 7.7.2
+      semver: 7.7.3
       validate-npm-package-license: 3.0.4
 
   normalize-url@6.1.0: {}
@@ -11866,7 +11866,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  renovate@43.4.2(encoding@0.1.13)(typanion@3.14.0):
+  renovate@43.4.3(encoding@0.1.13)(typanion@3.14.0):
     dependencies:
       '@aws-sdk/client-codecommit': 3.980.0
       '@aws-sdk/client-ec2': 3.980.0
