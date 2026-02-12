@@ -28,8 +28,8 @@ catalogs:
       specifier: 1.0.0-rc.4
       version: 1.0.0-rc.4
     srvx:
-      specifier: 0.11.3
-      version: 0.11.3
+      specifier: 0.11.4
+      version: 0.11.4
     zod:
       specifier: 4.3.6
       version: 4.3.6
@@ -221,7 +221,7 @@ importers:
         version: 2.0.3
       srvx:
         specifier: 'catalog:'
-        version: 0.11.3
+        version: 0.11.4
       std-env:
         specifier: 3.10.0
         version: 3.10.0
@@ -254,7 +254,7 @@ importers:
         version: 0.7.12
       srvx:
         specifier: 'catalog:'
-        version: 0.11.3
+        version: 0.11.4
     devDependencies:
       rolldown:
         specifier: 'catalog:'
@@ -317,7 +317,7 @@ importers:
         version: link:../core
       h3:
         specifier: beta
-        version: 2.0.0-beta.5(crossws@0.4.4(srvx@0.11.3))
+        version: 2.0.0-beta.5(crossws@0.4.4(srvx@0.11.4))
 
   packages/logger:
     dependencies:
@@ -380,7 +380,7 @@ importers:
         version: link:../di
       srvx:
         specifier: 'catalog:'
-        version: 0.11.3
+        version: 0.11.4
       ufo:
         specifier: 1.6.3
         version: 1.6.3
@@ -418,10 +418,10 @@ importers:
         version: link:../logger
       crossws:
         specifier: 0.4.4
-        version: 0.4.4(srvx@0.11.3)
+        version: 0.4.4(srvx@0.11.4)
       srvx:
         specifier: 'catalog:'
-        version: 0.11.3
+        version: 0.11.4
     devDependencies:
       zod:
         specifier: 'catalog:'
@@ -5729,8 +5729,8 @@ packages:
   sprintf-js@1.1.3:
     resolution: {integrity: sha512-Oo+0REFV59/rz3gfJNKQiBlwfHaSESl1pcGyABQsnnIfWOFt6JNj5gCog2U6MLZ//IGYD+nA8nI+mTShREReaA==}
 
-  srvx@0.11.3:
-    resolution: {integrity: sha512-QnQwqpNcu+nVkpRv/CI+mtHNcYNc6SR/A0J7EB22KINixRf2sbjFFu7U3rNrBPWmVhjicEuH9+1rEIDHw8CDeA==}
+  srvx@0.11.4:
+    resolution: {integrity: sha512-m/2p87bqWZ94xpRN06qNBwh0xq/D0dXajnvPDSHFqrTogxuTWYNP1UHz6Cf+oY7D+NPLY35TJAp4ESIKn0WArQ==}
     engines: {node: '>=20.16.0'}
     hasBin: true
 
@@ -10481,9 +10481,9 @@ snapshots:
       shebang-command: 2.0.0
       which: 2.0.2
 
-  crossws@0.4.4(srvx@0.11.3):
+  crossws@0.4.4(srvx@0.11.4):
     optionalDependencies:
-      srvx: 0.11.3
+      srvx: 0.11.4
 
   css-select@5.2.2:
     dependencies:
@@ -11172,14 +11172,14 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  h3@2.0.0-beta.5(crossws@0.4.4(srvx@0.11.3)):
+  h3@2.0.0-beta.5(crossws@0.4.4(srvx@0.11.4)):
     dependencies:
       cookie-es: 2.0.0
       fetchdts: 0.1.7
       rou3: 0.7.12
       srvx: 0.8.16
     optionalDependencies:
-      crossws: 0.4.4(srvx@0.11.3)
+      crossws: 0.4.4(srvx@0.11.4)
 
   handlebars@4.7.8:
     dependencies:
@@ -13279,7 +13279,7 @@ snapshots:
 
   sprintf-js@1.1.3: {}
 
-  srvx@0.11.3: {}
+  srvx@0.11.4: {}
 
   srvx@0.8.16: {}
 
