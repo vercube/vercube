@@ -1,6 +1,15 @@
 import { BaseMiddleware, RequestContext } from '@vercube/core';
 import { Inject } from '@vercube/di';
 import type { MiddlewareOptions } from '@vercube/core';
+import {
+  BearerTokenKey,
+  RequestIdKey,
+  RequestMethodKey,
+  RequestStartTimeKey,
+  RequestUrlKey,
+  UserIdKey,
+} from '../Services/RequestContextKeys';
+import { TypedRequestContext } from '../Services/TypedRequestContext';
 
 /**
  * Middleware that extracts and stores request-specific data in the request context.
@@ -19,26 +28,28 @@ export class RequestContextMiddleware extends BaseMiddleware {
    * @param args - Middleware options
    */
   public async onRequest(request: Request, _response: Response, _args: MiddlewareOptions): Promise<void> {
+    const ctx = new TypedRequestContext(this.gRequestContext);
+
     // Extract bearer token from Authorization header
     const authHeader = request.headers.get('Authorization');
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.replace('Bearer ', '');
-      this.gRequestContext.set('bearerToken', token);
+      ctx.set(BearerTokenKey, token);
 
       // Extract user ID from token (simplified - in real app you'd decode JWT)
       // For demo purposes, we'll assume token format: "user-{userId}"
       const userIdMatch = token.match(/user-(\d+)/);
       if (userIdMatch) {
-        this.gRequestContext.set('userId', userIdMatch[1]);
+        ctx.set(UserIdKey, userIdMatch[1]);
       }
     }
 
     // Set request metadata
-    this.gRequestContext.set('requestId', crypto.randomUUID());
-    this.gRequestContext.set('requestStartTime', Date.now());
-    this.gRequestContext.set('requestMethod', request.method);
-    this.gRequestContext.set('requestUrl', request.url);
+    ctx.set(RequestIdKey, crypto.randomUUID());
+    ctx.set(RequestStartTimeKey, Date.now());
+    ctx.set(RequestMethodKey, request.method);
+    ctx.set(RequestUrlKey, request.url);
 
-    console.log(this.gRequestContext.getAll());
+    console.log(ctx.getAll());
   }
 }

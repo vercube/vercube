@@ -2,6 +2,16 @@ import { Controller, Get, Middleware, Post, RequestContext, Status } from '@verc
 import { Inject } from '@vercube/di';
 import { Logger } from '@vercube/logger';
 import { RequestContextMiddleware } from '../Middlewares/RequestContextMiddleware';
+import {
+  BearerTokenKey,
+  CustomValueKey,
+  RequestIdKey,
+  RequestMethodKey,
+  RequestStartTimeKey,
+  RequestUrlKey,
+  UserIdKey,
+} from '../Services/RequestContextKeys';
+import { TypedRequestContext } from '../Services/TypedRequestContext';
 
 /**
  * Controller demonstrating the usage of Request Context.
@@ -29,7 +39,8 @@ export class RequestContextController {
     userId: string | undefined;
     message: string;
   }> {
-    const userId = this.gRequestContext.get<string>('userId');
+    const ctx = new TypedRequestContext(this.gRequestContext);
+    const userId = ctx.get(UserIdKey);
 
     this.gLogger.info('RequestContextController::getUser', `User ID from context: ${userId}`);
 
@@ -57,7 +68,8 @@ export class RequestContextController {
     tokenPrefix: string;
     message: string;
   }> {
-    const token = this.gRequestContext.get<string>('bearerToken');
+    const ctx = new TypedRequestContext(this.gRequestContext);
+    const token = ctx.get(BearerTokenKey);
 
     if (!token) {
       return {
@@ -90,11 +102,12 @@ export class RequestContextController {
     processingTime: number | undefined;
     allKeys: string[];
   }> {
-    const requestId = this.gRequestContext.get<string>('requestId');
-    const requestMethod = this.gRequestContext.get<string>('requestMethod');
-    const requestUrl = this.gRequestContext.get<string>('requestUrl');
-    const requestStartTime = this.gRequestContext.get<number>('requestStartTime');
-    const allKeys = this.gRequestContext.keys();
+    const ctx = new TypedRequestContext(this.gRequestContext);
+    const requestId = ctx.get(RequestIdKey);
+    const requestMethod = ctx.get(RequestMethodKey);
+    const requestUrl = ctx.get(RequestUrlKey);
+    const requestStartTime = ctx.get(RequestStartTimeKey);
+    const allKeys = ctx.keys();
 
     const processingTime = requestStartTime ? Date.now() - requestStartTime : undefined;
 
@@ -125,7 +138,8 @@ export class RequestContextController {
     userId: string;
     message: string;
   }> {
-    const userId = this.gRequestContext.getOrDefault<string>('userId', 'guest');
+    const ctx = new TypedRequestContext(this.gRequestContext);
+    const userId = ctx.getOrDefault(UserIdKey, 'guest');
 
     return {
       userId,
@@ -144,12 +158,13 @@ export class RequestContextController {
     message: string;
     customValue: string;
   }> {
+    const ctx = new TypedRequestContext(this.gRequestContext);
     // Set a custom value in the context
     const customValue = `custom-${Date.now()}`;
-    this.gRequestContext.set('customValue', customValue);
+    ctx.set(CustomValueKey, customValue);
 
     // This value is now available for other parts of the request processing
-    const retrievedValue = this.gRequestContext.get<string>('customValue');
+    const retrievedValue = ctx.get(CustomValueKey);
 
     this.gLogger.info('RequestContextController::setCustomValue', `Set custom value: ${retrievedValue}`);
 
@@ -172,8 +187,9 @@ export class RequestContextController {
     keys: string[];
     message: string;
   }> {
-    const allContext = this.gRequestContext.getAll();
-    const keys = this.gRequestContext.keys();
+    const ctx = new TypedRequestContext(this.gRequestContext);
+    const allContext = ctx.getAll();
+    const keys = ctx.keys();
 
     // Convert Map to object for JSON serialization
     const contextObject: Record<string, unknown> = {};
@@ -199,7 +215,8 @@ export class RequestContextController {
     requestId: string | undefined;
     message: string;
   }> {
-    const requestId = this.gRequestContext.get<string>('requestId');
+    const ctx = new TypedRequestContext(this.gRequestContext);
+    const requestId = ctx.get(RequestIdKey);
 
     return {
       requestId,
