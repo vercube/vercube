@@ -1,8 +1,8 @@
 {
   "name": "@vercube/devkit",
-  "version": "0.0.42",
+  "version": "0.0.43",
   "description": "Devkit  module for Vercube framework",
-  "packageManager": "pnpm@10.28.2",
+  "packageManager": "pnpm@10.29.3",
   "repository": {
     "type": "git",
     "url": "https://github.com/vercube/vercube.git",
@@ -31,7 +31,7 @@
     "c12": "catalog:",
     "chokidar": "5.0.0",
     "consola": "catalog:",
-    "dotenv": "17.2.3",
+    "dotenv": "17.2.4",
     "hookable": "6.0.1",
     "oxc-parser": "0.112.0",
     "oxc-transform": "0.112.0",

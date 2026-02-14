@@ -18,7 +18,7 @@ export class Router {
    * Service for triggering application hooks
    */
   @Inject(HooksService)
-  private gHooksService: HooksService;
+  private gHooksService!: HooksService;
 
   /**
    * Internal router context that stores all registered routes

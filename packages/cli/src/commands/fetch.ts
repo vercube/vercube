@@ -55,7 +55,7 @@ export const fetchCommand = defineCommand({
       entry: ctx.args.entry,
       url: ctx.args.url,
       method: ctx.args.method,
-      headers: ctx.args.headers?.split(',') ?? [],
+      header: ctx.args.headers?.split(',') ?? [],
       data: ctx.args.data,
     });
   },

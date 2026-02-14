@@ -10,10 +10,10 @@ import type { StorageTypes } from '../Types/StorageTypes';
  */
 export class StorageManager {
   @Inject(Container)
-  private gContainer: Container;
+  private gContainer!: Container;
 
   @InjectOptional(Logger)
-  private gLogger: Logger | null;
+  private gLogger!: Logger | null;
 
   /**
    * Map of registered storage instances indexed by their names

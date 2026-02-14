@@ -12,7 +12,7 @@ class MySubclass extends MyClass {}
 
 class MyClassWithDep {
   @Inject(MyClass)
-  public myClass: MyClass;
+  public myClass!: MyClass;
 }
 
 let _singletonId: number = 0;
@@ -33,13 +33,13 @@ const $MyIdentityOtherClass = Identity('NewContainer.MyIdentityOtherClass');
 class MyIdentityOtherClass {}
 class MyIdentityClass {
   @Inject($MyIdentityOtherClass)
-  public myIdentityOtherClass: MyIdentityOtherClass;
+  public myIdentityOtherClass!: MyIdentityOtherClass;
 }
 
 class MyOptionalDependency {}
 class MyClassWithOptionalDependency {
   @InjectOptional(MyOptionalDependency)
-  public gMyOptionalDependecny: MyOptionalDependency | null;
+  public gMyOptionalDependecny!: MyOptionalDependency | null;
 }
 
 class MyClassWithDeprecatedDecorator {}

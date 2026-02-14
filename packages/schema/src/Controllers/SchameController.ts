@@ -13,7 +13,7 @@ import { SchemaRegistry } from '../Services/SchemaRegistry';
 @Controller('/_schema')
 export class SchemaController {
   @Inject(SchemaRegistry)
-  private readonly gSchemaRegistry: SchemaRegistry;
+  private readonly gSchemaRegistry!: SchemaRegistry;
 
   /**
    * Handles GET requests to retrieve the generated OpenAPI schema.

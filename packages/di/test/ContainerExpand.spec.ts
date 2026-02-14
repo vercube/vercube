@@ -9,13 +9,13 @@ class MyDynamicClass {}
 
 class MyDynamicClassWithReverseDep {
   @Inject(MyClass)
-  public myClass: MyClass;
+  public myClass!: MyClass;
 }
 
 class MyDynamicClassB {}
 class MyDynamicClassA {
   @Inject(MyDynamicClassB)
-  public myClassB: MyDynamicClassB;
+  public myClassB!: MyDynamicClassB;
 }
 
 describe('[Framework][IOC] Container', () => {

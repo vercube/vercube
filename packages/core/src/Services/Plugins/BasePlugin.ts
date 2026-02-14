@@ -8,7 +8,7 @@ export class BasePlugin<T = unknown> {
   /**
    * The name of the plugin.
    */
-  public name: string;
+  public name!: string;
 
   /**
    * Uses the plugin with the given app.

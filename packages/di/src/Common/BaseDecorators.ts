@@ -10,7 +10,7 @@ export abstract class BaseDecorator<T = any, P = any> {
   public instance: any;
 
   /** Holds class prototype that is decorated */
-  public prototype: P;
+  public prototype!: P;
 
   /** Holds property name that was decorated */
   public propertyName!: string;

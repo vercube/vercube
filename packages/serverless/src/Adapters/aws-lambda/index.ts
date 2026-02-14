@@ -1,8 +1,7 @@
-import { convertEventToRequest } from './Utils/Request';
-import { convertBodyToAWSResponse, convertResponseToAWSResponse } from './Utils/Response';
+import { toLambdaHandler } from 'srvx/aws-lambda';
 import type { ServerlessHandler } from '../../Types/ServerlessTypes';
 import type { App } from '@vercube/core';
-import type { APIGatewayProxyEvent, APIGatewayProxyEventV2 } from 'aws-lambda';
+import type * as AWS from 'aws-lambda';
 
 /**
  * Converts a Vercube App instance into an AWS Lambda handler function for API Gateway integration.
@@ -29,15 +28,21 @@ import type { APIGatewayProxyEvent, APIGatewayProxyEventV2 } from 'aws-lambda';
  * @see {@link convertResponseToAWSResponse} For details on response header conversion
  * @see {@link convertBodyToAWSResponse} For details on response body conversion
  */
-export function toServerlessHandler(app: App): ServerlessHandler<APIGatewayProxyEvent | APIGatewayProxyEventV2> {
-  return async (event: APIGatewayProxyEvent | APIGatewayProxyEventV2) => {
-    const request = convertEventToRequest(event);
-    const response = await app.fetch(request);
-
-    return {
-      statusCode: response.status,
-      ...convertResponseToAWSResponse(response),
-      ...(await convertBodyToAWSResponse(response)),
-    };
-  };
+export function toServerlessHandler(
+  app: App,
+): ServerlessHandler<
+  AWS.APIGatewayProxyEvent | AWS.APIGatewayProxyEventV2,
+  AWS.APIGatewayProxyResult | AWS.APIGatewayProxyResultV2,
+  AWS.Context
+> {
+  return toLambdaHandler({
+    fetch: async (request) => {
+      const response = await app.fetch(request);
+      return response;
+    },
+  }) as ServerlessHandler<
+    AWS.APIGatewayProxyEvent | AWS.APIGatewayProxyEventV2,
+    AWS.APIGatewayProxyResult | AWS.APIGatewayProxyResultV2,
+    AWS.Context
+  >;
 }

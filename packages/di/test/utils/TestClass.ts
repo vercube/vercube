@@ -10,7 +10,7 @@ export default class TestClass extends ATestClass {
   /**
    * value
    */
-  private fValue: number;
+  private fValue!: number;
 
   /**
    * get value

@@ -4,14 +4,14 @@ packages:
   - playground
 
 catalog:
-  '@oxc-project/runtime': 0.112.0
+  '@oxc-project/runtime': 0.113.0
   '@standard-schema/spec': 1.1.0
-  c12: 3.3.3
+  c12: 4.0.0-beta.2
   consola: 3.4.2
   defu: 6.1.4
   pathe: 2.0.3
-  rolldown: 1.0.0-rc.2
-  srvx: npm:srvx-nightly
+  rolldown: 1.0.0-rc.4
+  srvx: 0.11.4
   zod: 4.3.6
 
 ignoredBuiltDependencies:

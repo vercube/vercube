@@ -13,19 +13,19 @@ import type { Container } from '@vercube/di';
  */
 export class App {
   @Inject(Router)
-  private gRouter: Router;
+  private gRouter!: Router;
 
   @Inject(PluginsRegistry)
-  private gPluginsRegistry: PluginsRegistry;
+  private gPluginsRegistry!: PluginsRegistry;
 
   @Inject(HttpServer)
-  private gHttpServer: HttpServer;
+  private gHttpServer!: HttpServer;
 
   @Inject(StaticRequestHandler)
-  private gStaticRequestHandler: StaticRequestHandler;
+  private gStaticRequestHandler!: StaticRequestHandler;
 
   @Inject(RuntimeConfig)
-  private gRuntimeConfig: RuntimeConfig;
+  private gRuntimeConfig!: RuntimeConfig;
 
   /** Holds the initialization status of the application */
   private fIsInitialized: boolean = false;
@@ -34,7 +34,7 @@ export class App {
   private fInternalContainer!: Container;
 
   /** Hold app config */
-  private fConfig: ConfigTypes.Config;
+  private fConfig!: ConfigTypes.Config;
 
   /**
    * Gets the dependency injection container.

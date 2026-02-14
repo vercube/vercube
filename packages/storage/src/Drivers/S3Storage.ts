@@ -100,8 +100,8 @@ export interface S3BaseOptions extends S3ClientConfig {
  */
 export class S3Storage implements Storage<S3BaseOptions> {
   private logger?: Logger;
-  private s3: S3Client;
-  private bucket: string;
+  private s3!: S3Client;
+  private bucket!: string;
 
   /**
    * Initializes the S3 storage client.

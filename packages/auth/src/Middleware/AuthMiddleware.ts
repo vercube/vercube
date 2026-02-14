@@ -15,13 +15,13 @@ import type { BaseMiddleware, MiddlewareOptions } from '@vercube/core';
  */
 export class AuthMiddleware implements BaseMiddleware<AuthTypes.MiddlewareOptions> {
   @Inject(Container)
-  private gContainer: Container;
+  private gContainer!: Container;
 
   @InjectOptional(Logger)
-  private gLogger: Logger | null;
+  private gLogger!: Logger | null;
 
   @InjectOptional(AuthProvider)
-  private gAuthProvider: AuthProvider | null;
+  private gAuthProvider!: AuthProvider | null;
 
   /**
    * Middleware function that processes the HTTP event.

@@ -19,7 +19,7 @@ interface OptionsDecoratorOptions {
  */
 class OptionsDecorator extends BaseDecorator<OptionsDecoratorOptions> {
   @Inject(Router)
-  private gRouter: Router;
+  private gRouter!: Router;
 
   @Inject(RequestHandler)
   private gRequestHandler!: RequestHandler;
