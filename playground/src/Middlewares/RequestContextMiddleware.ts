@@ -1,5 +1,14 @@
-import { BaseMiddleware, RequestContext } from '@vercube/core';
-import { Inject } from '@vercube/di';
+import { BaseMiddleware } from '@vercube/core';
+import { Container, Inject } from '@vercube/di';
+import {
+  BearerTokenKey,
+  RequestIdKey,
+  RequestMethodKey,
+  RequestStartTimeKey,
+  RequestUrlKey,
+  UserIdKey,
+} from '../Services/RequestContextKeys';
+import { TypedRequestContext } from '../Services/TypedRequestContext';
 import type { MiddlewareOptions } from '@vercube/core';
 
 /**
@@ -7,9 +16,8 @@ import type { MiddlewareOptions } from '@vercube/core';
  * This middleware extracts bearer token, user ID, and sets request metadata for logging.
  */
 export class RequestContextMiddleware extends BaseMiddleware {
-  /** Inject the RequestContext */
-  @Inject(RequestContext)
-  private gRequestContext!: RequestContext;
+  @Inject(Container)
+  private gContainer!: Container;
 
   /**
    * Extracts bearer token and user information from the request and stores it in the context.
@@ -19,26 +27,28 @@ export class RequestContextMiddleware extends BaseMiddleware {
    * @param args - Middleware options
    */
   public async onRequest(request: Request, _response: Response, _args: MiddlewareOptions): Promise<void> {
+    const ctx = this.gContainer.resolve(TypedRequestContext);
+
     // Extract bearer token from Authorization header
     const authHeader = request.headers.get('Authorization');
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.replace('Bearer ', '');
-      this.gRequestContext.set('bearerToken', token);
+      ctx.set(BearerTokenKey, token);
 
       // Extract user ID from token (simplified - in real app you'd decode JWT)
       // For demo purposes, we'll assume token format: "user-{userId}"
       const userIdMatch = token.match(/user-(\d+)/);
       if (userIdMatch) {
-        this.gRequestContext.set('userId', userIdMatch[1]);
+        ctx.set(UserIdKey, userIdMatch[1]);
       }
     }
 
     // Set request metadata
-    this.gRequestContext.set('requestId', crypto.randomUUID());
-    this.gRequestContext.set('requestStartTime', Date.now());
-    this.gRequestContext.set('requestMethod', request.method);
-    this.gRequestContext.set('requestUrl', request.url);
+    ctx.set(RequestIdKey, crypto.randomUUID());
+    ctx.set(RequestStartTimeKey, Date.now());
+    ctx.set(RequestMethodKey, request.method);
+    ctx.set(RequestUrlKey, request.url);
 
-    console.log(this.gRequestContext.getAll());
+    console.log(ctx.getAll());
   }
 }
