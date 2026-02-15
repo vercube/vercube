@@ -1,14 +1,24 @@
 import { RequestContext } from '@vercube/core';
-import { describe, expect, it } from 'vitest';
+import { Container } from '@vercube/di';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { BearerTokenKey, RequestIdKey, RequestStartTimeKey } from '../src/Services/RequestContextKeys';
 import { TypedRequestContext } from '../src/Services/TypedRequestContext';
 
 describe('TypedRequestContext', () => {
-  it('sets and gets typed keys inside a request context', async () => {
-    const requestContext = new RequestContext();
+  let container: Container;
+  let requestContext: RequestContext;
+  let ctx: TypedRequestContext;
 
+  beforeEach(() => {
+    container = new Container();
+    container.bind(RequestContext);
+    container.bindTransient(TypedRequestContext);
+    requestContext = container.get(RequestContext);
+    ctx = container.get(TypedRequestContext);
+  });
+
+  it('sets and gets typed keys inside a request context', async () => {
     await requestContext.run(async () => {
-      const ctx = new TypedRequestContext(requestContext);
       ctx.set(RequestIdKey, 'req-123');
       ctx.set(RequestStartTimeKey, 1_234_567_890);
 
@@ -18,17 +28,11 @@ describe('TypedRequestContext', () => {
   });
 
   it('throws when used outside a request context', () => {
-    const requestContext = new RequestContext();
-    const ctx = new TypedRequestContext(requestContext);
-
     expect(() => ctx.set(RequestIdKey, 'req-outside')).toThrow('RequestContext.set() called outside of request context');
     expect(() => ctx.get(RequestIdKey)).toThrow('RequestContext.get() called outside of request context');
   });
 
   it('isolates values between separate runs', async () => {
-    const requestContext = new RequestContext();
-    const ctx = new TypedRequestContext(requestContext);
-
     await requestContext.run(async () => {
       ctx.set(RequestIdKey, 'req-1');
       expect(ctx.get(RequestIdKey)).toBe('req-1');
@@ -42,10 +46,7 @@ describe('TypedRequestContext', () => {
   });
 
   it('preserves context through async chains', async () => {
-    const requestContext = new RequestContext();
-
     await requestContext.run(async () => {
-      const ctx = new TypedRequestContext(requestContext);
       ctx.set(RequestIdKey, 'req-async');
 
       const fromPromise = await Promise.resolve().then(() => ctx.get(RequestIdKey));
@@ -59,10 +60,7 @@ describe('TypedRequestContext', () => {
   });
 
   it('returns defensive copies from getAll and keys', async () => {
-    const requestContext = new RequestContext();
-
     await requestContext.run(async () => {
-      const ctx = new TypedRequestContext(requestContext);
       ctx.set(RequestIdKey, 'req-copy');
 
       const all = ctx.getAll();
@@ -77,9 +75,6 @@ describe('TypedRequestContext', () => {
   });
 
   it('supports a middleware-to-handler flow', async () => {
-    const requestContext = new RequestContext();
-    const ctx = new TypedRequestContext(requestContext);
-
     const middleware = () => {
       ctx.set(RequestIdKey, 'req-flow');
       ctx.set(RequestStartTimeKey, 2137);
@@ -98,9 +93,6 @@ describe('TypedRequestContext', () => {
   });
 
   it('keeps contexts isolated across parallel runs', async () => {
-    const requestContext = new RequestContext();
-    const ctx = new TypedRequestContext(requestContext);
-
     const runOne = requestContext.run(async () => {
       ctx.set(RequestIdKey, 'req-a');
       await Promise.resolve();
@@ -118,10 +110,7 @@ describe('TypedRequestContext', () => {
   });
 
   it('returns defaults when keys are missing', async () => {
-    const requestContext = new RequestContext();
-
     await requestContext.run(async () => {
-      const ctx = new TypedRequestContext(requestContext);
       expect(ctx.get(BearerTokenKey)).toBeUndefined();
       expect(ctx.getOrDefault(BearerTokenKey, 'none')).toBe('none');
     });

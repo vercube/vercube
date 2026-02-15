@@ -1,6 +1,5 @@
-import { BaseMiddleware, RequestContext } from '@vercube/core';
-import { Inject } from '@vercube/di';
-import type { MiddlewareOptions } from '@vercube/core';
+import { BaseMiddleware } from '@vercube/core';
+import { Container, Inject } from '@vercube/di';
 import {
   BearerTokenKey,
   RequestIdKey,
@@ -10,15 +9,15 @@ import {
   UserIdKey,
 } from '../Services/RequestContextKeys';
 import { TypedRequestContext } from '../Services/TypedRequestContext';
+import type { MiddlewareOptions } from '@vercube/core';
 
 /**
  * Middleware that extracts and stores request-specific data in the request context.
  * This middleware extracts bearer token, user ID, and sets request metadata for logging.
  */
 export class RequestContextMiddleware extends BaseMiddleware {
-  /** Inject the RequestContext */
-  @Inject(RequestContext)
-  private gRequestContext!: RequestContext;
+  @Inject(Container)
+  private gContainer!: Container;
 
   /**
    * Extracts bearer token and user information from the request and stores it in the context.
@@ -28,7 +27,7 @@ export class RequestContextMiddleware extends BaseMiddleware {
    * @param args - Middleware options
    */
   public async onRequest(request: Request, _response: Response, _args: MiddlewareOptions): Promise<void> {
-    const ctx = new TypedRequestContext(this.gRequestContext);
+    const ctx = this.gContainer.resolve(TypedRequestContext);
 
     // Extract bearer token from Authorization header
     const authHeader = request.headers.get('Authorization');
