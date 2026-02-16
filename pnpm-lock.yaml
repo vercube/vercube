@@ -7,8 +7,8 @@ settings:
 catalogs:
   default:
     '@oxc-project/runtime':
-      specifier: 0.113.0
-      version: 0.113.0
+      specifier: 0.114.0
+      version: 0.114.0
     '@standard-schema/spec':
       specifier: 1.1.0
       version: 1.1.0
@@ -49,7 +49,7 @@ importers:
         version: 20.4.1
       '@oxc-project/runtime':
         specifier: 'catalog:'
-        version: 0.113.0
+        version: 0.114.0
       '@types/node':
         specifier: 25.2.3
         version: 25.2.3
@@ -97,7 +97,7 @@ importers:
     dependencies:
       '@oxc-project/runtime':
         specifier: 'catalog:'
-        version: 0.113.0
+        version: 0.114.0
       '@vercube/cli':
         specifier: workspace:*
         version: link:../../packages/cli
@@ -148,7 +148,7 @@ importers:
     dependencies:
       '@oxc-project/runtime':
         specifier: 'catalog:'
-        version: 0.113.0
+        version: 0.114.0
       '@vercube/cli':
         specifier: workspace:*
         version: link:../../packages/cli
@@ -166,7 +166,7 @@ importers:
     dependencies:
       '@oxc-project/runtime':
         specifier: 'catalog:'
-        version: 0.113.0
+        version: 0.114.0
       '@vercube/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -273,7 +273,7 @@ importers:
     dependencies:
       '@oxc-project/runtime':
         specifier: 'catalog:'
-        version: 0.113.0
+        version: 0.114.0
       '@vercube/core':
         specifier: workspace:*
         version: link:../core
@@ -1559,8 +1559,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@oxc-project/runtime@0.113.0':
-    resolution: {integrity: sha512-apRWH/gXeAsl/sQiblIZnLu7f8P/C9S2fJIicuHV9KOK9J7Hv1JPyTwB8WAcOrDBfjs+cbzjMOGe9UR2ue4ZQg==}
+  '@oxc-project/runtime@0.114.0':
+    resolution: {integrity: sha512-mVGQvr/uFJGQ3hsvgQ1sJfh79t5owyZZZtw+VaH+WhtvsmtgjT6imznB9sz2Q67Q0/4obM9mOOtQscU4aJteSg==}
     engines: {node: ^20.19.0 || >=22.12.0}
 
   '@oxc-project/types@0.112.0':
@@ -5740,6 +5740,7 @@ packages:
   tar@7.5.7:
     resolution: {integrity: sha512-fov56fJiRuThVFXD6o6/Q354S7pnWMJIVlDBYijsTNx6jKSE4pvrDTs6lUnmGvNyfJwFQQwWy3owKz1ucIhveQ==}
     engines: {node: '>=18'}
+    deprecated: Old versions of tar are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
 
   through2-concurrent@2.0.0:
     resolution: {integrity: sha512-R5/jLkfMvdmDD+seLwN7vB+mhbqzWop5fAjx5IX8/yQq7VhBhzDmhXgaHAOnhnWkCpRMM7gToYHycB0CS/pd+A==}
@@ -8343,7 +8344,7 @@ snapshots:
   '@oxc-parser/binding-win32-x64-msvc@0.112.0':
     optional: true
 
-  '@oxc-project/runtime@0.113.0': {}
+  '@oxc-project/runtime@0.114.0': {}
 
   '@oxc-project/types@0.112.0': {}
 
