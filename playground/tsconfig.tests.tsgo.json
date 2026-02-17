@@ -1,0 +1,14 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@vercube/*": ["../packages/*/src"],
+      "@vercube/logger/drivers/*": ["../packages/logger/src/Drivers/*"]
+    }
+  },
+  "include": [
+    "./src/Services/TypedRequestContext.ts",
+    "./src/Services/RequestContextKeys.ts",
+    "./test/TypedRequestContext.types.ts"
+  ]
+}
