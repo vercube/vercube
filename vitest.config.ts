@@ -38,9 +38,10 @@ export default defineConfig({
       ],
     },
   },
-  // resolve: {
-  //   alias: {
-  //     '@vercube/*': './packages/$1/src',
-  //   },
-  // },
+  resolve: {
+    alias: {
+      '@vercube/*': './packages/$1/src',
+      '@vercube/logger/drivers/*': './packages/logger/src/Drivers/$1',
+    },
+  },
 });
