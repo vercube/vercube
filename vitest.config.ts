@@ -33,6 +33,8 @@ export default defineConfig({
         'packages/serverless/src/index.ts',
         // hooks
         'packages/**/src/Hooks/**',
+        // playground
+        'playground/**',
       ],
     },
   },
