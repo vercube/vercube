@@ -13,8 +13,8 @@ catalogs:
       specifier: 1.1.0
       version: 1.1.0
     c12:
-      specifier: 4.0.0-beta.2
-      version: 4.0.0-beta.2
+      specifier: 4.0.0-beta.3
+      version: 4.0.0-beta.3
     consola:
       specifier: 3.4.2
       version: 3.4.2
@@ -242,7 +242,7 @@ importers:
         version: link:../logger
       c12:
         specifier: 'catalog:'
-        version: 4.0.0-beta.2(chokidar@5.0.0)(dotenv@17.3.1)(giget@3.1.2)(jiti@2.6.1)(magicast@0.5.1)
+        version: 4.0.0-beta.3(chokidar@5.0.0)(dotenv@17.3.1)(giget@3.1.2)(jiti@2.6.1)(magicast@0.5.1)
       defu:
         specifier: 'catalog:'
         version: 6.1.4
@@ -279,7 +279,7 @@ importers:
         version: link:../core
       c12:
         specifier: 'catalog:'
-        version: 4.0.0-beta.2(chokidar@5.0.0)(dotenv@17.3.1)(giget@3.1.2)(jiti@2.6.1)(magicast@0.5.1)
+        version: 4.0.0-beta.3(chokidar@5.0.0)(dotenv@17.3.1)(giget@3.1.2)(jiti@2.6.1)(magicast@0.5.1)
       chokidar:
         specifier: 5.0.0
         version: 5.0.0
@@ -3112,8 +3112,8 @@ packages:
       magicast:
         optional: true
 
-  c12@4.0.0-beta.2:
-    resolution: {integrity: sha512-u2MKpLudcF5rXP33y/tj42fBtd08SXc2BdyGJM0HC8jDNGP+CjmB3A9BnlnCywBlutgAABu1m63zHnqDUlmWjg==}
+  c12@4.0.0-beta.3:
+    resolution: {integrity: sha512-15pHxeM4kKKnF1zPgvXq/ETPhf9DRLGg0Id3GAyQhQqYxt8WkUCbo0NipHjQUUNC5VPP8TQA32pGPDUZmAi/3g==}
     peerDependencies:
       chokidar: ^5
       dotenv: '*'
@@ -3291,9 +3291,6 @@ packages:
 
   concat-map@0.0.1:
     resolution: {integrity: sha512-/Srv4dswyQNBfohGpz9o6Yb3Gz3SrUDqBH5rTuhGR7ahtlbYKnVxw2bCFMRljaA7EXHaXZ8wsHdodFvbkhKmqg==}
-
-  confbox@0.2.2:
-    resolution: {integrity: sha512-1NB+BKqhtNipMsov4xI/NnhCKp9XG9NamYp5PVm9klAT0fsrNPjaFICsCFhNhwZJKNh7zB/3q8qXz0E9oaMNtQ==}
 
   confbox@0.2.4:
     resolution: {integrity: sha512-ysOGlgTFbN2/Y6Cg3Iye8YKulHw+R2fNXHrgSmXISQdMnomY6eNDprVdW9R5xBguEqI954+S6709UyiO7B+6OQ==}
@@ -9757,7 +9754,7 @@ snapshots:
   c12@3.3.3(magicast@0.5.1):
     dependencies:
       chokidar: 5.0.0
-      confbox: 0.2.2
+      confbox: 0.2.4
       defu: 6.1.4
       dotenv: 17.3.1
       exsolve: 1.0.8
@@ -9771,7 +9768,7 @@ snapshots:
     optionalDependencies:
       magicast: 0.5.1
 
-  c12@4.0.0-beta.2(chokidar@5.0.0)(dotenv@17.3.1)(giget@3.1.2)(jiti@2.6.1)(magicast@0.5.1):
+  c12@4.0.0-beta.3(chokidar@5.0.0)(dotenv@17.3.1)(giget@3.1.2)(jiti@2.6.1)(magicast@0.5.1):
     dependencies:
       confbox: 0.2.4
       defu: 6.1.4
@@ -9939,8 +9936,6 @@ snapshots:
 
   concat-map@0.0.1:
     optional: true
-
-  confbox@0.2.2: {}
 
   confbox@0.2.4: {}
 
