@@ -1,5 +1,5 @@
 import { Controller, Get, Middleware, Post, Status } from '@vercube/core';
-import { Container, Inject } from '@vercube/di';
+import { Inject } from '@vercube/di';
 import { Logger } from '@vercube/logger';
 import { RequestContextMiddleware } from '../Middlewares/RequestContextMiddleware';
 import {
@@ -21,11 +21,17 @@ import { TypedRequestContext } from '../Services/TypedRequestContext';
 @Controller('/api/request-context')
 @Middleware(RequestContextMiddleware)
 export class RequestContextController {
+  /**
+   * The logger instance.
+   */
   @Inject(Logger)
   private gLogger!: Logger;
 
-  @Inject(Container)
-  private gContainer!: Container;
+  /**
+   * The typed request context instance.
+   */
+  @Inject(TypedRequestContext)
+  private gTypedRequestContext!: TypedRequestContext;
 
   /**
    * Example endpoint that retrieves user ID from request context.
@@ -39,8 +45,7 @@ export class RequestContextController {
     userId: string | undefined;
     message: string;
   }> {
-    const ctx = this.gContainer.resolve(TypedRequestContext);
-    const userId = ctx.get(UserIdKey);
+    const userId = this.gTypedRequestContext.get(UserIdKey);
 
     this.gLogger.info('RequestContextController::getUser', `User ID from context: ${userId}`);
 
@@ -68,8 +73,7 @@ export class RequestContextController {
     tokenPrefix: string;
     message: string;
   }> {
-    const ctx = this.gContainer.resolve(TypedRequestContext);
-    const token = ctx.get(BearerTokenKey);
+    const token = this.gTypedRequestContext.get(BearerTokenKey);
 
     if (!token) {
       return {
@@ -102,12 +106,11 @@ export class RequestContextController {
     processingTime: number | undefined;
     allKeys: string[];
   }> {
-    const ctx = this.gContainer.resolve(TypedRequestContext);
-    const requestId = ctx.get(RequestIdKey);
-    const requestMethod = ctx.get(RequestMethodKey);
-    const requestUrl = ctx.get(RequestUrlKey);
-    const requestStartTime = ctx.get(RequestStartTimeKey);
-    const allKeys = ctx.keys();
+    const requestId = this.gTypedRequestContext.get(RequestIdKey);
+    const requestMethod = this.gTypedRequestContext.get(RequestMethodKey);
+    const requestUrl = this.gTypedRequestContext.get(RequestUrlKey);
+    const requestStartTime = this.gTypedRequestContext.get(RequestStartTimeKey);
+    const allKeys = this.gTypedRequestContext.keys();
 
     const processingTime = requestStartTime ? Date.now() - requestStartTime : undefined;
 
@@ -138,8 +141,7 @@ export class RequestContextController {
     userId: string;
     message: string;
   }> {
-    const ctx = this.gContainer.resolve(TypedRequestContext);
-    const userId = ctx.getOrDefault(UserIdKey, 'guest');
+    const userId = this.gTypedRequestContext.getOrDefault(UserIdKey, 'guest');
 
     return {
       userId,
@@ -158,13 +160,12 @@ export class RequestContextController {
     message: string;
     customValue: string;
   }> {
-    const ctx = this.gContainer.resolve(TypedRequestContext);
     // Set a custom value in the context
     const customValue = `custom-${Date.now()}`;
-    ctx.set(CustomValueKey, customValue);
+    this.gTypedRequestContext.set(CustomValueKey, customValue);
 
     // This value is now available for other parts of the request processing
-    const retrievedValue = ctx.get(CustomValueKey);
+    const retrievedValue = this.gTypedRequestContext.get(CustomValueKey);
 
     this.gLogger.info('RequestContextController::setCustomValue', `Set custom value: ${retrievedValue}`);
 
@@ -187,9 +188,8 @@ export class RequestContextController {
     keys: string[];
     message: string;
   }> {
-    const ctx = this.gContainer.resolve(TypedRequestContext);
-    const allContext = ctx.getAll();
-    const keys = ctx.keys();
+    const allContext = this.gTypedRequestContext.getAll();
+    const keys = this.gTypedRequestContext.keys();
 
     // Convert Map to object for JSON serialization
     const contextObject: Record<string, unknown> = {};
@@ -215,8 +215,7 @@ export class RequestContextController {
     requestId: string | undefined;
     message: string;
   }> {
-    const ctx = this.gContainer.resolve(TypedRequestContext);
-    const requestId = ctx.get(RequestIdKey);
+    const requestId = this.gTypedRequestContext.get(RequestIdKey);
 
     return {
       requestId,

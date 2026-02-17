@@ -1,6 +1,7 @@
 import { createApp } from '@vercube/core';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { RequestContextController } from '../src/Controllers/RequestContextController';
+import { TypedRequestContext } from '../src/Services/TypedRequestContext';
 
 describe('RequestContextController integration', () => {
   let fetchApp: (request: Request) => Promise<Response>;
@@ -9,6 +10,7 @@ describe('RequestContextController integration', () => {
     const app = await createApp();
     app.container.expand((container) => {
       container.bind(RequestContextController);
+      container.bindTransient(TypedRequestContext);
     });
     fetchApp = app.fetch.bind(app);
   });
