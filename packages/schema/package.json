@@ -31,7 +31,7 @@
     "build": "tsdown --config ../../tsdown.config.ts --config-loader=unrun"
   },
   "dependencies": {
-    "@asteasolutions/zod-to-openapi": "8.4.0",
+    "@asteasolutions/zod-to-openapi": "8.4.1",
     "@standard-schema/spec": "catalog:",
     "@vercube/core": "workspace:*",
     "@vercube/di": "workspace:*",
