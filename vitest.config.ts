@@ -12,7 +12,7 @@ export default defineConfig({
       'playground/test/**/*.test.ts',
       'playground/test/**/*.bench.ts',
     ],
-    projects: ['packages/*', 'playground'],
+    projects: ['packages/*'],
     coverage: {
       reporter: ['text', 'json', 'html'],
       include: ['packages/**/src/**/*.ts'],
@@ -41,7 +41,6 @@ export default defineConfig({
   resolve: {
     alias: {
       '@vercube/*': './packages/$1/src',
-      '@vercube/logger/drivers/*': './packages/logger/src/Drivers/$1',
     },
   },
 });
