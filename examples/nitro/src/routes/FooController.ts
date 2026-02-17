@@ -15,8 +15,13 @@ export class FooController {
     return { message: 'Hello, world!' };
   }
 
-  @Get('/:id/test')
+  @Get('/:id/testa')
   public async show(id: string): Promise<{ message: string }> {
+    return { message: `Hello, world! ${id}` };
+  }
+
+  @Get('/:id/testb')
+  public async showb(id: string): Promise<{ message: string }> {
     return { message: `Hello, world! ${id}` };
   }
 }
