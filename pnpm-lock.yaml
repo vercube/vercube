@@ -75,8 +75,8 @@ importers:
         specifier: 1.48.0
         version: 1.48.0
       renovate:
-        specifier: 43.20.0
-        version: 43.20.0(encoding@0.1.13)(typanion@3.14.0)
+        specifier: 43.24.0
+        version: 43.24.0(encoding@0.1.13)(typanion@3.14.0)
       simple-git-hooks:
         specifier: 2.13.1
         version: 2.13.1
@@ -3950,8 +3950,8 @@ packages:
     deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
     hasBin: true
 
-  glob@13.0.1:
-    resolution: {integrity: sha512-B7U/vJpE3DkJ5WXTgTpTRN63uV42DseiXXKMwG14LQBXmsdeIoHAPbU/MEo6II0k5ED74uc2ZGTC6MwHFQhF6w==}
+  glob@13.0.2:
+    resolution: {integrity: sha512-035InabNu/c1lW0tzPhAgapKctblppqsKKG9ZaNzbr+gXwWMjXoiyGSyB9sArzrjG7jY+zntRq5ZSUYemrnWVQ==}
     engines: {node: 20 || >=22}
 
   glob@6.0.4:
@@ -5314,8 +5314,8 @@ packages:
   remark@15.0.1:
     resolution: {integrity: sha512-Eht5w30ruCXgFmxVUSlNWQ9iiimq07URKeFS3hNc8cUWy1llX4KDWfyEDZRycMc+znsN9Ux5/tJ/BFdgdOwA3A==}
 
-  renovate@43.20.0:
-    resolution: {integrity: sha512-Z3pBdbtbKdNMArFV98AaBTXhCUqbBY/S1HtSc8BuOPk0IR4+rKDiTBWoZY6c+IifGLJClyVzhA9k+q+Bq1qPAA==}
+  renovate@43.24.0:
+    resolution: {integrity: sha512-8nkbLjm3ajMSMdoPDFkzIi7feyXq61jKwFuLzBABfnkV6cR2avRX+xf9WkfVTRTEkmsGiwvxcByFvZK2sIa83Q==}
     engines: {node: ^24.11.0, pnpm: ^10.0.0}
     hasBin: true
 
@@ -9802,7 +9802,7 @@ snapshots:
     dependencies:
       '@npmcli/fs': 5.0.0
       fs-minipass: 3.0.3
-      glob: 13.0.1
+      glob: 13.0.2
       lru-cache: 11.2.5
       minipass: 7.1.2
       minipass-collect: 2.0.1
@@ -10626,7 +10626,7 @@ snapshots:
       package-json-from-dist: 1.0.1
       path-scurry: 1.11.1
 
-  glob@13.0.1:
+  glob@13.0.2:
     dependencies:
       minimatch: 10.1.2
       minipass: 7.1.2
@@ -12271,7 +12271,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  renovate@43.20.0(encoding@0.1.13)(typanion@3.14.0):
+  renovate@43.24.0(encoding@0.1.13)(typanion@3.14.0):
     dependencies:
       '@aws-sdk/client-codecommit': 3.980.0
       '@aws-sdk/client-ec2': 3.980.0
@@ -12339,7 +12339,7 @@ snapshots:
       fs-extra: 11.3.3
       git-url-parse: 16.1.0
       github-url-from-git: 1.5.0
-      glob: 13.0.1
+      glob: 13.0.2
       global-agent: 3.0.0
       google-auth-library: 10.5.0
       got: 11.8.6
