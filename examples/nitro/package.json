@@ -1,0 +1,22 @@
+{
+  "name": "@examples/nitro",
+  "version": "1.0.0",
+  "description": "Nitro example for Vercube",
+  "packageManager": "pnpm@10.27.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nitro build",
+    "dev": "nitro dev"
+  },
+  "dependencies": {
+    "@vercube/core": "workspace:*",
+    "@vercube/di": "workspace:*",
+    "@vercube/logger": "workspace:*"
+  },
+  "devDependencies": {
+    "@vercube/nitro": "workspace:*",
+    "nitro": "catalog:",
+    "rolldown": "catalog:"
+  }
+}

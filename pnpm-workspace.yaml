@@ -9,9 +9,11 @@ catalog:
   c12: 4.0.0-beta.2
   consola: 3.4.2
   defu: 6.1.4
+  nitro: ../../../../unjs/nitro
   pathe: 2.0.3
   rolldown: 1.0.0-rc.3
   srvx: 0.11.2
+  ufo: 1.6.3
   zod: 4.3.6
 
 ignoredBuiltDependencies:
