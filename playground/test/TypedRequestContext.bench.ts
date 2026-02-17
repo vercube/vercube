@@ -1,6 +1,7 @@
 import { RequestContext } from '@vercube/core';
 import { Container } from '@vercube/di';
-import { beforeEach, bench, describe } from 'vitest';
+import { Logger } from '@vercube/logger';
+import { beforeEach, bench, describe, vi } from 'vitest';
 import { RequestIdKey, RequestStartTimeKey } from '../src/Services/RequestContextKeys';
 import { TypedRequestContext } from '../src/Services/TypedRequestContext';
 
@@ -9,6 +10,12 @@ describe('TypedRequestContext overhead', () => {
 
   beforeEach(() => {
     container = new Container();
+    container.bindMock(Logger, {
+      debug: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+    });
     container.bind(RequestContext);
     container.bindTransient(TypedRequestContext);
   });

@@ -1,6 +1,7 @@
 import { RequestContext } from '@vercube/core';
 import { Container } from '@vercube/di';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { Logger } from '@vercube/logger';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { BearerTokenKey, RequestIdKey, RequestStartTimeKey } from '../src/Services/RequestContextKeys';
 import { TypedRequestContext } from '../src/Services/TypedRequestContext';
 
@@ -11,8 +12,15 @@ describe('TypedRequestContext', () => {
 
   beforeEach(() => {
     container = new Container();
+    container.bindMock(Logger, {
+      debug: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+    });
     container.bind(RequestContext);
     container.bindTransient(TypedRequestContext);
+
     requestContext = container.get(RequestContext);
     ctx = container.get(TypedRequestContext);
   });
