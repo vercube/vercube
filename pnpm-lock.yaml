@@ -7,8 +7,8 @@ settings:
 catalogs:
   default:
     '@oxc-project/runtime':
-      specifier: 0.115.0
-      version: 0.115.0
+      specifier: 0.116.0
+      version: 0.116.0
     '@standard-schema/spec':
       specifier: 1.1.0
       version: 1.1.0
@@ -49,7 +49,7 @@ importers:
         version: 20.4.2
       '@oxc-project/runtime':
         specifier: 'catalog:'
-        version: 0.115.0
+        version: 0.116.0
       '@types/node':
         specifier: 25.3.1
         version: 25.3.1
@@ -97,7 +97,7 @@ importers:
     dependencies:
       '@oxc-project/runtime':
         specifier: 'catalog:'
-        version: 0.115.0
+        version: 0.116.0
       '@vercube/cli':
         specifier: workspace:*
         version: link:../../packages/cli
@@ -148,7 +148,7 @@ importers:
     dependencies:
       '@oxc-project/runtime':
         specifier: 'catalog:'
-        version: 0.115.0
+        version: 0.116.0
       '@vercube/cli':
         specifier: workspace:*
         version: link:../../packages/cli
@@ -166,7 +166,7 @@ importers:
     dependencies:
       '@oxc-project/runtime':
         specifier: 'catalog:'
-        version: 0.115.0
+        version: 0.116.0
       '@vercube/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -273,7 +273,7 @@ importers:
     dependencies:
       '@oxc-project/runtime':
         specifier: 'catalog:'
-        version: 0.115.0
+        version: 0.116.0
       '@vercube/core':
         specifier: workspace:*
         version: link:../core
@@ -1558,8 +1558,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@oxc-project/runtime@0.115.0':
-    resolution: {integrity: sha512-Rg8Wlt5dCbXhQnsXPrkOjL1DTSvXLgb2R/KYfnf1/K+R0k6UMLEmbQXPM+kwrWqSmWA2t0B1EtHy2/3zikQpvQ==}
+  '@oxc-project/runtime@0.116.0':
+    resolution: {integrity: sha512-LFaAr+svwlXc539pl85rsp645MyJSJpheFPHgh30KDSqiD7L1GuxoVagzjDQQwi1iD6tLIl8UjzaHJubOnWFdg==}
     engines: {node: ^20.19.0 || >=22.12.0}
 
   '@oxc-project/types@0.112.0':
@@ -4110,11 +4110,13 @@ packages:
   git-raw-commits@2.0.11:
     resolution: {integrity: sha512-VnctFhw+xfj8Va1xtfEqCUD2XDrbAPSJx+hSrE5K7fGdjZruW7XV+QOrN7LF/RJyvspRiD2I0asWsxFp0ya26A==}
     engines: {node: '>=10'}
+    deprecated: This package is no longer maintained. For the JavaScript API, please use @conventional-changelog/git-client instead.
     hasBin: true
 
   git-raw-commits@4.0.0:
     resolution: {integrity: sha512-ICsMM1Wk8xSGMowkOmPrzo2Fgmfo4bMHLNX6ytHjajRJUqvHOw/TFapQ+QG75c3X/tTDDhOSRPGC52dDbNM8FQ==}
     engines: {node: '>=16'}
+    deprecated: This package is no longer maintained. For the JavaScript API, please use @conventional-changelog/git-client instead.
     hasBin: true
 
   git-up@8.1.1:
@@ -8556,7 +8558,7 @@ snapshots:
   '@oxc-parser/binding-win32-x64-msvc@0.115.0':
     optional: true
 
-  '@oxc-project/runtime@0.115.0': {}
+  '@oxc-project/runtime@0.116.0': {}
 
   '@oxc-project/types@0.112.0': {}
 
