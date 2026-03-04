@@ -36,8 +36,8 @@
     "giget": "3.1.2",
     "nypm": "0.6.5",
     "pathe": "catalog:",
-    "std-env": "3.10.0",
     "srvx": "catalog:",
+    "std-env": "4.0.0-rc.1",
     "tinyexec": "1.0.2"
   },
   "publishConfig": {
