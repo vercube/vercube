@@ -18,25 +18,23 @@ export default function vercubeNitro(): NitroModule {
 
       const routes = [...routeMap.values()];
 
-      console.log(routes);
-
       nitro.options.virtual['#internal/vercube-route-plugin'] = `
         import { definePlugin } from 'nitro';
-        import { useNitroApp } from 'nitro/app';
-        import { Container } from '@vercube/di';
+        import { createApp } from '@vercube/core';
+        import { initializeContainer } from '@vercube/di';
+
         ${routes.map((route) => route.import).join('\n')}
 
         export default definePlugin(async (nitroApp) => {
-          let container = nitroApp.__vercubeContainer__;
-
-          if (!container) {
-            container = new Container();
-            nitroApp.__vercubeContainer__ = container;
-          }
+          const app = await createApp();
+          nitroApp.__vercubeApp__ = app;
+          globalThis.__vercubeApp__ = app;
 
           // bind routes to container
-          ${routes.map((route) => `container.bind(${route.importClassName});`).join('\n')}
-        })
+          ${routes.map((route) => `app.container.bind(${route.importClassName});`).join('\n')}
+
+          initializeContainer(app.container);
+        });
       `;
 
       nitro.options.plugins.push('#internal/vercube-route-plugin');

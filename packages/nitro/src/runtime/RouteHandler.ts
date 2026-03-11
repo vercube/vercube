@@ -1,10 +1,9 @@
-import { useNitroApp } from 'nitro/app';
 import { defineEventHandler } from 'nitro/h3';
 
-export default defineEventHandler((event) => {
-  const container = useNitroApp().__vercubeContainer__;
+export default defineEventHandler({
+  fetch: async (event) => {
+    const app = (globalThis as any).__vercubeApp__;
 
-  console.log(container);
-
-  return { message: 'Hello, world!' };
+    return app.fetch(event);
+  },
 });

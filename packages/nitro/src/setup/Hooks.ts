@@ -1,5 +1,7 @@
 import { destroyContainer } from '@vercube/di';
+import { watch } from 'chokidar';
 import { useNitroApp } from 'nitro/app';
+import { join } from 'pathe';
 import { validateBundler } from '../validators/BundlerValidator';
 import { validateTypescript } from '../validators/TypescriptValidator';
 import { setupRoutes } from './Routes';
@@ -27,6 +29,26 @@ export function setupHooks(nitro: Nitro): void {
     await setupRoutes(nitro);
     nitro.routing.sync();
   });
+
+  /**
+   * In dev mode, watch controller files for content changes.
+   * Nitro's built-in watcher only reacts to add/unlink events (not `change`),
+   * and Rollup only watches files it directly imports. Controller files
+   * decorated with @Controller are not imported by Rollup, so their changes
+   * are invisible to Nitro. This watcher bridges that gap.
+   */
+  if (nitro.options.dev) {
+    const scanDirs = nitro.options.scanDirs.flatMap((dir) => [
+      join(dir, nitro.options.apiDir || 'api'),
+      join(dir, nitro.options.routesDir || 'routes'),
+    ]);
+
+    const watcher = watch(scanDirs, { ignoreInitial: true }).on('change', async () => {
+      await nitro.hooks.callHook('rollup:reload');
+    });
+
+    nitro.hooks.hook('close', () => watcher.close());
+  }
 
   /**
    * Destroys the Vercube container

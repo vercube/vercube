@@ -1,4 +1,4 @@
-import { Controller, Get } from '@vercube/core';
+import { Controller, Get, HTTPStatus, Param, Status } from '@vercube/core';
 
 /**
  * Foo controller.
@@ -16,7 +16,8 @@ export class FooController {
   }
 
   @Get('/:id/testb')
-  public async show(id: string): Promise<{ message: string }> {
-    return { message: `Hello, world! ${id}` };
+  @Status(HTTPStatus.OK)
+  public async show(@Param('id') id: string): Promise<{ message: string }> {
+    return { message: `Hello, world! The id is ${id}` };
   }
 }

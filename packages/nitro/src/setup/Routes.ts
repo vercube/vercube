@@ -35,8 +35,6 @@ export async function setupRoutes(nitro: Nitro): Promise<void> {
 
   // sync nitro routes
   nitro.routing.sync();
-
-  console.log(nitro.options.routes);
 }
 
 /**
