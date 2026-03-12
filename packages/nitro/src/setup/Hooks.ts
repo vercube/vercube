@@ -41,6 +41,7 @@ export function setupHooks(nitro: Nitro): void {
     const scanDirs = nitro.options.scanDirs.flatMap((dir) => [
       join(dir, nitro.options.apiDir || 'api'),
       join(dir, nitro.options.routesDir || 'routes'),
+      dir,
     ]);
 
     const watcher = watch(scanDirs, { ignoreInitial: true }).on('change', async () => {

@@ -1,6 +1,8 @@
 import { setupHooks } from './setup/Hooks';
 import { getTransformedRoutes } from './setup/Routes';
+import { getTransformedServices } from './setup/Services';
 import type { RouteInfo } from './build/Routes';
+import type { ServiceInfo } from './build/Services';
 import type { NitroModule } from 'nitro/types';
 
 export default function vercubeNitro(): NitroModule {
@@ -18,12 +20,25 @@ export default function vercubeNitro(): NitroModule {
 
       const routes = [...routeMap.values()];
 
+      const serviceMap = new Map<string, ServiceInfo>();
+
+      for (const service of await getTransformedServices(nitro)) {
+        serviceMap.set(`${service.fullPath}:${service.importClassName}`, service);
+      }
+
+      const services = [...serviceMap.values()];
+
+      // Deduplicate imports by class name (a class bound as a route shouldn't be imported twice)
+      const routeClassNames = new Set(routes.map((r) => r.importClassName));
+      const uniqueServices = services.filter((s) => !routeClassNames.has(s.importClassName));
+
       nitro.options.virtual['#internal/vercube-route-plugin'] = `
         import { definePlugin } from 'nitro';
         import { createApp } from '@vercube/core';
         import { initializeContainer } from '@vercube/di';
 
         ${routes.map((route) => route.import).join('\n')}
+        ${uniqueServices.map((service) => service.import).join('\n')}
 
         export default definePlugin(async (nitroApp) => {
           const app = await createApp();
@@ -32,6 +47,9 @@ export default function vercubeNitro(): NitroModule {
 
           // bind routes to container
           ${routes.map((route) => `app.container.bind(${route.importClassName});`).join('\n')}
+
+          // bind services to container
+          ${uniqueServices.map((service) => `app.container.bind(${service.importClassName});`).join('\n')}
 
           initializeContainer(app.container);
         });

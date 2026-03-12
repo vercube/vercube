@@ -1,4 +1,6 @@
 import { Controller, Get, HTTPStatus, Param, Status } from '@vercube/core';
+import { Inject } from '@vercube/di';
+import { TestService } from '../services/TestService';
 
 /**
  * Foo controller.
@@ -6,6 +8,9 @@ import { Controller, Get, HTTPStatus, Param, Status } from '@vercube/core';
  */
 @Controller('/api/foo')
 export class FooController {
+  @Inject(TestService)
+  private gTestService: TestService;
+
   /**
    * Handles GET requests to the / endpoint.
    * @returns {Promise<{ message: string }>} A promise that resolves to an object containing a greeting message.
@@ -18,6 +23,8 @@ export class FooController {
   @Get('/:id/testb')
   @Status(HTTPStatus.OK)
   public async show(@Param('id') id: string): Promise<{ message: string }> {
-    return { message: `Hello, world! The id is ${id}` };
+    return {
+      message: `Hello, world! The id is ${id} and the test service is ${this.gTestService.getTest()}`,
+    };
   }
 }
