@@ -20,7 +20,7 @@ export class FooController {
     return { message: 'Hello, world!' };
   }
 
-  @Get('/:id/testb')
+  @Get('/:id/testa')
   @Status(HTTPStatus.OK)
   public async show(@Param('id') id: string): Promise<{ message: string }> {
     return {

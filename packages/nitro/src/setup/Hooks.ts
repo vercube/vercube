@@ -5,9 +5,10 @@ import { join } from 'pathe';
 import { validateBundler } from '../validators/BundlerValidator';
 import { validateTypescript } from '../validators/TypescriptValidator';
 import { setupRoutes } from './Routes';
+import type { PluginOptions } from '../plugin/VercubePlugin';
 import type { Nitro } from 'nitro/types';
 
-export function setupHooks(nitro: Nitro): void {
+export function setupHooks(nitro: Nitro, options?: PluginOptions): void {
   /**
    * Validates the bundler and typescript options for the nitro instance
    * @param nitro - The nitro instance
@@ -25,11 +26,6 @@ export function setupHooks(nitro: Nitro): void {
     nitro.routing.sync();
   });
 
-  nitro.hooks.hook('rollup:reload', async () => {
-    await setupRoutes(nitro);
-    nitro.routing.sync();
-  });
-
   /**
    * In dev mode, watch controller files for content changes.
    * Nitro's built-in watcher only reacts to add/unlink events (not `change`),
@@ -41,7 +37,7 @@ export function setupHooks(nitro: Nitro): void {
     const scanDirs = nitro.options.scanDirs.flatMap((dir) => [
       join(dir, nitro.options.apiDir || 'api'),
       join(dir, nitro.options.routesDir || 'routes'),
-      dir,
+      ...(options?.scanDirs ?? []),
     ]);
 
     const watcher = watch(scanDirs, { ignoreInitial: true }).on('change', async () => {
