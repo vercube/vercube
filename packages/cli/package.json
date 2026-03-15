@@ -38,7 +38,7 @@
     "pathe": "catalog:",
     "srvx": "catalog:",
     "std-env": "4.0.0",
-    "tinyexec": "1.0.2"
+    "tinyexec": "1.0.4"
   },
   "publishConfig": {
     "access": "public"
