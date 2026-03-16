@@ -53,7 +53,7 @@
     "access": "public"
   },
   "inlinedDependencies": {
-    "@types/aws-lambda": "8.10.161",
-    "@azure/functions": "4.11.2"
+    "@azure/functions": "4.11.2",
+    "@types/aws-lambda": "8.10.161"
   }
 }

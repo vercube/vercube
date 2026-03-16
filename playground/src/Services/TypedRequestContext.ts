@@ -1,6 +1,7 @@
 import { RequestContext } from '@vercube/core';
 import { Inject } from '@vercube/di';
 
+// oxlint-disable-next-line no-unused-vars
 export type CtxKey<T> = { readonly name: string };
 
 export const ctxKey = <T>(name: string): CtxKey<T> => ({ name });
