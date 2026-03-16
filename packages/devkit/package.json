@@ -32,9 +32,9 @@
     "chokidar": "5.0.0",
     "consola": "catalog:",
     "dotenv": "17.3.1",
-    "hookable": "6.0.1",
-    "oxc-parser": "0.117.0",
-    "oxc-transform": "0.117.0",
+    "hookable": "6.1.0",
+    "oxc-parser": "0.119.0",
+    "oxc-transform": "0.119.0",
     "pathe": "catalog:",
     "rolldown": "catalog:",
     "unplugin-isolated-decl": "0.15.7"
