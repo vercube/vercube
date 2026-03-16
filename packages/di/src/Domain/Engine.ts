@@ -21,6 +21,7 @@ export interface IClassMapEntry {
   deps: IClassDep[];
 }
 
+// oxlint-disable-next-line no-shadow-restricted-names
 declare const globalThis: {
   __IOCClassMap: Map<IOC.Prototype, IClassMapEntry>;
 };

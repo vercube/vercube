@@ -20,14 +20,13 @@
   // Experimental: Sort imports
   "experimentalSortImports": {
     "groups": [
-      ["^node:"],
       ["builtin"],
       ["external"],
-      ["^@vercube/"],
+      ["internal"],
       ["parent"],
       ["sibling"],
       ["index"],
-      ["external-type", "internal-type", "parent-type", "sibling-type", "index-type"],
+      ["type-builtin", "type-external", "type-internal", "type-parent", "type-sibling", "type-index"],
     ],
     "internalPattern": ["^@vercube/"],
     "ignoreCase": true,

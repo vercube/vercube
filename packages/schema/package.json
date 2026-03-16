@@ -2,7 +2,7 @@
   "name": "@vercube/schema",
   "version": "0.0.43",
   "description": "Schema (swagger) module for Vercube framework",
-  "packageManager": "pnpm@10.28.2",
+  "packageManager": "pnpm@10.32.1",
   "repository": {
     "type": "git",
     "url": "https://github.com/vercube/vercube.git",
@@ -31,7 +31,7 @@
     "build": "tsdown --config ../../tsdown.config.ts --config-loader=unrun"
   },
   "dependencies": {
-    "@asteasolutions/zod-to-openapi": "8.4.0",
+    "@asteasolutions/zod-to-openapi": "8.4.3",
     "@standard-schema/spec": "catalog:",
     "@vercube/core": "workspace:*",
     "@vercube/di": "workspace:*",

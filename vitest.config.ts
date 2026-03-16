@@ -6,7 +6,12 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    include: ['packages/**/test/**/*.test.ts', 'packages/**/test/**/*.bench.ts'],
+    include: [
+      'packages/**/test/**/*.test.ts',
+      'packages/**/test/**/*.bench.ts',
+      'playground/test/**/*.test.ts',
+      'playground/test/**/*.bench.ts',
+    ],
     projects: ['packages/*'],
     coverage: {
       reporter: ['text', 'json', 'html'],
@@ -28,6 +33,8 @@ export default defineConfig({
         'packages/serverless/src/index.ts',
         // hooks
         'packages/**/src/Hooks/**',
+        // playground
+        'playground/**',
       ],
     },
   },
