@@ -44,14 +44,18 @@ class GetDecorator extends BaseDecorator<GetDecoratorOptions> {
       propertyName: this.propertyName,
     });
 
-    this.gRouter.addRoute({
-      path: this.options.path,
-      method: 'GET',
-      handler: this.gRequestHandler.prepareHandler({
-        instance: this.instance,
-        propertyName: this.propertyName,
-      }),
-    });
+    const methods: ('GET' | 'HEAD')[] = ['GET', 'HEAD'];
+
+    for (const method of methods) {
+      this.gRouter.addRoute({
+        path: this.options.path,
+        method,
+        handler: this.gRequestHandler.prepareHandler({
+          instance: this.instance,
+          propertyName: this.propertyName,
+        }),
+      });
+    }
   }
 }
 
