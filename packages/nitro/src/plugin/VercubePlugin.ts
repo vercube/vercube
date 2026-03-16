@@ -26,7 +26,7 @@ export function vercubeNitro(options?: PluginOptions): NitroModule {
 
       const serviceMap = new Map<string, ServiceInfo>();
 
-      for (const service of await getTransformedServices(nitro)) {
+      for (const service of await getTransformedServices(nitro, options?.scanDirs)) {
         serviceMap.set(`${service.fullPath}:${service.importClassName}`, service);
       }
 

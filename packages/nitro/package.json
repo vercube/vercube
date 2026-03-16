@@ -34,6 +34,7 @@
   "dependencies": {
     "@vercube/core": "workspace:*",
     "@vercube/di": "workspace:*",
+    "@vercube/storage": "workspace:*",
     "chokidar": "^5.0.0",
     "nitro": "catalog:",
     "oxc-parser": "0.112.0",

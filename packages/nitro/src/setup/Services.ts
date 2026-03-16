@@ -6,7 +6,7 @@ import type { Nitro } from 'nitro/types';
  * Scans the project source directory for `@Injectable`-decorated classes and returns
  * their transformed service info with resolved import paths.
  */
-export async function getTransformedServices(nitro: Nitro): Promise<ServiceInfo[]> {
+export async function getTransformedServices(nitro: Nitro, scanDirs?: string[]): Promise<ServiceInfo[]> {
   const files = await scanServices(nitro);
   return (await Promise.all(files.map((file) => transformService(file))).then((r) => r.flat())).map((service) => ({
     ...service,
@@ -19,6 +19,6 @@ export async function getTransformedServices(nitro: Nitro): Promise<ServiceInfo[
  * scanDirs already points to the server source root (e.g. `src/`), so we scan
  * from `.` to cover all subdirectories without adding an extra path segment.
  */
-export async function scanServices(nitro: Nitro): Promise<FileInfo[]> {
-  return scanFiles(nitro, '.');
+export async function scanServices(nitro: Nitro, scanDirs?: string[]): Promise<FileInfo[]> {
+  return Promise.all(scanDirs?.map((dir) => scanFiles(nitro, dir)) ?? [scanFiles(nitro, '.')]).then((r) => r.flat());
 }

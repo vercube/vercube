@@ -1,5 +1,6 @@
-import { Controller, Get, HTTPStatus, Param, Status } from '@vercube/core';
+import { Controller, Delete, Get, Param, Post, Put } from '@vercube/core';
 import { Inject } from '@vercube/di';
+import { StorageManager } from '@vercube/storage';
 import { TestService } from '../services/TestService';
 
 /**
@@ -8,6 +9,9 @@ import { TestService } from '../services/TestService';
  */
 @Controller('/api/foo')
 export class FooController {
+  @Inject(StorageManager)
+  private gStorageManager: StorageManager;
+
   @Inject(TestService)
   private gTestService: TestService;
 
@@ -17,12 +21,36 @@ export class FooController {
    */
   @Get('/')
   public async index(): Promise<{ message: string }> {
-    return { message: 'Hello, world!' };
+    await this.gStorageManager.setItem({ key: 'foo', value: 'bar' });
+
+    const value = await this.gStorageManager.getItem<string>({ key: 'foo' });
+
+    return { message: `Hello, world! The value is ${value}` };
   }
 
-  @Get('/:id/testa')
-  @Status(HTTPStatus.OK)
+  @Get('/:id')
   public async show(@Param('id') id: string): Promise<{ message: string }> {
+    return {
+      message: `Hello, world! The id is ${id} and the test service is ${this.gTestService.getTest()}`,
+    };
+  }
+
+  @Post('/:id')
+  public async create(@Param('id') id: string): Promise<{ message: string }> {
+    return {
+      message: `Hello, world! The id is ${id} and the test service is ${this.gTestService.getTest()}`,
+    };
+  }
+
+  @Put('/:id')
+  public async update(@Param('id') id: string): Promise<{ message: string }> {
+    return {
+      message: `Hello, world! The id is ${id} and the test service is ${this.gTestService.getTest()}`,
+    };
+  }
+
+  @Delete('/:id')
+  public async delete(@Param('id') id: string): Promise<{ message: string }> {
     return {
       message: `Hello, world! The id is ${id} and the test service is ${this.gTestService.getTest()}`,
     };

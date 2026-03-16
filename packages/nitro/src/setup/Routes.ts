@@ -9,29 +9,29 @@ export async function setupRoutes(nitro: Nitro): Promise<void> {
    * @param nitro - The nitro instance
    * @returns void
    */
-  const perfStart = performance.now();
   const routes = await getTransformedRoutes(nitro);
 
-  nitro.logger.success(`Vercube routes transformed in ${Math.round(performance.now() - perfStart)}ms`);
+  // clear nitro handlers
+  nitro.options.handlers = clearRoutes(nitro.options.handlers);
 
-  nitro.options.routes = {
-    ...clearRoutes(nitro.options?.routes ?? {}),
-    // oxlint-disable-next-line unicorn/no-array-reduce
-    ...routes.reduce(
-      (acc, route) => {
-        acc[route.route] = {
-          handler: '@vercube/nitro/runtime/handler',
-          method: route.method as HTTPMethod,
-          lazy: false,
-          format: 'web',
-          env: ['dev', 'prod'],
-          meta: {},
-        };
-        return acc;
-      },
-      {} as NitroOptions['routes'],
-    ),
-  };
+  nitro.options.handlers.push(
+    ...routes.map((route) => ({
+      route: route.route,
+      method: route.method as HTTPMethod,
+      handler: `@vercube/nitro/runtime/handler`,
+      lazy: true,
+    })),
+  );
+
+  // ignore class files
+  nitro.options.ignore = [
+    ...new Set([
+      ...(nitro.options.ignore ?? []),
+      ...routes.map((route) =>
+        route.fullPath.replace(nitro.options.rootDir, '').replace(String(nitro.options?.serverDir), '').replace('src/', ''),
+      ),
+    ]),
+  ];
 
   // sync nitro routes
   nitro.routing.sync();
@@ -63,14 +63,10 @@ export async function scanRoutes(nitro: Nitro): Promise<FileInfo[]> {
 }
 
 /**
- * Clears routes that are not defined in the routes directory
- * @param routes - The routes to clear
- * @returns The cleared routes
+ * Clears the routes from the handlers
+ * @param handlers - The handlers
+ * @returns void
  */
-function clearRoutes(routes: NitroOptions['routes']): NitroOptions['routes'] {
-  return Object.fromEntries(
-    Object.entries(routes).filter(
-      ([_, value]) => typeof value === 'object' && 'handler' in value && value.handler !== '@vercube/nitro/runtime/handler',
-    ),
-  );
+export function clearRoutes(handlers: NitroOptions['handlers']): NitroOptions['handlers'] {
+  return handlers.filter((handler) => handler.handler !== '@vercube/nitro/runtime/handler');
 }

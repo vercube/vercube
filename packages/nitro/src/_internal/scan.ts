@@ -15,7 +15,6 @@ export async function scanDir(nitro: Nitro, dir: string, name: string): Promise<
   const fileNames = await glob(join(name, GLOB_SCAN_PATTERN), {
     cwd: dir,
     dot: true,
-    ignore: nitro.options.ignore,
     absolute: true,
   }).catch((error) => {
     if (error?.code === 'ENOTDIR') {

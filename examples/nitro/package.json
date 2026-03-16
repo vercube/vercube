@@ -12,11 +12,12 @@
   "dependencies": {
     "@vercube/core": "workspace:*",
     "@vercube/di": "workspace:*",
-    "@vercube/logger": "workspace:*"
+    "@vercube/logger": "workspace:*",
+    "@vercube/nitro": "workspace:*",
+    "@vercube/storage": "workspace:*",
+    "nitro": "catalog:"
   },
   "devDependencies": {
-    "@vercube/nitro": "workspace:*",
-    "nitro": "catalog:",
     "rolldown": "catalog:"
   }
 }

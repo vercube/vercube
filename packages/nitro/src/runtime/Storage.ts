@@ -1,27 +1,13 @@
-import { Container, Init, Inject, InjectOptional } from '@vercube/di';
-import { Logger } from '@vercube/logger';
-import { Storage } from './Storage';
-import type { StorageTypes } from '../Types/StorageTypes';
+import { Storage, StorageManager } from '@vercube/storage';
+import { useStorage } from 'nitro/storage';
+import type { StorageTypes } from '@vercube/storage';
 
 /**
  * Manages multiple storage instances and provides a unified interface for storage operations.
  * Each storage instance is identified by a unique name and implements the Storage interface.
  * This class handles initialization, registration, and delegation of storage operations.
  */
-export class StorageManager {
-  /** Container instance */
-  @Inject(Container)
-  protected gContainer!: Container;
-
-  /** Logger instance */
-  @InjectOptional(Logger)
-  protected gLogger!: Logger | null;
-
-  /**
-   * Map of registered storage instances indexed by their names
-   */
-  protected fStorages: Map<string, StorageTypes.Storages> = new Map();
-
+export class NitroStorageManager extends StorageManager {
   /**
    * Mounts a new storage instance with the specified name
    * @param {StorageTypes.Mount} params - Mount parameters containing name and storage implementation
@@ -29,11 +15,11 @@ export class StorageManager {
    * @param {IOC.Newable<Storage>} params.storage - Storage implementation to mount
    * @returns {Promise<void>} A promise that resolves when mounting is complete
    */
-  public async mount<T extends Storage<unknown>>({ name, storage, initOptions }: StorageTypes.Mount<T>): Promise<void> {
-    this.fStorages.set(name ?? 'default', {
-      storage: this.gContainer.resolve(storage),
-      initOptions,
-    });
+  public async mount<T extends Storage<unknown>>(_opts: StorageTypes.Mount<T>): Promise<void> {
+    this.gLogger?.warn(
+      'NitroStorageManager::mount',
+      'mounting storage is not supported for Nitro. Use options.storage in nitro.config.ts instead',
+    );
   }
 
   /**
@@ -41,8 +27,23 @@ export class StorageManager {
    * @param {string} name - Name of the storage instance to retrieve
    * @returns {Storage | undefined} The storage instance if found, undefined otherwise
    */
-  public getStorage(name: string = 'default'): Storage | undefined {
-    return this.fStorages.get(name)?.storage ?? undefined;
+  public getStorage(name: string = ''): Storage | undefined {
+    // if named storage don't exists - use a default one (nitro.config.ts)
+    const storage = useStorage(name) || useStorage();
+
+    return {
+      getItem: storage.getItem.bind(storage),
+      getItems: async <T>(keys: string[]) => (await storage.getItems(keys)).map((item) => item.value) as T[],
+      setItem: storage.setItem.bind(storage),
+      hasItem: storage.hasItem.bind(storage),
+      getKeys: storage.getKeys.bind(storage),
+      clear: storage.clear.bind(storage),
+      deleteItem: storage.removeItem.bind(storage),
+      size: () => {
+        this.gLogger?.warn('NitroStorageManager::size', 'getting size is not supported for Nitro Storage.');
+        return 0;
+      },
+    } as unknown as Storage;
   }
 
   /**
@@ -143,18 +144,10 @@ export class StorageManager {
   }
 
   /**
-   * Initializes all registered storage instances
-   * Called automatically with @Init() decorator
-   * @returns {Promise<void>} A promise that resolves when all storages are initialized
+   * Initializes the storage manager
+   * @returns {Promise<void>} A promise that resolves when the storage manager is initialized
    */
-  @Init()
   protected async init(): Promise<void> {
-    for (const { storage, initOptions } of this.fStorages.values()) {
-      try {
-        await storage?.initialize(initOptions);
-      } catch (error) {
-        this.gLogger?.error('Vercube/StorageManager::init', error);
-      }
-    }
+    // do nothing for Nitro Storage Manager
   }
 }

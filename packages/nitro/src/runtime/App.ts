@@ -1,5 +1,7 @@
 import { createApp, type App, type ConfigTypes } from '@vercube/core';
 import { initializeContainer } from '@vercube/di';
+import { StorageManager } from '@vercube/storage';
+import { NitroStorageManager } from './Storage';
 import type { Nitro, NitroOptions } from 'nitro/types';
 
 /**
@@ -18,6 +20,8 @@ export async function createNitroApp(nitroOpts: NitroOptions): Promise<App> {
       },
     },
   });
+
+  app.container.bind(StorageManager, NitroStorageManager);
 
   initializeContainer(app.container);
 

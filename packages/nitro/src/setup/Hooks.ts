@@ -41,7 +41,7 @@ export function setupHooks(nitro: Nitro, options?: PluginOptions): void {
     ]);
 
     const watcher = watch(scanDirs, { ignoreInitial: true }).on('change', async () => {
-      await nitro.hooks.callHook('rollup:reload');
+      await nitro.hooks.callHook('compiled', nitro);
     });
 
     nitro.hooks.hook('close', () => watcher.close());
