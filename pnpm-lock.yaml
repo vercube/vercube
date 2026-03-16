@@ -4433,6 +4433,16 @@ packages:
       crossws:
         optional: true
 
+  h3@2.0.1-rc.16:
+    resolution: {integrity: sha512-h+pjvyujdo9way8qj6FUbhaQcHlR8FEq65EhTX9ViT5pK8aLj68uFl4hBkF+hsTJAH+H1END2Yv6hTIsabGfag==}
+    engines: {node: '>=20.11.1'}
+    hasBin: true
+    peerDependencies:
+      crossws: ^0.4.1
+    peerDependenciesMeta:
+      crossws:
+        optional: true
+
   handlebars@4.7.8:
     resolution: {integrity: sha512-vafaFqs8MZkRrSX7sFVUdo3ap/eNiLnb4IakshzvP56X5Nr1iGKAIqdX6tMlm6HcNRIkr6AxO5jFEoJzzpT8aQ==}
     engines: {node: '>=0.4.7'}
@@ -11394,6 +11404,13 @@ snapshots:
   graph-data-structure@4.5.0: {}
 
   grapheme-splitter@1.0.4: {}
+
+  h3@2.0.1-rc.16(crossws@0.4.4(srvx@0.11.12)):
+    dependencies:
+      rou3: 0.8.1
+      srvx: 0.11.12
+    optionalDependencies:
+      crossws: 0.4.4(srvx@0.11.12)
 
   h3@2.0.1-rc.16(crossws@0.4.4(srvx@0.11.12)):
     dependencies:
