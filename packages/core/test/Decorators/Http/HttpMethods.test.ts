@@ -29,4 +29,15 @@ describe('Http Methods', () => {
       ).toBeDefined();
     });
   });
+
+  it('should also register HEAD route for GET endpoints', () => {
+    const router = app.container.get(Router);
+
+    expect(
+      router.resolve({
+        method: 'HEAD',
+        path: '/mock/get',
+      }),
+    ).toBeDefined();
+  });
 });
