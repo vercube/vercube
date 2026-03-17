@@ -5,6 +5,7 @@ export default defineConfig({
   modules: [
     vercubeNitro({
       scanDirs: ['routes', 'services'],
+      setupFile: './src/boot/boot.ts',
     }),
   ],
   serverDir: './src',

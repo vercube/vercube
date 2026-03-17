@@ -1,4 +1,5 @@
-import { Controller, Delete, Get, Param, Post, Put } from '@vercube/core';
+import { VercubeMiddleware } from '@/middleware/VercubeMiddleware';
+import { Controller, Delete, Get, Middleware, Param, Post, Put } from '@vercube/core';
 import { Inject } from '@vercube/di';
 import { StorageManager } from '@vercube/storage';
 import { TestService } from '../services/TestService';
@@ -20,6 +21,7 @@ export class FooController {
    * @returns {Promise<{ message: string }>} A promise that resolves to an object containing a greeting message.
    */
   @Get('/')
+  @Middleware(VercubeMiddleware)
   public async index(): Promise<{ message: string }> {
     await this.gStorageManager.setItem({ key: 'foo', value: 'bar' });
 

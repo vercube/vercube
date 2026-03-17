@@ -1,7 +1,7 @@
 import { destroyContainer } from '@vercube/di';
 import { watch } from 'chokidar';
-import { useNitroApp } from 'nitro/app';
 import { join } from 'pathe';
+import { useVercubeApp } from '../helpers/helpers';
 import { validateBundler } from '../validators/BundlerValidator';
 import { validateTypescript } from '../validators/TypescriptValidator';
 import { setupRoutes } from './Routes';
@@ -37,6 +37,7 @@ export function setupHooks(nitro: Nitro, options?: PluginOptions): void {
     const scanDirs = nitro.options.scanDirs.flatMap((dir) => [
       join(dir, nitro.options.apiDir || 'api'),
       join(dir, nitro.options.routesDir || 'routes'),
+      join(dir, 'middleware'),
       ...(options?.scanDirs ?? []),
     ]);
 
@@ -53,10 +54,11 @@ export function setupHooks(nitro: Nitro, options?: PluginOptions): void {
    * @returns void
    */
   nitro.hooks.hook('close', async () => {
-    if (!useNitroApp().__vercubeContainer__) {
+    const app = useVercubeApp();
+    if (!app) {
       return;
     }
 
-    destroyContainer(useNitroApp().__vercubeContainer__!);
+    destroyContainer(app.container);
   });
 }

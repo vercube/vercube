@@ -1,4 +1,7 @@
+import { defu } from 'defu';
+import { resolve } from 'pathe';
 import { setupHooks } from '../setup/Hooks';
+import { getTransformedMiddlewares } from '../setup/Middleware';
 import { getTransformedRoutes } from '../setup/Routes';
 import { getTransformedServices } from '../setup/Services';
 import type { RouteInfo } from '../build/Routes';
@@ -7,9 +10,33 @@ import type { NitroModule } from 'nitro/types';
 
 export interface PluginOptions {
   scanDirs?: string[];
+  /**
+   * Path to a file that exports a default function for customizing the Vercube app
+   * before the DI container is flushed. Use this to bind tokens, override services,
+   * or perform any setup that auto-discovery cannot handle.
+   *
+   * The file must export a default function matching: `(app: App) => void | Promise<void>`
+   *
+   * @example
+   * // nitro.config.ts
+   * vercubeNitro({ setupFile: './src/container.ts' })
+   *
+   * // src/container.ts
+   * import type { App } from '@vercube/core'
+   * export default async (app: App) => {
+   *   app.container.bind(DatabaseToken, PostgresDatabase)
+   * }
+   */
+  setupFile?: string;
 }
 
+const defaultOptions: PluginOptions = {
+  scanDirs: ['api', 'routes', 'services', 'repositories'],
+};
+
 export function vercubeNitro(options?: PluginOptions): NitroModule {
+  options = defu(options, defaultOptions);
+
   return {
     name: '@vercube/nitro',
     setup: async (nitro) => {
@@ -32,13 +59,19 @@ export function vercubeNitro(options?: PluginOptions): NitroModule {
 
       const services = [...serviceMap.values()];
 
-      // Deduplicate imports by class name (a class bound as a route shouldn't be imported twice)
+      // Scan middleware dir to exclude BaseMiddleware subclasses from Nitro's native handling
+      await getTransformedMiddlewares(nitro);
+
+      // Deduplicate imports by class name (a class bound as a route shouldn't be imported twice as a service)
       const routeClassNames = new Set(routes.map((r) => r.importClassName));
       const uniqueServices = services.filter((s) => !routeClassNames.has(s.importClassName));
+
+      const setupFilePath = options?.setupFile ? resolve(nitro.options.rootDir, options.setupFile) : null;
 
       nitro.options.virtual['#internal/vercube-route-plugin'] = `
         import { definePlugin } from 'nitro';
         import { createNitroApp } from '@vercube/nitro';
+        ${setupFilePath ? `import __vercubeSetup__ from '${setupFilePath}';` : ''}
 
         ${routes.map((route) => route.import).join('\n')}
         ${uniqueServices.map((service) => service.import).join('\n')}
@@ -53,6 +86,8 @@ export function vercubeNitro(options?: PluginOptions): NitroModule {
 
           // bind services to container
           ${uniqueServices.map((service) => `app.container.bind(${service.importClassName});`).join('\n')}
+
+          ${setupFilePath ? `await __vercubeSetup__(app);` : ''}
 
           app.container.flushQueue();
 

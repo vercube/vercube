@@ -1,7 +1,4 @@
-import type { Container } from '@vercube/di';
-
-declare module 'nitro/types' {
-  interface NitroApp {
-    __vercubeContainer__?: Container;
-  }
+import type { App } from '@vercube/core';
+declare global {
+  var __vercubeApp__: App;
 }
