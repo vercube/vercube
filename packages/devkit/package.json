@@ -31,6 +31,7 @@
     "c12": "catalog:",
     "chokidar": "5.0.0",
     "consola": "catalog:",
+    "defu": "catalog:",
     "dotenv": "17.3.1",
     "hookable": "6.1.0",
     "oxc-parser": "0.120.0",
