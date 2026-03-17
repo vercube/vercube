@@ -1,6 +1,6 @@
 {
   "name": "@vercube/storage",
-  "version": "0.0.43",
+  "version": "0.0.44",
   "description": "Storage module for Vercube framework",
   "packageManager": "pnpm@10.32.1",
   "repository": {
