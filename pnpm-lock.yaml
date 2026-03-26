@@ -28,8 +28,8 @@ catalogs:
       specifier: 1.0.0-rc.9
       version: 1.0.0-rc.9
     srvx:
-      specifier: 0.11.12
-      version: 0.11.12
+      specifier: 0.11.13
+      version: 0.11.13
     zod:
       specifier: 4.3.6
       version: 4.3.6
@@ -221,7 +221,7 @@ importers:
         version: 2.0.3
       srvx:
         specifier: 'catalog:'
-        version: 0.11.12
+        version: 0.11.13
       std-env:
         specifier: 4.0.0
         version: 4.0.0
@@ -254,7 +254,7 @@ importers:
         version: 0.8.1
       srvx:
         specifier: 'catalog:'
-        version: 0.11.12
+        version: 0.11.13
     devDependencies:
       rolldown:
         specifier: 'catalog:'
@@ -320,7 +320,7 @@ importers:
         version: link:../core
       h3:
         specifier: beta
-        version: 2.0.0-beta.5(crossws@0.4.4(srvx@0.11.12))
+        version: 2.0.0-beta.5(crossws@0.4.4(srvx@0.11.13))
 
   packages/logger:
     dependencies:
@@ -383,7 +383,7 @@ importers:
         version: link:../di
       srvx:
         specifier: 'catalog:'
-        version: 0.11.12
+        version: 0.11.13
       ufo:
         specifier: 1.6.3
         version: 1.6.3
@@ -421,10 +421,10 @@ importers:
         version: link:../logger
       crossws:
         specifier: 0.4.4
-        version: 0.4.4(srvx@0.11.12)
+        version: 0.4.4(srvx@0.11.13)
       srvx:
         specifier: 'catalog:'
-        version: 0.11.12
+        version: 0.11.13
     devDependencies:
       zod:
         specifier: 'catalog:'
@@ -768,6 +768,7 @@ packages:
   '@aws-sdk/xml-builder@3.972.12':
     resolution: {integrity: sha512-xjyucfn+F+kMf25c+LIUnvX3oyLSlj9T0Vncs5WMQI6G36JdnSwC8g0qf8RajfmSClXr660EpTz7FFKluZ4BqQ==}
     engines: {node: '>=20.0.0'}
+    deprecated: Upgrade @aws-sdk/xml-builder to v3.972.13 or higher to fix a fast-xml-parser configuration issue, see https://github.com/aws/aws-sdk-js-v3/issues/7867
 
   '@aws/lambda-invoke-store@0.2.4':
     resolution: {integrity: sha512-iY8yvjE0y651BixKNPgmv1WrQc+GZ142sb0z4gYnChDDY2YqI4P/jsSopBWrKfAt7LOJAkOXt7rC/hms+WclQQ==}
@@ -5479,8 +5480,8 @@ packages:
   sprintf-js@1.1.3:
     resolution: {integrity: sha512-Oo+0REFV59/rz3gfJNKQiBlwfHaSESl1pcGyABQsnnIfWOFt6JNj5gCog2U6MLZ//IGYD+nA8nI+mTShREReaA==}
 
-  srvx@0.11.12:
-    resolution: {integrity: sha512-AQfrGqntqVPXgP03pvBDN1KyevHC+KmYVqb8vVf4N+aomQqdhaZxjvoVp+AOm4u6x+GgNQY3MVzAUIn+TqwkOA==}
+  srvx@0.11.13:
+    resolution: {integrity: sha512-oknN6qduuMPafxKtHucUeG32Q963pjriA5g3/Bl05cwEsUe5VVbIU4qR9LrALHbipSCyBe+VmfDGGydqazDRkw==}
     engines: {node: '>=20.16.0'}
     hasBin: true
 
@@ -9683,9 +9684,9 @@ snapshots:
       shebang-command: 2.0.0
       which: 2.0.2
 
-  crossws@0.4.4(srvx@0.11.12):
+  crossws@0.4.4(srvx@0.11.13):
     optionalDependencies:
-      srvx: 0.11.12
+      srvx: 0.11.13
 
   css-select@5.2.2:
     dependencies:
@@ -10366,14 +10367,14 @@ snapshots:
 
   grapheme-splitter@1.0.4: {}
 
-  h3@2.0.0-beta.5(crossws@0.4.4(srvx@0.11.12)):
+  h3@2.0.0-beta.5(crossws@0.4.4(srvx@0.11.13)):
     dependencies:
       cookie-es: 2.0.0
       fetchdts: 0.1.7
       rou3: 0.7.12
       srvx: 0.8.16
     optionalDependencies:
-      crossws: 0.4.4(srvx@0.11.12)
+      crossws: 0.4.4(srvx@0.11.13)
 
   handlebars@4.7.8:
     dependencies:
@@ -12417,7 +12418,7 @@ snapshots:
 
   sprintf-js@1.1.3: {}
 
-  srvx@0.11.12: {}
+  srvx@0.11.13: {}
 
   srvx@0.8.16: {}
 
