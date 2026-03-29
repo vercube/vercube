@@ -88,7 +88,7 @@ interface IContainerDecoratorMetadata {
  * we must hold array of decorated instances, we realize it by holding map where key is
  * container (for easier removal later) and value is IContainerDecoratorMetadataObject.
  */
-const containerMap: Map<Container, IContainerDecoratorMetadata> = new Map();
+const containerMap: WeakMap<Container, IContainerDecoratorMetadata> = new WeakMap();
 
 /**
  * Helper function to query data from container
