@@ -1,6 +1,6 @@
 {
   "name": "@vercube/logger",
-  "version": "0.0.45",
+  "version": "0.0.46",
   "description": "Logger module for Vercube framework",
   "packageManager": "pnpm@10.33.0",
   "repository": {
