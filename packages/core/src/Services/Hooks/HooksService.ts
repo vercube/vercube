@@ -123,6 +123,10 @@ export class HooksService {
     }
 
     handlersOfType.splice(index, 1);
+
+    if (handlersOfType.length === 0) {
+      this.fHandlers.delete(type);
+    }
   }
 
   /**
