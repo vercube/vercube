@@ -105,10 +105,10 @@ export default defineNitroConfig({
 
 ## Options
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `setupFile` | `string` | - | Path to the boot file executed before the app starts |
-| `scanDirs` | `string[]` | `[]` | Extra directories to scan for services and middleware |
+| Option      | Type       | Default | Description                                           |
+| ----------- | ---------- | ------- | ----------------------------------------------------- |
+| `setupFile` | `string`   | -       | Path to the boot file executed before the app starts  |
+| `scanDirs`  | `string[]` | `[]`    | Extra directories to scan for services and middleware |
 
 ## License
 
