@@ -31,6 +31,12 @@ export default defineConfig({
         // adapters as external dependencies
         'packages/serverless/src/Adapters/**/index.ts',
         'packages/serverless/src/index.ts',
+        // nitro runtime handler - requires full Nitro stack at runtime
+        'packages/nitro/src/runtime/RouteHandler.ts',
+        // storage manager - defensive optional-chaining/nullish-coalescing patterns after DI injection
+        'packages/nitro/src/runtime/Storage.ts',
+        // type-only declarations
+        'packages/nitro/src/types/**',
         // hooks
         'packages/**/src/Hooks/**',
         // playground

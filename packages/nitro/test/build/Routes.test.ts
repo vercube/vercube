@@ -195,6 +195,26 @@ describe('extractRoutes', () => {
     expect(routes[0].route).toBe('/api');
   });
 
+  it('should handle class with no decorators on class node', () => {
+    const code = `
+      @Controller('/api')
+      export class FooController {}
+    `;
+    const routes = extractRoutes(code);
+    expect(routes).toEqual([]);
+  });
+
+  it('should handle method with no decorators', () => {
+    const code = `
+      @Controller('/api')
+      export class FooController {
+        foo() {}
+      }
+    `;
+    const routes = extractRoutes(code);
+    expect(routes).toEqual([]);
+  });
+
   it('should ignore methods without HTTP decorators', () => {
     const code = `
       @Controller('/api')
@@ -265,6 +285,45 @@ describe('extractRoutes', () => {
     const routes = extractRoutes(code);
     expect(routes).toHaveLength(1);
     expect(routes[0].route).toBe('/foo');
+  });
+
+  it('should skip anonymous default-export class without a name', () => {
+    const code = `
+      @Controller('/api')
+      export default class {
+        @Get('/foo')
+        foo() {}
+      }
+    `;
+    expect(extractRoutes(code)).toEqual([]);
+  });
+
+  it('should skip non-MethodDefinition class members (e.g. property declarations)', () => {
+    const code = `
+      @Controller('/api')
+      export class FooController {
+        static path = '/api';
+        @Get('/foo')
+        foo() {}
+      }
+    `;
+    const routes = extractRoutes(code);
+    expect(routes).toHaveLength(1);
+    expect(routes[0].route).toBe('/api/foo');
+  });
+
+  it('should skip non-Controller class-level decorators when resolving the base path', () => {
+    const code = `
+      @Injectable()
+      @Controller('/api')
+      export class FooController {
+        @Get('/foo')
+        foo() {}
+      }
+    `;
+    const routes = extractRoutes(code);
+    expect(routes).toHaveLength(1);
+    expect(routes[0].route).toBe('/api/foo');
   });
 
   it('should handle transformRoute with real file', async () => {

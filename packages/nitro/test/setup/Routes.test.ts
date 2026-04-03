@@ -83,6 +83,15 @@ describe('scanRoutes', () => {
     expect(result).toEqual([]);
   });
 
+  it('should fall back to api/routes when apiDir/routesDir are not set', async () => {
+    mkdirSync(join(tmpDir, 'api'));
+    writeFileSync(join(tmpDir, 'api', 'FooController.ts'), controllerCode);
+
+    const nitro = makeMockNitro(tmpDir, { apiDir: undefined, routesDir: undefined });
+    const result = await scanRoutes(nitro);
+    expect(result).toHaveLength(1);
+  });
+
   it('should use custom apiDir and routesDir when specified', async () => {
     mkdirSync(join(tmpDir, 'custom-api'));
     mkdirSync(join(tmpDir, 'custom-routes'));
