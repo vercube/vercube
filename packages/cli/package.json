@@ -1,8 +1,8 @@
 {
   "name": "@vercube/cli",
-  "version": "0.0.43",
+  "version": "0.0.46",
   "description": "CLI module for Vercube framework",
-  "packageManager": "pnpm@10.32.1",
+  "packageManager": "pnpm@10.33.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/vercube/vercube.git",
@@ -31,9 +31,9 @@
   "dependencies": {
     "@vercube/devkit": "workspace:*",
     "@vercube/logger": "workspace:*",
-    "citty": "0.2.1",
+    "citty": "0.2.2",
     "consola": "catalog:",
-    "giget": "3.1.2",
+    "giget": "3.2.0",
     "nypm": "0.6.5",
     "pathe": "catalog:",
     "srvx": "catalog:",

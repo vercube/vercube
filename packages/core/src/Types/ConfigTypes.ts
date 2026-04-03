@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 import type { LoggerTypes } from '@vercube/logger';
 import type { DotenvOptions } from 'c12';
-import type { RolldownPluginOption } from 'rolldown';
+import type { RolldownOptions, RolldownPluginOption } from 'rolldown';
 
 /**
  * Namespace containing configuration type definitions for the Vercube framework.
@@ -43,6 +43,8 @@ export namespace ConfigTypes {
 
     /**
      * Defines to pass to the build.
+     * @deprecated Use `rolldownConfig.transform.define` instead.
+     * This field is still applied via the base config but will be removed in a future release.
      */
     define?: Record<string, string>;
 
@@ -58,6 +60,8 @@ export namespace ConfigTypes {
 
     /**
      * Additional plugins to use in the bundler.
+     * @deprecated Use `rolldownConfig.plugins` instead.
+     * This field is still applied via the base config but will be removed in a future release.
      */
     plugins?: RolldownPluginOption[];
 
@@ -80,6 +84,13 @@ export namespace ConfigTypes {
      * The bundler to use for the application build.
      */
     bundler?: 'rolldown';
+
+    /**
+     * Additional options passed directly to the rolldown bundler.
+     * These options are deep-merged with the base config using `defu`, meaning values provided here take precedence over the defaults.
+     * The `input`, `output`, and `onwarn` fields are managed internally and cannot be overridden here.
+     */
+    rolldownConfig?: Omit<RolldownOptions, 'input' | 'output' | 'onwarn'>;
   }
 
   /**
