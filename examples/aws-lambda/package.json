@@ -19,7 +19,7 @@
     "@vercube/di": "workspace:*",
     "@vercube/logger": "workspace:*",
     "@vercube/serverless": "workspace:*",
-    "serverless": "4.33.0",
+    "serverless": "4.33.3",
     "serverless-offline": "14.5.0"
   }
 }
