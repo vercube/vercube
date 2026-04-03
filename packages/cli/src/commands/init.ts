@@ -1,5 +1,4 @@
 import { existsSync } from 'node:fs';
-import { defineCommand } from 'citty';
 import { consola } from 'consola';
 import { colors } from 'consola/utils';
 import { downloadTemplate, startShell } from 'giget';
@@ -7,14 +6,16 @@ import { installDependencies } from 'nypm';
 import { relative, resolve } from 'pathe';
 import { hasTTY } from 'std-env';
 import { x } from 'tinyexec';
-import { vercubeIcon } from '../utils/logo';
-import type { CommandDef } from 'citty';
-import type { ConsolaInstance } from 'consola';
+import { BaseCommand } from '../BaseCommand';
+import { Arg } from '../Decorators/Arg';
+import { Command } from '../Decorators/Command';
+import { Flag } from '../Decorators/Flag';
+import { vercubeIcon } from '../Utils/Logo';
 import type { PackageManagerName } from 'nypm';
 
 /* eslint-disable unicorn/no-process-exit */
 
-export const logger: ConsolaInstance = consola.withTag(colors.whiteBright(colors.bold(colors.bgGreenBright(' vercube '))));
+const logger = consola.withTag(colors.whiteBright(colors.bold(colors.bgGreenBright(' vercube '))));
 const DEFAULT_REGISTRY = 'https://raw.githubusercontent.com/vercube/starter/main/templates';
 const DEFAULT_TEMPLATE_NAME = 'vercube';
 
@@ -28,47 +29,60 @@ const pms: Record<PackageManagerName, undefined> = {
 
 const packageManagerOptions = Object.keys(pms) as PackageManagerName[];
 
-export const initCommand = defineCommand({
-  meta: {
-    name: 'init',
-    description: 'Initialize a new Vercube app',
-  },
-  args: {
-    dir: {
-      type: 'positional',
-      description: 'Project directory',
-      default: '',
-    },
-    force: {
-      type: 'boolean',
-      alias: 'f',
-      description: 'Override existing directory',
-    },
-    install: {
-      type: 'boolean',
-      default: true,
-      description: 'Skip installing dependencies',
-    },
-    gitInit: {
-      type: 'boolean',
-      description: 'Initialize git repository',
-      default: true,
-    },
-    packageManager: {
-      type: 'string',
-      description: 'Package manager choice (npm, pnpm, yarn, bun)',
-      default: 'pnpm',
-    },
-  },
-  async run(ctx) {
+/**
+ * Scaffolds a new Vercube project from the official starter template.
+ * Downloads the template, installs dependencies, and optionally inits a git repo.
+ * Prompts interactively for missing options when running in a TTY.
+ *
+ * @example
+ * ```sh
+ * vercube init my-app
+ * vercube init my-app --package-manager bun --no-git-init
+ * vercube init --force
+ * ```
+ */
+@Command({
+  name: 'init',
+  description: 'Initialize a new Vercube app',
+})
+export class InitCommand extends BaseCommand {
+  /** Target directory. Prompted interactively when omitted. */
+  @Arg({ name: 'dir', description: 'Project directory' })
+  public dir!: string;
+
+  /** Overwrite existing directory without prompting. */
+  @Flag({ name: 'force', description: 'Override existing directory', default: false })
+  public force!: boolean;
+
+  /** Set to `false` to skip dependency installation. */
+  @Flag({ name: 'install', description: 'Install dependencies', default: true })
+  public install!: boolean;
+
+  /** Run `git init` in the new project directory. */
+  @Flag({ name: 'gitInit', description: 'Initialize git repository', default: true })
+  public gitInit!: boolean;
+
+  /** Package manager for dependency installation. */
+  @Flag({ name: 'packageManager', description: 'Package manager choice (npm, pnpm, yarn, bun)', default: 'pnpm' })
+  public packageManager!: string;
+
+  /** Open an interactive shell in the project directory after scaffolding. */
+  @Flag({ name: 'shell', description: 'Open shell in project directory', default: false })
+  public shell!: boolean;
+
+  /**
+   * @returns resolves when scaffolding and setup are complete
+   */
+  public override async run(): Promise<void> {
     if (hasTTY) {
       process.stdout.write(`\n${vercubeIcon}\n\n`);
     }
 
     consola.info(`Welcome to ${colors.bold('Vercube')}!`);
-    let dir = ctx.args.dir;
 
-    if (ctx.args.dir === '') {
+    let dir = this.dir ?? '';
+
+    if (!dir) {
       dir = await logger
         .prompt('Where would you like to create your project?', {
           placeholder: './vercube-app',
@@ -83,10 +97,8 @@ export const initCommand = defineCommand({
     let templateDownloadPath = resolve(cwd, dir);
     logger.info(`Creating a new project in ${colors.cyan(relative(cwd, templateDownloadPath) || templateDownloadPath)}.`);
 
-    let shouldForce = Boolean(ctx.args.force);
+    let shouldForce = Boolean(this.force);
 
-    // Prompt the user if the template download directory already exists
-    // when no `--force` flag is provided
     const shouldVerify = !shouldForce && existsSync(templateDownloadPath);
     if (shouldVerify) {
       const selectedAction = await logger.prompt(
@@ -102,7 +114,6 @@ export const initCommand = defineCommand({
           shouldForce = true;
           break;
         }
-
         case 'Select different directory': {
           templateDownloadPath = resolve(
             cwd,
@@ -115,23 +126,18 @@ export const initCommand = defineCommand({
           );
           break;
         }
-
-        // 'Abort' or Ctrl+C
         default: {
           process.exit(1);
         }
       }
     }
 
-    // Download template
     let template: any;
 
     try {
       template = await downloadTemplate(DEFAULT_TEMPLATE_NAME, {
         dir: templateDownloadPath,
         force: shouldForce,
-        offline: Boolean(ctx.args.offline),
-        preferOffline: Boolean(ctx.args.preferOffline),
         registry: DEFAULT_REGISTRY,
       });
     } catch (error) {
@@ -142,8 +148,7 @@ export const initCommand = defineCommand({
       process.exit(1);
     }
 
-    // Resolve package manager
-    const packageManagerArg = ctx.args.packageManager as PackageManagerName;
+    const packageManagerArg = this.packageManager as PackageManagerName;
     const selectedPackageManager = packageManagerOptions.includes(packageManagerArg)
       ? packageManagerArg
       : await logger
@@ -154,9 +159,7 @@ export const initCommand = defineCommand({
           })
           .catch(() => process.exit(1));
 
-    // Install project dependencies
-    // or skip installation based on the '--no-install' flag
-    if (ctx.args.install === false) {
+    if (this.install === false) {
       logger.info('Skipping install dependencies step.');
     } else {
       logger.start('Installing dependencies...');
@@ -180,7 +183,7 @@ export const initCommand = defineCommand({
       logger.success('Installation completed.');
     }
 
-    let gitInit = ctx.args.gitInit;
+    let gitInit = this.gitInit;
     if (gitInit === undefined) {
       gitInit = await logger
         .prompt('Initialize git repository?', {
@@ -189,26 +192,24 @@ export const initCommand = defineCommand({
         })
         .catch(() => process.exit(1));
     }
-    if (ctx.args.gitInit) {
+
+    if (gitInit) {
       logger.info('Initializing git repository...\n');
       try {
         await x('git', ['init', template.dir], {
           throwOnError: true,
-          nodeOptions: {
-            stdio: 'inherit',
-          },
+          nodeOptions: { stdio: 'inherit' },
         });
       } catch (error) {
         logger.warn(`Failed to initialize git repository: ${error}`);
       }
     }
 
-    // Display next steps
     logger.log('\n✨ Vercube project has been created! Next steps:');
     const relativeTemplateDir = relative(process.cwd(), template.dir) || '.';
     const runCmd = selectedPackageManager === 'deno' ? 'task' : 'run';
     const nextSteps = [
-      !ctx.args.shell && relativeTemplateDir.length > 1 && `\`cd ${relativeTemplateDir}\``,
+      !this.shell && relativeTemplateDir.length > 1 && `\`cd ${relativeTemplateDir}\``,
       `Start development server with \`${selectedPackageManager} ${runCmd} dev\``,
     ].filter(Boolean);
 
@@ -216,8 +217,8 @@ export const initCommand = defineCommand({
       logger.log(` › ${step}`);
     }
 
-    if (ctx.args.shell) {
+    if (this.shell) {
       startShell(template.dir);
     }
-  },
-}) as CommandDef;
+  }
+}

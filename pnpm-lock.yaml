@@ -21,6 +21,9 @@ catalogs:
     defu:
       specifier: 6.1.6
       version: 6.1.6
+    jiti:
+      specifier: 2.6.1
+      version: 2.6.1
     pathe:
       specifier: 2.0.3
       version: 2.0.3
@@ -159,6 +162,21 @@ importers:
         specifier: workspace:*
         version: link:../../packages/logger
 
+  examples/cli-commands:
+    dependencies:
+      '@vercube/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@vercube/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@vercube/di':
+        specifier: workspace:*
+        version: link:../../packages/di
+      '@vercube/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
+
   examples/ws:
     dependencies:
       '@oxc-project/runtime':
@@ -195,12 +213,21 @@ importers:
 
   packages/cli:
     dependencies:
+      '@vercube/core':
+        specifier: workspace:*
+        version: link:../core
       '@vercube/devkit':
         specifier: workspace:*
         version: link:../devkit
+      '@vercube/di':
+        specifier: workspace:*
+        version: link:../di
       '@vercube/logger':
         specifier: workspace:*
         version: link:../logger
+      c12:
+        specifier: 'catalog:'
+        version: 4.0.0-beta.4(chokidar@5.0.0)(dotenv@17.4.0)(giget@3.2.0)(jiti@2.6.1)(magicast@0.5.2)
       citty:
         specifier: 0.2.2
         version: 0.2.2
@@ -210,6 +237,9 @@ importers:
       giget:
         specifier: 3.2.0
         version: 3.2.0
+      jiti:
+        specifier: 'catalog:'
+        version: 2.6.1
       nypm:
         specifier: 0.6.5
         version: 0.6.5

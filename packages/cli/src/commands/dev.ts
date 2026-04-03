@@ -1,20 +1,26 @@
 import { createDevServer, createVercube, watch } from '@vercube/devkit';
-import { defineCommand } from 'citty';
-import type { CommandDef } from 'citty';
+import { BaseCommand } from '../BaseCommand';
+import { Command } from '../Decorators/Command';
 
-export const devCommand: CommandDef = defineCommand({
-  meta: {
-    name: 'dev',
-    description: 'Start development server',
-  },
-  async run() {
-    // create new app
+/**
+ * Starts the Vercube dev server with file watching and hot reload.
+ *
+ * @example
+ * ```sh
+ * vercube dev
+ * ```
+ */
+@Command({
+  name: 'dev',
+  description: 'Start development server',
+})
+export class DevCommand extends BaseCommand {
+  /**
+   * @returns resolves when the watcher is ready
+   */
+  public override async run(): Promise<void> {
     const app = await createVercube();
-
-    // create dev server
     createDevServer(app);
-
-    // create rolldown watcher to watch for changes
     await watch(app);
-  },
-});
+  }
+}

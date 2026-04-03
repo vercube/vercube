@@ -1,28 +1,36 @@
 import { build, createVercube } from '@vercube/devkit';
-import { defineCommand } from 'citty';
-import type { CommandDef } from 'citty';
+import { BaseCommand } from '../BaseCommand';
+import { Command } from '../Decorators/Command';
+import { Flag } from '../Decorators/Flag';
 
-export const buildCommand = defineCommand({
-  meta: {
-    name: 'build',
-    description: 'Build the project',
-  },
-  args: {
-    entry: {
-      type: 'string',
-      description: 'Entry file',
-      default: undefined,
-    },
-  },
-  run: async (ctx) => {
-    // create new app
+/**
+ * Builds the Vercube application for production.
+ *
+ * @example
+ * ```sh
+ * vercube build
+ * vercube build --entry src/index.ts
+ * ```
+ */
+@Command({
+  name: 'build',
+  description: 'Build the project',
+})
+export class BuildCommand extends BaseCommand {
+  /** Custom entry file path. Uses default from vercube.config.ts when omitted. */
+  @Flag({ name: 'entry', description: 'Entry file', type: 'string' })
+  public entry!: string | undefined;
+
+  /**
+   * @returns resolves when the build is done
+   */
+  public override async run(): Promise<void> {
     const app = await createVercube({
       build: {
-        entry: ctx?.args?.entry ?? undefined,
+        entry: this.entry,
       },
     });
 
-    // run build
     await build(app);
-  },
-}) as CommandDef;
+  }
+}

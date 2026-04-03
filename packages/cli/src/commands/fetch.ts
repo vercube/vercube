@@ -1,62 +1,65 @@
 import { build, createVercube } from '@vercube/devkit';
-import { defineCommand } from 'citty';
 import { cliFetch } from 'srvx/cli';
-import type { CommandDef } from 'citty';
+import { BaseCommand } from '../BaseCommand';
+import { Arg } from '../Decorators/Arg';
+import { Command } from '../Decorators/Command';
+import { Flag } from '../Decorators/Flag';
 
-export const fetchCommand = defineCommand({
-  meta: {
-    name: 'fetch',
-    description: 'Fetch a request from the application',
-  },
-  args: {
-    url: {
-      type: 'positional',
-      description: 'URL to fetch',
-      default: '/',
-    },
-    entry: {
-      type: 'string',
-      description: 'Entry point for the application',
-      default: 'index.mjs',
-    },
-    method: {
-      type: 'string',
-      description: 'HTTP method (default: GET, or POST if body is provided)',
-      default: 'GET',
-      alias: 'X',
-      valueHint: 'GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS',
-    },
-    headers: {
-      type: 'string',
-      description: 'Add header (format: "Name: Value, Name: Value, ...")',
-      alias: 'H',
-    },
-    data: {
-      type: 'string',
-      description: 'Request body (use @- for stdin, @file for file)',
-      alias: 'd',
-    },
-    verbose: {
-      type: 'boolean',
-      description: 'Show request and response headers',
-      alias: 'v',
-      default: false,
-    },
-  },
-  async run(ctx) {
+/**
+ * Builds the app, then sends an HTTP request and prints the response.
+ * Useful for quick endpoint testing without running a full server.
+ *
+ * @example
+ * ```sh
+ * vercube fetch /api/users
+ * vercube fetch /api/users --method POST --data '{"name":"test"}'
+ * vercube fetch /api/users --verbose
+ * ```
+ */
+@Command({
+  name: 'fetch',
+  description: 'Fetch a request from the application',
+})
+export class FetchCommand extends BaseCommand {
+  /** Target URL path, e.g. `/api/users`. */
+  @Arg({ name: 'url', description: 'URL to fetch' })
+  public url!: string;
+
+  /** Entry file relative to the output directory. */
+  @Flag({ name: 'entry', description: 'Entry point for the application', default: 'index.mjs' })
+  public entry!: string;
+
+  /** HTTP method. */
+  @Flag({ name: 'method', description: 'HTTP method', default: 'GET' })
+  public method!: string;
+
+  /** Request headers as `"Name: Value, Name: Value"`. */
+  @Flag({ name: 'headers', description: 'Add header (format: "Name: Value, ...")', type: 'string' })
+  public headers!: string | undefined;
+
+  /** Request body. `@-` reads from stdin, `@filename` reads from a file. */
+  @Flag({ name: 'data', description: 'Request body (use @- for stdin, @file for file)', type: 'string' })
+  public data!: string | undefined;
+
+  /** Print request and response headers alongside the body. */
+  @Flag({ name: 'verbose', description: 'Show request and response headers', default: false })
+  public verbose!: boolean;
+
+  /**
+   * @returns resolves when the response has been printed
+   */
+  public override async run(): Promise<void> {
     const app = await createVercube({ build: { dts: false } });
-
-    // build app before running the command
     await build(app);
 
     await cliFetch({
-      verbose: ctx.args.verbose,
+      verbose: this.verbose,
       dir: app.config.build?.output?.dir ?? 'dist',
-      entry: ctx.args.entry,
-      url: ctx.args.url,
-      method: ctx.args.method,
-      header: ctx.args.headers?.split(',') ?? [],
-      data: ctx.args.data,
+      entry: this.entry,
+      url: this.url,
+      method: this.method,
+      header: this.headers?.split(',') ?? [],
+      data: this.data,
     });
-  },
-}) as CommandDef;
+  }
+}
