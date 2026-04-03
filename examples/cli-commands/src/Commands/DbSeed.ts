@@ -18,7 +18,7 @@ import { Logger } from '@vercube/logger';
 })
 export class DbSeedCommand extends BaseCommand {
   @Inject(Logger)
-  private logger: Logger;
+  private readonly gLogger: Logger;
 
   /** Target environment for seed data. */
   @Flag({ name: 'env', description: 'Target environment (development, test)', default: 'development' })
@@ -28,9 +28,9 @@ export class DbSeedCommand extends BaseCommand {
    * @returns resolves when seeding is done
    */
   public override async run(): Promise<void> {
-    this.logger.info(`Seeding database for environment: ${this.env}`);
-    this.logger.info('✔ users seeded (10 records)');
-    this.logger.info('✔ posts seeded (25 records)');
-    this.logger.info('Database seeded successfully.');
+    this.gLogger.info(`Seeding database for environment: ${this.env}`);
+    this.gLogger.info('✔ users seeded (10 records)');
+    this.gLogger.info('✔ posts seeded (25 records)');
+    this.gLogger.info('Database seeded successfully.');
   }
 }

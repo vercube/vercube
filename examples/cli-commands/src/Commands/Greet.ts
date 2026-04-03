@@ -18,7 +18,7 @@ import { Logger } from '@vercube/logger';
 })
 export class GreetCommand extends BaseCommand {
   @Inject(Logger)
-  private logger: Logger;
+  private readonly gLogger: Logger;
 
   /** Name to greet. */
   @Arg({ name: 'name', description: 'Name to greet', required: true })
@@ -40,7 +40,7 @@ export class GreetCommand extends BaseCommand {
     const output = this.uppercase ? message.toUpperCase() : message;
 
     for (let i = 0; i < this.times; i++) {
-      this.logger.info(output);
+      this.gLogger.info(output);
     }
   }
 }

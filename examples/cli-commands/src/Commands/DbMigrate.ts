@@ -18,7 +18,7 @@ import { Logger } from '@vercube/logger';
 })
 export class DbMigrateCommand extends BaseCommand {
   @Inject(Logger)
-  private logger: Logger;
+  private readonly gLogger: Logger;
 
   /** Preview which migrations would run without applying them. */
   @Flag({ name: 'dry-run', description: 'Preview migrations without applying them', default: false })
@@ -29,13 +29,13 @@ export class DbMigrateCommand extends BaseCommand {
    */
   public override async run(): Promise<void> {
     if (this.dryRun) {
-      this.logger.info('[dry-run] Would apply: 001_create_users.sql, 002_add_posts.sql');
+      this.gLogger.info('[dry-run] Would apply: 001_create_users.sql, 002_add_posts.sql');
       return;
     }
 
-    this.logger.info('Running migrations...');
-    this.logger.info('✔ 001_create_users.sql');
-    this.logger.info('✔ 002_add_posts.sql');
-    this.logger.info('All migrations applied.');
+    this.gLogger.info('Running migrations...');
+    this.gLogger.info('✔ 001_create_users.sql');
+    this.gLogger.info('✔ 002_add_posts.sql');
+    this.gLogger.info('All migrations applied.');
   }
 }

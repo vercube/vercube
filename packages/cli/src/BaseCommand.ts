@@ -11,10 +11,10 @@ import type { Container } from '@vercube/di';
  * @Command({ name: 'deploy', description: 'Deploy application' })
  * export class DeployCommand extends BaseCommand {
  *   @Inject(MyService)
- *   private myService!: MyService;
+ *   private readonly gMyService!: MyService;
  *
  *   public override async run(): Promise<void> {
- *     await this.myService.deploy();
+ *     await this.gMyService.deploy();
  *   }
  * }
  * ```
