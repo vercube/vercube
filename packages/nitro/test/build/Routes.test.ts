@@ -170,6 +170,31 @@ describe('extractRoutes', () => {
     expect(routes[1]).toMatchObject({ route: '/b/y', method: 'POST', importClassName: 'BController' });
   });
 
+  it('should handle method decorator without arguments (non-call expression)', () => {
+    const code = `
+      @Controller('/api')
+      export class FooController {
+        @Get
+        foo() {}
+      }
+    `;
+    const routes = extractRoutes(code);
+    expect(routes).toHaveLength(0);
+  });
+
+  it('should use empty string as path when HTTP decorator has non-literal argument', () => {
+    const code = `
+      @Controller('/api')
+      export class FooController {
+        @Get(SOME_PATH)
+        foo() {}
+      }
+    `;
+    const routes = extractRoutes(code);
+    expect(routes).toHaveLength(1);
+    expect(routes[0].route).toBe('/api');
+  });
+
   it('should ignore methods without HTTP decorators', () => {
     const code = `
       @Controller('/api')
@@ -186,5 +211,80 @@ describe('extractRoutes', () => {
     const routes = extractRoutes(code);
     expect(routes).toHaveLength(1);
     expect(routes[0].route).toBe('/api/foo');
+  });
+
+  it('should extract route from non-exported class declaration', () => {
+    const code = `
+      @Controller('/api')
+      class InternalController {
+        @Get('/internal')
+        internal() {}
+      }
+    `;
+    const routes = extractRoutes(code);
+    expect(routes).toHaveLength(1);
+    expect(routes[0].route).toBe('/api/internal');
+    expect(routes[0].import).toContain('import { InternalController }');
+  });
+
+  it('should handle @Controller decorator without string argument', () => {
+    const code = `
+      @Controller()
+      export class FooController {
+        @Get('/foo')
+        foo() {}
+      }
+    `;
+    const routes = extractRoutes(code);
+    expect(routes).toHaveLength(1);
+    expect(routes[0].route).toBe('/foo');
+  });
+
+  it('should ignore export default that is not a class', () => {
+    const code = `
+      export default function handler() {}
+    `;
+    expect(extractRoutes(code)).toEqual([]);
+  });
+
+  it('should ignore export named that is not a class', () => {
+    const code = `
+      export const handler = () => {};
+    `;
+    expect(extractRoutes(code)).toEqual([]);
+  });
+
+  it('should handle @Controller with non-literal argument', () => {
+    const code = `
+      @Controller(BASE_PATH)
+      export class FooController {
+        @Get('/foo')
+        foo() {}
+      }
+    `;
+    const routes = extractRoutes(code);
+    expect(routes).toHaveLength(1);
+    expect(routes[0].route).toBe('/foo');
+  });
+
+  it('should handle transformRoute with real file', async () => {
+    const { writeFileSync, mkdirSync, rmSync } = await import('node:fs');
+    const { tmpdir } = await import('node:os');
+    const { join } = await import('node:path');
+    const { transformRoute } = await import('../../src/build/Routes');
+
+    const dir = join(tmpdir(), `vercube-route-${Date.now()}`);
+    mkdirSync(dir, { recursive: true });
+    const filePath = join(dir, 'FooController.ts');
+    writeFileSync(filePath, `@Controller('/api') export class FooController { @Get('/foo') foo() {} }`);
+
+    try {
+      const routes = await transformRoute({ fullPath: filePath, path: 'FooController.ts' });
+      expect(routes).toHaveLength(1);
+      expect(routes[0].fullPath).toBe(filePath);
+      expect(routes[0].path).toBe('FooController.ts');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

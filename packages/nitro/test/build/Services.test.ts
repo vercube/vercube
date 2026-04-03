@@ -116,4 +116,52 @@ describe('extractServices', () => {
     expect(services[0].fullPath).toBe('');
     expect(services[0].path).toBe('');
   });
+
+  it('should ignore export default that is not a class', () => {
+    const code = `export default function handler() {}`;
+    expect(extractServices(code)).toEqual([]);
+  });
+
+  it('should ignore export named that is not a class', () => {
+    const code = `export const x = 1;`;
+    expect(extractServices(code)).toEqual([]);
+  });
+
+  it('should ignore anonymous class without name', () => {
+    const code = `@Injectable() export default class {}`;
+    expect(extractServices(code)).toEqual([]);
+  });
+
+  it('should extract from non-exported class declaration', () => {
+    const code = `
+      @Injectable()
+      class InternalService {
+        do() {}
+      }
+    `;
+    const services = extractServices(code);
+    expect(services).toHaveLength(1);
+    expect(services[0].importClassName).toBe('InternalService');
+    expect(services[0].import).toContain('import { InternalService }');
+  });
+
+  it('should handle transformService with real file', async () => {
+    const { writeFileSync, mkdirSync, rmSync } = await import('node:fs');
+    const { tmpdir } = await import('node:os');
+    const { join } = await import('node:path');
+    const { transformService } = await import('../../src/build/Services');
+
+    const dir = join(tmpdir(), `vercube-svc-${Date.now()}`);
+    mkdirSync(dir, { recursive: true });
+    const filePath = join(dir, 'UserService.ts');
+    writeFileSync(filePath, `@Injectable() export class UserService { get() {} }`);
+
+    try {
+      const result = await transformService({ fullPath: filePath, path: 'UserService.ts' });
+      expect(result).toHaveLength(1);
+      expect(result[0].fullPath).toBe(filePath);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
 });

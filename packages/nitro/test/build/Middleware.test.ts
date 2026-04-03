@@ -97,4 +97,51 @@ describe('extractMiddlewares', () => {
     expect(middlewares[0].fullPath).toBe('');
     expect(middlewares[0].path).toBe('');
   });
+
+  it('should ignore export default that is not a class', () => {
+    const code = `export default function handler() {}`;
+    expect(extractMiddlewares(code)).toEqual([]);
+  });
+
+  it('should ignore export named that is not a class', () => {
+    const code = `export const x = 1;`;
+    expect(extractMiddlewares(code)).toEqual([]);
+  });
+
+  it('should ignore anonymous class without name', () => {
+    const code = `export default class extends BaseMiddleware {}`;
+    expect(extractMiddlewares(code)).toEqual([]);
+  });
+
+  it('should extract from non-exported class declaration', () => {
+    const code = `
+      class InternalMiddleware extends BaseMiddleware {
+        handle() {}
+      }
+    `;
+    const middlewares = extractMiddlewares(code);
+    expect(middlewares).toHaveLength(1);
+    expect(middlewares[0].importClassName).toBe('InternalMiddleware');
+    expect(middlewares[0].import).toContain('import { InternalMiddleware }');
+  });
+
+  it('should handle transformMiddleware with real file', async () => {
+    const { writeFileSync, mkdirSync, rmSync } = await import('node:fs');
+    const { tmpdir } = await import('node:os');
+    const { join } = await import('node:path');
+    const { transformMiddleware } = await import('../../src/build/Middleware');
+
+    const dir = join(tmpdir(), `vercube-mw-${Date.now()}`);
+    mkdirSync(dir, { recursive: true });
+    const filePath = join(dir, 'AuthMiddleware.ts');
+    writeFileSync(filePath, `export class AuthMiddleware extends BaseMiddleware { handle() {} }`);
+
+    try {
+      const result = await transformMiddleware({ fullPath: filePath, path: 'AuthMiddleware.ts' });
+      expect(result).toHaveLength(1);
+      expect(result[0].fullPath).toBe(filePath);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
 });
