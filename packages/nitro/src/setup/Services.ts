@@ -7,7 +7,7 @@ import type { Nitro } from 'nitro/types';
  * their transformed service info with resolved import paths.
  */
 export async function getTransformedServices(nitro: Nitro, scanDirs?: string[]): Promise<ServiceInfo[]> {
-  const files = await scanServices(nitro);
+  const files = await scanServices(nitro, scanDirs);
   return (await Promise.all(files.map((file) => transformService(file))).then((r) => r.flat())).map((service) => ({
     ...service,
     import: service.import.replace(SERVICE_IMPORT_SOURCE, service.fullPath),
