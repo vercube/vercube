@@ -1,6 +1,7 @@
 import { Container } from '@vercube/di';
 import { BaseLogger, Logger } from '@vercube/logger';
 import { ConsoleProvider } from '@vercube/logger/drivers/ConsoleProvider';
+import { CommandRegistry } from './CommandRegistry';
 
 /**
  * Creates and configures a dedicated DI container for the CLI.
@@ -17,6 +18,8 @@ export function createCliContainer(): Container {
     logLevel: 'info',
     providers: [{ name: 'console', provider: ConsoleProvider }],
   });
+
+  container.bind(CommandRegistry);
 
   container.flushQueue();
 

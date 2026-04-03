@@ -11,7 +11,7 @@ import { FetchCommand } from './Commands/Fetch';
 import { InitCommand } from './Commands/Init';
 
 const container = createCliContainer();
-const registry = new CommandRegistry();
+const registry = container.resolve(CommandRegistry);
 
 // Register built-in commands
 registry.register(BuildCommand);
