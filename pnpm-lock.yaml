@@ -28,8 +28,8 @@ catalogs:
       specifier: 1.0.0-rc.12
       version: 1.0.0-rc.12
     srvx:
-      specifier: 0.11.13
-      version: 0.11.13
+      specifier: 0.11.15
+      version: 0.11.15
     zod:
       specifier: 4.3.6
       version: 4.3.6
@@ -218,7 +218,7 @@ importers:
         version: 2.0.3
       srvx:
         specifier: 'catalog:'
-        version: 0.11.13
+        version: 0.11.15
       std-env:
         specifier: 4.0.0
         version: 4.0.0
@@ -251,7 +251,7 @@ importers:
         version: 0.8.1
       srvx:
         specifier: 'catalog:'
-        version: 0.11.13
+        version: 0.11.15
     devDependencies:
       rolldown:
         specifier: 'catalog:'
@@ -317,7 +317,7 @@ importers:
         version: link:../core
       h3:
         specifier: beta
-        version: 2.0.0-beta.5(crossws@0.4.4(srvx@0.11.13))
+        version: 2.0.0-beta.5(crossws@0.4.4(srvx@0.11.15))
 
   packages/logger:
     dependencies:
@@ -380,7 +380,7 @@ importers:
         version: link:../di
       srvx:
         specifier: 'catalog:'
-        version: 0.11.13
+        version: 0.11.15
       ufo:
         specifier: 1.6.3
         version: 1.6.3
@@ -418,10 +418,10 @@ importers:
         version: link:../logger
       crossws:
         specifier: 0.4.4
-        version: 0.4.4(srvx@0.11.13)
+        version: 0.4.4(srvx@0.11.15)
       srvx:
         specifier: 'catalog:'
-        version: 0.11.13
+        version: 0.11.15
     devDependencies:
       zod:
         specifier: 'catalog:'
@@ -3805,8 +3805,8 @@ packages:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
     engines: {node: '>=0.10.0'}
 
-  srvx@0.11.13:
-    resolution: {integrity: sha512-oknN6qduuMPafxKtHucUeG32Q963pjriA5g3/Bl05cwEsUe5VVbIU4qR9LrALHbipSCyBe+VmfDGGydqazDRkw==}
+  srvx@0.11.15:
+    resolution: {integrity: sha512-iXsux0UcOjdvs0LCMa2Ws3WwcDUozA3JN3BquNXkaFPP7TpRqgunKdEgoZ/uwb1J6xaYHfxtz9Twlh6yzwM6Tg==}
     engines: {node: '>=20.16.0'}
     hasBin: true
 
@@ -6879,9 +6879,9 @@ snapshots:
       shebang-command: 2.0.0
       which: 2.0.2
 
-  crossws@0.4.4(srvx@0.11.13):
+  crossws@0.4.4(srvx@0.11.15):
     optionalDependencies:
-      srvx: 0.11.13
+      srvx: 0.11.15
 
   data-uri-to-buffer@4.0.1: {}
 
@@ -7238,14 +7238,14 @@ snapshots:
 
   graceful-fs@4.2.11: {}
 
-  h3@2.0.0-beta.5(crossws@0.4.4(srvx@0.11.13)):
+  h3@2.0.0-beta.5(crossws@0.4.4(srvx@0.11.15)):
     dependencies:
       cookie-es: 2.0.0
       fetchdts: 0.1.7
       rou3: 0.7.12
       srvx: 0.8.16
     optionalDependencies:
-      crossws: 0.4.4(srvx@0.11.13)
+      crossws: 0.4.4(srvx@0.11.15)
 
   has-flag@4.0.0: {}
 
@@ -8085,7 +8085,7 @@ snapshots:
 
   source-map-js@1.2.1: {}
 
-  srvx@0.11.13: {}
+  srvx@0.11.15: {}
 
   srvx@0.8.16: {}
 
