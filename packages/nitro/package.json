@@ -1,0 +1,48 @@
+{
+  "name": "@vercube/nitro",
+  "version": "0.0.43",
+  "description": "Nitro module for Vercube framework",
+  "packageManager": "pnpm@10.28.2",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vercube/vercube.git",
+    "directory": "packages/nitro"
+  },
+  "license": "MIT",
+  "sideEffects": false,
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "exports": {
+    ".": "./dist/index.mjs",
+    "./package.json": "./package.json",
+    "./runtime/handler": "./dist/runtime/RouteHandler.mjs"
+  },
+  "types": "./dist/index.d.mts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "keywords": [
+    "vercube",
+    "nitro",
+    "framework"
+  ],
+  "scripts": {
+    "build": "tsdown --config ./tsdown.config.ts --config-loader=unrun"
+  },
+  "dependencies": {
+    "@vercube/core": "workspace:*",
+    "@vercube/di": "workspace:*",
+    "@vercube/storage": "workspace:*",
+    "defu": "catalog:",
+    "chokidar": "5.0.0",
+    "nitro": "catalog:",
+    "oxc-parser": "0.112.0",
+    "pathe": "catalog:",
+    "tinyglobby": "0.2.15"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

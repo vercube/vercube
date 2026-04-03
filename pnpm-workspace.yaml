@@ -9,7 +9,9 @@ catalog:
   c12: 4.0.0-beta.4
   consola: 3.4.2
   defu: 6.1.6
+  nitro: 3.0.260311-beta
   pathe: 2.0.3
+  ufo: 1.6.3
   rolldown: 1.0.0-rc.13
   srvx: 0.11.15
   zod: 4.3.6

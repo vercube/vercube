@@ -208,7 +208,8 @@
     "docs",
     "bench",
     "node_modules",
-    "pnpm-lock.yaml"
+    "pnpm-lock.yaml",
+    "node_modules/**/*"
   ],
   "overrides": [
     {
