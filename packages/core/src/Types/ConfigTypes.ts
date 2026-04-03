@@ -181,6 +181,18 @@ export namespace ConfigTypes {
     build?: BuildOptions;
 
     /**
+     * CLI configuration options.
+     * This property is only used when using vercube cli.
+     */
+    cli?: {
+      /**
+       * List of command classes to register in the CLI.
+       * Each class must be decorated with @Command.
+       */
+      commands?: (new () => unknown)[];
+    };
+
+    /**
      * Additional configuration for c12.
      */
     c12?: {

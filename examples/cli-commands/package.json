@@ -1,0 +1,22 @@
+{
+  "name": "@examples/cli-commands",
+  "version": "1.0.0",
+  "description": "Example showing how to create custom CLI commands in Vercube",
+  "packageManager": "pnpm@10.33.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vercube build",
+    "dev": "vercube dev",
+    "greet": "vercube greet",
+    "db:migrate": "vercube db migrate",
+    "db:seed": "vercube db seed"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@vercube/cli": "workspace:*",
+    "@vercube/core": "workspace:*",
+    "@vercube/di": "workspace:*",
+    "@vercube/logger": "workspace:*"
+  }
+}
