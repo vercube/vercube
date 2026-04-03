@@ -40,7 +40,7 @@ describe('NitroStorageManager', () => {
     it('should warn that mounting is not supported', async () => {
       const manager = makeManager();
       await manager.mount({} as any);
-      expect(manager['gLogger'].warn).toHaveBeenCalledWith(
+      expect((manager as any)['gLogger'].warn).toHaveBeenCalledWith(
         'NitroStorageManager::mount',
         expect.stringContaining('not supported'),
       );
@@ -66,7 +66,10 @@ describe('NitroStorageManager', () => {
       const storage = manager.getStorage()!;
       const result = storage.size();
       expect(result).toBe(0);
-      expect(manager['gLogger'].warn).toHaveBeenCalledWith('NitroStorageManager::size', expect.stringContaining('not supported'));
+      expect((manager as any)['gLogger'].warn).toHaveBeenCalledWith(
+        'NitroStorageManager::size',
+        expect.stringContaining('not supported'),
+      );
     });
   });
 
