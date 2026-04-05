@@ -35,7 +35,7 @@
     "@commitlint/config-conventional": "20.5.0",
     "@oxc-project/runtime": "catalog:",
     "@types/node": "25.5.2",
-    "@typescript/native-preview": "7.0.0-dev.20260403.1",
+    "@typescript/native-preview": "7.0.0-dev.20260405.1",
     "@vitest/coverage-v8": "4.1.2",
     "@vitest/ui": "4.1.2",
     "bumpp": "11.0.1",
