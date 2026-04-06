@@ -1,3 +1,4 @@
+import type { VercubePluginInput } from './Plugin';
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 import type { LoggerTypes } from '@vercube/logger';
 import type { DotenvOptions } from 'c12';
@@ -191,6 +192,12 @@ export namespace ConfigTypes {
        */
       commands?: (new () => unknown)[];
     };
+
+    /**
+     * Framework plugins (config, runtime, CLI, dev `hooks`).
+     * @see {@link https://vercube.dev/docs/advanced/custom-plugin} - Plugins documentation
+     */
+    plugins?: VercubePluginInput[];
 
     /**
      * Additional configuration for c12.

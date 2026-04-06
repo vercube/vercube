@@ -4,7 +4,8 @@ export * from './Common/CreateApp';
 
 // Config
 export * from './Config/Config';
-export * from './Config/Loader';
+export type { LoadVercubeConfigOptions } from './Config/Loader';
+export { loadVercubeConfig } from './Config/Loader';
 
 // Http decorators
 export * from './Decorators/Http/Body';
@@ -37,6 +38,16 @@ export * from './Services/Hooks/HooksService';
 
 // Plugins
 export * from './Services/Plugins/BasePlugin';
+export * from './Types/Plugin';
+export {
+  applyVercubePluginHooks,
+  defineVercubePlugin,
+  invokeVercubePluginDevHooks,
+  isBasePluginClass,
+  normalizeVercubePluginInputs,
+  vercubePluginFromClass,
+  withPluginOptions,
+} from './Plugins/VercubePlugin';
 
 // Middlewares
 export * from './Services/Middleware/BaseMiddleware';

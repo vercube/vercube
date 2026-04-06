@@ -6,6 +6,7 @@ import { Router } from '../Services/Router/Router';
 import { StaticRequestHandler } from '../Services/Router/StaticRequestHandler';
 import type { BasePlugin } from '../Services/Plugins/BasePlugin';
 import type { ConfigTypes } from '../Types/ConfigTypes';
+import type { VercubePlugin, VercubePluginEnv } from '../Types/Plugin';
 import type { Container } from '@vercube/di';
 
 /**
@@ -132,11 +133,26 @@ export class App {
   }
 
   /**
-   * Resolves and initializes the plugins for the application.
+   * Initializes registry plugins, then runs `setup` on each normalized config plugin in order.
    *
-   * @private
+   * @returns Resolves when all plugin `setup` hooks have been awaited.
    */
   private async resolvePlugins(): Promise<void> {
     await this.gPluginsRegistry.init(this);
+
+    const plugins = this.fConfig.plugins as VercubePlugin[] | undefined;
+    if (!plugins?.length) {
+      return;
+    }
+
+    const env: VercubePluginEnv = {
+      cwd: typeof process === 'undefined' ? '.' : process.cwd(),
+      dev: this.fConfig.dev,
+      production: this.fConfig.production,
+    };
+
+    for (const plugin of plugins) {
+      await plugin.setup?.(this, env);
+    }
   }
 }

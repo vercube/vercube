@@ -26,6 +26,12 @@
       "@vercube/*": ["./packages/*/src"]
     }
   },
-  "include": ["./packages/**/*.ts", "./scripts/**/*.ts", "./tsdown.config.ts"],
+  "include": [
+    "./packages/**/*.ts",
+    "./scripts/**/*.ts",
+    "./tsdown.config.ts",
+    "./examples/custom-plugin/**/*.ts",
+    "./examples/cli-commands/**/*.ts"
+  ],
   "exclude": ["node_modules"]
 }

@@ -18,11 +18,11 @@ import { Logger } from '@vercube/logger';
 })
 export class DbSeedCommand extends BaseCommand {
   @Inject(Logger)
-  private readonly gLogger: Logger;
+  private readonly gLogger!: Logger;
 
   /** Target environment for seed data. */
   @Flag({ name: 'env', description: 'Target environment (development, test)', default: 'development' })
-  public env: string;
+  public env!: string;
 
   /**
    * @returns resolves when seeding is done
