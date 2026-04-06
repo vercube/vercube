@@ -32,7 +32,7 @@
     "chokidar": "5.0.0",
     "consola": "catalog:",
     "defu": "catalog:",
-    "dotenv": "17.4.0",
+    "dotenv": "17.4.1",
     "hookable": "6.1.0",
     "oxc-parser": "0.123.0",
     "oxc-transform": "0.123.0",
