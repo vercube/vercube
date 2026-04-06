@@ -18,19 +18,19 @@ import { Logger } from '@vercube/logger';
 })
 export class GreetCommand extends BaseCommand {
   @Inject(Logger)
-  private readonly gLogger: Logger;
+  private readonly gLogger!: Logger;
 
   /** Name to greet. */
   @Arg({ name: 'name', description: 'Name to greet', required: true })
-  public name: string;
+  public name!: string;
 
   /** How many times to repeat the greeting. */
   @Flag({ name: 'times', description: 'How many times to greet', default: 1 })
-  public times: number;
+  public times!: number;
 
   /** Print the greeting in uppercase. */
   @Flag({ name: 'uppercase', description: 'Print greeting in uppercase', default: false })
-  public uppercase: boolean;
+  public uppercase!: boolean;
 
   /**
    * @returns resolves after all greetings have been printed

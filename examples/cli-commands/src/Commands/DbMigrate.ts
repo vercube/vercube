@@ -18,11 +18,11 @@ import { Logger } from '@vercube/logger';
 })
 export class DbMigrateCommand extends BaseCommand {
   @Inject(Logger)
-  private readonly gLogger: Logger;
+  private readonly gLogger!: Logger;
 
   /** Preview which migrations would run without applying them. */
   @Flag({ name: 'dry-run', description: 'Preview migrations without applying them', default: false })
-  public dryRun: boolean;
+  public dryRun!: boolean;
 
   /**
    * @returns resolves when migrations are done (or preview printed)
