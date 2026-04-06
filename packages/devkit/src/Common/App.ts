@@ -1,19 +1,28 @@
-import { loadVercubeConfig } from '@vercube/core';
+import { invokeVercubePluginDevHooks, loadVercubeConfig } from '@vercube/core';
 import { createHooks } from 'hookable';
 import type { DevKitTypes } from '../Types/DevKitTypes';
-import type { ConfigTypes, DeepPartial } from '@vercube/core';
+import type { ConfigTypes, DeepPartial, VercubePlugin } from '@vercube/core';
 
 /**
- * Creates a development server application.
- * @param {DeepPartial<ConfigTypes.Config>} cfg - The configuration for the application.
- * @returns {DevKitTypes.App} The development server application instance.
+ * Loads dev config, builds a `Hookable` app object, and runs plugin `hooks()` in the parent process.
+ *
+ * @param cfg - Partial config merged before load (typically sets `dev: true` via spread).
+ * @returns App handle with `hooks` and resolved `config`.
  */
 export async function createVercube(cfg?: DeepPartial<ConfigTypes.Config>): Promise<DevKitTypes.App> {
   const hooks = createHooks<DevKitTypes.Hooks>();
-  const config = await loadVercubeConfig({ ...cfg, dev: true });
+  const cwd = cfg?.build?.root ?? process.cwd();
+  const config = await loadVercubeConfig({ ...cfg, dev: true }, { cwd });
 
-  return {
+  const app: DevKitTypes.App = {
     hooks,
     config,
   };
+
+  await invokeVercubePluginDevHooks(config.plugins as VercubePlugin[] | undefined, {
+    hooks,
+    config,
+  });
+
+  return app;
 }

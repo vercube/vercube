@@ -1,8 +1,7 @@
 import { createRequire } from 'node:module';
 import { dirname, resolve } from 'node:path';
-import { loadConfig } from 'c12';
+import { loadVercubeConfig } from '@vercube/core';
 import { createJiti } from 'jiti';
-import type { ConfigTypes } from '@vercube/core';
 
 /** @internal */
 const _require = createRequire(import.meta.url);
@@ -51,22 +50,18 @@ const jiti = createJiti(import.meta.url, {
  *
  * Returns an empty array when:
  * - `vercube.config.ts` does not exist in `cwd`
- * - the config file has no `cli.commands` field
+ * - the config file has no `cli.commands` and no plugin registered commands
  *
  * @param cwd - directory to look for `vercube.config.ts` in (typically `process.cwd()`)
  * @returns array of command class constructors, or `[]` if none found
  */
 export async function loadUserCommands(cwd: string): Promise<(new () => unknown)[]> {
   try {
-    const result = await loadConfig<ConfigTypes.Config>({
-      name: 'vercube',
+    const config = await loadVercubeConfig(undefined, {
       cwd,
-      rcFile: false,
-      globalRc: false,
       import: (id) => jiti.import(id),
     });
-
-    return result.config?.cli?.commands ?? [];
+    return config.cli?.commands ?? [];
   } catch {
     return [];
   }

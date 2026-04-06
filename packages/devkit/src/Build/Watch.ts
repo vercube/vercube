@@ -31,8 +31,7 @@ export async function watch(app: DevKitTypes.App): Promise<void> {
 
   app.hooks.hook('bundler-watch:restart', () => {
     console.clear();
-    consola.info({ tag: 'build', message: 'Configuration changed, reloading...' });
-    app.hooks.callHook('dev:reload');
+    consola.info({ tag: 'build', message: 'Configuration changed, rebuilding...' });
   });
 
   app.hooks.hook('bundler-watch:error', (error: Error) => {
