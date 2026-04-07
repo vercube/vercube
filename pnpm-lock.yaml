@@ -205,6 +205,27 @@ importers:
         specifier: 1.3.11
         version: 1.3.11
 
+  examples/evlog:
+    dependencies:
+      '@oxc-project/runtime':
+        specifier: 'catalog:'
+        version: 0.123.0
+      '@vercube/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@vercube/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@vercube/di':
+        specifier: workspace:*
+        version: link:../../packages/di
+      '@vercube/evlog':
+        specifier: workspace:*
+        version: link:../../packages/evlog
+      '@vercube/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
+
   examples/nitro:
     dependencies:
       '@vercube/core':
