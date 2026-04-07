@@ -44,14 +44,17 @@ import { EvlogPlugin } from '@vercube/evlog';
 
 export default defineConfig({
   plugins: [
-    [EvlogPlugin, {
-      // exclude health-check routes from request logging
-      exclude: ['/health'],
-      // evlog provider options
-      provider: {
-        pretty: true, // pretty-print in dev
+    [
+      EvlogPlugin,
+      {
+        // exclude health-check routes from request logging
+        exclude: ['/health'],
+        // evlog provider options
+        provider: {
+          pretty: true, // pretty-print in dev
+        },
       },
-    }],
+    ],
   ],
 });
 ```
@@ -66,20 +69,23 @@ import { EvlogPlugin } from '@vercube/evlog';
 
 export default defineConfig({
   plugins: [
-    [EvlogPlugin, {
-      provider: {
-        drain: async ({ event }) => {
-          await fetch('https://api.axiom.co/v1/datasets/logs/ingest', {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${process.env.AXIOM_TOKEN}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify([event]),
-          });
+    [
+      EvlogPlugin,
+      {
+        provider: {
+          drain: async ({ event }) => {
+            await fetch('https://api.axiom.co/v1/datasets/logs/ingest', {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${process.env.AXIOM_TOKEN}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify([event]),
+            });
+          },
         },
       },
-    }],
+    ],
   ],
 });
 ```
@@ -124,28 +130,28 @@ log.error({ error: new Error('timeout'), requestId: '123' });
 
 ## 🔧 Plugin options
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `include` | `string[]` | all routes | Glob patterns for routes to log |
-| `exclude` | `string[]` | `[]` | Glob patterns for routes to skip |
-| `routes` | `Record<string, { service: string }>` | — | Per-route service name overrides |
-| `priority` | `number` | `0` | Middleware priority (lower = earlier) |
-| `provider` | `EvlogProviderOptions` | — | Options forwarded to `initLogger()` |
-| `drain` | `function` | — | Drain callback for every emitted event |
-| `enrich` | `function` | — | Enrich callback before drain |
-| `keep` | `function` | — | Tail-sampling callback |
+| Option     | Type                                  | Default    | Description                            |
+| ---------- | ------------------------------------- | ---------- | -------------------------------------- |
+| `include`  | `string[]`                            | all routes | Glob patterns for routes to log        |
+| `exclude`  | `string[]`                            | `[]`       | Glob patterns for routes to skip       |
+| `routes`   | `Record<string, { service: string }>` | —          | Per-route service name overrides       |
+| `priority` | `number`                              | `0`        | Middleware priority (lower = earlier)  |
+| `provider` | `EvlogProviderOptions`                | —          | Options forwarded to `initLogger()`    |
+| `drain`    | `function`                            | —          | Drain callback for every emitted event |
+| `enrich`   | `function`                            | —          | Enrich callback before drain           |
+| `keep`     | `function`                            | —          | Tail-sampling callback                 |
 
 ### `provider` options (`EvlogProviderOptions`)
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `enabled` | `boolean` | `true` | Enable/disable all logging |
-| `pretty` | `boolean` | auto | Pretty-print output |
-| `silent` | `boolean` | `false` | Suppress built-in console output |
-| `stringify` | `boolean` | `true` | Emit JSON strings vs raw objects |
-| `env` | `object` | — | Service, environment, version overrides |
-| `sampling` | `object` | — | Per-level sample rates and keep rules |
-| `drain` | `function` | — | Drain callback (alternative to plugin-level drain) |
+| Option      | Type       | Default | Description                                        |
+| ----------- | ---------- | ------- | -------------------------------------------------- |
+| `enabled`   | `boolean`  | `true`  | Enable/disable all logging                         |
+| `pretty`    | `boolean`  | auto    | Pretty-print output                                |
+| `silent`    | `boolean`  | `false` | Suppress built-in console output                   |
+| `stringify` | `boolean`  | `true`  | Emit JSON strings vs raw objects                   |
+| `env`       | `object`   | —       | Service, environment, version overrides            |
+| `sampling`  | `object`   | —       | Per-level sample rates and keep rules              |
+| `drain`     | `function` | —       | Drain callback (alternative to plugin-level drain) |
 
 ## 📜 License
 
