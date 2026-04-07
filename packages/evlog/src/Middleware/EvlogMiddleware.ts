@@ -1,8 +1,9 @@
 import { RequestContext } from '@vercube/core';
+import { BaseMiddleware } from '@vercube/core';
 import { InjectOptional } from '@vercube/di';
 import { createMiddlewareLogger, extractSafeHeaders } from 'evlog/toolkit';
 import type { EvlogTypes } from '../Types/EvlogTypes';
-import type { BaseMiddleware, MiddlewareOptions } from '@vercube/core';
+import type { MiddlewareOptions } from '@vercube/core';
 
 /**
  * Key used to store the evlog request logger in RequestContext.
@@ -22,7 +23,7 @@ export const EVLOG_FINISH_KEY = 'evlog:finish';
  * 2. Stores the logger in `RequestContext` for access via `useEvlog()`
  * 3. On response, calls `finish()` to emit the wide event through the drain pipeline
  */
-export class EvlogMiddleware implements BaseMiddleware<EvlogTypes.MiddlewareOptions> {
+export class EvlogMiddleware extends BaseMiddleware<EvlogTypes.MiddlewareOptions> {
   @InjectOptional(RequestContext)
   private gRequestContext!: RequestContext | null;
 

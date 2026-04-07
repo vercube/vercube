@@ -113,7 +113,7 @@ export class EvlogProvider {
       log[level](tag, args[0]);
     } else if (args.length === 1 && typeof args[0] === 'object' && args[0] !== null && !(args[0] instanceof Error)) {
       log[level](args[0] as Record<string, unknown>);
-    } else if (args.length >= 2 && typeof args[0] === 'string' && typeof args[1] === 'string') {
+    } else if (args.length === 2 && typeof args[0] === 'string' && typeof args[1] === 'string') {
       log[level](args[0], args[1]);
     } else {
       // Fallback: build an event object from the args

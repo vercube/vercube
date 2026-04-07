@@ -1,10 +1,11 @@
 import { GlobalMiddlewareRegistry } from '@vercube/core';
+import { BasePlugin } from '@vercube/core';
 import { Logger } from '@vercube/logger';
 import { EvlogProvider } from '../Drivers/EvlogProvider';
 import { EvlogMiddleware } from '../Middleware/EvlogMiddleware';
 import type { EvlogProviderOptions } from '../Drivers/EvlogProvider';
 import type { EvlogTypes } from '../Types/EvlogTypes';
-import type { App, BasePlugin } from '@vercube/core';
+import type { App } from '@vercube/core';
 
 /**
  * Plugin that integrates evlog into vercube.
@@ -34,10 +35,10 @@ import type { App, BasePlugin } from '@vercube/core';
  * });
  * ```
  */
-export class EvlogPlugin implements BasePlugin<EvlogTypes.PluginOptions> {
+export class EvlogPlugin extends BasePlugin<EvlogTypes.PluginOptions> {
   public name = 'evlog';
 
-  public setup(app: App, options?: EvlogTypes.PluginOptions): void {
+  public override setup(app: App, options?: EvlogTypes.PluginOptions): void {
     // Reconfigure the logger to use evlog provider
     const logger = app.container.get(Logger);
     logger.configure({
@@ -45,8 +46,10 @@ export class EvlogPlugin implements BasePlugin<EvlogTypes.PluginOptions> {
       providers: [
         {
           name: 'evlog',
-          provider: EvlogProvider,
-          options: options?.provider,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          provider: EvlogProvider as any,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          options: options?.provider as any,
         },
       ],
     });
@@ -54,6 +57,7 @@ export class EvlogPlugin implements BasePlugin<EvlogTypes.PluginOptions> {
     // Register the evlog middleware as a global middleware for request logging
     const middlewareRegistry = app.container.get(GlobalMiddlewareRegistry);
     middlewareRegistry.registerGlobalMiddleware(EvlogMiddleware, {
+      target: '__global__',
       priority: options?.priority ?? 0,
       args: options,
     });
