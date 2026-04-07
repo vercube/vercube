@@ -8,7 +8,7 @@ catalog:
   '@standard-schema/spec': 1.1.0
   c12: 4.0.0-beta.4
   consola: 3.4.2
-  defu: 6.1.6
+  defu: 6.1.7
   pathe: 2.0.3
   rolldown: 1.0.0-rc.13
   srvx: 0.11.15
