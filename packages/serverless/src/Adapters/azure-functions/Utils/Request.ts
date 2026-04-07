@@ -28,6 +28,6 @@ export function convertEventToRequest(request: HttpRequest): Request {
   return new Request(request.url, {
     method: request.method,
     headers: headersToObject(request.headers),
-    ...(hasBody ? { body: request.body as ReadableStream, duplex: 'half' } : {}),
+    ...(hasBody && request.body != null ? { body: request.body as unknown as ReadableStream, duplex: 'half' as const } : {}),
   });
 }

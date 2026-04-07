@@ -117,7 +117,7 @@ describe('HttpServer', () => {
 
       mockErrorHandler.handleError.mockReturnValue(new Response('Error handled'));
 
-      const result = bunErrorHandler!(testError);
+      const result = (bunErrorHandler as (this: unknown, err: Error) => Response)(testError);
 
       expect(mockErrorHandler.handleError).toHaveBeenCalledWith(testError);
       expect(result).toBeInstanceOf(Response);
