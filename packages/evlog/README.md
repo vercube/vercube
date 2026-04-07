@@ -90,31 +90,31 @@ export default defineConfig({
 });
 ```
 
-### Reading the request-scoped logger
+### Enriching the wide event with context
 
-Inside a controller or service, access the per-request logger via `RequestContext`:
+Inside a controller or service, just inject `Logger` and use `setContext()` to enrich the wide event:
 
 ```ts
 import { Controller, Get } from '@vercube/core';
 import { Inject } from '@vercube/di';
-import { RequestContext } from '@vercube/core';
-import { EVLOG_REQUEST_LOGGER_KEY } from '@vercube/evlog';
-import type { EvlogTypes } from '@vercube/evlog';
+import { Logger } from '@vercube/logger';
 
 @Controller('/users')
 export class UsersController {
-  @Inject(RequestContext)
-  private requestContext!: RequestContext;
+  @Inject(Logger)
+  private logger!: Logger;
 
   @Get('/:id')
   async getUser() {
-    const log = this.requestContext.get<EvlogTypes.EvlogRequestLogger>(EVLOG_REQUEST_LOGGER_KEY);
-    log?.set('userId', 42);
+    this.logger.setContext('userId', 42);
+    this.logger.setContext('resource', 'user');
 
     return { id: 42 };
   }
 }
 ```
+
+All context set during the request is automatically included in the final wide event emitted by `EvlogMiddleware`.
 
 ### Using the evlog API directly
 

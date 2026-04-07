@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { Container, Inject } from '@vercube/di';
 import { LoggerProvider } from '../Common/LoggerProvider';
 import { isLogLevelEnabled } from '../Utils/Utils';
@@ -23,6 +24,11 @@ export class BaseLogger implements Logger {
    * Hold providers level
    */
   private fProvidersLevel: Map<string, LoggerTypes.Level> = new Map();
+
+  /**
+   * Request-scoped context storage.
+   */
+  private fContextStorage = new AsyncLocalStorage<Map<string, unknown>>();
 
   /**
    * Configure logger
@@ -95,6 +101,34 @@ export class BaseLogger implements Logger {
   }
 
   /**
+   * Sets a key-value pair in the current request-scoped logging context.
+   */
+  public setContext(key: string, value: unknown): void {
+    const store = this.fContextStorage.getStore();
+    if (store) {
+      store.set(key, value);
+    }
+  }
+
+  /**
+   * Returns all key-value pairs from the current request-scoped logging context.
+   */
+  public getContext(): Record<string, unknown> {
+    const store = this.fContextStorage.getStore();
+    if (!store) {
+      return {};
+    }
+    return Object.fromEntries(store);
+  }
+
+  /**
+   * Runs a function within a new logging context scope.
+   */
+  public async runInContext<T>(fn: () => Promise<T>): Promise<T> {
+    return this.fContextStorage.run(new Map(), fn);
+  }
+
+  /**
    * Prints a log message according to the specified format and level.
    * This is an abstract method that should be implemented by subclasses.
    * @param message - The log message object containing level, tag, and arguments
@@ -102,6 +136,12 @@ export class BaseLogger implements Logger {
    * @protected
    */
   protected printMessage(message: LoggerTypes.Message): void {
+    // attach request-scoped context if available
+    const store = this.fContextStorage.getStore();
+    if (store && store.size > 0) {
+      message.context = Object.fromEntries(store);
+    }
+
     // check if message level is enabled for any provider
     const providersToProcess = [...this.fProviders.entries()].filter(([name]) => {
       return isLogLevelEnabled(message.level, this.fProvidersLevel.get(name) ?? this.fLogLevel);

@@ -22,4 +22,16 @@ export class MockLogger extends Logger {
   public error(...args: LoggerTypes.Arg[]): void {
     // Mock implementation
   }
+
+  public setContext(_key: string, _value: unknown): void {
+    // Mock implementation
+  }
+
+  public getContext(): Record<string, unknown> {
+    return {};
+  }
+
+  public async runInContext<T>(fn: () => Promise<T>): Promise<T> {
+    return fn();
+  }
 }

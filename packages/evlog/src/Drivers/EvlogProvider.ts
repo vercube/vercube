@@ -96,6 +96,7 @@ export class EvlogProvider {
 
   /**
    * Processes a log message by forwarding it to evlog's log API.
+   * When request-scoped context is present (via Logger.setContext), it is merged into every event.
    * @param message - The log message to process
    */
   public processMessage(message: LoggerTypes.Message): void {
@@ -104,54 +105,61 @@ export class EvlogProvider {
       this.fInitialized = true;
     }
 
-    const { level, args, tag } = message;
+    const { level, args, tag, context } = message;
+    const hasContext = context && Object.keys(context).length > 0;
 
-    // evlog supports two signatures:
-    // log[level](tag: string, message: string)
-    // log[level](event: Record<string, unknown>)
-    if (tag && args.length > 0 && typeof args[0] === 'string') {
-      log[level](tag, args[0]);
-    } else if (args.length === 1 && typeof args[0] === 'object' && args[0] !== null && !(args[0] instanceof Error)) {
-      log[level](args[0] as Record<string, unknown>);
-    } else if (args.length === 2 && typeof args[0] === 'string' && typeof args[1] === 'string') {
-      log[level](args[0], args[1]);
-    } else {
-      // Fallback: build an event object from the args
-      const event: Record<string, unknown> = {};
-
-      if (tag) {
-        event.tag = tag;
+    // When context is present, always use event-object form so context is included
+    if (!hasContext) {
+      // Fast paths without context — use evlog's native signatures
+      if (tag && args.length > 0 && typeof args[0] === 'string') {
+        log[level](tag, args[0]);
+        return;
       }
-
-      if (message.timestamp) {
-        event.timestamp = new Date(message.timestamp).toISOString();
+      if (args.length === 1 && typeof args[0] === 'object' && args[0] !== null && !(args[0] instanceof Error)) {
+        log[level](args[0] as Record<string, unknown>);
+        return;
       }
-
-      if (message.pid) {
-        event.pid = message.pid;
+      if (args.length === 2 && typeof args[0] === 'string' && typeof args[1] === 'string') {
+        log[level](args[0], args[1]);
+        return;
       }
-
-      if (message.type) {
-        event.type = message.type;
-      }
-
-      // Map args into the event
-      const messageParts: string[] = [];
-      for (const arg of args) {
-        if (arg instanceof Error) {
-          event.error = { message: arg.message, stack: arg.stack, name: arg.name };
-        } else if (typeof arg === 'object' && arg !== null) {
-          Object.assign(event, arg);
-        } else {
-          messageParts.push(String(arg));
-        }
-      }
-
-      if (messageParts.length > 0) {
-        event.message = messageParts.join(' ');
-      }
-
-      log[level](event);
     }
+
+    // Build event object, merging context + args
+    const event: Record<string, unknown> = { ...context };
+
+    if (tag) {
+      event.tag = tag;
+    }
+
+    if (message.timestamp) {
+      event.timestamp = new Date(message.timestamp).toISOString();
+    }
+
+    if (message.pid) {
+      event.pid = message.pid;
+    }
+
+    if (message.type) {
+      event.type = message.type;
+    }
+
+    // Map args into the event
+    const messageParts: string[] = [];
+    for (const arg of args) {
+      if (arg instanceof Error) {
+        event.error = { message: arg.message, stack: arg.stack, name: arg.name };
+      } else if (typeof arg === 'object' && arg !== null) {
+        Object.assign(event, arg);
+      } else {
+        messageParts.push(String(arg));
+      }
+    }
+
+    if (messageParts.length > 0) {
+      event.message = messageParts.join(' ');
+    }
+
+    log[level](event);
   }
 }

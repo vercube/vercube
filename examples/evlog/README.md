@@ -6,8 +6,7 @@ Demonstrates structured wide-event logging in a Vercube app using [`@vercube/evl
 
 - Registering `EvlogPlugin` to replace the default console logger with [evlog](https://evlog.dev)
 - Excluding health-check routes from request logging via the `exclude` option
-- Accessing the per-request logger inside a controller via `RequestContext`
-- Enriching the wide event with structured metadata (`log.set()`)
+- Enriching the wide event with `logger.setContext()` — no `RequestContext` needed
 
 ## Project structure
 

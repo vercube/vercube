@@ -1,4 +1,5 @@
 import { Container, Inject } from '@vercube/di';
+import { Logger } from '@vercube/logger';
 import { FastResponse } from '../../Types/CommonTypes';
 import { ErrorHandlerProvider } from '../ErrorHandler/ErrorHandlerProvider';
 import { MetadataResolver } from '../Metadata/MetadataResolver';
@@ -260,10 +261,15 @@ export class RequestHandler {
    */
   private async runWithContext<T>(fn: () => Promise<T>): Promise<T> {
     const requestContext = this.gContainer.getOptional(RequestContext);
+    const logger = this.gContainer.getOptional(Logger);
+
+    // Wrap fn in logger context first, then request context
+    const wrapped = logger ? () => logger.runInContext(fn) : fn;
+
     if (requestContext) {
-      return requestContext.run(fn);
+      return requestContext.run(wrapped);
     }
-    return fn();
+    return wrapped();
   }
 
   /**

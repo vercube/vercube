@@ -1,22 +1,18 @@
 import { Controller, Get, Post } from '@vercube/core';
-import { RequestContext } from '@vercube/core';
 import { Inject } from '@vercube/di';
-import { EVLOG_REQUEST_LOGGER_KEY } from '@vercube/evlog';
-import type { EvlogTypes } from '@vercube/evlog';
+import { Logger } from '@vercube/logger';
 
 /**
- * Example controller that demonstrates how to use the request-scoped evlog logger.
+ * Example controller that demonstrates request-scoped logging context with evlog.
  *
- * `EvlogMiddleware` (registered globally by `EvlogPlugin`) creates a per-request
- * logger and stores it in `RequestContext` under `EVLOG_REQUEST_LOGGER_KEY`.
- *
- * Any fields set on the logger via `log.set()` are included in the final wide
- * event emitted when the response finishes.
+ * Use `logger.setContext(key, value)` to enrich the wide event emitted by
+ * `EvlogMiddleware` at the end of each request. No need to access `RequestContext` —
+ * just inject `Logger` and use it.
  */
 @Controller('/users')
 export class UsersController {
-  @Inject(RequestContext)
-  private requestContext!: RequestContext;
+  @Inject(Logger)
+  private logger!: Logger;
 
   /**
    * Returns a list of users.
@@ -24,15 +20,13 @@ export class UsersController {
    */
   @Get('/')
   public async list(): Promise<{ users: Array<{ id: number; name: string }> }> {
-    const log = this.requestContext.get<EvlogTypes.EvlogRequestLogger>(EVLOG_REQUEST_LOGGER_KEY);
-
     const users = [
       { id: 1, name: 'Alice' },
       { id: 2, name: 'Bob' },
     ];
 
-    log?.set('resource', 'users');
-    log?.set('count', users.length);
+    this.logger.setContext('resource', 'users');
+    this.logger.setContext('count', users.length);
 
     return { users };
   }
@@ -40,17 +34,13 @@ export class UsersController {
   /**
    * Returns a single user by id.
    * Enriches the wide event with `{ resource: 'user', userId }`.
-   * Emits an error field when the user is not found.
    */
   @Get('/:id')
   public async get(): Promise<{ user: { id: number; name: string } }> {
-    const log = this.requestContext.get<EvlogTypes.EvlogRequestLogger>(EVLOG_REQUEST_LOGGER_KEY);
-
-    // Simulate a user lookup
     const user = { id: 1, name: 'Alice' };
 
-    log?.set('resource', 'user');
-    log?.set('userId', user.id);
+    this.logger.setContext('resource', 'user');
+    this.logger.setContext('userId', user.id);
 
     return { user };
   }
@@ -61,10 +51,8 @@ export class UsersController {
    */
   @Post('/')
   public async create(): Promise<{ created: boolean }> {
-    const log = this.requestContext.get<EvlogTypes.EvlogRequestLogger>(EVLOG_REQUEST_LOGGER_KEY);
-
-    log?.set('resource', 'user');
-    log?.set('action', 'create');
+    this.logger.setContext('resource', 'user');
+    this.logger.setContext('action', 'create');
 
     return { created: true };
   }
