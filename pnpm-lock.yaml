@@ -393,6 +393,21 @@ importers:
 
   packages/di: {}
 
+  packages/evlog:
+    dependencies:
+      '@vercube/core':
+        specifier: workspace:*
+        version: link:../core
+      '@vercube/di':
+        specifier: workspace:*
+        version: link:../di
+      '@vercube/logger':
+        specifier: workspace:*
+        version: link:../logger
+      evlog:
+        specifier: ^2.11.0
+        version: 2.11.0(express@5.2.1)(hono@4.12.9)(nitro@3.0.260311-beta(chokidar@5.0.0)(dotenv@17.4.0)(giget@3.2.0)(jiti@2.6.1)(rollup@4.60.1)(vite@7.3.1(@types/node@25.5.2)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3)))(vite@7.3.1(@types/node@25.5.2)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3))
+
   packages/h3:
     dependencies:
       '@vercube/core':
@@ -3390,6 +3405,59 @@ packages:
   eventsource@3.0.7:
     resolution: {integrity: sha512-CRT1WTyuQoD771GW56XEZFQ/ZoSfWid1alKGDYMmkt2yl8UXrVR4pspqWNEcqKvVIzg6PAltWjxcSSPrboA4iA==}
     engines: {node: '>=18.0.0'}
+
+  evlog@2.11.0:
+    resolution: {integrity: sha512-JsPxRLZOn9vVNZvtehoGcIPMS089ZfgW2PtarZgpz/U6gJ0Zl9wIPtOjP0KSAFrwX7ZOIyAhZTdZoI0v9L6o5A==}
+    peerDependencies:
+      '@nestjs/common': '>=11.1.17'
+      '@nuxt/kit': ^4.4.2
+      '@tanstack/start-client-core': ^1.161.0
+      ai: '>=6.0.142'
+      elysia: '>=1.4.28'
+      express: '>=5.2.1'
+      fastify: '>=5.8.4'
+      h3: ^1.15.10
+      hono: ''
+      next: '>=16.2.2'
+      nitro: ^3.0.260311-beta
+      nitropack: ^2.13.2
+      ofetch: ^1.5.1
+      react: '>=19.2.4'
+      react-router: '>=7.13.2'
+      vite: ^7.0.0 || ^8.0.0
+    peerDependenciesMeta:
+      '@nestjs/common':
+        optional: true
+      '@nuxt/kit':
+        optional: true
+      '@tanstack/start-client-core':
+        optional: true
+      ai:
+        optional: true
+      elysia:
+        optional: true
+      express:
+        optional: true
+      fastify:
+        optional: true
+      h3:
+        optional: true
+      hono:
+        optional: true
+      next:
+        optional: true
+      nitro:
+        optional: true
+      nitropack:
+        optional: true
+      ofetch:
+        optional: true
+      react:
+        optional: true
+      react-router:
+        optional: true
+      vite:
+        optional: true
 
   execa@8.0.1:
     resolution: {integrity: sha512-VyhnebXciFV2DESc+p6B+y0LjSm0krU4OgJN44qFAhBY0TJ+1V61tYD2+wHusZ6F9n5K+vl8k0sTy7PEfV4qpg==}
@@ -7837,6 +7905,13 @@ snapshots:
   eventsource@3.0.7:
     dependencies:
       eventsource-parser: 3.0.6
+
+  evlog@2.11.0(express@5.2.1)(hono@4.12.9)(nitro@3.0.260311-beta(chokidar@5.0.0)(dotenv@17.4.0)(giget@3.2.0)(jiti@2.6.1)(rollup@4.60.1)(vite@7.3.1(@types/node@25.5.2)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3)))(vite@7.3.1(@types/node@25.5.2)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3)):
+    optionalDependencies:
+      express: 5.2.1
+      hono: 4.12.9
+      nitro: 3.0.260311-beta(chokidar@5.0.0)(dotenv@17.4.0)(giget@3.2.0)(jiti@2.6.1)(rollup@4.60.1)(vite@7.3.1(@types/node@25.5.2)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3))
+      vite: 7.3.1(@types/node@25.5.2)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3)
 
   execa@8.0.1:
     dependencies:

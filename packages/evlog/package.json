@@ -1,0 +1,37 @@
+{
+  "name": "@vercube/evlog",
+  "version": "0.0.46",
+  "description": "Evlog integration for Vercube framework - structured wide-event logging",
+  "packageManager": "pnpm@10.33.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vercube/vercube.git",
+    "directory": "packages/evlog"
+  },
+  "license": "MIT",
+  "sideEffects": false,
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "exports": {
+    ".": "./dist/index.mjs",
+    "./package.json": "./package.json"
+  },
+  "types": "./dist/index.d.mts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsdown --config ../../tsdown.config.ts --config-loader=unrun"
+  },
+  "dependencies": {
+    "@vercube/core": "workspace:*",
+    "@vercube/di": "workspace:*",
+    "@vercube/logger": "workspace:*",
+    "evlog": "^2.11.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
