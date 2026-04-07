@@ -7,8 +7,8 @@ settings:
 catalogs:
   default:
     '@oxc-project/runtime':
-      specifier: 0.123.0
-      version: 0.123.0
+      specifier: 0.124.0
+      version: 0.124.0
     '@standard-schema/spec':
       specifier: 1.1.0
       version: 1.1.0
@@ -49,7 +49,7 @@ importers:
         version: 20.5.0
       '@oxc-project/runtime':
         specifier: 'catalog:'
-        version: 0.123.0
+        version: 0.124.0
       '@types/node':
         specifier: 25.5.2
         version: 25.5.2
@@ -94,7 +94,7 @@ importers:
     dependencies:
       '@oxc-project/runtime':
         specifier: 'catalog:'
-        version: 0.123.0
+        version: 0.124.0
       '@vercube/cli':
         specifier: workspace:*
         version: link:../../packages/cli
@@ -145,7 +145,7 @@ importers:
     dependencies:
       '@oxc-project/runtime':
         specifier: 'catalog:'
-        version: 0.123.0
+        version: 0.124.0
       '@vercube/cli':
         specifier: workspace:*
         version: link:../../packages/cli
@@ -163,7 +163,7 @@ importers:
     dependencies:
       '@oxc-project/runtime':
         specifier: 'catalog:'
-        version: 0.123.0
+        version: 0.124.0
       '@vercube/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -270,7 +270,7 @@ importers:
     dependencies:
       '@oxc-project/runtime':
         specifier: 'catalog:'
-        version: 0.123.0
+        version: 0.124.0
       '@vercube/core':
         specifier: workspace:*
         version: link:../core
@@ -1232,8 +1232,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@oxc-project/runtime@0.123.0':
-    resolution: {integrity: sha512-wRf0z8saz9tHLcK3YeTeBmwISrpy4bBimvKxUmryiIhbt+ZJb0nwwJNL3D8xpeWbNfZlGSlzRBZbfcbApIGZJw==}
+  '@oxc-project/runtime@0.124.0':
+    resolution: {integrity: sha512-sSg6n37J3w3mM4odFvRqzQENf6+qxKnvStr/gU0FgRRg1VE/4MqryLd9PJmE0a7K5xlDfbrctBtSagaFH6ij9Q==}
     engines: {node: ^20.19.0 || >=22.12.0}
 
   '@oxc-project/types@0.122.0':
@@ -5174,7 +5174,7 @@ snapshots:
   '@oxc-parser/binding-win32-x64-msvc@0.123.0':
     optional: true
 
-  '@oxc-project/runtime@0.123.0': {}
+  '@oxc-project/runtime@0.124.0': {}
 
   '@oxc-project/types@0.122.0': {}
 
