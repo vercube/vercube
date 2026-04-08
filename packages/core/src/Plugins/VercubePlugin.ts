@@ -13,6 +13,14 @@ import type {
 
 export type { VercubePlugin, VercubePluginEnv } from '../Types/Plugin';
 
+type HookCleanup = () => void;
+
+/**
+ * Tracks cleanup callbacks for plugin-registered dev hooks per hookable instance.
+ * This prevents listener accumulation across config reloads in `vercube dev`.
+ */
+const pluginDevHookCleanupMap: WeakMap<object, HookCleanup[]> = new WeakMap();
+
 /**
  * Returns the same plugin object; narrows the type for object literals.
  *
@@ -217,7 +225,67 @@ export async function invokeVercubePluginDevHooks(
   if (!plugins?.length) {
     return;
   }
-  for (const plugin of plugins) {
-    await plugin.hooks?.(ctx);
+
+  const rawHooks = ctx.hooks as Record<string, any> | undefined;
+  if (!rawHooks || typeof rawHooks !== 'object') {
+    for (const plugin of plugins) {
+      await plugin.hooks?.(ctx);
+    }
+    return;
   }
+
+  // Remove hooks registered by plugins during the previous config load cycle.
+  const previousCleanup = pluginDevHookCleanupMap.get(rawHooks);
+  if (previousCleanup?.length) {
+    for (const dispose of previousCleanup) {
+      dispose();
+    }
+  }
+
+  const cleanup: HookCleanup[] = [];
+
+  const trackedHooks = new Proxy(rawHooks, {
+    get(target, prop, receiver) {
+      if (prop === 'hook') {
+        return (name: string, handler: (...args: any[]) => any, ...rest: any[]) => {
+          const result = Reflect.apply(target.hook, target, [name, handler, ...rest]);
+
+          if (typeof result === 'function') {
+            cleanup.push(result as HookCleanup);
+          } else if (typeof target.removeHook === 'function') {
+            cleanup.push(() => {
+              target.removeHook(name, handler);
+            });
+          }
+
+          return result;
+        };
+      }
+
+      if (prop === 'addHooks') {
+        return (hooksObject: Record<string, (...args: any[]) => any>) => {
+          const result = Reflect.apply(target.addHooks, target, [hooksObject]);
+          if (typeof target.removeHooks === 'function') {
+            cleanup.push(() => {
+              target.removeHooks(hooksObject);
+            });
+          }
+          return result;
+        };
+      }
+
+      return Reflect.get(target, prop, receiver);
+    },
+  });
+
+  const nextCtx: VercubePluginHooksContext = {
+    ...ctx,
+    hooks: trackedHooks,
+  };
+
+  for (const plugin of plugins) {
+    await plugin.hooks?.(nextCtx);
+  }
+
+  pluginDevHookCleanupMap.set(rawHooks, cleanup);
 }
