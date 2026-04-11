@@ -31,9 +31,10 @@
 pnpm add @vercube/serverless
 ```
 
-## 📖 Usage
+## 📖 Documentation
 
-Check out the full [documentation](https://vercube.dev/docs/modules/serverless/overview)
+- **Concepts & adapters:** [Serverless module (overview)](https://vercube.dev/docs/modules/serverless/overview)
+- **Deploy guides:** [AWS Lambda](https://vercube.dev/docs/deployment/aws-lambda) · [Azure Functions](https://vercube.dev/docs/deployment/azure-functions)
 
 ## 📜 License
 

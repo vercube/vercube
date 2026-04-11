@@ -6,6 +6,8 @@
 
 A example showcasing how to use Vercube with Azure Functions. This template demonstrates how to build serverless applications using Vercube's Azure Functions integration, making it easy to deploy your APIs to Azure Functions. It includes examples of routing, request handling, and Azure Functions configuration.
 
+**Docs:** [Deploy to Azure Functions](https://vercube.dev/docs/deployment/azure-functions) · [Serverless module](https://vercube.dev/docs/modules/serverless/overview)
+
 ## <a name="getting-started">🚀 Quick Start</a>
 
 ```sh
