@@ -17,13 +17,3 @@ jobs:
       build-for-lint: true
       typecheck: pnpm test:tscheck
       lint: pnpm test:lint
-
-  release-commit:
-    needs: [unit-test]
-    if: github.event_name == 'pull_request'
-    permissions: {}
-    uses: sxzz/workflows/.github/workflows/release-commit.yml@v1
-    with:
-      build: pnpm build
-      packages: "./packages/*"
-      comment-package-manager: pnpm
