@@ -60,10 +60,16 @@ export class RequestHandler {
     // get global middlewares
     const globalMiddlewares = this.gGlobalMiddlewareRegistry.middlewares;
 
-    // get unique middlewares;
-    const uniqueMiddlewares = [...middlewares, ...globalMiddlewares].filter(
-      (m, index, self) => self.findIndex((t) => t.middleware === m.middleware) === index,
-    );
+    const combined = [...middlewares, ...globalMiddlewares];
+    const seen = new Set<MetadataTypes.Middleware['middleware']>();
+    const uniqueMiddlewares: MetadataTypes.Middleware[] = [];
+    for (const m of combined) {
+      if (seen.has(m.middleware)) {
+        continue;
+      }
+      seen.add(m.middleware);
+      uniqueMiddlewares.push(m);
+    }
 
     // resolve middlewares
     const resolvedMiddlewares = uniqueMiddlewares.map((m) => ({
@@ -82,7 +88,7 @@ export class RequestHandler {
     return {
       instance,
       propertyName,
-      args: method.args,
+      args: method.args.length <= 1 ? method.args : [...method.args].sort((a, b) => a.idx - b.idx),
       middlewares: {
         beforeMiddlewares,
         afterMiddlewares,
@@ -389,7 +395,7 @@ export class RequestHandler {
     const { request, response, methodArgs, handlerResponse, executeRequest, executeResponse } = options;
     let currentResponse = response;
 
-    for await (const hook of middlewares) {
+    for (const hook of middlewares) {
       try {
         // Execute onRequest hook if requested
         if (executeRequest) {

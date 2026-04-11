@@ -63,14 +63,15 @@ export class Router {
    * @returns {RouterTypes.RouteMatched<RouterTypes.RouterHandler> | undefined} The matched route or undefined if no match found
    */
   public resolve(route: RouterTypes.RouteFind): RouterTypes.RouteMatched<RouterTypes.RouterHandler> | undefined {
-    let url = route.path;
-
-    try {
-      url = new URL(route.path).pathname;
-    } catch {
-      // silent error
+    let pathname = route.path;
+    if (/^https?:\/\//i.test(pathname)) {
+      try {
+        pathname = new URL(pathname).pathname;
+      } catch {
+        // keep pathname as-is (e.g. malformed absolute URL)
+      }
     }
 
-    return findRoute(this.fRouterContext, route.method.toUpperCase(), url);
+    return findRoute(this.fRouterContext, route.method.toUpperCase(), pathname);
   }
 }

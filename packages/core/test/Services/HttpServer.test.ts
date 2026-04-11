@@ -209,7 +209,7 @@ describe('HttpServer', () => {
       const result = await httpServer.handleRequest(request);
 
       expect(mockRouter.resolve).toHaveBeenCalledWith({
-        path: request.url,
+        path: new URL(request.url).pathname,
         method: request.method,
       });
       expect(mockRequestHandler.handleRequest).toHaveBeenCalledWith(request, mockRoute);
@@ -226,7 +226,7 @@ describe('HttpServer', () => {
       const result = await httpServer.handleRequest(request);
 
       expect(mockRouter.resolve).toHaveBeenCalledWith({
-        path: request.url,
+        path: new URL(request.url).pathname,
         method: request.method,
       });
       expect(mockStaticRequestHandler.handleRequest).toHaveBeenCalledWith(request);
@@ -244,7 +244,7 @@ describe('HttpServer', () => {
       const result = await httpServer.handleRequest(request);
 
       expect(mockRouter.resolve).toHaveBeenCalledWith({
-        path: request.url,
+        path: new URL(request.url).pathname,
         method: request.method,
       });
       expect(mockStaticRequestHandler.handleRequest).toHaveBeenCalledWith(request);
@@ -272,7 +272,7 @@ describe('HttpServer', () => {
       const result = await httpServer.handleRequest(request);
 
       expect(mockRouter.resolve).toHaveBeenCalledWith({
-        path: request.url,
+        path: new URL(request.url).pathname,
         method: request.method,
       });
       expect(mockStaticRequestHandler.handleRequest).toHaveBeenCalledWith(request);
@@ -292,7 +292,7 @@ describe('HttpServer', () => {
       const result = await httpServer.handleRequest(preflightRequest);
 
       expect(mockRouter.resolve).toHaveBeenCalledWith({
-        path: preflightRequest.url,
+        path: new URL(preflightRequest.url).pathname,
         method: preflightRequest.method,
       });
       expect(mockRequestHandler.handlePreflight).toHaveBeenCalledWith(preflightRequest);
@@ -313,7 +313,7 @@ describe('HttpServer', () => {
       const result = await httpServer.handleRequest(optionsRequest);
 
       expect(mockRouter.resolve).toHaveBeenCalledWith({
-        path: optionsRequest.url,
+        path: new URL(optionsRequest.url).pathname,
         method: optionsRequest.method,
       });
       expect(mockRequestHandler.handleRequest).toHaveBeenCalled();
