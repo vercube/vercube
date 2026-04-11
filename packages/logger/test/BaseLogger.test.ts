@@ -366,4 +366,112 @@ describe('BaseLogger', () => {
     expect(consoleSpy).not.toHaveBeenCalled();
     vi.restoreAllMocks();
   });
+
+  describe('setContext / getContext / runInContext', () => {
+    it('should return empty context outside runInContext', () => {
+      expect(logger.getContext()).toEqual({});
+    });
+
+    it('should silently no-op setContext outside runInContext', () => {
+      expect(() => logger.setContext('key', 'value')).not.toThrow();
+      expect(logger.getContext()).toEqual({});
+    });
+
+    it('should store and retrieve context inside runInContext', async () => {
+      await logger.runInContext(async () => {
+        logger.setContext('userId', 42);
+        logger.setContext('action', 'login');
+        expect(logger.getContext()).toEqual({ userId: 42, action: 'login' });
+      });
+    });
+
+    it('should clean up context after runInContext completes', async () => {
+      await logger.runInContext(async () => {
+        logger.setContext('userId', 42);
+      });
+      expect(logger.getContext()).toEqual({});
+    });
+
+    it('should include context in messages sent to providers', async () => {
+      const processMessageSpy = vi.fn();
+      class SpyProvider {
+        public initialize(): void {}
+        public processMessage(msg: LoggerTypes.Message): void {
+          processMessageSpy(msg);
+        }
+      }
+      container.bind(SpyProvider);
+
+      logger.configure({
+        providers: [{ name: 'spy', provider: SpyProvider }],
+      });
+
+      await logger.runInContext(async () => {
+        logger.setContext('requestId', 'abc-123');
+        logger.info('hello');
+      });
+
+      expect(processMessageSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          level: 'info',
+          args: ['hello'],
+          context: { requestId: 'abc-123' },
+        }),
+      );
+    });
+
+    it('should not include context in messages outside runInContext', () => {
+      const processMessageSpy = vi.fn();
+      class SpyProvider {
+        public initialize(): void {}
+        public processMessage(msg: LoggerTypes.Message): void {
+          processMessageSpy(msg);
+        }
+      }
+      container.bind(SpyProvider);
+
+      logger.configure({
+        providers: [{ name: 'spy', provider: SpyProvider }],
+      });
+
+      logger.info('no context');
+
+      expect(processMessageSpy).toHaveBeenCalledWith(expect.objectContaining({ level: 'info', args: ['no context'] }));
+      expect(processMessageSpy.mock.calls[0][0].context).toBeUndefined();
+    });
+
+    it('should isolate context between concurrent runInContext calls', async () => {
+      const contexts: Record<string, unknown>[] = [];
+
+      const processMessageSpy = vi.fn((msg: LoggerTypes.Message) => {
+        if (msg.context) contexts.push(msg.context);
+      });
+      class SpyProvider {
+        public initialize(): void {}
+        public processMessage(msg: LoggerTypes.Message): void {
+          processMessageSpy(msg);
+        }
+      }
+      container.bind(SpyProvider);
+
+      logger.configure({
+        providers: [{ name: 'spy', provider: SpyProvider }],
+      });
+
+      await Promise.all([
+        logger.runInContext(async () => {
+          logger.setContext('req', 'A');
+          await new Promise((r) => setTimeout(r, 10));
+          logger.info('from A');
+        }),
+        logger.runInContext(async () => {
+          logger.setContext('req', 'B');
+          logger.info('from B');
+        }),
+      ]);
+
+      expect(contexts).toContainEqual({ req: 'A' });
+      expect(contexts).toContainEqual({ req: 'B' });
+    });
+  });
 });

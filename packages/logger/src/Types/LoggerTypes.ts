@@ -13,6 +13,7 @@ export namespace LoggerTypes {
     pid?: number;
     type?: 'access_log' | 'application_log';
     timestamp?: number;
+    context?: Record<string, unknown>;
   }
 
   export type LogProviderOptions<T extends IOC.Newable<LoggerProvider>> = Parameters<InstanceType<T>['initialize']>[0] & {

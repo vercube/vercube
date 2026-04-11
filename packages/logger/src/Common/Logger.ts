@@ -41,4 +41,27 @@ export abstract class Logger {
    * @returns A value determined by the implementing class
    */
   public abstract error(...args: LoggerTypes.Arg[]): void;
+
+  /**
+   * Sets a key-value pair in the current request-scoped logging context.
+   * Context is included in every log message emitted within the same async scope.
+   *
+   * @param key - The context key
+   * @param value - The context value
+   */
+  public abstract setContext(key: string, value: unknown): void;
+
+  /**
+   * Returns all key-value pairs from the current request-scoped logging context.
+   */
+  public abstract getContext(): Record<string, unknown>;
+
+  /**
+   * Runs a function within a new logging context scope.
+   * Context set via `setContext` inside `fn` is automatically cleaned up when `fn` completes.
+   *
+   * @param fn - The function to run within the context
+   * @returns The result of the function
+   */
+  public abstract runInContext<T>(fn: () => Promise<T>): Promise<T>;
 }

@@ -1,0 +1,21 @@
+{
+  "name": "@examples/evlog",
+  "version": "1.0.0",
+  "description": "Example: structured wide-event logging with @vercube/evlog",
+  "packageManager": "pnpm@10.33.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vercube build",
+    "dev": "vercube dev"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@oxc-project/runtime": "catalog:",
+    "@vercube/cli": "workspace:*",
+    "@vercube/core": "workspace:*",
+    "@vercube/di": "workspace:*",
+    "@vercube/evlog": "workspace:*",
+    "@vercube/logger": "workspace:*"
+  }
+}
