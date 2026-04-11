@@ -32,7 +32,7 @@
     "@vercube/core": "workspace:*",
     "@vercube/di": "workspace:*",
     "@vercube/logger": "workspace:*",
-    "crossws": "0.4.4",
+    "crossws": "0.4.5",
     "srvx": "catalog:"
   },
   "publishConfig": {
