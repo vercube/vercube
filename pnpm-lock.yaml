@@ -239,7 +239,7 @@ importers:
         version: link:../logger
       c12:
         specifier: 'catalog:'
-        version: 4.0.0-beta.4(chokidar@5.0.0)(dotenv@17.4.1)(giget@3.2.0)(jiti@2.6.1)(magicast@0.5.2)
+        version: 4.0.0-beta.4(chokidar@5.0.0)(dotenv@17.4.2)(giget@3.2.0)(jiti@2.6.1)(magicast@0.5.2)
       defu:
         specifier: 'catalog:'
         version: 6.1.7
@@ -276,7 +276,7 @@ importers:
         version: link:../core
       c12:
         specifier: 'catalog:'
-        version: 4.0.0-beta.4(chokidar@5.0.0)(dotenv@17.4.1)(giget@3.2.0)(jiti@2.6.1)(magicast@0.5.2)
+        version: 4.0.0-beta.4(chokidar@5.0.0)(dotenv@17.4.2)(giget@3.2.0)(jiti@2.6.1)(magicast@0.5.2)
       chokidar:
         specifier: 5.0.0
         version: 5.0.0
@@ -287,8 +287,8 @@ importers:
         specifier: 'catalog:'
         version: 6.1.7
       dotenv:
-        specifier: 17.4.1
-        version: 17.4.1
+        specifier: 17.4.2
+        version: 17.4.2
       hookable:
         specifier: 6.1.0
         version: 6.1.0
@@ -2693,8 +2693,8 @@ packages:
     resolution: {integrity: sha512-QM8q3zDe58hqUqjraQOmzZ1LIH9SWQJTlEKCH4kJ2oQvLZk7RbQXvtDM2XEq3fwkV9CCvvH4LA0AV+ogFsBM2Q==}
     engines: {node: '>=8'}
 
-  dotenv@17.4.1:
-    resolution: {integrity: sha512-k8DaKGP6r1G30Lx8V4+pCsLzKr8vLmV2paqEj1Y55GdAgJuIqpRp5FfajGF8KtwMxCz9qJc6wUIJnm053d/WCw==}
+  dotenv@17.4.2:
+    resolution: {integrity: sha512-nI4U3TottKAcAD9LLud4Cb7b2QztQMUEfHbvhTH09bqXTxnSie8WnjPALV/WMCrJZ6UV/qHJ6L03OqO3LcdYZw==}
     engines: {node: '>=12'}
 
   dts-resolver@2.1.3:
@@ -6224,7 +6224,7 @@ snapshots:
 
   bytes@3.1.2: {}
 
-  c12@4.0.0-beta.4(chokidar@5.0.0)(dotenv@17.4.1)(giget@3.2.0)(jiti@2.6.1)(magicast@0.5.2):
+  c12@4.0.0-beta.4(chokidar@5.0.0)(dotenv@17.4.2)(giget@3.2.0)(jiti@2.6.1)(magicast@0.5.2):
     dependencies:
       confbox: 0.2.4
       defu: 6.1.7
@@ -6234,7 +6234,7 @@ snapshots:
       rc9: 3.0.1
     optionalDependencies:
       chokidar: 5.0.0
-      dotenv: 17.4.1
+      dotenv: 17.4.2
       giget: 3.2.0
       jiti: 2.6.1
       magicast: 0.5.2
@@ -6398,7 +6398,7 @@ snapshots:
     dependencies:
       is-obj: 2.0.0
 
-  dotenv@17.4.1: {}
+  dotenv@17.4.2: {}
 
   dts-resolver@2.1.3: {}
 
