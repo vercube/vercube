@@ -2,7 +2,7 @@
   "name": "@vercube/storage",
   "version": "0.0.46",
   "description": "Storage module for Vercube framework",
-  "packageManager": "pnpm@10.33.0",
+  "packageManager": "pnpm@10.33.1",
   "repository": {
     "type": "git",
     "url": "https://github.com/vercube/vercube.git",
