@@ -43,7 +43,7 @@
     "@vercube/core": "workspace:*",
     "@vercube/di": "workspace:*",
     "srvx": "catalog:",
-    "ufo": "1.6.3"
+    "ufo": "1.6.4"
   },
   "devDependencies": {
     "@azure/functions": "4.14.0",
