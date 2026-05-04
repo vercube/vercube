@@ -31,8 +31,8 @@ catalogs:
       specifier: 0.11.15
       version: 0.11.15
     zod:
-      specifier: 4.4.2
-      version: 4.4.2
+      specifier: 4.4.3
+      version: 4.4.3
 
 importers:
 
@@ -258,7 +258,7 @@ importers:
         version: 1.0.0-rc.18
       zod:
         specifier: 'catalog:'
-        version: 4.4.2
+        version: 4.4.3
 
   packages/create-app:
     dependencies:
@@ -329,7 +329,7 @@ importers:
     dependencies:
       '@modelcontextprotocol/sdk':
         specifier: 1.29.0
-        version: 1.29.0(zod@4.4.2)
+        version: 1.29.0(zod@4.4.3)
       '@vercube/auth':
         specifier: workspace:*
         version: link:../auth
@@ -344,16 +344,16 @@ importers:
         version: link:../logger
       mcp-handler:
         specifier: 1.1.0
-        version: 1.1.0(@modelcontextprotocol/sdk@1.29.0(zod@4.4.2))
+        version: 1.1.0(@modelcontextprotocol/sdk@1.29.0(zod@4.4.3))
       zod:
         specifier: 'catalog:'
-        version: 4.4.2
+        version: 4.4.3
 
   packages/schema:
     dependencies:
       '@asteasolutions/zod-to-openapi':
         specifier: 8.5.0
-        version: 8.5.0(zod@4.4.2)
+        version: 8.5.0(zod@4.4.3)
       '@standard-schema/spec':
         specifier: 'catalog:'
         version: 1.1.0
@@ -368,7 +368,7 @@ importers:
         version: 6.1.7
       zod:
         specifier: 'catalog:'
-        version: 4.4.2
+        version: 4.4.3
 
   packages/serverless:
     dependencies:
@@ -425,7 +425,7 @@ importers:
     devDependencies:
       zod:
         specifier: 'catalog:'
-        version: 4.4.2
+        version: 4.4.3
 
   playground:
     dependencies:
@@ -470,7 +470,7 @@ importers:
         version: 2.8.1
       zod:
         specifier: 'catalog:'
-        version: 4.4.2
+        version: 4.4.3
     devDependencies:
       '@vercube/cli':
         specifier: workspace:*
@@ -4164,15 +4164,15 @@ packages:
     peerDependencies:
       zod: ^3.25.28 || ^4
 
-  zod@4.4.2:
-    resolution: {integrity: sha512-IynmDyxsEsb9RKzO3J9+4SxXnl2FTFSzNBaKKaMV6tsSk0rw9gYw9gs+JFCq/qk2LCZ78KDwyj+Z289TijSkUw==}
+  zod@4.4.3:
+    resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
 
 snapshots:
 
-  '@asteasolutions/zod-to-openapi@8.5.0(zod@4.4.2)':
+  '@asteasolutions/zod-to-openapi@8.5.0(zod@4.4.3)':
     dependencies:
       openapi3-ts: 4.5.0
-      zod: 4.4.2
+      zod: 4.4.3
 
   '@aws-crypto/crc32@5.2.0':
     dependencies:
@@ -5420,7 +5420,7 @@ snapshots:
     dependencies:
       jsep: 1.4.0
 
-  '@modelcontextprotocol/sdk@1.29.0(zod@4.4.2)':
+  '@modelcontextprotocol/sdk@1.29.0(zod@4.4.3)':
     dependencies:
       '@hono/node-server': 1.19.12(hono@4.12.10)
       ajv: 8.18.0
@@ -5437,8 +5437,8 @@ snapshots:
       json-schema-typed: 8.0.2
       pkce-challenge: 5.0.1
       raw-body: 3.0.2
-      zod: 4.4.2
-      zod-to-json-schema: 3.25.2(zod@4.4.2)
+      zod: 4.4.3
+      zod-to-json-schema: 3.25.2(zod@4.4.3)
     transitivePeerDependencies:
       - supports-color
 
@@ -7274,9 +7274,9 @@ snapshots:
 
   math-intrinsics@1.1.0: {}
 
-  mcp-handler@1.1.0(@modelcontextprotocol/sdk@1.29.0(zod@4.4.2)):
+  mcp-handler@1.1.0(@modelcontextprotocol/sdk@1.29.0(zod@4.4.3)):
     dependencies:
-      '@modelcontextprotocol/sdk': 1.29.0(zod@4.4.2)
+      '@modelcontextprotocol/sdk': 1.29.0(zod@4.4.3)
       chalk: 5.6.2
       commander: 11.1.0
       redis: 4.7.1
@@ -8220,8 +8220,8 @@ snapshots:
 
   yocto-queue@1.2.2: {}
 
-  zod-to-json-schema@3.25.2(zod@4.4.2):
+  zod-to-json-schema@3.25.2(zod@4.4.3):
     dependencies:
-      zod: 4.4.2
+      zod: 4.4.3
 
-  zod@4.4.2: {}
+  zod@4.4.3: {}
