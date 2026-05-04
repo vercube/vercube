@@ -2,7 +2,7 @@
   "name": "@vercube/core",
   "version": "0.0.46",
   "description": "Core module for Vercube framework",
-  "packageManager": "pnpm@10.33.2",
+  "packageManager": "pnpm@10.33.3",
   "repository": {
     "type": "git",
     "url": "https://github.com/vercube/vercube.git",
