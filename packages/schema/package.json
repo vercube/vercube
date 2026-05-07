@@ -2,7 +2,7 @@
   "name": "@vercube/schema",
   "version": "0.0.46",
   "description": "Schema (swagger) module for Vercube framework",
-  "packageManager": "pnpm@10.33.3",
+  "packageManager": "pnpm@11.0.8",
   "repository": {
     "type": "git",
     "url": "https://github.com/vercube/vercube.git",
