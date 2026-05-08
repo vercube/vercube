@@ -460,11 +460,11 @@ importers:
         specifier: workspace:*
         version: link:../packages/ws
       serverless:
-        specifier: 4.35.0
-        version: 4.35.0
+        specifier: 4.35.1
+        version: 4.35.1
       serverless-offline:
         specifier: 14.5.0
-        version: 14.5.0(serverless@4.35.0)
+        version: 14.5.0(serverless@4.35.1)
       tslib:
         specifier: 2.8.1
         version: 2.8.1
@@ -3633,8 +3633,8 @@ packages:
     engines: {node: '>=18.17.0'}
     hasBin: true
 
-  serverless@4.35.0:
-    resolution: {integrity: sha512-FuBk7Eva0qT6BwFgC/GtqVlsmZaZheoxZV//CWcw7DM30Gi1HW+OuipMBzt0tSmd7/QbgMSc0tULOYKiRE+uvQ==}
+  serverless@4.35.1:
+    resolution: {integrity: sha512-FlhnxJPL41002uqkSy+ja8oKyrcaa80nkRAPN2rEF0Q9VshX1XrIOsmG+wJqMZRBZqEsOoMsuj84xgAZVFFjcA==}
     engines: {node: '>=18.17.0'}
     hasBin: true
 
@@ -7463,7 +7463,7 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  serverless-offline@14.5.0(serverless@4.35.0):
+  serverless-offline@14.5.0(serverless@4.35.1):
     dependencies:
       '@aws-sdk/client-lambda': 3.1024.0
       '@hapi/boom': 10.0.1
@@ -7487,7 +7487,7 @@ snapshots:
       node-fetch: 3.3.2
       node-schedule: 2.1.1
       p-memoize: 7.1.1
-      serverless: 4.35.0
+      serverless: 4.35.1
       tree-kill: 1.2.2
       tsx: 4.21.0
       velocityjs: 2.1.5
@@ -7503,7 +7503,7 @@ snapshots:
       rimraf: 5.0.10
       undici: 6.24.1
 
-  serverless@4.35.0:
+  serverless@4.35.1:
     dependencies:
       rimraf: 5.0.10
       undici: 6.25.0
