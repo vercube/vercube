@@ -402,8 +402,8 @@ importers:
         version: link:../logger
     optionalDependencies:
       '@aws-sdk/client-s3':
-        specifier: 3.1043.0
-        version: 3.1043.0
+        specifier: 3.1045.0
+        version: 3.1045.0
 
   packages/ws:
     dependencies:
@@ -510,8 +510,8 @@ packages:
     resolution: {integrity: sha512-e44dhPmVzHfQtJ84KpMVIuTuyg4JGw77UVDWvuxe+SixAi8diuBQJen/1gA5Ulm1covHAlp/4nm0aCcXetTI5Q==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-s3@3.1043.0':
-    resolution: {integrity: sha512-QrDh9PACpmijOgbVnvQIvoWFZcMEBoGw0qiQRfGvsUEcB1JPCS2U5R0irB4XQSmsBlQUNlNeXVfpx3JI++NqrA==}
+  '@aws-sdk/client-s3@3.1045.0':
+    resolution: {integrity: sha512-fsuO3Y6t+3Ro9Bsg41DKj4Sfy53CGSrhnMldNplWmG8Tx0UbYk+YDa4RD1hVlJpERw4JBmPkl0+J9qlxMh1pcA==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/core@3.974.8':
@@ -4199,7 +4199,7 @@ snapshots:
     transitivePeerDependencies:
       - aws-crt
 
-  '@aws-sdk/client-s3@3.1043.0':
+  '@aws-sdk/client-s3@3.1045.0':
     dependencies:
       '@aws-crypto/sha1-browser': 5.2.0
       '@aws-crypto/sha256-browser': 5.2.0
