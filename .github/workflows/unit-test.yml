@@ -17,3 +17,22 @@ jobs:
       build-for-lint: true
       typecheck: pnpm test:tscheck
       lint: pnpm test:lint
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v2
+
+      - name: Install Dependencies
+        run: pnpm install
+
+      - name: Approve PNPM Builds
+        run: pnpm approve-builds --yes
+
+      - name: Run Typecheck
+        run: pnpm test:tscheck
+
+      - name: Run Lint
+        run: pnpm test:lint
