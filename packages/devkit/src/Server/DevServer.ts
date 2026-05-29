@@ -25,7 +25,22 @@ export function createDevServer(app: DevKitTypes.App): DevKitTypes.DevServer {
     const oldFork = currentFork;
     currentFork = undefined;
 
-    oldFork?.kill();
+    // Wait for the old worker to actually exit before spawning a new one.
+    // A graceful SIGTERM may not terminate the process if it holds long-lived
+    // handles (e.g. an open message-queue connection keeping the event loop
+    // alive), which would leave a zombie worker still processing events with
+    // stale code. Fall back to SIGKILL if it does not exit in time.
+    if (oldFork) {
+      await new Promise<void>((resolve) => {
+        const killTimer = setTimeout(() => oldFork.kill('SIGKILL'), 1000);
+        oldFork.once('exit', () => {
+          clearTimeout(killTimer);
+          resolve();
+        });
+        oldFork.kill('SIGTERM');
+      });
+    }
+
     // Create a new worker
     currentFork = fork(forkEntry);
 
