@@ -17,44 +17,63 @@ export function createDevServer(app: DevKitTypes.App): DevKitTypes.DevServer {
   let currentFork: ChildProcess | undefined;
 
   /**
+   * Terminates a worker and resolves only once it has fully exited, so the
+   * resources it owns (the HTTP port and any message-queue consumers) are
+   * released before a replacement is spawned.
+   *
+   * A graceful SIGTERM may not stop a worker that holds long-lived handles —
+   * e.g. an open message-queue connection keeps the event loop alive — so fall
+   * back to SIGKILL after a short grace period.
+   * @param {ChildProcess} worker - The worker process to terminate.
+   * @returns {Promise<void>} A promise that resolves when the worker has exited.
+   */
+  function killWorker(worker: ChildProcess): Promise<void> {
+    // Already exited.
+    if (worker.exitCode !== null || worker.signalCode !== null) {
+      return Promise.resolve();
+    }
+
+    return new Promise<void>((resolve) => {
+      const killTimer = setTimeout(() => worker.kill('SIGKILL'), 1000);
+      worker.once('exit', () => {
+        clearTimeout(killTimer);
+        resolve();
+      });
+      worker.kill('SIGTERM');
+    });
+  }
+
+  /**
    * Reloads the fork by killing the old one and creating a new one.
    * @returns {Promise<void>} A promise that resolves when the fork is reloaded.
    */
   async function _reload() {
-    // Kill old worker
+    // Kill old worker and wait for it to fully exit before spawning a new one.
+    // Spawning the replacement too early lets it inherit a port the dying
+    // worker still holds (EADDRINUSE), or run alongside a zombie that keeps
+    // consuming queue messages with stale code.
     const oldFork = currentFork;
     currentFork = undefined;
 
-    // Wait for the old worker to actually exit before spawning a new one.
-    // A graceful SIGTERM may not terminate the process if it holds long-lived
-    // handles (e.g. an open message-queue connection keeping the event loop
-    // alive), which would leave a zombie worker still processing events with
-    // stale code. Fall back to SIGKILL if it does not exit in time.
     if (oldFork) {
-      await new Promise<void>((resolve) => {
-        const killTimer = setTimeout(() => oldFork.kill('SIGKILL'), 1000);
-        oldFork.once('exit', () => {
-          clearTimeout(killTimer);
-          resolve();
-        });
-        oldFork.kill('SIGTERM');
-      });
+      await killWorker(oldFork);
     }
 
     // Create a new worker
     currentFork = fork(forkEntry);
-
-    if (!currentFork) {
-      return;
-    }
   }
 
   /**
    * Reloads the fork.
+   *
+   * Reloads are serialized: overlapping file-change events chain onto the
+   * previous reload instead of running concurrently, which would otherwise
+   * spawn a second worker while another is still shutting down.
    * @returns {Promise<void>} A promise that resolves when the worker is reloaded.
    */
   const reload = () => {
-    reloadPromise = _reload()
+    reloadPromise = (reloadPromise ?? Promise.resolve())
+      .then(() => _reload())
       .then(() => {
         consola.success({
           tag: 'worker',
@@ -67,9 +86,6 @@ export function createDevServer(app: DevKitTypes.App): DevKitTypes.DevServer {
           message: 'Failed to reload worker',
           error,
         });
-      })
-      .finally(() => {
-        reloadPromise = undefined;
       });
     return reloadPromise;
   };
