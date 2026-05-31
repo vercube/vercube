@@ -223,8 +223,8 @@ importers:
         specifier: 4.1.0
         version: 4.1.0
       tinyexec:
-        specifier: 1.2.2
-        version: 1.2.2
+        specifier: 1.2.4
+        version: 1.2.4
 
   packages/core:
     dependencies:
@@ -460,11 +460,11 @@ importers:
         specifier: workspace:*
         version: link:../packages/ws
       serverless:
-        specifier: 4.36.1
-        version: 4.36.1
+        specifier: 4.37.0
+        version: 4.37.0
       serverless-offline:
-        specifier: 14.7.0
-        version: 14.7.0(serverless@4.36.1)
+        specifier: 14.7.1
+        version: 14.7.1(serverless@4.37.0)
       tslib:
         specifier: 2.8.1
         version: 2.8.1
@@ -3870,8 +3870,8 @@ packages:
     peerDependencies:
       serverless: ^4.0.0
 
-  serverless-offline@14.7.0:
-    resolution: {integrity: sha512-w0bn7Nul4XE82+UoSzxes/2Ob7YqUZNvE09XLOk9HiriWHMdzqDx9zh2by0ezzWL7cMw7ePCJsMgRXR5EW/2Nw==}
+  serverless-offline@14.7.1:
+    resolution: {integrity: sha512-bpTX+5tWFODy4bkvhJmugCiv2dPH8i7SkpG/5DAtPZWiuuwFQuAltrMHaGYOF4OolpeD57JftJwfpHt5w1TtKA==}
     engines: {node: '>=20.0.0'}
     peerDependencies:
       serverless: ^4.0.0
@@ -3881,8 +3881,8 @@ packages:
     engines: {node: '>=18.17.0'}
     hasBin: true
 
-  serverless@4.36.1:
-    resolution: {integrity: sha512-A5GypD5N0gNcJsMLQSxoo2e52R78mQgKcaMv8VSEWoUDu7mzgQmvZ/ehLtBvk7UbvZvUXc9UBFJ7PlWhnIsQ9w==}
+  serverless@4.37.0:
+    resolution: {integrity: sha512-IX0lcW1HtxdKsEdmyXZVpsaurYopGS0yLQ5rP6ofjJkXALYLHW9y7NHw4Dy3GQpueKUfoON9Psg1opkxVdM+tg==}
     engines: {node: '>=18.17.0'}
     hasBin: true
 
@@ -4011,8 +4011,8 @@ packages:
   tinybench@2.9.0:
     resolution: {integrity: sha512-0+DUvqWMValLmha6lr4kD8iAMK1HzV0/aKnCtWb9v9641TnP/MFb7Pc2bxoxQjTXAErryXVgUOfv2YqNllqGeg==}
 
-  tinyexec@1.2.2:
-    resolution: {integrity: sha512-M/Q0B2cp4K7kynaT/vnED1j8TlLY+Pp7C6Wl2bl/7u/F0mUVwdyOpwomQb8JpYLitHUssAJRmLZdMCGsrx7i+g==}
+  tinyexec@1.2.4:
+    resolution: {integrity: sha512-SHf/r48b7vOrjve9PxJo3MN5v5yuyjHvdUcrQffT3WXMUfnGmHDVbC4k3sHJaJTgZCwpUplIaAo5ANtMyp3YHg==}
     engines: {node: '>=18'}
 
   tinyglobby@0.2.16:
@@ -4473,12 +4473,12 @@ snapshots:
     dependencies:
       '@aws-crypto/sha256-browser': 5.2.0
       '@aws-crypto/sha256-js': 5.2.0
-      '@aws-sdk/core': 3.974.14
-      '@aws-sdk/credential-provider-node': 3.972.45
+      '@aws-sdk/core': 3.974.15
+      '@aws-sdk/credential-provider-node': 3.972.46
       '@aws-sdk/types': 3.973.9
-      '@smithy/core': 3.24.3
-      '@smithy/fetch-http-handler': 5.4.3
-      '@smithy/node-http-handler': 4.7.3
+      '@smithy/core': 3.24.5
+      '@smithy/fetch-http-handler': 5.4.5
+      '@smithy/node-http-handler': 4.7.5
       '@smithy/types': 4.14.2
       tslib: 2.8.1
 
@@ -4525,7 +4525,6 @@ snapshots:
       '@smithy/types': 4.14.2
       bowser: 2.14.1
       tslib: 2.8.1
-    optional: true
 
   '@aws-sdk/crc64-nvme@3.972.9':
     dependencies:
@@ -4548,7 +4547,6 @@ snapshots:
       '@smithy/core': 3.24.5
       '@smithy/types': 4.14.2
       tslib: 2.8.1
-    optional: true
 
   '@aws-sdk/credential-provider-http@3.972.42':
     dependencies:
@@ -4569,7 +4567,6 @@ snapshots:
       '@smithy/node-http-handler': 4.7.5
       '@smithy/types': 4.14.2
       tslib: 2.8.1
-    optional: true
 
   '@aws-sdk/credential-provider-ini@3.972.44':
     dependencies:
@@ -4602,14 +4599,13 @@ snapshots:
       '@smithy/credential-provider-imds': 4.3.5
       '@smithy/types': 4.14.2
       tslib: 2.8.1
-    optional: true
 
   '@aws-sdk/credential-provider-login@3.972.44':
     dependencies:
-      '@aws-sdk/core': 3.974.14
+      '@aws-sdk/core': 3.974.15
       '@aws-sdk/nested-clients': 3.997.12
       '@aws-sdk/types': 3.973.9
-      '@smithy/core': 3.24.3
+      '@smithy/core': 3.24.5
       '@smithy/types': 4.14.2
       tslib: 2.8.1
 
@@ -4621,7 +4617,6 @@ snapshots:
       '@smithy/core': 3.24.5
       '@smithy/types': 4.14.2
       tslib: 2.8.1
-    optional: true
 
   '@aws-sdk/credential-provider-node@3.972.45':
     dependencies:
@@ -4650,7 +4645,6 @@ snapshots:
       '@smithy/credential-provider-imds': 4.3.5
       '@smithy/types': 4.14.2
       tslib: 2.8.1
-    optional: true
 
   '@aws-sdk/credential-provider-process@3.972.40':
     dependencies:
@@ -4667,7 +4661,6 @@ snapshots:
       '@smithy/core': 3.24.5
       '@smithy/types': 4.14.2
       tslib: 2.8.1
-    optional: true
 
   '@aws-sdk/credential-provider-sso@3.972.44':
     dependencies:
@@ -4688,7 +4681,6 @@ snapshots:
       '@smithy/core': 3.24.5
       '@smithy/types': 4.14.2
       tslib: 2.8.1
-    optional: true
 
   '@aws-sdk/credential-provider-web-identity@3.972.44':
     dependencies:
@@ -4707,7 +4699,6 @@ snapshots:
       '@smithy/core': 3.24.5
       '@smithy/types': 4.14.2
       tslib: 2.8.1
-    optional: true
 
   '@aws-sdk/middleware-bucket-endpoint@3.972.17':
     dependencies:
@@ -4799,12 +4790,12 @@ snapshots:
     dependencies:
       '@aws-crypto/sha256-browser': 5.2.0
       '@aws-crypto/sha256-js': 5.2.0
-      '@aws-sdk/core': 3.974.14
+      '@aws-sdk/core': 3.974.15
       '@aws-sdk/signature-v4-multi-region': 3.996.29
       '@aws-sdk/types': 3.973.9
-      '@smithy/core': 3.24.3
-      '@smithy/fetch-http-handler': 5.4.3
-      '@smithy/node-http-handler': 4.7.3
+      '@smithy/core': 3.24.5
+      '@smithy/fetch-http-handler': 5.4.5
+      '@smithy/node-http-handler': 4.7.5
       '@smithy/types': 4.14.2
       tslib: 2.8.1
 
@@ -4820,7 +4811,6 @@ snapshots:
       '@smithy/node-http-handler': 4.7.5
       '@smithy/types': 4.14.2
       tslib: 2.8.1
-    optional: true
 
   '@aws-sdk/region-config-resolver@3.972.13':
     dependencies:
@@ -4843,14 +4833,13 @@ snapshots:
       '@smithy/signature-v4': 5.4.5
       '@smithy/types': 4.14.2
       tslib: 2.8.1
-    optional: true
 
   '@aws-sdk/token-providers@3.1054.0':
     dependencies:
-      '@aws-sdk/core': 3.974.14
+      '@aws-sdk/core': 3.974.15
       '@aws-sdk/nested-clients': 3.997.12
       '@aws-sdk/types': 3.973.9
-      '@smithy/core': 3.24.3
+      '@smithy/core': 3.24.5
       '@smithy/types': 4.14.2
       tslib: 2.8.1
 
@@ -4862,7 +4851,6 @@ snapshots:
       '@smithy/core': 3.24.5
       '@smithy/types': 4.14.2
       tslib: 2.8.1
-    optional: true
 
   '@aws-sdk/types@3.973.9':
     dependencies:
@@ -5000,7 +4988,7 @@ snapshots:
       '@commitlint/load': 21.0.1(@types/node@25.9.1)(typescript@6.0.2)
       '@commitlint/read': 21.0.1(conventional-commits-parser@6.4.0)
       '@commitlint/types': 21.0.1
-      tinyexec: 1.2.2
+      tinyexec: 1.2.4
       yargs: 18.0.0
     transitivePeerDependencies:
       - '@types/node'
@@ -5070,7 +5058,7 @@ snapshots:
       '@commitlint/top-level': 21.0.1
       '@commitlint/types': 21.0.1
       git-raw-commits: 5.0.1(conventional-commits-parser@6.4.0)
-      tinyexec: 1.2.2
+      tinyexec: 1.2.4
     transitivePeerDependencies:
       - conventional-commits-filter
       - conventional-commits-parser
@@ -6047,7 +6035,6 @@ snapshots:
       '@aws-crypto/crc32': 5.2.0
       '@smithy/types': 4.14.2
       tslib: 2.8.1
-    optional: true
 
   '@smithy/credential-provider-imds@4.3.3':
     dependencies:
@@ -6060,7 +6047,6 @@ snapshots:
       '@smithy/core': 3.24.5
       '@smithy/types': 4.14.2
       tslib: 2.8.1
-    optional: true
 
   '@smithy/eventstream-codec@4.2.14':
     dependencies:
@@ -6103,7 +6089,6 @@ snapshots:
       '@smithy/core': 3.24.5
       '@smithy/types': 4.14.2
       tslib: 2.8.1
-    optional: true
 
   '@smithy/hash-node@4.2.14':
     dependencies:
@@ -6185,7 +6170,6 @@ snapshots:
       '@smithy/core': 3.24.5
       '@smithy/types': 4.14.2
       tslib: 2.8.1
-    optional: true
 
   '@smithy/property-provider@4.2.14':
     dependencies:
@@ -6222,7 +6206,6 @@ snapshots:
       '@smithy/core': 3.24.5
       '@smithy/types': 4.14.2
       tslib: 2.8.1
-    optional: true
 
   '@smithy/smithy-client@4.12.13':
     dependencies:
@@ -6612,7 +6595,7 @@ snapshots:
       jsonc-parser: 3.3.1
       package-manager-detector: 1.6.0
       semver: 7.7.4
-      tinyexec: 1.2.2
+      tinyexec: 1.2.4
       tinyglobby: 0.2.16
       unconfig: 7.5.0
       yaml: 2.8.4
@@ -7319,7 +7302,7 @@ snapshots:
       listr2: 10.2.1
       picomatch: 4.0.4
       string-argv: 0.3.2
-      tinyexec: 1.2.2
+      tinyexec: 1.2.4
     optionalDependencies:
       yaml: 2.8.4
 
@@ -7448,7 +7431,7 @@ snapshots:
     dependencies:
       citty: 0.2.2
       pathe: 2.0.3
-      tinyexec: 1.2.2
+      tinyexec: 1.2.4
 
   object-assign@4.1.1: {}
 
@@ -7894,7 +7877,7 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  serverless-offline@14.7.0(serverless@4.36.1):
+  serverless-offline@14.7.1(serverless@4.37.0):
     dependencies:
       '@aws-sdk/client-lambda': 3.1053.0
       '@hapi/boom': 10.0.1
@@ -7917,7 +7900,7 @@ snapshots:
       node-fetch: 3.3.2
       node-schedule: 2.1.1
       p-memoize: 7.1.1
-      serverless: 4.36.1
+      serverless: 4.37.0
       tree-kill: 1.2.2
       tsx: 4.22.3
       velocityjs: 2.1.6
@@ -7932,7 +7915,7 @@ snapshots:
       rimraf: 5.0.10
       undici: 6.24.1
 
-  serverless@4.36.1:
+  serverless@4.37.0:
     dependencies:
       rimraf: 5.0.10
       undici: 6.25.0
@@ -8058,7 +8041,7 @@ snapshots:
 
   tinybench@2.9.0: {}
 
-  tinyexec@1.2.2: {}
+  tinyexec@1.2.4: {}
 
   tinyglobby@0.2.16:
     dependencies:
@@ -8088,7 +8071,7 @@ snapshots:
       rolldown: 1.0.2
       rolldown-plugin-dts: 0.25.1(@typescript/native-preview@7.0.0-dev.20260527.2)(rolldown@1.0.2)(typescript@6.0.2)
       semver: 7.8.1
-      tinyexec: 1.2.2
+      tinyexec: 1.2.4
       tinyglobby: 0.2.16
       tree-kill: 1.2.2
       unconfig-core: 7.5.0
@@ -8238,7 +8221,7 @@ snapshots:
       picomatch: 4.0.4
       std-env: 4.1.0
       tinybench: 2.9.0
-      tinyexec: 1.2.2
+      tinyexec: 1.2.4
       tinyglobby: 0.2.16
       tinyrainbow: 3.1.0
       vite: 7.3.1(@types/node@25.9.1)(jiti@2.6.1)(tsx@4.22.3)(yaml@2.8.4)
