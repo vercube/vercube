@@ -2,7 +2,7 @@
   "name": "vercube-monorepo",
   "version": "0.0.48",
   "description": "An ultra-efficient JavaScript server framework that runs anywhere - Node.js, Bun, or Deno - with unmatched flexibility and complete configurability for developers who refuse to sacrifice speed or control.",
-  "packageManager": "pnpm@10.34.1",
+  "packageManager": "pnpm@11.5.0",
   "type": "module",
   "private": true,
   "engines": {
@@ -36,8 +36,8 @@
     "@oxc-project/runtime": "catalog:",
     "@types/node": "25.9.1",
     "@typescript/native-preview": "7.0.0-dev.20260527.2",
-    "@vitest/coverage-v8": "4.1.7",
-    "@vitest/ui": "4.1.7",
+    "@vitest/coverage-v8": "4.1.8",
+    "@vitest/ui": "4.1.8",
     "bumpp": "11.1.0",
     "lint-staged": "17.0.7",
     "oxfmt": "0.52.0",
@@ -46,7 +46,8 @@
     "tsdown": "0.22.1",
     "tslib": "2.8.1",
     "turbo": "2.9.16",
-    "vitest": "4.1.7"
+    "unrun": "0.3.0",
+    "vitest": "4.1.8"
   },
   "simple-git-hooks": {
     "pre-commit": "pnpm pre-commit",
