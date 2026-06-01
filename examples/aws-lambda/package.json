@@ -2,7 +2,7 @@
   "name": "@examples/aws-lambda",
   "version": "1.0.0",
   "description": "Base example for Vercube",
-  "packageManager": "pnpm@10.33.0",
+  "packageManager": "pnpm@11.5.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -19,7 +19,7 @@
     "@vercube/di": "workspace:*",
     "@vercube/logger": "workspace:*",
     "@vercube/serverless": "workspace:*",
-    "serverless": "4.33.3",
-    "serverless-offline": "14.5.0"
+    "serverless": "4.37.0",
+    "serverless-offline": "14.7.1"
   }
 }
