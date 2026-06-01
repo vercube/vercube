@@ -26,3 +26,11 @@ ignoredBuiltDependencies:
 onlyBuiltDependencies:
   - nx
   - simple-git-hooks
+
+minimumReleaseAge: 0
+
+allowBuilds:
+  azure-functions-core-tools: true
+  esbuild: false
+  serverless: true
+  simple-git-hooks: true
