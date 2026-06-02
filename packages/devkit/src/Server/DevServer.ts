@@ -21,8 +21,8 @@ export function createDevServer(app: DevKitTypes.App): DevKitTypes.DevServer {
    * resources it owns (the HTTP port and any message-queue consumers) are
    * released before a replacement is spawned.
    *
-   * A graceful SIGTERM may not stop a worker that holds long-lived handles —
-   * e.g. an open message-queue connection keeps the event loop alive — so fall
+   * A graceful SIGTERM may not stop a worker that holds long-lived handles -
+   * e.g. an open message-queue connection keeps the event loop alive - so fall
    * back to SIGKILL after a short grace period.
    * @param {ChildProcess} worker - The worker process to terminate.
    * @returns {Promise<void>} A promise that resolves when the worker has exited.

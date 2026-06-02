@@ -1,5 +1,5 @@
 /**
- * Re-exports evlog's toolkit — the building blocks used to integrate
+ * Re-exports evlog's toolkit - the building blocks used to integrate
  * request-scoped wide-event logging into a framework.
  *
  * Available as `@vercube/logger/toolkit`.

@@ -22,8 +22,8 @@ export const EVLOG_FINISH_KEY = 'evlog:finish';
  *
  * On each request it creates a request-scoped logger via evlog's toolkit and
  * stores it in {@link RequestContext} (so handlers can enrich the event), then
- * emits the accumulated wide event — including method, path, status and
- * duration — when the response is produced.
+ * emits the accumulated wide event - including method, path, status and
+ * duration - when the response is produced.
  *
  * Registered automatically by the framework; disable via `requestLogging: false`
  * in the application config.
