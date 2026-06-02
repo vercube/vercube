@@ -1,6 +1,6 @@
 import { Container } from '@vercube/di';
 import { BaseLogger, Logger } from '@vercube/logger';
-import { ConsoleProvider } from '@vercube/logger/drivers/ConsoleProvider';
+import { EvlogMiddleware } from '../Middleware/EvlogMiddleware';
 import { RuntimeConfig } from '../Services/Config/RuntimeConfig';
 import { DefaultErrorHandlerProvider } from '../Services/ErrorHandler/DefaultErrorHandlerProvider';
 import { ErrorHandlerProvider } from '../Services/ErrorHandler/ErrorHandlerProvider';
@@ -26,11 +26,10 @@ export function createContainer(config: ConfigTypes.Config): Container {
   const container = new Container();
   container.bindInstance(Container, container);
 
-  // bind logger and default appender
+  // bind evlog-backed logger
   container.bind(Logger, BaseLogger);
   container.get(Logger).configure({
     logLevel: config.logLevel ?? 'debug',
-    providers: [{ name: 'console', provider: ConsoleProvider }],
   });
 
   // bind default error provider
@@ -51,6 +50,11 @@ export function createContainer(config: ConfigTypes.Config): Container {
   // bind validation providers
   // use StandardSchema as default
   container.bind(ValidationProvider, StandardSchemaValidationProvider);
+
+  // register evlog request middleware for per-request wide events (opt-out)
+  if (config.requestLogging !== false) {
+    container.get(GlobalMiddlewareRegistry).registerGlobalMiddleware(EvlogMiddleware);
+  }
 
   return container;
 }

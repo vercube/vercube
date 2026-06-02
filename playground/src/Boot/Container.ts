@@ -1,7 +1,6 @@
 import { AuthProvider } from '@vercube/auth';
 import { Container } from '@vercube/di';
 import { Logger } from '@vercube/logger';
-import { ConsoleProvider } from '@vercube/logger/drivers/ConsoleProvider';
 import { StorageManager } from '@vercube/storage';
 import { MemoryStorage } from '@vercube/storage/drivers/MemoryStorage';
 import { WeatherTool } from 'src/Tools/WeatherTool';
@@ -22,6 +21,6 @@ export function useContainer(container: Container): void {
   container.bind(WeatherTool);
 
   container.get(Logger).configure({
-    providers: [{ name: 'console', provider: ConsoleProvider, logLevel: 'error' }],
+    logLevel: 'error',
   });
 }

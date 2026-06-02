@@ -1,33 +1,38 @@
-import type { LoggerProvider } from '../Common/LoggerProvider';
-import type { IOC } from '@vercube/di';
+import type { LoggerConfig, LogLevel } from 'evlog';
 
+/**
+ * Types for the evlog-backed Vercube logger.
+ *
+ * @see https://evlog.dev
+ */
 export namespace LoggerTypes {
-  export type Level = 'debug' | 'info' | 'warn' | 'error';
+  /**
+   * Supported severity levels, aligned with evlog.
+   * Order: debug < info < warn < error.
+   */
+  export type Level = LogLevel;
 
-  export type Arg = any;
+  /**
+   * Any value accepted by the logger methods.
+   */
+  export type Arg = unknown;
 
-  export interface Message {
-    level: Level;
-    args: Arg[];
-    tag?: string;
-    pid?: number;
-    type?: 'access_log' | 'application_log';
-    timestamp?: number;
-  }
+  /**
+   * Structured context merged into emitted (wide) events.
+   */
+  export type Context = Record<string, unknown>;
 
-  export type LogProviderOptions<T extends IOC.Newable<LoggerProvider>> = Parameters<InstanceType<T>['initialize']>[0] & {
+  /**
+   * Logger configuration.
+   *
+   * Mirrors evlog's {@link LoggerConfig} and adds `logLevel` as a framework-level
+   * alias for evlog's `minLevel`.
+   */
+  export interface Options extends LoggerConfig {
+    /**
+     * Minimum severity for the simple log API.
+     * Alias for evlog's `minLevel`; takes precedence when both are provided.
+     */
     logLevel?: Level;
-  };
-
-  export interface LogAppender<T extends IOC.Newable<LoggerProvider>> {
-    name: string;
-    provider: T;
-    logLevel?: Level;
-    options?: LogProviderOptions<T>;
-  }
-
-  export interface Options {
-    logLevel?: Level;
-    providers?: LogAppender<any>[];
   }
 }
