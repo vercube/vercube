@@ -12,7 +12,7 @@
 ![GitHub License](<https://img.shields.io/github/license/vercube/vercube?style=for-the-badge&logo=gitbook&logoColor=rgba(255%2C%20255%2C%20255%2C%200.6)&labelColor=%23000&color=%232f2f2f>)
 ![Codecov](<https://img.shields.io/codecov/c/github/vercube/vercube?style=for-the-badge&logo=vitest&logoColor=rgba(255%2C%20255%2C%20255%2C%200.6)&labelColor=%23000&color=%232f2f2f>)
 
-**Structured logging with multiple outputs - console for dev, JSON for production, or whatever you need. Just inject `Logger` and go.**
+**Structured wide-event logging powered by [evlog](https://evlog.dev) - pretty in dev, JSON in production, with sampling, redaction and pluggable drains. Just inject `Logger` and go.**
 
 [Website](https://vercube.dev) • [Documentation](https://vercube.dev/docs/getting-started)
 
@@ -20,9 +20,10 @@
 
 ## ✨ Features
 
-- **Multiple providers** - console, JSON, or build your own
+- **Powered by evlog** - structured, wide-event logging under a simple `Logger` API
 - **Log levels** - debug, info, warn, error
-- **Per-provider config** - different levels for different outputs
+- **Wide events** - accumulate context with `set()` / `child()` and `emit()` once
+- **Drains & adapters** - ship logs to Axiom, OTLP, Sentry, Datadog and more
 - **DI integration** - just `@Inject(Logger)` wherever you need it
 
 ## 📦 Installation

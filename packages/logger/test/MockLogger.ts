@@ -22,4 +22,20 @@ export class MockLogger extends Logger {
   public error(...args: LoggerTypes.Arg[]): void {
     // Mock implementation
   }
+
+  public set(context: LoggerTypes.Context): void {
+    // Mock implementation
+  }
+
+  public getContext(): LoggerTypes.Context {
+    return {};
+  }
+
+  public child(context: LoggerTypes.Context): Logger {
+    return this;
+  }
+
+  public emit(overrides?: LoggerTypes.Context): void {
+    // Mock implementation
+  }
 }

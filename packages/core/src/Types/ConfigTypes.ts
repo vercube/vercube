@@ -161,6 +161,14 @@ export namespace ConfigTypes {
     logLevel?: LoggerTypes.Level;
 
     /**
+     * Enables the evlog request middleware, which emits one structured
+     * wide event per request (method, path, status, duration).
+     *
+     * @default true
+     */
+    requestLogging?: boolean;
+
+    /**
      * Server configuration options.
      */
     server?: ServerOptions;

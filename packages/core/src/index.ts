@@ -52,6 +52,7 @@ export {
 // Middlewares
 export * from './Services/Middleware/BaseMiddleware';
 export * from './Services/Middleware/GlobalMiddlewareRegistry';
+export * from './Middleware/EvlogMiddleware';
 
 // HttpServer
 export * from './Services/HttpServer/HttpServer';

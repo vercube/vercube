@@ -1,5 +1,6 @@
 import { createApp, HttpServer } from '@vercube/core';
 import { Container, initializeContainer } from '@vercube/di';
+import { Logger } from '@vercube/logger';
 import { defineHooks } from 'crossws';
 import { type ServerPlugin } from 'srvx';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -119,7 +120,7 @@ describe('WebsocketService', () => {
   });
 
   it('logs warning if no handler found', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const warn = vi.spyOn(container.get(Logger), 'warn').mockImplementation(() => {});
     const peer = createMockPeer('321', '/nohandler');
     const message = createMockMessage({ event: 'ghost', data: {} });
 
@@ -204,7 +205,7 @@ describe('WebsocketService', () => {
   });
 
   it('logs errors on error hook', async () => {
-    const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const errorLog = vi.spyOn(container.get(Logger), 'error').mockImplementation(() => {});
     const peer = createMockPeer('error', '/err');
     const err = new Error('Boom');
 

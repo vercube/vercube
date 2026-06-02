@@ -4,8 +4,34 @@ export * from './Common/Logger';
 // Services
 export * from './Service/BaseLogger';
 
-// Utils
-export { isLogLevelEnabled, colors } from './Utils/Utils';
-
 // Types
 export * from './Types/LoggerTypes';
+
+// Re-exported evlog primitives for advanced / wide-event usage.
+// @see https://evlog.dev
+export {
+  log,
+  initLogger,
+  createLogger,
+  createRequestLogger,
+  createError,
+  parseError,
+  EvlogError,
+  defineError,
+  defineErrorCatalog,
+} from 'evlog';
+
+export type {
+  Log,
+  RequestLogger,
+  RequestLoggerOptions,
+  LoggerConfig,
+  LogLevel,
+  WideEvent,
+  EnvironmentContext,
+  SamplingConfig,
+  RedactConfig,
+  DrainContext,
+  DrainFn,
+  ErrorOptions,
+} from 'evlog';
