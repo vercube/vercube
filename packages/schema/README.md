@@ -12,7 +12,7 @@
 ![GitHub License](<https://img.shields.io/github/license/vercube/vercube?style=for-the-badge&logo=gitbook&logoColor=rgba(255%2C%20255%2C%20255%2C%200.6)&labelColor=%23000&color=%232f2f2f>)
 ![Codecov](<https://img.shields.io/codecov/c/github/vercube/vercube?style=for-the-badge&logo=vitest&logoColor=rgba(255%2C%20255%2C%20255%2C%200.6)&labelColor=%23000&color=%232f2f2f>)
 
-**Auto-generate OpenAPI specs from your Zod schemas. Add `@Schema` to your routes, get Swagger docs at `/_schema`.**
+**Auto-generate OpenAPI specs from your Zod schemas. Add `@Schema` to your routes, get OpenAPI at `/_schema` and Scalar docs at `/_schema/docs`.**
 
 [Website](https://vercube.dev) • [Documentation](https://vercube.dev/docs/getting-started)
 
@@ -24,6 +24,7 @@
 - **Decorator API** - `@Schema` on routes to add OpenAPI metadata
 - **Auto-resolution** - picks up `@Body`, `@Param`, `@QueryParams` automatically
 - **Runtime endpoint** - OpenAPI JSON available at `/_schema`
+- **Scalar UI** - Interactive API docs at `/_schema/docs` ([Scalar](https://github.com/scalar/scalar))
 
 ## 📦 Installation
 
