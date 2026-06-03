@@ -1,6 +1,10 @@
 import { BasePlugin } from '@vercube/core';
+import { defu } from 'defu';
+import { DEFAULT_SCHEMA_PLUGIN_OPTIONS } from '../Constants/SchemaDefaults';
 import { SchemaController } from '../Controllers/SchameController';
 import { SchemaRegistry } from '../Services/SchemaRegistry';
+import { $SchemaPluginOptions } from '../Symbols/SchemaSymbols';
+import type { SchemaPluginOptions } from '../Types/SchemaPluginOptions';
 import type { App } from '@vercube/core';
 
 /**
@@ -10,6 +14,7 @@ import type { App } from '@vercube/core';
  * - Automatic OpenAPI schema generation from Zod schemas
  * - Route-level schema validation via @Schema decorator
  * - Runtime schema access via /_schema endpoint
+ * - Scalar API Reference UI at /_schema/docs (https://github.com/scalar/scalar)
  * - Seamless integration with request validation (@Body, @Query, etc)
  *
  * @example
@@ -26,7 +31,7 @@ import type { App } from '@vercube/core';
  *
  * @see {@link https://vercube.dev} for full documentation
  */
-export class SchemaPlugin<T = unknown> extends BasePlugin<T> {
+export class SchemaPlugin extends BasePlugin<SchemaPluginOptions> {
   /**
    * The name of the plugin.
    * @override
@@ -39,11 +44,11 @@ export class SchemaPlugin<T = unknown> extends BasePlugin<T> {
    * @returns {void | Promise<void>}
    * @override
    */
-  public override use(app: App, options: T): void | Promise<void> {
-    // bind required services to the app container
-    app.container.bind(SchemaRegistry);
+  public override use(app: App, options?: SchemaPluginOptions): void | Promise<void> {
+    const mergedOptions = defu(options ?? {}, DEFAULT_SCHEMA_PLUGIN_OPTIONS) as SchemaPluginOptions;
 
-    // bind schema controller to the app container
+    app.container.bindInstance($SchemaPluginOptions, mergedOptions);
+    app.container.bind(SchemaRegistry);
     app.container.bind(SchemaController);
   }
 }
