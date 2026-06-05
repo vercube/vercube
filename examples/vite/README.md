@@ -5,12 +5,12 @@ dev server via [`@vercube/vite`](../../packages/vite).
 
 - **Vite** serves the Vue frontend (`index.html`, `src/main.ts`, `src/App.vue`) with HMR.
 - **Vercube** handles only its own routes under `/api` (controllers in `src/server`, auto-discovered).
-- Requests that don't match a Vercube route fall through to Vite — that's why the frontend loads normally.
+- Requests that don't match a Vercube route fall through to Vite, which is why the frontend loads normally.
 
 ## Run
 
 ```bash
-pnpm dev      # vite — open http://localhost:3010
+pnpm dev      # vite, open http://localhost:3010
 ```
 
 The page fetches `GET /api/hello/:name` from the Vercube controller and round-trips a
