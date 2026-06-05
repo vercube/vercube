@@ -2,7 +2,7 @@
   "name": "vercube-monorepo",
   "version": "0.0.48",
   "description": "An ultra-efficient JavaScript server framework that runs anywhere - Node.js, Bun, or Deno - with unmatched flexibility and complete configurability for developers who refuse to sacrifice speed or control.",
-  "packageManager": "pnpm@11.5.1",
+  "packageManager": "pnpm@11.5.2",
   "type": "module",
   "private": true,
   "engines": {
