@@ -40,8 +40,7 @@ describe('createVercubeEnvironment', () => {
     expect(prodEnv.resolve).toEqual({});
     expect(devEnv.build?.outDir).toBe('/abs/dist');
     expect(devEnv.build?.rollupOptions?.input).toEqual({ index: '/abs/node_modules/.vercube/server-entry.mjs' });
-    expect(devEnv.build?.rollupOptions?.external?.('@vercube/core')).toBe(true);
-    expect(devEnv.build?.rollupOptions?.external?.('./local.ts')).toBe(false);
+    expect(devEnv.build?.rollupOptions?.external).toBe(isBareSpecifier);
   });
 });
 
