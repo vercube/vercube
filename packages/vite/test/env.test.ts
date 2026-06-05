@@ -1,5 +1,33 @@
-import { describe, expect, it } from 'vitest';
-import { createVercubeEnvironment, getEnvRunner, isBareSpecifier } from '../src/env';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const loadRunner = vi.hoisted(() => vi.fn().mockResolvedValue({ name: 'node-worker' }));
+const runnerCallbacks = vi.hoisted(() => ({
+  onClose: undefined as ((runner: unknown, cause?: unknown) => void) | undefined,
+  onReady: undefined as (() => void) | undefined,
+}));
+
+vi.mock('../src/dev', () => ({
+  createFetchableDevEnvironment: vi.fn(() => ({ name: 'vercube' })),
+}));
+vi.mock('env-runner', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('env-runner')>();
+  return {
+    ...actual,
+    loadRunner,
+    RunnerManager: class {
+      reload = vi.fn().mockResolvedValue(undefined);
+      sendMessage = vi.fn();
+      onClose(cb: (runner: unknown, cause?: unknown) => void) {
+        runnerCallbacks.onClose = cb;
+      }
+      onReady(cb: () => void) {
+        runnerCallbacks.onReady = cb;
+      }
+    },
+  };
+});
+
+import { createVercubeEnvironment, getEnvRunner, initEnvRunner, reloadEnvRunner, isBareSpecifier } from '../src/env';
 import { VERCUBE_ENV } from '../src/types';
 import type { VercubePluginContext } from '../src/types';
 
@@ -41,6 +69,74 @@ describe('createVercubeEnvironment', () => {
     expect(devEnv.build?.outDir).toBe('/abs/dist');
     expect(devEnv.build?.rollupOptions?.input).toEqual({ index: '/abs/node_modules/.vercube/server-entry.mjs' });
     expect(devEnv.build?.rollupOptions?.external).toBe(isBareSpecifier);
+  });
+
+  it('registers fetchable environments and tracks their entries', async () => {
+    const pluginCtx = ctx({
+      _envRunner: { fetch: vi.fn(), init: vi.fn(), sendMessage: vi.fn() } as any,
+    });
+    const options = createVercubeEnvironment(pluginCtx);
+    const env = await options.dev!.createEnvironment!('vercube', {} as any, {} as any);
+
+    expect(env).toBeDefined();
+    expect(pluginCtx._viteEnvs?.get('vercube')).toBe(pluginCtx.serverEntry);
+  });
+});
+
+describe('initEnvRunner', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    delete process.env.VERCUBE_DEV_RUNNER;
+  });
+
+  it('loads the worker runner and is idempotent', async () => {
+    const pluginCtx = ctx();
+    const first = await initEnvRunner(pluginCtx);
+    const second = await initEnvRunner(pluginCtx);
+
+    expect(first).toBe(second);
+    expect(pluginCtx._envRunner).toBe(first);
+    expect(loadRunner).toHaveBeenCalledOnce();
+  });
+
+  it('retries worker reloads and replays environment registrations on ready', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const pluginCtx = ctx({ _viteEnvs: new Map([['vercube', '/entry.mjs']]) });
+    const manager = await initEnvRunner(pluginCtx);
+
+    runnerCallbacks.onReady?.();
+    expect(manager.sendMessage).toHaveBeenCalledWith({
+      type: 'custom',
+      event: 'vercube:vite-env',
+      data: { name: 'vercube', entry: '/entry.mjs' },
+    });
+
+    runnerCallbacks.onClose?.({}, new Error('crash'));
+    runnerCallbacks.onClose?.({}, new Error('crash'));
+    runnerCallbacks.onClose?.({}, new Error('crash'));
+    runnerCallbacks.onClose?.({}, new Error('crash'));
+    expect(loadRunner.mock.calls.length).toBeGreaterThanOrEqual(4);
+    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('env runner failed after 3 retries'), expect.any(String));
+    errorSpy.mockRestore();
+  });
+});
+
+describe('reloadEnvRunner', () => {
+  it('initializes the runner when it is missing', async () => {
+    const pluginCtx = ctx();
+    await reloadEnvRunner(pluginCtx);
+    expect(pluginCtx._envRunner).toBeDefined();
+  });
+
+  it('reloads an already initialized runner', async () => {
+    const pluginCtx = ctx();
+    await initEnvRunner(pluginCtx);
+    const reload = vi.mocked(pluginCtx._envRunner!.reload);
+    const callsBefore = reload.mock.calls.length;
+
+    await reloadEnvRunner(pluginCtx);
+
+    expect(reload.mock.calls.length).toBe(callsBefore + 1);
   });
 });
 

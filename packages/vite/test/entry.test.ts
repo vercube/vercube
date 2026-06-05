@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, readFileSync, rmSync } from 'node:fs';
 import { dirname } from 'pathe';
 import { describe, expect, it } from 'vitest';
 import { generateServerEntry, writeServerEntry } from '../src/entry';
