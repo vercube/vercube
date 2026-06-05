@@ -306,7 +306,7 @@ describe('WebsocketService', () => {
     await hooks?.open?.(peer);
     expect(service['fNamespaces']['/ghost']).toBeUndefined();
 
-    await hooks?.close?.(peer);
+    await hooks?.close?.(peer, { code: 1000 });
     expect(service['fNamespaces']['/ghost']).toBeUndefined();
   });
 
