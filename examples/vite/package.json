@@ -1,0 +1,22 @@
+{
+  "name": "@vercube/example-vite",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@vercube/core": "workspace:*",
+    "@vercube/di": "workspace:*",
+    "@vercube/ws": "workspace:*",
+    "vue": "3.5.35"
+  },
+  "devDependencies": {
+    "@vercube/vite": "workspace:*",
+    "@vitejs/plugin-vue": "6.0.7",
+    "vite": "catalog:"
+  }
+}

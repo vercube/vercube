@@ -1,12 +1,12 @@
 {
-  "name": "@vercube/nitro",
-  "version": "0.0.43",
-  "description": "Nitro module for Vercube framework",
-  "packageManager": "pnpm@10.28.2",
+  "name": "@vercube/vite",
+  "version": "0.0.48",
+  "description": "Vite plugin integrating Vercube with the Vite Environment API",
+  "packageManager": "pnpm@11.5.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/vercube/vercube.git",
-    "directory": "packages/nitro"
+    "directory": "packages/vite"
   },
   "license": "MIT",
   "sideEffects": false,
@@ -15,8 +15,8 @@
   "module": "./dist/index.mjs",
   "exports": {
     ".": "./dist/index.mjs",
-    "./package.json": "./package.json",
-    "./runtime/handler": "./dist/runtime/RouteHandler.mjs"
+    "./runtime/dev-worker": "./dist/runtime/dev-worker.mjs",
+    "./package.json": "./package.json"
   },
   "types": "./dist/index.d.mts",
   "files": [
@@ -25,22 +25,28 @@
   ],
   "keywords": [
     "vercube",
-    "nitro",
+    "vite",
+    "vite-plugin",
+    "environment-api",
     "framework"
   ],
   "scripts": {
     "build": "tsdown --config ./tsdown.config.ts --config-loader=unrun"
   },
   "dependencies": {
-    "@vercube/core": "workspace:*",
-    "@vercube/di": "workspace:*",
     "@vercube/scan": "workspace:*",
-    "@vercube/storage": "workspace:*",
-    "defu": "catalog:",
     "chokidar": "5.0.0",
-    "nitro": "catalog:",
+    "defu": "catalog:",
+    "env-runner": "catalog:",
     "pathe": "catalog:",
-    "tinyglobby": "0.2.15"
+    "rou3": "0.8.1",
+    "srvx": "catalog:"
+  },
+  "peerDependencies": {
+    "vite": "^8.0.0"
+  },
+  "devDependencies": {
+    "vite": "catalog:"
   },
   "publishConfig": {
     "access": "public"

@@ -1,0 +1,69 @@
+import { describe, expect, it } from 'vitest';
+import { generateServerEntry } from '../src/entry';
+import type { VercubePluginContext } from '../src/types';
+import type { ServiceInfo } from '@vercube/scan';
+
+function cls(className: string, isDefault = false): ServiceInfo {
+  const path = `/abs/${className}.ts`;
+  return {
+    importClassName: className,
+    import: isDefault ? `import ${className} from '${path}';` : `import { ${className} } from '${path}';`,
+    fullPath: path,
+    path: `${className}.ts`,
+  };
+}
+
+function ctx(overrides: Partial<VercubePluginContext>): VercubePluginContext {
+  return {
+    pluginConfig: {},
+    root: '/abs',
+    scanDirs: ['/abs/src'],
+    serverEntry: '/abs/node_modules/.vercube/server-entry.mjs',
+    dev: true,
+    controllers: [],
+    routes: [],
+    services: [],
+    ...overrides,
+  };
+}
+
+describe('generateServerEntry', () => {
+  it('imports core, binds discovered classes, flushes and exports fetch + handleUpgrade', () => {
+    const code = generateServerEntry(ctx({ controllers: [cls('UserController', true)], services: [cls('MailService')] }));
+
+    expect(code).toContain(`import { createApp } from '@vercube/core';`);
+    expect(code).toContain(`import UserController from '/abs/UserController.ts';`);
+    expect(code).toContain(`import { MailService } from '/abs/MailService.ts';`);
+    expect(code).toContain('const app = await createApp();');
+    expect(code).toContain('app.container.bind(UserController);');
+    expect(code).toContain('app.container.bind(MailService);');
+    expect(code).toContain('app.container.flushQueue();');
+    expect(code).toContain('export const fetch = app.fetch.bind(app);');
+    expect(code).toContain('export const handleUpgrade =');
+  });
+
+  it('deduplicates imports and binds for a class discovered more than once', () => {
+    const code = generateServerEntry(ctx({ controllers: [cls('UserController', true), cls('UserController', true)] }));
+
+    expect(code.match(/import UserController from/g)).toHaveLength(1);
+    expect(code.match(/app\.container\.bind\(UserController\)/g)).toHaveLength(1);
+  });
+
+  it('passes the setup file to createApp as its pre-init setup hook', () => {
+    const code = generateServerEntry(ctx({ setupFile: '/abs/setup.ts', controllers: [cls('UserController')] }));
+
+    expect(code).toContain(`import __vercubeSetup__ from "/abs/setup.ts";`);
+    expect(code).toContain('const app = await createApp({ setup: __vercubeSetup__ });');
+    // setup is wired into createApp (pre-init), binds happen afterwards
+    expect(code.indexOf('createApp({ setup: __vercubeSetup__ })')).toBeLessThan(
+      code.indexOf('app.container.bind(UserController);'),
+    );
+  });
+
+  it('produces a valid empty app when nothing is discovered', () => {
+    const code = generateServerEntry(ctx({}));
+    expect(code).toContain('const app = await createApp();');
+    expect(code).toContain('export const fetch = app.fetch.bind(app);');
+    expect(code).not.toContain('app.container.bind(');
+  });
+});
