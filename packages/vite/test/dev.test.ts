@@ -209,4 +209,75 @@ describe('configureViteDevServer', () => {
     expect(watcherClose).toHaveBeenCalled();
     expect(envRunnerClose).toHaveBeenCalled();
   });
+
+  it('ignores file watch events that do not add or remove files', async () => {
+    vi.useFakeTimers();
+    const reload = watchHandlers.get('all')!;
+
+    reload('change', '/abs/src/File.ts');
+    await vi.advanceTimersByTimeAsync(60);
+
+    expect(scanProject).not.toHaveBeenCalled();
+  });
+
+  it('coalesces rapid file watch events into a single rescan', async () => {
+    vi.useFakeTimers();
+    const reload = watchHandlers.get('all')!;
+
+    reload('add', '/abs/src/A.ts');
+    reload('add', '/abs/src/B.ts');
+    await vi.advanceTimersByTimeAsync(60);
+
+    expect(scanProject).toHaveBeenCalledOnce();
+  });
+
+  it('skips sendNodeResponse when the socket was already handled', async () => {
+    const { sendNodeResponse } = await import('srvx/node');
+    const next = vi.fn();
+
+    await middleware({ url: '/api/hello' }, { writableEnded: true, headersSent: false }, next);
+    await middleware({ url: '/api/hello' }, { writableEnded: false, headersSent: true }, next);
+
+    expect(sendNodeResponse).not.toHaveBeenCalled();
+  });
+
+  it('deduplicates duplicate route paths when building the matcher', async () => {
+    const next = vi.fn();
+    const res = { writableEnded: false, headersSent: false, writeHead: vi.fn(), end: vi.fn() };
+    const pluginCtx = ctx({
+      routes: [
+        {
+          route: '/api/hello',
+          method: 'GET',
+          import: '',
+          importClassName: 'HelloController',
+          fullPath: '',
+          path: '',
+          params: [],
+        },
+        {
+          route: '/api/hello',
+          method: 'POST',
+          import: '',
+          importClassName: 'HelloController',
+          fullPath: '',
+          path: '',
+          params: [],
+        },
+      ],
+    });
+
+    await configureViteDevServer(pluginCtx, {
+      environments: { [VERCUBE_ENV]: { dispatchFetch, moduleGraph: { invalidateAll: vi.fn() }, hot: { send: vi.fn() } } },
+      middlewares: {
+        use: vi.fn((fn) => {
+          middleware = fn;
+        }),
+      },
+      httpServer: { once: vi.fn(), on: vi.fn() },
+    } as any);
+
+    await middleware({ url: '/api/hello' }, res, next);
+    expect(dispatchFetch).toHaveBeenCalledOnce();
+  });
 });
