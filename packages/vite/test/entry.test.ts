@@ -1,5 +1,7 @@
+import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
+import { dirname } from 'pathe';
 import { describe, expect, it } from 'vitest';
-import { generateServerEntry } from '../src/entry';
+import { generateServerEntry, writeServerEntry } from '../src/entry';
 import type { VercubePluginContext } from '../src/types';
 import type { ServiceInfo } from '@vercube/scan';
 
@@ -83,5 +85,20 @@ describe('generateServerEntry', () => {
     expect(code).toContain(`import { createApp } from '@vercube/core';`);
     expect(code).not.toContain('serveStaticFiles');
     expect(code).not.toContain('HttpServer');
+  });
+});
+
+describe('writeServerEntry', () => {
+  it('writes the generated entry to disk', () => {
+    const serverEntry = `/tmp/vercube-entry-${Date.now()}/node_modules/.vercube/server-entry.mjs`;
+    const context = ctx({ serverEntry, controllers: [cls('HelloController', true)] });
+
+    try {
+      writeServerEntry(context);
+      expect(existsSync(serverEntry)).toBe(true);
+      expect(readFileSync(serverEntry, 'utf8')).toBe(generateServerEntry(context));
+    } finally {
+      rmSync(dirname(dirname(serverEntry)), { recursive: true, force: true });
+    }
   });
 });

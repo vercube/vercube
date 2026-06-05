@@ -112,4 +112,13 @@ describe('scanSource', () => {
     expect(controllers.find((c) => c.importClassName === 'ChatController')!.import).toContain('import ChatController from');
     expect(controllers.find((c) => c.importClassName === 'UserController')!.import).toContain('import { UserController }');
   });
+
+  it('discovers middleware classes anywhere in the scan tree', async () => {
+    write('Middleware', 'AuthMiddleware.ts', `export class AuthMiddleware extends BaseMiddleware { handle() {} }`);
+
+    const { middlewares } = await scanSource({ dirs: [baseDir] });
+
+    expect(middlewares.map((m) => m.importClassName)).toEqual(['AuthMiddleware']);
+    expect(middlewares[0].import).toContain(`import { AuthMiddleware } from '`);
+  });
 });
