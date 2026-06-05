@@ -40,7 +40,9 @@ onMounted(() => {
       <h2>HTTP</h2>
       <label> Name: <input v-model="name" @keyup.enter="loadGreeting" /> </label>
       <button @click="loadGreeting">Fetch /api/hello</button>
-      <p>Response: <strong>{{ greeting }}</strong></p>
+      <p>
+        Response: <strong>{{ greeting }}</strong>
+      </p>
     </section>
 
     <section>
