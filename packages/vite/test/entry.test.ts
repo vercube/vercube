@@ -20,6 +20,7 @@ function ctx(overrides: Partial<VercubePluginContext>): VercubePluginContext {
     scanDirs: ['/abs/src'],
     serverEntry: '/abs/node_modules/.vercube/server-entry.mjs',
     dev: true,
+    hasClient: false,
     controllers: [],
     routes: [],
     services: [],
@@ -49,15 +50,14 @@ describe('generateServerEntry', () => {
     expect(code.match(/app\.container\.bind\(UserController\)/g)).toHaveLength(1);
   });
 
-  it('passes the setup file to createApp as its pre-init setup hook', () => {
+  it('runs the setup file inside createApp as a pre-init setup hook', () => {
     const code = generateServerEntry(ctx({ setupFile: '/abs/setup.ts', controllers: [cls('UserController')] }));
 
     expect(code).toContain(`import __vercubeSetup__ from "/abs/setup.ts";`);
-    expect(code).toContain('const app = await createApp({ setup: __vercubeSetup__ });');
+    expect(code).toContain('const app = await createApp({ setup: async (app) => {');
+    expect(code).toContain('await __vercubeSetup__(app);');
     // setup is wired into createApp (pre-init), binds happen afterwards
-    expect(code.indexOf('createApp({ setup: __vercubeSetup__ })')).toBeLessThan(
-      code.indexOf('app.container.bind(UserController);'),
-    );
+    expect(code.indexOf('await __vercubeSetup__(app);')).toBeLessThan(code.indexOf('app.container.bind(UserController);'));
   });
 
   it('produces a valid empty app when nothing is discovered', () => {
@@ -65,5 +65,23 @@ describe('generateServerEntry', () => {
     expect(code).toContain('const app = await createApp();');
     expect(code).toContain('export const fetch = app.fetch.bind(app);');
     expect(code).not.toContain('app.container.bind(');
+  });
+
+  it('serves the built frontend in production when the project has a client', () => {
+    const code = generateServerEntry(ctx({ hasClient: true, controllers: [cls('HelloController', true)] }));
+
+    expect(code).toContain(`import { createApp, HttpServer, serveStaticFiles } from '@vercube/core';`);
+    // static is only registered when run directly (production)
+    expect(code).toContain('if (import.meta.main) {');
+    expect(code).toContain('app.container.get(HttpServer).addPlugin(serveStaticFiles(dir));');
+    expect(code).toContain("new URL('./public', import.meta.url)");
+  });
+
+  it('does not pull in the static server when there is no client', () => {
+    const code = generateServerEntry(ctx({ hasClient: false, controllers: [cls('HelloController', true)] }));
+
+    expect(code).toContain(`import { createApp } from '@vercube/core';`);
+    expect(code).not.toContain('serveStaticFiles');
+    expect(code).not.toContain('HttpServer');
   });
 });

@@ -19,18 +19,19 @@ WebSocket message to the `/echo` namespace.
 ## Build
 
 ```bash
-pnpm build    # vite build → frontend + server into dist/
+pnpm build    # vite build → frontend into dist/public, server into dist/index.mjs
+node dist/index.mjs   # one server: serves the frontend and the API
 ```
 
-Produces `dist/index.html` + `dist/assets/*` (the Vue frontend) and `dist/index.mjs`
-(the Vercube server, runnable with `node dist/index.mjs`).
+`node dist/index.mjs` serves the built Vue app from `dist/public` and the API routes,
+the same way the dev server does.
 
 ## Layout
 
 ```
-index.html              # Vite entry (frontend)
-src/main.ts, App.vue     # Vue app, calls the Vercube API
-src/server/              # Vercube — auto-discovered controllers
+index.html               # Vite entry (frontend)
+src/main.ts, App.vue      # Vue app, calls the Vercube API
+src/server/               # Vercube, auto-discovered controllers
   Controllers/HelloController.ts   # GET /api/hello, /api/hello/:name
   Controllers/EchoWsController.ts  # WebSocket @Namespace('/echo')
   Boot/Setup.ts                    # registers @vercube/ws

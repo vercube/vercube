@@ -53,6 +53,8 @@ export interface VercubePluginContext {
   serverEntry: string;
   /** Whether the plugin is running in dev (serve) mode. */
   dev: boolean;
+  /** Whether the project has a frontend (`index.html`) the built server should serve. */
+  hasClient: boolean;
   /** Discovered `@Controller` classes (every controller, including WebSocket-only ones). */
   controllers: ServiceInfo[];
   /** Discovered HTTP routes (method + path), used to decide which requests Vercube handles. */

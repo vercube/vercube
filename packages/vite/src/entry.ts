@@ -31,20 +31,48 @@ export function generateServerEntry(ctx: VercubePluginContext): string {
     }
   }
 
-  const lines: string[] = [`import { createApp } from '@vercube/core';`];
+  const lines: string[] = [
+    ctx.hasClient
+      ? `import { createApp, HttpServer, serveStaticFiles } from '@vercube/core';`
+      : `import { createApp } from '@vercube/core';`,
+  ];
 
+  if (ctx.hasClient) {
+    lines.push(`import { fileURLToPath } from 'node:url';`);
+  }
   if (ctx.setupFile) {
     lines.push(`import __vercubeSetup__ from ${JSON.stringify(ctx.setupFile)};`);
   }
 
   lines.push(...imports.values(), '');
 
-  // The setup file is passed as `createApp`'s setup hook so it runs before the
-  // app initializes — early enough to register plugins (`app.addPlugin`), mount
-  // storage, or bind interface→implementation tokens that auto-discovery can't
-  // infer. Auto-discovered controllers/services are bound afterwards; flushing
-  // the queue then registers their routes via decorator initialization.
-  lines.push(ctx.setupFile ? 'const app = await createApp({ setup: __vercubeSetup__ });' : 'const app = await createApp();', '');
+  // The setup hook runs before the app initializes — early enough to register
+  // plugins (`app.addPlugin`), mount storage, or bind interface→implementation
+  // tokens that auto-discovery can't infer. It also wires the production static
+  // server (see below). Auto-discovered controllers/services are bound
+  // afterwards; flushing the queue then registers their routes via decorators.
+  const setupBody: string[] = [];
+  if (ctx.setupFile) {
+    setupBody.push('  await __vercubeSetup__(app);');
+  }
+  if (ctx.hasClient) {
+    // Only when run directly (production), serve the built frontend from
+    // `dist/public` (next to this `dist/index.mjs`). `serveStatic` runs before
+    // the app handler, so it answers `/` and assets while `/api` falls through.
+    setupBody.push(
+      '  if (import.meta.main) {',
+      "    const dir = fileURLToPath(new URL('./public', import.meta.url));",
+      '    app.container.get(HttpServer).addPlugin(serveStaticFiles(dir));',
+      '  }',
+    );
+  }
+
+  if (setupBody.length > 0) {
+    lines.push('const app = await createApp({ setup: async (app) => {', ...setupBody, '} });', '');
+  } else {
+    lines.push('const app = await createApp();', '');
+  }
+
   lines.push(...[...imports.keys()].map((name) => `app.container.bind(${name});`), '');
 
   lines.push('app.container.flushQueue();', '');

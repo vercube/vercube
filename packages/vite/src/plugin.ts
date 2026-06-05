@@ -1,5 +1,6 @@
 import { defu } from 'defu';
-import { createContext, setupContext } from './context';
+import { resolve } from 'pathe';
+import { CLIENT_OUT_DIR, createContext, setupContext } from './context';
 import { createVercubeEnvironment, initEnvRunner } from './env';
 import { VERCUBE_ENV } from './types';
 import type { VercubePluginConfig, VercubePluginContext } from './types';
@@ -48,9 +49,12 @@ function vercubeMain(ctx: VercubePluginContext): Plugin {
 
       // Vercube only claims its own routes (see the dev middleware), so Vite keeps
       // its default app type and continues to serve the frontend, assets and HMR.
+      // The frontend build is sent to `dist/public` (separate from the server's
+      // `dist/index.mjs`) so the built server can serve it as static files.
       return {
         builder: { sharedConfigBuild: true },
         environments: {
+          client: { build: { outDir: resolve(ctx.root, CLIENT_OUT_DIR) } },
           [VERCUBE_ENV]: createVercubeEnvironment(ctx),
         },
       };
