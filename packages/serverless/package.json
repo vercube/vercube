@@ -47,7 +47,7 @@
   },
   "devDependencies": {
     "@azure/functions": "4.16.0",
-    "@types/aws-lambda": "8.10.161"
+    "@types/aws-lambda": "8.10.162"
   },
   "publishConfig": {
     "access": "public"
