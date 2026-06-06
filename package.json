@@ -34,7 +34,7 @@
     "@commitlint/cli": "21.0.2",
     "@commitlint/config-conventional": "21.0.2",
     "@oxc-project/runtime": "catalog:",
-    "@types/node": "25.9.1",
+    "@types/node": "25.9.2",
     "@typescript/native-preview": "7.0.0-dev.20260605.1",
     "@vitest/coverage-v8": "4.1.8",
     "@vitest/ui": "4.1.8",
