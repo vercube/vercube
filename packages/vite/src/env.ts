@@ -94,7 +94,12 @@ export async function initEnvRunner(ctx: VercubePluginContext): Promise<RunnerMa
       await loadRunnerInto(ctx, manager);
       ctx._envRunner = manager;
       return manager;
-    })();
+    })().finally(() => {
+      // Clear the cached promise once it settles. On success the `_envRunner`
+      // guard above short-circuits future calls; on failure this lets callers
+      // retry instead of being stuck with the same rejected promise.
+      ctx._initPromise = undefined;
+    });
   }
   return ctx._initPromise;
 }

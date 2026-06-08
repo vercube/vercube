@@ -17,7 +17,7 @@ export interface VercubePluginConfig {
 
   /**
    * Directories (relative to `rootDir`) whose file trees are scanned for
-   * controllers, `@Injectable` services and middleware. Defaults to `['src', '.']`.
+   * controllers, `@Injectable` services and middleware. Defaults to `['src']`.
    */
   scanDirs?: string[];
 

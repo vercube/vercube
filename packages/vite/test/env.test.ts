@@ -119,6 +119,18 @@ describe('initEnvRunner', () => {
     expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('env runner failed after 3 retries'), expect.any(String));
     errorSpy.mockRestore();
   });
+
+  it('allows re-initialization after a failed attempt', async () => {
+    const pluginCtx = ctx();
+    loadRunner.mockRejectedValueOnce(new Error('boom'));
+
+    await expect(initEnvRunner(pluginCtx)).rejects.toThrow('boom');
+    expect(pluginCtx._envRunner).toBeUndefined();
+
+    const manager = await initEnvRunner(pluginCtx);
+    expect(manager).toBeDefined();
+    expect(pluginCtx._envRunner).toBe(manager);
+  });
 });
 
 describe('reloadEnvRunner', () => {
