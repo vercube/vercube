@@ -1,6 +1,6 @@
 {
   "name": "@vercube/di",
-  "version": "0.0.48",
+  "version": "1.0.0-beta.1",
   "description": "Dependency Injection  module for Vercube framework",
   "packageManager": "pnpm@11.5.3",
   "repository": {

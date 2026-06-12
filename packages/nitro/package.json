@@ -1,6 +1,6 @@
 {
   "name": "@vercube/nitro",
-  "version": "0.0.43",
+  "version": "1.0.0-beta.1",
   "description": "Nitro module for Vercube framework",
   "packageManager": "pnpm@10.28.2",
   "repository": {
