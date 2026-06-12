@@ -35,12 +35,12 @@
     "@vercube/core": "workspace:*",
     "@vercube/di": "workspace:*",
     "@vercube/storage": "workspace:*",
-    "defu": "catalog:",
     "chokidar": "5.0.0",
+    "defu": "catalog:",
     "nitro": "catalog:",
-    "oxc-parser": "0.112.0",
+    "oxc-parser": "0.135.0",
     "pathe": "catalog:",
-    "tinyglobby": "0.2.15"
+    "tinyglobby": "0.2.17"
   },
   "publishConfig": {
     "access": "public"

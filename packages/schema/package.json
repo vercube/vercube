@@ -31,8 +31,8 @@
     "build": "tsdown --config ../../tsdown.config.ts --config-loader=unrun"
   },
   "dependencies": {
-    "@scalar/client-side-rendering": "0.1.13",
     "@asteasolutions/zod-to-openapi": "8.5.0",
+    "@scalar/client-side-rendering": "0.2.3",
     "@standard-schema/spec": "catalog:",
     "@vercube/core": "workspace:*",
     "@vercube/di": "workspace:*",
