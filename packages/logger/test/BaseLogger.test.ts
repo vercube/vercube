@@ -1,369 +1,134 @@
-import { Container } from '@vercube/di';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { BaseLogger, Logger } from '../src';
-import { ConsoleProvider } from '../src/Drivers/ConsoleProvider';
-import { JSONProvider } from '../src/Drivers/JsonProvider';
-import type { LoggerTypes } from '../src';
+
+const { log, initLogger } = vi.hoisted(() => ({
+  log: {
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  },
+  initLogger: vi.fn(),
+}));
+
+vi.mock('evlog', () => ({ log, initLogger }));
+
+const { BaseLogger } = await import('../src/Service/BaseLogger');
 
 describe('BaseLogger', () => {
-  let logger: Logger;
-  let container: Container;
+  let logger: InstanceType<typeof BaseLogger>;
 
   beforeEach(() => {
-    container = new Container();
-    container.bindInstance(Container, container);
-
-    // bind logger
-    container.bind(Logger, BaseLogger);
-    container.bind(ConsoleProvider);
-    container.bind(JSONProvider);
-
-    logger = container.get(Logger);
+    vi.clearAllMocks();
+    logger = new BaseLogger();
   });
 
-  it('should configure with default options', () => {
-    logger.configure({});
-    // @ts-ignore - accessing private property for testing
-    expect(logger.fLogLevel).toBe('debug');
-    // @ts-ignore - accessing private property for testing
-    expect(logger.fProviders.size).toBe(0);
-  });
-
-  it('should configure with custom log level', () => {
-    logger.configure({ logLevel: 'info' });
-    // @ts-ignore - accessing private property for testing
-    expect(logger.fLogLevel).toBe('info');
-  });
-
-  it('should configure with providers', () => {
-    const options: LoggerTypes.Options = {
-      logLevel: 'info',
-      providers: [
-        {
-          name: 'console',
-          provider: ConsoleProvider,
-          logLevel: 'debug',
-        },
-        {
-          name: 'json',
-          provider: JSONProvider,
-          logLevel: 'info',
-        },
-      ],
-    };
-    logger.configure(options);
-    // @ts-ignore - accessing private property for testing
-    expect(logger.fProviders.size).toBe(2);
-    // @ts-ignore - accessing private property for testing
-    expect(logger.fProvidersLevel.get('console')).toBe('debug');
-    // @ts-ignore - accessing private property for testing
-    expect(logger.fProvidersLevel.get('json')).toBe('info');
-  });
-
-  it('should handle provider initialization errors', () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const options: LoggerTypes.Options = {
-      providers: [
-        {
-          name: 'invalid',
-          provider: class InvalidProvider {},
-        },
-      ],
-    };
-    logger.configure(options);
-    expect(consoleSpy).toHaveBeenCalled();
-    consoleSpy.mockRestore();
-  });
-
-  it('should log messages through configured providers', () => {
-    const consoleSpy = {
-      debug: vi.fn(),
-      info: vi.fn(),
-      warn: vi.fn(),
-      error: vi.fn(),
-    };
-    vi.spyOn(console, 'debug').mockImplementation(consoleSpy.debug);
-    vi.spyOn(console, 'info').mockImplementation(consoleSpy.info);
-    vi.spyOn(console, 'warn').mockImplementation(consoleSpy.warn);
-    vi.spyOn(console, 'error').mockImplementation(consoleSpy.error);
-
-    logger.configure({
-      providers: [
-        {
-          name: 'console',
-          provider: ConsoleProvider,
-          logLevel: 'debug',
-        },
-      ],
+  describe('configure', () => {
+    it('maps logLevel to evlog minLevel and passes options through', () => {
+      logger.configure({ logLevel: 'warn', pretty: true, silent: true });
+      expect(initLogger).toHaveBeenCalledWith(expect.objectContaining({ minLevel: 'warn', pretty: true, silent: true }));
     });
 
-    logger.debug('debug message');
-    logger.info('info message');
-    logger.warn('warn message');
-    logger.error('error message');
-
-    expect(consoleSpy.debug).toHaveBeenCalled();
-    expect(consoleSpy.info).toHaveBeenCalled();
-    expect(consoleSpy.warn).toHaveBeenCalled();
-    expect(consoleSpy.error).toHaveBeenCalled();
-
-    vi.restoreAllMocks();
-  });
-
-  it('should respect provider log levels', () => {
-    const consoleSpy = {
-      debug: vi.fn(),
-      info: vi.fn(),
-      warn: vi.fn(),
-      error: vi.fn(),
-    };
-    vi.spyOn(console, 'debug').mockImplementation(consoleSpy.debug);
-    vi.spyOn(console, 'info').mockImplementation(consoleSpy.info);
-    vi.spyOn(console, 'warn').mockImplementation(consoleSpy.warn);
-    vi.spyOn(console, 'error').mockImplementation(consoleSpy.error);
-
-    logger.configure({
-      providers: [
-        {
-          name: 'console',
-          provider: ConsoleProvider,
-          logLevel: 'info',
-        },
-      ],
+    it('prefers logLevel over minLevel', () => {
+      logger.configure({ logLevel: 'error', minLevel: 'debug' });
+      expect(initLogger).toHaveBeenCalledWith(expect.objectContaining({ minLevel: 'error' }));
     });
 
-    logger.debug('debug message');
-    logger.info('info message');
-    logger.warn('warn message');
-    logger.error('error message');
-
-    expect(consoleSpy.debug).not.toHaveBeenCalled();
-    expect(consoleSpy.info).toHaveBeenCalled();
-    expect(consoleSpy.warn).toHaveBeenCalled();
-    expect(consoleSpy.error).toHaveBeenCalled();
-
-    vi.restoreAllMocks();
+    it('works with empty options', () => {
+      expect(() => logger.configure({})).not.toThrow();
+      expect(initLogger).toHaveBeenCalledTimes(1);
+    });
   });
 
-  it('should handle multiple providers with different log levels', () => {
-    const consoleSpy = vi.fn();
-    const jsonSpy = vi.fn();
-    vi.spyOn(console, 'debug').mockImplementation(consoleSpy);
-    vi.spyOn(console, 'log').mockImplementation(jsonSpy);
-
-    logger.configure({
-      providers: [
-        {
-          name: 'console',
-          provider: ConsoleProvider,
-          logLevel: 'debug',
-        },
-        {
-          name: 'json',
-          provider: JSONProvider,
-          logLevel: 'error',
-        },
-      ],
+  describe('log methods', () => {
+    it('forwards (tag, message) using the native tagged form', () => {
+      logger.info('Auth', 'logged in');
+      expect(log.info).toHaveBeenCalledWith('Auth', 'logged in');
     });
 
-    logger.debug('test message');
-    expect(consoleSpy).toHaveBeenCalled();
-    expect(jsonSpy).not.toHaveBeenCalled();
-
-    logger.error('error message');
-    expect(jsonSpy).toHaveBeenCalled();
-
-    vi.restoreAllMocks();
-  });
-
-  it('should handle provider options', () => {
-    const options: LoggerTypes.Options = {
-      providers: [
-        {
-          name: 'console',
-          provider: ConsoleProvider,
-          options: {
-            logLevel: 'debug',
-          },
-        },
-      ],
-    };
-    expect(() => logger.configure(options)).not.toThrow();
-  });
-
-  it('should handle reconfiguration', () => {
-    logger.configure({
-      providers: [
-        {
-          name: 'console',
-          provider: ConsoleProvider,
-        },
-      ],
+    it('treats a lone string as a message event', () => {
+      logger.warn('something happened');
+      expect(log.warn).toHaveBeenCalledWith({ message: 'something happened' });
     });
 
-    // @ts-ignore - accessing private property for testing
-    const initialSize = logger.fProviders.size;
-
-    logger.configure({
-      providers: [
-        {
-          name: 'json',
-          provider: JSONProvider,
-        },
-      ],
+    it('captures Error objects under the error field', () => {
+      logger.error(new Error('boom'));
+      const arg = log.error.mock.calls[0][0];
+      expect(arg.error).toMatchObject({ name: 'Error', message: 'boom' });
+      expect(arg.error.stack).toBeDefined();
     });
 
-    // @ts-ignore - accessing private property for testing
-    expect(logger.fProviders.size).toBe(1);
-    expect(initialSize).toBe(1);
-  });
-
-  it('should handle messages with additional properties', () => {
-    const consoleSpy = vi.fn();
-    vi.spyOn(console, 'info').mockImplementation(consoleSpy);
-
-    logger.configure({
-      providers: [
-        {
-          name: 'console',
-          provider: ConsoleProvider,
-        },
-      ],
+    it('merges a tag with an Error', () => {
+      logger.error('Storage::init', new Error('disk'));
+      const arg = log.error.mock.calls[0][0];
+      expect(arg.message).toBe('Storage::init');
+      expect(arg.error.message).toBe('disk');
     });
 
-    const timestamp = Date.now();
-    const pid = process.pid;
-    const tag = 'test-tag';
-    const type = 'application_log';
-
-    logger.info('test message', { timestamp, pid, tag, type });
-    expect(consoleSpy).toHaveBeenCalled();
-
-    vi.restoreAllMocks();
-  });
-
-  it('should handle undefined provider options', () => {
-    const options: LoggerTypes.Options = {
-      providers: [
-        {
-          name: 'console',
-          provider: ConsoleProvider,
-          options: undefined,
-        },
-      ],
-    };
-    expect(() => logger.configure(options)).not.toThrow();
-  });
-
-  it('should handle undefined providers array', () => {
-    const options: LoggerTypes.Options = {
-      logLevel: 'info',
-      providers: undefined,
-    };
-    expect(() => logger.configure(options)).not.toThrow();
-  });
-
-  it('should handle empty providers array', () => {
-    const options: LoggerTypes.Options = {
-      logLevel: 'info',
-      providers: [],
-    };
-    expect(() => logger.configure(options)).not.toThrow();
-  });
-
-  it('should handle async provider initialization', async () => {
-    class AsyncProvider extends ConsoleProvider {
-      public async initialize(): Promise<void> {
-        await new Promise((resolve) => setTimeout(resolve, 10));
-      }
-    }
-
-    container.bind(AsyncProvider);
-    const options: LoggerTypes.Options = {
-      providers: [
-        {
-          name: 'async',
-          provider: AsyncProvider,
-        },
-      ],
-    };
-    expect(() => logger.configure(options)).not.toThrow();
-  });
-
-  it('should handle provider initialization with options', () => {
-    class OptionsProvider extends ConsoleProvider {
-      public initialize(options?: { logLevel?: LoggerTypes.Level }): void {
-        expect(options?.logLevel).toBe('debug');
-      }
-    }
-
-    container.bind(OptionsProvider);
-    const options: LoggerTypes.Options = {
-      providers: [
-        {
-          name: 'options',
-          provider: OptionsProvider,
-          options: { logLevel: 'debug' },
-        },
-      ],
-    };
-    expect(() => logger.configure(options)).not.toThrow();
-  });
-
-  it('should handle provider without logLevel using global logLevel', () => {
-    const consoleSpy = vi.fn();
-    vi.spyOn(console, 'debug').mockImplementation(consoleSpy);
-
-    logger.configure({
-      logLevel: 'debug',
-      providers: [
-        {
-          name: 'console',
-          provider: ConsoleProvider,
-        },
-      ],
+    it('merges object fields into the event', () => {
+      logger.info('Ctx', { userId: 1 });
+      expect(log.info.mock.calls[0][0]).toMatchObject({ message: 'Ctx', userId: 1 });
     });
 
-    logger.debug('test message');
-    expect(consoleSpy).toHaveBeenCalled();
-    vi.restoreAllMocks();
-  });
-
-  it('should handle provider without logLevel and no global logLevel', () => {
-    const consoleSpy = vi.fn();
-    vi.spyOn(console, 'debug').mockImplementation(consoleSpy);
-
-    logger.configure({
-      providers: [
-        {
-          name: 'console',
-          provider: ConsoleProvider,
-        },
-      ],
+    it('keeps tag and message separate when both are present alongside fields', () => {
+      logger.error('WS::init', 'failed', { code: 1 });
+      expect(log.error.mock.calls[0][0]).toMatchObject({ tag: 'WS::init', message: 'failed', code: 1 });
     });
 
-    logger.debug('test message');
-    expect(consoleSpy).toHaveBeenCalled();
-    vi.restoreAllMocks();
+    it('routes each level to the matching evlog method', () => {
+      logger.debug('a', 'b');
+      logger.info('c', 'd');
+      logger.warn('e', 'f');
+      logger.error('g', 'h');
+      expect(log.debug).toHaveBeenCalledOnce();
+      expect(log.info).toHaveBeenCalledOnce();
+      expect(log.warn).toHaveBeenCalledOnce();
+      expect(log.error).toHaveBeenCalledOnce();
+    });
   });
 
-  it('should handle provider with undefined logLevel', () => {
-    const consoleSpy = vi.fn();
-    vi.spyOn(console, 'debug').mockImplementation(consoleSpy);
-
-    logger.configure({
-      logLevel: 'info',
-      providers: [
-        {
-          name: 'console',
-          provider: ConsoleProvider,
-          logLevel: undefined,
-        },
-      ],
+  describe('wide-event context', () => {
+    it('set/getContext accumulate context', () => {
+      logger.set({ a: 1 });
+      logger.set({ b: 2 });
+      expect(logger.getContext()).toEqual({ a: 1, b: 2 });
     });
 
-    logger.debug('test message');
-    expect(consoleSpy).not.toHaveBeenCalled();
-    vi.restoreAllMocks();
+    it('getContext returns a copy (not a live reference)', () => {
+      logger.set({ a: 1 });
+      const ctx = logger.getContext();
+      ctx.a = 999;
+      expect(logger.getContext()).toEqual({ a: 1 });
+    });
+
+    it('merges accumulated context into every event', () => {
+      logger.set({ requestId: 'x' });
+      logger.info('hello');
+      expect(log.info.mock.calls[0][0]).toMatchObject({ requestId: 'x', message: 'hello' });
+    });
+
+    it('child inherits parent context plus extra context', () => {
+      logger.set({ a: 1 });
+      const child = logger.child({ b: 2 });
+      expect(child.getContext()).toEqual({ a: 1, b: 2 });
+    });
+
+    it('child context is isolated from the parent', () => {
+      logger.set({ a: 1 });
+      const child = logger.child({ b: 2 });
+      child.set({ c: 3 });
+      expect(logger.getContext()).toEqual({ a: 1 });
+    });
+
+    it('emit flushes accumulated context and resets it', () => {
+      logger.set({ a: 1 });
+      logger.emit({ done: true });
+      expect(log.info).toHaveBeenCalledWith({ a: 1, done: true });
+      expect(logger.getContext()).toEqual({});
+    });
+
+    it('emit is a no-op when there is nothing to emit', () => {
+      logger.emit();
+      expect(log.info).not.toHaveBeenCalled();
+    });
   });
 });

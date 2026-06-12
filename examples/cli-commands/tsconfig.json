@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "lib": ["es2022", "DOM"],
+    "paths": {
+      "@/*": ["src/*"],
+      "@vercube/*": ["../../packages/*/src"]
+    }
+  },
+  "include": ["./src/**/*.ts", "./vercube.config.ts"]
+}

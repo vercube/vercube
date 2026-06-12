@@ -115,8 +115,9 @@ export class HttpServer {
    */
   public async handleRequest(request: Request): Promise<Response> {
     try {
+      const pathname = new URL(request.url).pathname;
       const route = this.gRouter.resolve({
-        path: request.url,
+        path: pathname,
         method: request.method,
       });
 

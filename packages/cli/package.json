@@ -15,6 +15,7 @@
   "module": "./dist/index.mjs",
   "exports": {
     ".": "./dist/index.mjs",
+    "./toolkit": "./dist/toolkit.mjs",
     "./package.json": "./package.json"
   },
   "types": "./dist/index.d.mts",
@@ -26,15 +27,19 @@
     "vercube": "./dist/index.mjs"
   },
   "scripts": {
-    "build": "tsdown --config ../../tsdown.config.ts --config-loader=unrun"
+    "build": "tsdown --config tsdown.config.ts --config-loader=unrun"
   },
   "dependencies": {
+    "@vercube/core": "workspace:*",
     "@vercube/devkit": "workspace:*",
+    "@vercube/di": "workspace:*",
     "@vercube/logger": "workspace:*",
+    "c12": "catalog:",
     "citty": "0.2.2",
     "consola": "catalog:",
-    "giget": "3.2.0",
-    "nypm": "0.6.6",
+    "giget": "3.3.0",
+    "jiti": "catalog:",
+    "nypm": "0.6.7",
     "pathe": "catalog:",
     "srvx": "catalog:",
     "std-env": "4.1.0",

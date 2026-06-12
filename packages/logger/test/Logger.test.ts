@@ -25,12 +25,16 @@ describe('Logger', () => {
     expect(typeof logger.info).toBe('function');
     expect(typeof logger.warn).toBe('function');
     expect(typeof logger.error).toBe('function');
+    expect(typeof logger.set).toBe('function');
+    expect(typeof logger.getContext).toBe('function');
+    expect(typeof logger.child).toBe('function');
+    expect(typeof logger.emit).toBe('function');
   });
 
   it('should accept configuration options', () => {
     const options: LoggerTypes.Options = {
       logLevel: 'info',
-      providers: [],
+      pretty: true,
     };
     expect(() => logger.configure(options)).not.toThrow();
   });

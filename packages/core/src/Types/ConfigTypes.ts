@@ -1,3 +1,4 @@
+import type { VercubePluginInput } from './Plugin';
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 import type { LoggerTypes } from '@vercube/logger';
 import type { DotenvOptions } from 'c12';
@@ -160,6 +161,14 @@ export namespace ConfigTypes {
     logLevel?: LoggerTypes.Level;
 
     /**
+     * Enables the evlog request middleware, which emits one structured
+     * wide event per request (method, path, status, duration).
+     *
+     * @default true
+     */
+    requestLogging?: boolean;
+
+    /**
      * Server configuration options.
      */
     server?: ServerOptions;
@@ -179,6 +188,24 @@ export namespace ConfigTypes {
      * This property is only used when using vercube cli.
      */
     build?: BuildOptions;
+
+    /**
+     * CLI configuration options.
+     * This property is only used when using vercube cli.
+     */
+    cli?: {
+      /**
+       * List of command classes to register in the CLI.
+       * Each class must be decorated with @Command.
+       */
+      commands?: (new () => unknown)[];
+    };
+
+    /**
+     * Framework plugins (config, runtime, CLI, dev `hooks`).
+     * @see {@link https://vercube.dev/docs/advanced/custom-plugin} - Plugins documentation
+     */
+    plugins?: VercubePluginInput[];
 
     /**
      * Additional configuration for c12.

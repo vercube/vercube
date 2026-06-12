@@ -6,6 +6,8 @@
 
 A example showcasing how to use Vercube with AWS Lambda. This template demonstrates how to build serverless applications using Vercube's AWS Lambda integration, making it easy to deploy your APIs to AWS Lambda. It includes examples of routing, request handling, and Lambda function configuration.
 
+**Docs:** [Deploy to AWS Lambda](https://vercube.dev/docs/deployment/aws-lambda) · [Serverless module](https://vercube.dev/docs/modules/serverless/overview)
+
 ## <a name="getting-started">🚀 Quick Start</a>
 
 ```sh

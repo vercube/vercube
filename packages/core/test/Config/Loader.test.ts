@@ -45,13 +45,16 @@ describe('Config loader', () => {
 
     const config = await loadVercubeConfig(overrides);
 
-    expect(mockLoadConfig).toHaveBeenCalledWith({
-      name: 'vercube',
-      dotenv: overrides.c12?.dotenv,
-      rcFile: false,
-      globalRc: false,
-      defaults: expect.any(Object),
-    });
+    expect(mockLoadConfig).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'vercube',
+        cwd: process.cwd(),
+        dotenv: overrides.c12?.dotenv,
+        rcFile: false,
+        globalRc: false,
+        defaults: expect.any(Object),
+      }),
+    );
     // defu merges loaded config with overrides, with overrides taking precedence
     expect(config).toEqual({
       logLevel: 'debug', // From overrides
@@ -78,13 +81,16 @@ describe('Config loader', () => {
 
     const config = await loadVercubeConfig();
 
-    expect(mockLoadConfig).toHaveBeenCalledWith({
-      name: 'vercube',
-      dotenv: true, // Should use default true when no overrides
-      rcFile: false,
-      globalRc: false,
-      defaults: expect.any(Object),
-    });
+    expect(mockLoadConfig).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'vercube',
+        cwd: process.cwd(),
+        dotenv: true, // Should use default true when no overrides
+        rcFile: false,
+        globalRc: false,
+        defaults: expect.any(Object),
+      }),
+    );
     expect(config).toEqual({
       logLevel: 'info',
       server: {
@@ -110,13 +116,16 @@ describe('Config loader', () => {
 
     const config = await loadVercubeConfig(overrides);
 
-    expect(mockLoadConfig).toHaveBeenCalledWith({
-      name: 'vercube',
-      dotenv: true, // Should use default true when overrides.c12?.dotenv is undefined
-      rcFile: false,
-      globalRc: false,
-      defaults: expect.any(Object),
-    });
+    expect(mockLoadConfig).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'vercube',
+        cwd: process.cwd(),
+        dotenv: true, // Should use default true when overrides.c12?.dotenv is undefined
+        rcFile: false,
+        globalRc: false,
+        defaults: expect.any(Object),
+      }),
+    );
     // defu merges loaded config with overrides, with overrides taking precedence
     expect(config).toEqual({
       logLevel: 'debug', // From overrides

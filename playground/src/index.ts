@@ -1,4 +1,4 @@
-import { createApp } from '@vercube/core';
+import { createApp, type RequestHandler } from '@vercube/core';
 import { useContainer } from './Boot/Container';
 import { setup } from './Boot/Setup';
 
@@ -10,5 +10,5 @@ if (import.meta.main) {
 }
 
 export default {
-  fetch: app.fetch.bind(app),
+  fetch: app.fetch.bind(app) as RequestHandler,
 };

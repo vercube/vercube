@@ -39,17 +39,27 @@ export class MetadataResolver {
    * @public
    */
   public async resolveArgs(args: MetadataTypes.Arg[], event: RouterTypes.RouterEvent): Promise<MetadataTypes.Arg[]> {
-    // sort arguments by index
-    args.sort((a, b) => a.idx - b.idx);
+    // Prepared routes pass args sorted by idx; support unsorted callers with a cheap O(n) check (no alloc when sorted)
+    let list = args;
+    if (args.length > 1) {
+      for (let i = 1; i < args.length; i++) {
+        if (args[i - 1].idx > args[i].idx) {
+          list = [...args].sort((a, b) => a.idx - b.idx);
+          break;
+        }
+      }
+    }
 
-    // resolve arguments data from event
-    const resolvedArgs = args.map(async (arg) => ({
-      ...arg,
-      resolved: await this.resolveArg(arg, event),
-    }));
-
-    // return resolved arguments
-    return await Promise.all(resolvedArgs);
+    const resolvedArgs: MetadataTypes.Arg[] = [];
+    for (let i = 0; i < list.length; i++) {
+      const arg = list[i];
+      let resolved: unknown = this.resolveArg(arg, event);
+      if (resolved instanceof Promise) {
+        resolved = await resolved;
+      }
+      resolvedArgs.push({ ...arg, resolved });
+    }
+    return resolvedArgs;
   }
 
   /**
@@ -60,7 +70,7 @@ export class MetadataResolver {
    * @return {unknown} The resolved argument.
    * @private
    */
-  private resolveArg(arg: MetadataTypes.Arg, event: RouterTypes.RouterEvent): unknown {
+  private resolveArg(arg: MetadataTypes.Arg, event: RouterTypes.RouterEvent): unknown | Promise<unknown> {
     switch (arg.type) {
       case 'param': {
         return resolveRouterParam(arg?.data?.name ?? '', event);

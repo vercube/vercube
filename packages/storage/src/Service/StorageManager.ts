@@ -9,16 +9,18 @@ import type { StorageTypes } from '../Types/StorageTypes';
  * This class handles initialization, registration, and delegation of storage operations.
  */
 export class StorageManager {
+  /** Container instance */
   @Inject(Container)
-  private gContainer!: Container;
+  protected gContainer!: Container;
 
+  /** Logger instance */
   @InjectOptional(Logger)
-  private gLogger!: Logger | null;
+  protected gLogger!: Logger | null;
 
   /**
    * Map of registered storage instances indexed by their names
    */
-  private fStorages: Map<string, StorageTypes.Storages> = new Map();
+  protected fStorages: Map<string, StorageTypes.Storages> = new Map();
 
   /**
    * Mounts a new storage instance with the specified name
@@ -146,7 +148,7 @@ export class StorageManager {
    * @returns {Promise<void>} A promise that resolves when all storages are initialized
    */
   @Init()
-  private async init(): Promise<void> {
+  protected async init(): Promise<void> {
     for (const { storage, initOptions } of this.fStorages.values()) {
       try {
         await storage?.initialize(initOptions);
