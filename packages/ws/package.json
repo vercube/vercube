@@ -2,7 +2,7 @@
   "name": "@vercube/ws",
   "version": "1.0.0-beta.2",
   "description": "Websocket module for Vercube framework",
-  "packageManager": "pnpm@11.7.0",
+  "packageManager": "pnpm@11.8.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/vercube/vercube.git",
