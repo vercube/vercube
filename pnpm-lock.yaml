@@ -34,8 +34,8 @@ catalogs:
       specifier: 1.1.2
       version: 1.1.2
     srvx:
-      specifier: 0.11.16
-      version: 0.11.16
+      specifier: 0.11.17
+      version: 0.11.17
     ufo:
       specifier: 1.6.4
       version: 1.6.4
@@ -304,7 +304,7 @@ importers:
         version: 2.0.3
       srvx:
         specifier: 'catalog:'
-        version: 0.11.16
+        version: 0.11.17
       std-env:
         specifier: 4.1.0
         version: 4.1.0
@@ -337,7 +337,7 @@ importers:
         version: 0.8.1
       srvx:
         specifier: 'catalog:'
-        version: 0.11.16
+        version: 0.11.17
     devDependencies:
       rolldown:
         specifier: 'catalog:'
@@ -469,7 +469,7 @@ importers:
         version: link:../di
       srvx:
         specifier: 'catalog:'
-        version: 0.11.16
+        version: 0.11.17
       ufo:
         specifier: 'catalog:'
         version: 1.6.4
@@ -507,10 +507,10 @@ importers:
         version: link:../logger
       crossws:
         specifier: 0.4.6
-        version: 0.4.6(srvx@0.11.16)
+        version: 0.4.6(srvx@0.11.17)
       srvx:
         specifier: 'catalog:'
-        version: 0.11.16
+        version: 0.11.17
     devDependencies:
       zod:
         specifier: 'catalog:'
@@ -4083,6 +4083,11 @@ packages:
     engines: {node: '>=20.16.0'}
     hasBin: true
 
+  srvx@0.11.17:
+    resolution: {integrity: sha512-43yM4luKfCJamyCMhrUeHUPOrf8TdZe7kN8s5zayZCH5OeprYqi49Aso5ZvHXR4aB+DHaRNO/diNFgZSMNG8Xw==}
+    engines: {node: '>=20.16.0'}
+    hasBin: true
+
   stack-trace@1.0.0-pre2:
     resolution: {integrity: sha512-2ztBJRek8IVofG9DBJqdy2N5kulaacX30Nz7xmkYF6ale9WBVmIy6mFBchvGX7Vx/MyjBhx+Rcxqrj+dbOnQ6A==}
     engines: {node: '>=16'}
@@ -6622,6 +6627,10 @@ snapshots:
     optionalDependencies:
       srvx: 0.11.16
 
+  crossws@0.4.6(srvx@0.11.17):
+    optionalDependencies:
+      srvx: 0.11.17
+
   data-uri-to-buffer@4.0.1: {}
 
   db0@0.3.4: {}
@@ -7167,7 +7176,7 @@ snapshots:
       ocache: 0.1.5
       ofetch: 2.0.0-alpha.3
       ohash: 2.0.11
-      rolldown: 1.1.1
+      rolldown: 1.1.2
       srvx: 0.11.16
       unenv: 2.0.0-rc.24
       unstorage: 2.0.0-alpha.7(chokidar@5.0.0)(db0@0.3.4)(lru-cache@11.5.1)(ofetch@2.0.0-alpha.3)
@@ -7825,6 +7834,8 @@ snapshots:
   source-map-js@1.2.1: {}
 
   srvx@0.11.16: {}
+
+  srvx@0.11.17: {}
 
   stack-trace@1.0.0-pre2: {}
 
