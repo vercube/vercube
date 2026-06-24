@@ -30,12 +30,12 @@
     ]
   },
   "devDependencies": {
-    "@codspeed/vitest-plugin": "5.7.0",
+    "@codspeed/vitest-plugin": "5.7.1",
     "@commitlint/cli": "21.1.0",
     "@commitlint/config-conventional": "21.1.0",
     "@oxc-project/runtime": "catalog:",
     "@types/node": "25.9.4",
-    "@typescript/native-preview": "7.0.0-dev.20260623.1",
+    "@typescript/native-preview": "7.0.0-dev.20260624.1",
     "@vitest/coverage-v8": "4.1.9",
     "@vitest/ui": "4.1.9",
     "bumpp": "11.1.0",
@@ -45,7 +45,7 @@
     "simple-git-hooks": "2.13.1",
     "tsdown": "0.22.3",
     "tslib": "2.8.1",
-    "turbo": "2.9.18",
+    "turbo": "2.10.0",
     "unrun": "0.3.1",
     "vitest": "4.1.9"
   },
