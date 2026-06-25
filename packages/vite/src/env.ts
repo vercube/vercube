@@ -7,6 +7,13 @@ import type { RunnerName } from 'env-runner';
 import type { EnvironmentOptions } from 'vite';
 
 /**
+ * Dev-only `resolve.noExternal` patterns. Only `@vercube/*` must stay in Vite's
+ * module graph so class-reference DI tokens are not duplicated; other deps (e.g.
+ * CJS-only `dotenv`) are left external and loaded via native `import()`.
+ */
+export const DEV_NO_EXTERNAL: (string | RegExp)[] = [/^@vercube\//];
+
+/**
  * The custom message event used to tell the worker which entry an environment loads.
  */
 export const VITE_ENV_EVENT = 'vercube:vite-env';
@@ -27,12 +34,12 @@ export function createVercubeEnvironment(ctx: VercubePluginContext): Environment
     // In dev, Vercube uses class references as DI tokens, so a package loaded
     // twice (once externalized to its dist, once transformed from source) yields
     // mismatched tokens and "Unresolved dependency" errors. Routing the entire
-    // server through Vite's module graph (`noExternal: true`) guarantees every
+    // server through Vite's module graph (`noExternal` for `@vercube/*`) guarantees every
     // module — framework and app — is evaluated exactly once with identical token
     // identities. The build doesn't share a graph with anything, so bare
     // dependencies are externalized there (see rollupOptions.external) and
     // resolve to a single dist instance at runtime.
-    resolve: ctx.dev ? { noExternal: true } : {},
+    resolve: ctx.dev ? { noExternal: DEV_NO_EXTERNAL } : {},
     build: {
       outDir: resolve(ctx.root, 'dist'),
       emptyOutDir: false,

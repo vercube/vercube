@@ -27,7 +27,14 @@ vi.mock('env-runner', async (importOriginal) => {
   };
 });
 
-import { createVercubeEnvironment, getEnvRunner, initEnvRunner, reloadEnvRunner, isBareSpecifier } from '../src/env';
+import {
+  createVercubeEnvironment,
+  DEV_NO_EXTERNAL,
+  getEnvRunner,
+  initEnvRunner,
+  reloadEnvRunner,
+  isBareSpecifier,
+} from '../src/env';
 import { VERCUBE_ENV } from '../src/types';
 import type { VercubePluginContext } from '../src/types';
 
@@ -64,7 +71,7 @@ describe('createVercubeEnvironment', () => {
     const devEnv = createVercubeEnvironment(ctx({ dev: true }));
     const prodEnv = createVercubeEnvironment(ctx({ dev: false }));
 
-    expect(devEnv.resolve).toEqual({ noExternal: true });
+    expect(devEnv.resolve).toEqual({ noExternal: DEV_NO_EXTERNAL });
     expect(prodEnv.resolve).toEqual({});
     expect(devEnv.build?.outDir).toBe('/abs/dist');
     expect(devEnv.build?.rollupOptions?.input).toEqual({ index: '/abs/node_modules/.vercube/server-entry.mjs' });
