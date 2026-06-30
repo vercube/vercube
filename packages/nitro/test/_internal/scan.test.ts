@@ -1,13 +1,17 @@
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { glob } from 'tinyglobby';
+import { scanDir as scanDirCore } from '@vercube/scan';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { scanDir, scanFiles } from '../../src/_internal/scan';
 
-vi.mock('tinyglobby', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('tinyglobby')>();
-  return { ...actual, glob: vi.fn(actual.glob) };
+vi.mock('@vercube/scan', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@vercube/scan')>();
+  return {
+    ...actual,
+    scanDir: vi.fn(actual.scanDir),
+    scanFiles: vi.fn(actual.scanFiles),
+  };
 });
 
 function makeMockNitro(scanDirs: string[]) {
@@ -23,6 +27,7 @@ describe('scanDir', () => {
   beforeEach(() => {
     tmpDir = join(tmpdir(), `vercube-scan-test-${Date.now()}`);
     mkdirSync(tmpDir, { recursive: true });
+    vi.mocked(scanDirCore).mockClear();
   });
 
   afterEach(() => {
@@ -60,19 +65,22 @@ describe('scanDir', () => {
     expect(result[1].path).toBe('ZController.ts');
   });
 
-  it('should warn and return empty array when glob throws ENOTDIR', async () => {
-    const enotdir = Object.assign(new Error('not a directory'), { code: 'ENOTDIR' });
-    vi.mocked(glob).mockRejectedValueOnce(enotdir);
+  it('should forward nitro logger when scanDir warns on ENOTDIR', async () => {
+    vi.mocked(scanDirCore).mockImplementationOnce(async (dir, name, logger) => {
+      logger?.warn(`Ignoring \`${join(dir, name)}\`. It must be a directory.`);
+      return [];
+    });
 
     const nitro = makeMockNitro([tmpDir]);
     const result = await scanDir(nitro, tmpDir, 'routes');
     expect(result).toEqual([]);
+    expect(scanDirCore).toHaveBeenCalledWith(tmpDir, 'routes', nitro.logger);
     expect(nitro.logger.warn).toHaveBeenCalledWith(expect.stringContaining('routes'));
   });
 
-  it('should re-throw non-ENOTDIR errors', async () => {
+  it('should re-throw errors from scanDir', async () => {
     const error = new Error('some other error');
-    vi.mocked(glob).mockRejectedValueOnce(error);
+    vi.mocked(scanDirCore).mockRejectedValueOnce(error);
 
     const nitro = makeMockNitro([tmpDir]);
     await expect(scanDir(nitro, tmpDir, 'routes')).rejects.toThrow('some other error');
