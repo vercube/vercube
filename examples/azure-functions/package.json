@@ -13,12 +13,12 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@azure/functions": "4.16.0",
+    "@azure/functions": "4.16.1",
     "@vercube/cli": "workspace:*",
     "@vercube/core": "workspace:*",
     "@vercube/di": "workspace:*",
     "@vercube/logger": "workspace:*",
     "@vercube/serverless": "workspace:*",
-    "azure-functions-core-tools": "~4.12.0"
+    "azure-functions-core-tools": "~4.12.1"
   }
 }

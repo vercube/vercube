@@ -36,7 +36,7 @@
   ],
   "dependencies": {
     "@vercube/di": "workspace:*",
-    "evlog": "^2.19.0"
+    "evlog": "^2.19.2"
   },
   "publishConfig": {
     "access": "public"
