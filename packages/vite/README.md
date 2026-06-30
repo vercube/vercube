@@ -73,12 +73,25 @@ node dist/index.mjs   # runs the built server
 
 ## Options
 
-| Option      | Type       | Default         | Description                                                                                                       |
-| ----------- | ---------- | --------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `rootDir`   | `string`   | Vite `root`     | Project root used to resolve `scanDirs` and `setupFile`.                                                          |
-| `scanDirs`  | `string[]` | `['src']`       | Directories scanned (recursively) for `@Controller` and `@Injectable` classes.                                    |
-| `setupFile` | `string`   | `undefined`     | Module whose default export `(app: App) => void \| Promise<void>` runs as `createApp`'s setup hook (before init). |
-| `runner`    | `string`   | `'node-worker'` | The `env-runner` runner used to execute server code in dev.                                                       |
+| Option       | Type                    | Default         | Description                                                                                                       |
+| ------------ | ----------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `rootDir`    | `string`                | Vite `root`     | Project root used to resolve `scanDirs` and `setupFile`.                                                          |
+| `scanDirs`   | `string[]`              | `['src']`       | Directories scanned (recursively) for `@Controller` and `@Injectable` classes.                                    |
+| `setupFile`  | `string`                | `undefined`     | Module whose default export `(app: App) => void \| Promise<void>` runs as `createApp`'s setup hook (before init). |
+| `runner`     | `string`                | `'node-worker'` | The `env-runner` runner used to execute server code in dev.                                                       |
+| `noExternal` | `(string \| RegExp)[]` | `undefined`     | Extra dev `resolve.noExternal` patterns merged after `@vercube/*` (see below).                                    |
+
+### Dev `noExternal`
+
+In dev, Vercube keeps `@vercube/*` inside Vite's module graph so class-reference DI tokens are not loaded twice. If a dependency imports `@vercube/core` from its published `dist` while your app imports it through Vite, inject tokens such as `RequestContext` will not match.
+
+Add those packages via `noExternal`:
+
+```ts
+vercube({
+  noExternal: [/^@org\//],
+});
+```
 
 ## Setup file
 

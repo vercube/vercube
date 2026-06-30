@@ -35,6 +35,19 @@ export interface VercubePluginConfig {
    * Defaults to `node-worker`.
    */
   runner?: string;
+
+  /**
+   * Additional package patterns passed to the Vercube environment's dev
+   * `resolve.noExternal`. They are merged after the built-in `@vercube/*`
+   * defaults so class-reference DI tokens are not duplicated in the module graph.
+   *
+   * Use this for workspace packages (for example `@org/*`) that import
+   * `@vercube/core` and register Vercube DI tokens.
+   *
+   * @example
+   * vercube({ noExternal: [/^@org\//] })
+   */
+  noExternal?: (string | RegExp)[];
 }
 
 /**

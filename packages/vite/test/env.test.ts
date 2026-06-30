@@ -34,6 +34,7 @@ import {
   initEnvRunner,
   reloadEnvRunner,
   isBareSpecifier,
+  resolveDevNoExternal,
 } from '../src/env';
 import { VERCUBE_ENV } from '../src/types';
 import type { VercubePluginContext } from '../src/types';
@@ -66,6 +67,18 @@ describe('isBareSpecifier', () => {
   });
 });
 
+describe('resolveDevNoExternal', () => {
+  it('returns defaults when no extra patterns are configured', () => {
+    expect(resolveDevNoExternal()).toBe(DEV_NO_EXTERNAL);
+    expect(resolveDevNoExternal([])).toBe(DEV_NO_EXTERNAL);
+  });
+
+  it('appends plugin patterns after the built-in defaults', () => {
+    const extra = [/^@org\//, '@my-org/shared'];
+    expect(resolveDevNoExternal(extra)).toEqual([...DEV_NO_EXTERNAL, ...extra]);
+  });
+});
+
 describe('createVercubeEnvironment', () => {
   it('externalizes bare deps in build and keeps the full graph in dev', () => {
     const devEnv = createVercubeEnvironment(ctx({ dev: true }));
@@ -76,6 +89,18 @@ describe('createVercubeEnvironment', () => {
     expect(devEnv.build?.outDir).toBe('/abs/dist');
     expect(devEnv.build?.rollupOptions?.input).toEqual({ index: '/abs/node_modules/.vercube/server-entry.mjs' });
     expect(devEnv.build?.rollupOptions?.external).toBe(isBareSpecifier);
+  });
+
+  it('merges plugin noExternal patterns in dev', () => {
+    const extra = [/^@org\//];
+    const devEnv = createVercubeEnvironment(
+      ctx({
+        dev: true,
+        pluginConfig: { noExternal: extra },
+      }),
+    );
+
+    expect(devEnv.resolve).toEqual({ noExternal: [...DEV_NO_EXTERNAL, ...extra] });
   });
 
   it('registers fetchable environments and tracks their entries', async () => {

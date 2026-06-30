@@ -7,11 +7,26 @@ import type { RunnerName } from 'env-runner';
 import type { EnvironmentOptions } from 'vite';
 
 /**
- * Dev-only `resolve.noExternal` patterns. Only `@vercube/*` must stay in Vite's
- * module graph so class-reference DI tokens are not duplicated; other deps (e.g.
- * CJS-only `dotenv`) are left external and loaded via native `import()`.
+ * Default dev-only `resolve.noExternal` patterns. `@vercube/*` must stay in
+ * Vite's module graph so class-reference DI tokens are not duplicated; other
+ * deps (e.g. CJS-only `dotenv`) are left external and loaded via native
+ * `import()`.
  */
 export const DEV_NO_EXTERNAL: (string | RegExp)[] = [/^@vercube\//];
+
+/**
+ * Resolves the full dev `noExternal` list for the Vercube environment by
+ * merging {@link DEV_NO_EXTERNAL} with optional plugin patterns.
+ *
+ * @param extra - Additional patterns from {@link VercubePluginConfig.noExternal}.
+ * @returns Patterns for `resolve.noExternal` in dev.
+ */
+export function resolveDevNoExternal(extra?: (string | RegExp)[]): (string | RegExp)[] {
+  if (!extra?.length) {
+    return DEV_NO_EXTERNAL;
+  }
+  return [...DEV_NO_EXTERNAL, ...extra];
+}
 
 /**
  * The custom message event used to tell the worker which entry an environment loads.
@@ -39,7 +54,7 @@ export function createVercubeEnvironment(ctx: VercubePluginContext): Environment
     // identities. The build doesn't share a graph with anything, so bare
     // dependencies are externalized there (see rollupOptions.external) and
     // resolve to a single dist instance at runtime.
-    resolve: ctx.dev ? { noExternal: DEV_NO_EXTERNAL } : {},
+    resolve: ctx.dev ? { noExternal: resolveDevNoExternal(ctx.pluginConfig.noExternal) } : {},
     build: {
       outDir: resolve(ctx.root, 'dist'),
       emptyOutDir: false,
