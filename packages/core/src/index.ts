@@ -1,6 +1,7 @@
 // Common modules
 export * from './Common/App';
 export * from './Common/CreateApp';
+export * from './Common/ServeStatic';
 
 // Config
 export * from './Config/Config';

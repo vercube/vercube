@@ -5,6 +5,19 @@ import { defineHooks } from 'crossws';
 import { plugin } from 'crossws/server';
 import { WebsocketTypes } from '../Types/WebsocketTypes';
 import type { WSError, WSMessage, WSPeer } from '../Types/WebsocketTypes';
+import type { NodeAdapter } from 'crossws/adapters/node';
+import type { IncomingMessage } from 'node:http';
+import type { Duplex } from 'node:stream';
+
+/**
+ * A Node.js `(req, socket, head)` upgrade handler exposed on `globalThis` so
+ * environments that drive the server through a raw Node HTTP upgrade event —
+ * notably the `@vercube/vite` dev server, where the app runs inside a worker
+ * without its own listening `srvx` server — can hand WebSocket upgrades to the
+ * same `crossws` hooks. Unused in normal deployments, where `srvx` handles the
+ * upgrade natively.
+ */
+type WsUpgradeGlobal = { __vercube_ws_upgrade__?: (req: IncomingMessage, socket: Duplex, head: Buffer) => Promise<void> };
 
 /**
  * WebsocketService class responsible for dealing with Websocket connections.
@@ -28,6 +41,11 @@ export class WebsocketService {
 
   @InjectOptional(Logger)
   private readonly gLogger!: Logger | null;
+
+  /**
+   * Lazily-created `crossws` Node adapter used for raw Node HTTP upgrades (dev server).
+   */
+  private fNodeAdapter?: NodeAdapter;
 
   /**
    * Internal namespace registry
@@ -215,6 +233,16 @@ export class WebsocketService {
 
     const serverPlugin = plugin(hooks);
     this.gHttpServer.addPlugin(serverPlugin);
+
+    // Expose a Node upgrade handler for runtimes that drive the server through a
+    // raw HTTP `upgrade` event instead of a listening `srvx` server (the Vite dev
+    // server). The `crossws` Node adapter is imported lazily, so non-Node targets
+    // and normal deployments never load it. The adapter shares the same `hooks`,
+    // so peer and namespace state stays consistent with the `srvx` path.
+    (globalThis as WsUpgradeGlobal).__vercube_ws_upgrade__ = async (req, socket, head) => {
+      this.fNodeAdapter ??= (await import('crossws/adapters/node')).default({ hooks });
+      await this.fNodeAdapter.handleUpgrade(req, socket, head);
+    };
   }
 
   /**

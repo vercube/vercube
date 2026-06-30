@@ -1,0 +1,42 @@
+{
+  "name": "@vercube/scan",
+  "version": "0.0.48",
+  "description": "Source scanning and AST extraction utilities for the Vercube framework",
+  "packageManager": "pnpm@11.5.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vercube/vercube.git",
+    "directory": "packages/scan"
+  },
+  "license": "MIT",
+  "sideEffects": false,
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "exports": {
+    ".": "./dist/index.mjs",
+    "./package.json": "./package.json"
+  },
+  "types": "./dist/index.d.mts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "keywords": [
+    "vercube",
+    "scan",
+    "ast",
+    "framework"
+  ],
+  "scripts": {
+    "build": "tsdown --config ../../tsdown.config.ts --config-loader=unrun"
+  },
+  "dependencies": {
+    "oxc-parser": "0.112.0",
+    "pathe": "catalog:",
+    "tinyglobby": "0.2.15"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
