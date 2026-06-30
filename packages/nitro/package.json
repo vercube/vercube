@@ -1,8 +1,8 @@
 {
   "name": "@vercube/nitro",
-  "version": "0.0.43",
+  "version": "1.0.0-beta.2",
   "description": "Nitro module for Vercube framework",
-  "packageManager": "pnpm@10.28.2",
+  "packageManager": "pnpm@11.9.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/vercube/vercube.git",
@@ -36,11 +36,12 @@
     "@vercube/di": "workspace:*",
     "@vercube/scan": "workspace:*",
     "@vercube/storage": "workspace:*",
-    "defu": "catalog:",
     "chokidar": "5.0.0",
+    "defu": "catalog:",
     "nitro": "catalog:",
+    "oxc-parser": "0.138.0",
     "pathe": "catalog:",
-    "tinyglobby": "0.2.15"
+    "tinyglobby": "0.2.17"
   },
   "publishConfig": {
     "access": "public"

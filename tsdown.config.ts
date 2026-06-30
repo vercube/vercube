@@ -15,11 +15,13 @@ export default defineConfig({
   entry: Object.values(entries),
   fixedExtension: true,
   dts: true,
-  inlineOnly: false,
-  external: [
-    ...builtinModules,
-    ...builtinModules.map((m) => `node:${m}`),
-    ...Object.keys(packageJson?.dependencies ?? {}),
-    ...Object.keys(packageJson?.optionalDependencies ?? {}),
-  ],
+  deps: {
+    neverBundle: [
+      ...builtinModules,
+      ...builtinModules.map((m) => `node:${m}`),
+      ...Object.keys(packageJson?.dependencies ?? {}),
+      ...Object.keys(packageJson?.optionalDependencies ?? {}),
+    ],
+    onlyBundle: false,
+  },
 });

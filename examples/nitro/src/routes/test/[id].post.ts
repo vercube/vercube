@@ -1,6 +1,6 @@
 import { defineEventHandler } from 'nitro/h3';
 
-export default defineEventHandler((event) => {
+export default defineEventHandler(() => {
   return {
     message: 'Hello, world!',
   };
