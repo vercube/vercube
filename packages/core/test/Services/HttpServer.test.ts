@@ -1,3 +1,6 @@
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { Container } from '@vercube/di';
 import * as srvx from 'srvx';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -231,6 +234,26 @@ describe('HttpServer', () => {
       });
       expect(mockStaticRequestHandler.handleRequest).toHaveBeenCalledWith(request);
       expect(result).toBe(staticResponse);
+    });
+
+    it('should serve index.html for unmatched frontend navigations when SPA fallback is enabled', async () => {
+      const publicDir = join(tmpdir(), `vercube-http-spa-${Date.now()}`);
+      mkdirSync(publicDir, { recursive: true });
+      writeFileSync(join(publicDir, 'index.html'), '<html>spa</html>');
+
+      try {
+        const request = new Request('http://localhost/test');
+        mockRouter.resolve.mockReturnValue(null);
+        mockStaticRequestHandler.handleRequest.mockResolvedValue(null);
+        httpServer.enableSpaFallback(publicDir);
+
+        const result = await httpServer.handleRequest(request);
+
+        expect(result.status).toBe(200);
+        expect(await result.text()).toBe('<html>spa</html>');
+      } finally {
+        rmSync(publicDir, { recursive: true, force: true });
+      }
     });
 
     it('should throw NotFoundError when route not found and no static file', async () => {

@@ -55,17 +55,6 @@ export function generateServerEntry(ctx: VercubePluginContext): string {
   if (ctx.setupFile) {
     setupBody.push('  await __vercubeSetup__(app);');
   }
-  if (ctx.hasClient) {
-    // Only when run directly (production), serve the built frontend from
-    // `dist/public` (next to this `dist/index.mjs`). `serveStatic` runs before
-    // the app handler, so it answers `/` and assets while `/api` falls through.
-    setupBody.push(
-      '  if (import.meta.main) {',
-      "    const dir = fileURLToPath(new URL('./public', import.meta.url));",
-      '    app.container.get(HttpServer).addPlugin(serveStaticFiles(dir));',
-      '  }',
-    );
-  }
 
   if (setupBody.length > 0) {
     lines.push('const app = await createApp({ setup: async (app) => {', ...setupBody, '} });', '');
@@ -79,7 +68,20 @@ export function generateServerEntry(ctx: VercubePluginContext): string {
   // Run-directly support: `node dist/index.mjs` starts listening. In dev the
   // worker imports this module (not the entrypoint), so `import.meta.main` is
   // false and only the exported `fetch` is used.
-  lines.push('if (import.meta.main) {', '  await app.listen();', '}', '');
+  if (ctx.hasClient) {
+    lines.push(
+      'if (import.meta.main) {',
+      "  const dir = fileURLToPath(new URL('./public', import.meta.url));",
+      '  const httpServer = app.container.get(HttpServer);',
+      '  httpServer.addPlugin(serveStaticFiles(dir));',
+      '  httpServer.enableSpaFallback(dir);',
+      '  await app.listen();',
+      '}',
+      '',
+    );
+  } else {
+    lines.push('if (import.meta.main) {', '  await app.listen();', '}', '');
+  }
   lines.push('export const fetch = app.fetch.bind(app);', '');
   // WebSocket upgrades in dev: the worker forwards raw Node upgrade events here.
   // `@vercube/ws` installs the handler on `globalThis` when its plugin is used;

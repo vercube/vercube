@@ -70,7 +70,7 @@ function vercubeMain(ctx: VercubePluginContext): Plugin {
 
     configureServer: async (server) => {
       const { configureViteDevServer } = await import('./dev');
-      return configureViteDevServer(ctx, server);
+      await configureViteDevServer(ctx, server);
     },
 
     // Server code has no browser HMR boundary: when a module in the Vercube

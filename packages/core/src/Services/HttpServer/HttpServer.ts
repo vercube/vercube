@@ -1,5 +1,6 @@
 import { Container, Inject } from '@vercube/di';
 import { serve } from 'srvx';
+import { tryServeSpaIndex } from '../../Common/ServeStatic';
 import { NotFoundError } from '../../Errors/Http/NotFoundError';
 import { ErrorHandlerProvider } from '../ErrorHandler/ErrorHandlerProvider';
 import { RequestHandler } from '../Router/RequestHandler';
@@ -54,6 +55,12 @@ export class HttpServer {
   private fPlugins: ServerPlugin[] = [];
 
   /**
+   * Built frontend directory used for SPA `index.html` fallback.
+   * @private
+   */
+  private fSpaPublicDir?: string;
+
+  /**
    * Adds a plugin to the HTTP server
    *
    * @param {ServerPlugin} plugin - The plugin to add
@@ -61,6 +68,16 @@ export class HttpServer {
    */
   public addPlugin(plugin: ServerPlugin): void {
     this.fPlugins.push(plugin);
+  }
+
+  /**
+   * Enables SPA fallback to `index.html` from `publicDir` for unmatched
+   * frontend navigations after API routes and static handlers are tried.
+   *
+   * @param publicDir - Absolute path to the built frontend directory.
+   */
+  public enableSpaFallback(publicDir: string): void {
+    this.fSpaPublicDir = publicDir;
   }
 
   /**
@@ -132,9 +149,14 @@ export class HttpServer {
 
         if (response) {
           return response;
-        } else {
-          throw new NotFoundError('Route not found');
         }
+
+        const spaResponse = await tryServeSpaIndex(request, this.fSpaPublicDir);
+        if (spaResponse) {
+          return spaResponse;
+        }
+
+        throw new NotFoundError('Route not found');
       }
 
       return this.gRequestHandler.handleRequest(request, route);
