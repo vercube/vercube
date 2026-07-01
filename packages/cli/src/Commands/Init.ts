@@ -49,7 +49,7 @@ const packageManagerOptions = Object.keys(pms) as PackageManagerName[];
 })
 export class InitCommand extends BaseCommand {
   /** Target directory. Prompted interactively when omitted. */
-  @Arg({ name: 'dir', description: 'Project directory' })
+  @Arg({ name: 'dir', description: 'Project directory', required: false })
   public dir!: string;
 
   /** Overwrite existing directory without prompting. */
