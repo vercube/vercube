@@ -1,6 +1,6 @@
 {
   "name": "@vercube/vite",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "description": "Vite plugin integrating Vercube with the Vite Environment API",
   "packageManager": "pnpm@11.5.0",
   "repository": {
