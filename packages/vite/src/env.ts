@@ -156,8 +156,9 @@ export async function reloadEnvRunner(ctx: VercubePluginContext): Promise<Runner
 
 /**
  * Returns true for bare module specifiers (npm/workspace packages), which the
- * production build externalizes. Relative paths, absolute paths and virtual
- * (`\0`-prefixed) ids are bundled.
+ * production build externalizes. Relative paths, absolute paths, virtual
+ * (`\0`-prefixed) ids, Vite path aliases (`@/…`), and bundler helper runtimes
+ * are bundled.
  *
  * @param id - The import specifier to classify.
  * @returns Whether the specifier is a bare dependency.
@@ -166,6 +167,13 @@ export function isBareSpecifier(id: string): boolean {
   if (id.startsWith('\0') || id.startsWith('.') || isAbsolute(id)) {
     return false;
   }
+
+  // `@/foo` is a path alias (`@` → src), not `@scope/pkg`. `@oxc-project/*` is
+  // injected by the transform pipeline and is not a runtime dependency.
+  if (id.startsWith('@/') || id.startsWith('@oxc-project/')) {
+    return false;
+  }
+
   return true;
 }
 

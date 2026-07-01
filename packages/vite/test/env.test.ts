@@ -65,6 +65,11 @@ describe('isBareSpecifier', () => {
     expect(isBareSpecifier('/abs/entry.ts')).toBe(false);
     expect(isBareSpecifier('\0virtual:entry')).toBe(false);
   });
+
+  it('bundles Vite path aliases and transform helper runtimes', () => {
+    expect(isBareSpecifier('@/api/config/ApiContainer')).toBe(false);
+    expect(isBareSpecifier('@oxc-project/runtime/helpers/decorate')).toBe(false);
+  });
 });
 
 describe('resolveDevNoExternal', () => {
