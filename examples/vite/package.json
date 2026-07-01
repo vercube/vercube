@@ -12,7 +12,7 @@
     "@vercube/core": "workspace:*",
     "@vercube/di": "workspace:*",
     "@vercube/ws": "workspace:*",
-    "vue": "3.5.35"
+    "vue": "3.5.39"
   },
   "devDependencies": {
     "@vercube/vite": "workspace:*",

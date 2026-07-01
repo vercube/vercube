@@ -32,9 +32,9 @@
     "build": "tsdown --config ../../tsdown.config.ts --config-loader=unrun"
   },
   "dependencies": {
-    "oxc-parser": "0.112.0",
+    "oxc-parser": "0.138.0",
     "pathe": "catalog:",
-    "tinyglobby": "0.2.15"
+    "tinyglobby": "0.2.17"
   },
   "publishConfig": {
     "access": "public"
