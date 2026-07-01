@@ -37,15 +37,15 @@ export interface VercubePluginConfig {
   runner?: string;
 
   /**
-   * Additional package patterns passed to the Vercube environment's dev
-   * `resolve.noExternal`. They are merged after the built-in `@vercube/*`
-   * defaults so class-reference DI tokens are not duplicated in the module graph.
+   * Package patterns merged after the built-in `@vercube/*` defaults. In dev they
+   * are passed to `resolve.noExternal`; in production they are bundled into the
+   * server output so class-reference DI tokens are not duplicated at runtime.
    *
-   * Use this for workspace packages (for example `@org/*`) that import
-   * `@vercube/core` and register Vercube DI tokens.
+   * Use this for packages (for example `@enp/*`) that import `@vercube/core` and
+   * participate in request-scoped injection (`RequestContext`, etc.).
    *
    * @example
-   * vercube({ noExternal: [/^@org\//] })
+   * vercube({ noExternal: [/^@enp\//] })
    */
   noExternal?: (string | RegExp)[];
 }

@@ -1,3 +1,4 @@
+import { createRequire } from 'node:module';
 import { loadRunner, RunnerManager } from 'env-runner';
 import { isAbsolute, resolve } from 'pathe';
 import { devWorker } from './meta';
@@ -7,26 +8,69 @@ import type { RunnerName } from 'env-runner';
 import type { EnvironmentOptions } from 'vite';
 
 /**
- * Default dev-only `resolve.noExternal` patterns. `@vercube/*` must stay in
- * Vite's module graph so class-reference DI tokens are not duplicated; other
- * deps (e.g. CJS-only `dotenv`) are left external and loaded via native
- * `import()`.
+ * Runtime dependencies of `@vercube/*` packages. When the framework is bundled
+ * into `dist/index.mjs`, these imports surface at the bundle top level and must
+ * be bundled too — pnpm does not hoist them to the app root.
  */
-export const DEV_NO_EXTERNAL: (string | RegExp)[] = [/^@vercube\//];
+export const FRAMEWORK_RUNTIME_DEPS: (string | RegExp)[] = [
+  /^srvx/,
+  'rou3',
+  'c12',
+  'defu',
+  'pathe',
+  'evlog',
+  /^evlog\//,
+  '@standard-schema/spec',
+];
 
 /**
- * Resolves the full dev `noExternal` list for the Vercube environment by
- * merging {@link DEV_NO_EXTERNAL} with optional plugin patterns.
+ * Default `resolve.noExternal` / production bundle patterns. `@vercube/*` must stay in
+ * a single module graph so class-reference DI tokens (e.g. `RequestContext`) are not
+ * duplicated between the app, plugins, and framework.
+ */
+export const DEFAULT_NO_EXTERNAL: (string | RegExp)[] = [/^@vercube\//, ...FRAMEWORK_RUNTIME_DEPS];
+
+/** Vercube packages that must resolve to a single module id (class-reference DI tokens). */
+export const VERCUBE_PACKAGES = ['@vercube/core', '@vercube/di', '@vercube/auth', '@vercube/logger', '@vercube/schema'] as const;
+
+/**
+ * Canonical entry paths for `@vercube/*` packages from the consuming app's root.
+ * Prevents the production bundler from inlining duplicate copies when workspace
+ * links and `node_modules` paths both appear in the graph.
+ */
+export function createVercubeResolveAliases(root: string): Record<string, string> {
+  const require = createRequire(resolve(root, 'package.json'));
+  const aliases: Record<string, string> = {};
+
+  for (const name of VERCUBE_PACKAGES) {
+    try {
+      aliases[name] = require.resolve(name);
+    } catch {
+      // Optional in apps that do not depend on every package directly.
+    }
+  }
+
+  return aliases;
+}
+
+/** @deprecated Use {@link DEFAULT_NO_EXTERNAL}. */
+export const DEV_NO_EXTERNAL = DEFAULT_NO_EXTERNAL;
+
+/**
+ * Merges built-in {@link DEFAULT_NO_EXTERNAL} with optional plugin patterns.
  *
  * @param extra - Additional patterns from {@link VercubePluginConfig.noExternal}.
- * @returns Patterns for `resolve.noExternal` in dev.
+ * @returns Patterns for dev `resolve.noExternal` and production bundling.
  */
-export function resolveDevNoExternal(extra?: (string | RegExp)[]): (string | RegExp)[] {
+export function resolveNoExternalPatterns(extra?: (string | RegExp)[]): (string | RegExp)[] {
   if (!extra?.length) {
-    return DEV_NO_EXTERNAL;
+    return DEFAULT_NO_EXTERNAL;
   }
-  return [...DEV_NO_EXTERNAL, ...extra];
+  return [...DEFAULT_NO_EXTERNAL, ...extra];
 }
+
+/** @deprecated Use {@link resolveNoExternalPatterns}. */
+export const resolveDevNoExternal = resolveNoExternalPatterns;
 
 /**
  * The custom message event used to tell the worker which entry an environment loads.
@@ -44,26 +88,20 @@ export const VITE_ENV_EVENT = 'vercube:vite-env';
  * @returns The environment options for the `vercube` environment.
  */
 export function createVercubeEnvironment(ctx: VercubePluginContext): EnvironmentOptions {
+  const noExternal = resolveNoExternalPatterns(ctx.pluginConfig.noExternal);
+
   return {
     consumer: 'server',
-    // In dev, Vercube uses class references as DI tokens, so a package loaded
-    // twice (once externalized to its dist, once transformed from source) yields
-    // mismatched tokens and "Unresolved dependency" errors. Routing the entire
-    // server through Vite's module graph (`noExternal` for `@vercube/*`) guarantees every
-    // module — framework and app — is evaluated exactly once with identical token
-    // identities. The build doesn't share a graph with anything, so bare
-    // dependencies are externalized there (see rollupOptions.external) and
-    // resolve to a single dist instance at runtime.
-    resolve: ctx.dev ? { noExternal: resolveDevNoExternal(ctx.pluginConfig.noExternal) } : {},
+    // Class references are DI tokens — every module that shares a token (framework,
+    // app, plugins such as `@enp/auth`) must resolve to the same class identity.
+    // Production bundles the full server dependency graph (see createProdExternal).
+    resolve: ctx.dev ? { noExternal } : {},
     build: {
       outDir: resolve(ctx.root, 'dist'),
       emptyOutDir: false,
       copyPublicDir: false,
       rollupOptions: {
         input: { index: ctx.serverEntry },
-        // Bundle app + framework sources; keep bare dependencies external so the
-        // output imports them from node_modules at runtime (matches Vercube's
-        // existing rolldown build and avoids duplicating large deps).
         external: isBareSpecifier,
         output: { entryFileNames: '[name].mjs', chunkFileNames: '[name]-[hash].mjs', format: 'es' },
       },
@@ -175,6 +213,83 @@ export function isBareSpecifier(id: string): boolean {
   }
 
   return true;
+}
+
+/**
+ * Returns whether `id` matches any {@link resolveNoExternalPatterns} entry.
+ */
+export function matchesNoExternal(id: string, patterns: (string | RegExp)[]): boolean {
+  for (const pattern of patterns) {
+    if (typeof pattern === 'string') {
+      if (id === pattern || id.startsWith(`${pattern}/`)) {
+        return true;
+      }
+      continue;
+    }
+
+    if (pattern.test(id)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Extracts the npm package name from an absolute `node_modules` file path.
+ */
+export function extractPackageName(filePath: string): string | null {
+  const marker = 'node_modules/';
+  const idx = filePath.lastIndexOf(marker);
+  if (idx === -1) {
+    return null;
+  }
+
+  const rest = filePath.slice(idx + marker.length);
+  if (rest.startsWith('@')) {
+    const parts = rest.split('/');
+    return parts.length >= 2 ? `${parts[0]}/${parts[1]}` : null;
+  }
+
+  return rest.split('/')[0] ?? null;
+}
+
+/**
+ * True when `importer` belongs to a package matched by {@link resolveNoExternalPatterns}.
+ */
+export function isFromBundledPackage(importer: string | undefined, patterns: (string | RegExp)[]): boolean {
+  if (!importer) {
+    return false;
+  }
+
+  const packageName = extractPackageName(importer);
+  return packageName ? matchesNoExternal(packageName, patterns) : false;
+}
+
+/**
+ * Rollup `external` predicate for the production server bundle. Bundles path
+ * aliases, app sources, packages covered by {@link resolveNoExternalPatterns},
+ * and their transitive dependencies so DI class tokens are not duplicated and
+ * pnpm cannot leave nested deps (e.g. `srvx`) unresolved at runtime.
+ */
+export function createProdExternal(extra?: (string | RegExp)[]): (id: string, importer?: string) => boolean {
+  const bundlePatterns = resolveNoExternalPatterns(extra);
+
+  return (id: string, importer?: string) => {
+    if (!isBareSpecifier(id)) {
+      return false;
+    }
+
+    if (matchesNoExternal(id, bundlePatterns)) {
+      return false;
+    }
+
+    if (isFromBundledPackage(importer, bundlePatterns)) {
+      return false;
+    }
+
+    return true;
+  };
 }
 
 /**

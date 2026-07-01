@@ -79,17 +79,19 @@ node dist/index.mjs   # runs the built server
 | `scanDirs`   | `string[]`             | `['src']`       | Directories scanned (recursively) for `@Controller` and `@Injectable` classes.                                    |
 | `setupFile`  | `string`               | `undefined`     | Module whose default export `(app: App) => void \| Promise<void>` runs as `createApp`'s setup hook (before init). |
 | `runner`     | `string`               | `'node-worker'` | The `env-runner` runner used to execute server code in dev.                                                       |
-| `noExternal` | `(string \| RegExp)[]` | `undefined`     | Extra dev `resolve.noExternal` patterns merged after `@vercube/*` (see below).                                    |
+| `noExternal` | `(string \| RegExp)[]` | `undefined`     | Extra package patterns merged after `@vercube/*` for dev and production bundling (see below).                     |
 
-### Dev `noExternal`
+### `noExternal`
 
-In dev, Vercube keeps `@vercube/*` inside Vite's module graph so class-reference DI tokens are not loaded twice. If a dependency imports `@vercube/core` from its published `dist` while your app imports it through Vite, inject tokens such as `RequestContext` will not match.
+Vercube keeps `@vercube/*` in a single module graph so class-reference DI tokens are not loaded twice. If a dependency imports `@vercube/core` from its published `dist` while your app resolves a different copy (common with pnpm), inject tokens such as `RequestContext` will not match — auth middleware writes to one instance, your services read from another.
 
-Add those packages via `noExternal`:
+The same patterns apply in **dev** (`resolve.noExternal`). In **production** the server bundle keeps `@vercube/*` and plugin packages as runtime imports — only app source (`@/…`) is inlined. Use **one** `@vercube/core` version across the app and dependencies (e.g. pnpm `overrides`), otherwise class-reference DI tokens such as `RequestContext` will not match between `@enp/auth` and your services.
+
+Add packages that use Vercube DI tokens:
 
 ```ts
 vercube({
-  noExternal: [/^@org\//],
+  noExternal: [/^@enp\//],
 });
 ```
 

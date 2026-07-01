@@ -55,6 +55,15 @@ export function generateServerEntry(ctx: VercubePluginContext): string {
   if (ctx.setupFile) {
     setupBody.push('  await __vercubeSetup__(app);');
   }
+  if (ctx.hasClient) {
+    // Plugins must be registered before `app.init()` wires the srvx server.
+    setupBody.push(
+      '  if (import.meta.main) {',
+      "    const dir = fileURLToPath(new URL('./public', import.meta.url));",
+      '    app.container.get(HttpServer).addPlugin(serveStaticFiles(dir));',
+      '  }',
+    );
+  }
 
   if (setupBody.length > 0) {
     lines.push('const app = await createApp({ setup: async (app) => {', ...setupBody, '} });', '');
@@ -72,9 +81,7 @@ export function generateServerEntry(ctx: VercubePluginContext): string {
     lines.push(
       'if (import.meta.main) {',
       "  const dir = fileURLToPath(new URL('./public', import.meta.url));",
-      '  const httpServer = app.container.get(HttpServer);',
-      '  httpServer.addPlugin(serveStaticFiles(dir));',
-      '  httpServer.enableSpaFallback(dir);',
+      '  app.container.get(HttpServer).enableSpaFallback(dir);',
       '  await app.listen();',
       '}',
       '',

@@ -36,10 +36,11 @@ describe('vercube plugin', () => {
     vi.clearAllMocks();
   });
 
-  it('returns the main sub-plugin', () => {
+  it('returns main and resolve-dedupe sub-plugins', () => {
     const plugins = vercube();
-    expect(plugins).toHaveLength(1);
+    expect(plugins).toHaveLength(2);
     expect(plugins[0].name).toBe('vercube:main');
+    expect(plugins[1].name).toBe('vercube:resolve-dedupe');
   });
 
   it('configures environments on first config call and warms the runner in dev', async () => {

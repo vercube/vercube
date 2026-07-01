@@ -75,8 +75,8 @@ describe('generateServerEntry', () => {
     expect(code).toContain(`import { createApp, HttpServer, serveStaticFiles } from '@vercube/core';`);
     // static is only registered when run directly (production)
     expect(code).toContain('if (import.meta.main) {');
-    expect(code).toContain('httpServer.addPlugin(serveStaticFiles(dir));');
-    expect(code).toContain('httpServer.enableSpaFallback(dir);');
+    expect(code).toContain('app.container.get(HttpServer).addPlugin(serveStaticFiles(dir));');
+    expect(code).toContain('app.container.get(HttpServer).enableSpaFallback(dir);');
     expect(code).toContain("new URL('./public', import.meta.url)");
   });
 

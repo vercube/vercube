@@ -1,7 +1,7 @@
 import { defu } from 'defu';
 import { resolve } from 'pathe';
 import { CLIENT_OUT_DIR, createContext, setupContext } from './context';
-import { createVercubeEnvironment, initEnvRunner } from './env';
+import { createVercubeEnvironment, createVercubeResolveAliases, initEnvRunner } from './env';
 import { VERCUBE_ENV } from './types';
 import type { VercubePluginConfig, VercubePluginContext } from './types';
 import type { Plugin } from 'vite';
@@ -20,7 +20,7 @@ import type { Plugin } from 'vite';
  */
 export function vercube(pluginConfig: VercubePluginConfig = {}): Plugin[] {
   const ctx = createContext(pluginConfig);
-  return [vercubeMain(ctx)];
+  return [vercubeMain(ctx), vercubeResolveDedupe(ctx)];
 }
 
 /**
@@ -53,6 +53,9 @@ function vercubeMain(ctx: VercubePluginContext): Plugin {
       // `dist/index.mjs`) so the built server can serve it as static files.
       return {
         builder: { sharedConfigBuild: true },
+        resolve: {
+          alias: createVercubeResolveAliases(ctx.root),
+        },
         environments: {
           client: { build: { outDir: resolve(ctx.root, CLIENT_OUT_DIR) } },
           [VERCUBE_ENV]: createVercubeEnvironment(ctx),
@@ -82,6 +85,28 @@ function vercubeMain(ctx: VercubePluginContext): Plugin {
       }
       this.environment.moduleGraph.invalidateAll();
       this.environment.hot.send({ type: 'full-reload' });
+    },
+  };
+}
+
+/**
+ * Forces every `@vercube/*` import in the server environment to the same resolved
+ * entry path so class-reference DI tokens are not duplicated in production bundles.
+ */
+function vercubeResolveDedupe(ctx: VercubePluginContext): Plugin {
+  return {
+    name: 'vercube:resolve-dedupe',
+    apply: 'build',
+    resolveId: {
+      filter: { id: /^@vercube\// },
+      handler(id) {
+        if (this.environment.name !== VERCUBE_ENV) {
+          return;
+        }
+
+        const aliases = createVercubeResolveAliases(ctx.root);
+        return aliases[id] ?? null;
+      },
     },
   };
 }
