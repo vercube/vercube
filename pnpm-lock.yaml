@@ -37,8 +37,8 @@ catalogs:
       specifier: 1.1.4
       version: 1.1.4
     srvx:
-      specifier: 0.11.18
-      version: 0.11.18
+      specifier: 0.11.20
+      version: 0.11.20
     ufo:
       specifier: 1.6.4
       version: 1.6.4
@@ -335,7 +335,7 @@ importers:
         version: 2.0.3
       srvx:
         specifier: 'catalog:'
-        version: 0.11.18
+        version: 0.11.20
       std-env:
         specifier: 4.1.0
         version: 4.1.0
@@ -368,7 +368,7 @@ importers:
         version: 0.8.1
       srvx:
         specifier: 'catalog:'
-        version: 0.11.18
+        version: 0.11.20
     devDependencies:
       rolldown:
         specifier: 'catalog:'
@@ -515,7 +515,7 @@ importers:
         version: link:../di
       srvx:
         specifier: 'catalog:'
-        version: 0.11.18
+        version: 0.11.20
       ufo:
         specifier: 'catalog:'
         version: 1.6.4
@@ -562,7 +562,7 @@ importers:
         version: 0.8.1
       srvx:
         specifier: 'catalog:'
-        version: 0.11.18
+        version: 0.11.20
     devDependencies:
       vite:
         specifier: ^8.1.2
@@ -581,10 +581,10 @@ importers:
         version: link:../logger
       crossws:
         specifier: 0.4.8
-        version: 0.4.8(srvx@0.11.18)
+        version: 0.4.8(srvx@0.11.20)
       srvx:
         specifier: 'catalog:'
-        version: 0.11.18
+        version: 0.11.20
     devDependencies:
       zod:
         specifier: 'catalog:'
@@ -2607,14 +2607,6 @@ packages:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
     engines: {node: '>= 8'}
 
-  crossws@0.4.7:
-    resolution: {integrity: sha512-N+BXE5AetLJ3/glz4DYLirKApAWg+V2guueoMenvAGVvqF/IA1PAzMYqYS+UfBkdz3tDXoQIevDaaxLy1Ch/4w==}
-    peerDependencies:
-      srvx: '>=0.11.5'
-    peerDependenciesMeta:
-      srvx:
-        optional: true
-
   crossws@0.4.8:
     resolution: {integrity: sha512-ENmlSJYxDd/Z91zkabdfZMYk4zIwGEOYpTpBSx8esSOtip/VE3h1am56FAjExa9nV95k/x8PFib0TjUkLPXQJg==}
     peerDependencies:
@@ -3762,6 +3754,11 @@ packages:
 
   srvx@0.11.18:
     resolution: {integrity: sha512-7/EW5sPdC1bU7iq1tgTvCZqUQDkJdsqIVzYqBv7SuBfQQ10oWkKj4KYNOw0H4Ig26bXuUYDA7XTKxB+/HC5SRw==}
+    engines: {node: '>=20.16.0'}
+    hasBin: true
+
+  srvx@0.11.20:
+    resolution: {integrity: sha512-gdPvbwpJOJpMyBYcp39q78C4pmv/Aw5WwZKB3+/pfeUVxo3EvNXlOi1fxzoy2ECGvUeBhouXy9rBxstjQQOPog==}
     engines: {node: '>=20.16.0'}
     hasBin: true
 
@@ -6113,11 +6110,6 @@ snapshots:
       shebang-command: 2.0.0
       which: 2.0.2
 
-  crossws@0.4.7(srvx@0.11.18):
-    optionalDependencies:
-      srvx: 0.11.18
-    optional: true
-
   crossws@0.4.8(srvx@0.11.17):
     optionalDependencies:
       srvx: 0.11.17
@@ -6125,6 +6117,10 @@ snapshots:
   crossws@0.4.8(srvx@0.11.18):
     optionalDependencies:
       srvx: 0.11.18
+
+  crossws@0.4.8(srvx@0.11.20):
+    optionalDependencies:
+      srvx: 0.11.20
 
   csstype@3.2.3: {}
 
@@ -6176,17 +6172,17 @@ snapshots:
 
   env-runner@0.1.14:
     dependencies:
-      crossws: 0.4.8(srvx@0.11.17)
+      crossws: 0.4.8(srvx@0.11.18)
       exsolve: 1.1.0
       httpxy: 0.5.3
-      srvx: 0.11.17
+      srvx: 0.11.18
 
   env-runner@0.1.15:
     dependencies:
-      crossws: 0.4.8(srvx@0.11.18)
+      crossws: 0.4.8(srvx@0.11.20)
       exsolve: 1.1.0
       httpxy: 0.5.4
-      srvx: 0.11.18
+      srvx: 0.11.20
 
   environment@1.1.0: {}
 
@@ -6399,20 +6395,20 @@ snapshots:
 
   gopd@1.2.0: {}
 
-  h3@2.0.1-rc.22(crossws@0.4.7(srvx@0.11.18)):
-    dependencies:
-      rou3: 0.8.1
-      srvx: 0.11.17
-    optionalDependencies:
-      crossws: 0.4.7(srvx@0.11.18)
-    optional: true
-
   h3@2.0.1-rc.22(crossws@0.4.8(srvx@0.11.17)):
     dependencies:
       rou3: 0.8.1
-      srvx: 0.11.17
+      srvx: 0.11.18
     optionalDependencies:
       crossws: 0.4.8(srvx@0.11.17)
+
+  h3@2.0.1-rc.22(crossws@0.4.8(srvx@0.11.18)):
+    dependencies:
+      rou3: 0.8.1
+      srvx: 0.11.18
+    optionalDependencies:
+      crossws: 0.4.8(srvx@0.11.18)
+    optional: true
 
   has-flag@4.0.0: {}
 
@@ -6702,10 +6698,10 @@ snapshots:
   nitro@3.0.260311-beta(chokidar@5.0.0)(dotenv@17.4.2)(giget@3.3.0)(jiti@2.7.0)(lru-cache@11.5.1)(rollup@4.62.2)(vite@8.1.3(@types/node@26.1.0)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0)):
     dependencies:
       consola: 3.4.2
-      crossws: 0.4.7(srvx@0.11.18)
+      crossws: 0.4.8(srvx@0.11.18)
       db0: 0.3.4
       env-runner: 0.1.15
-      h3: 2.0.1-rc.22(crossws@0.4.7(srvx@0.11.18))
+      h3: 2.0.1-rc.22(crossws@0.4.8(srvx@0.11.18))
       hookable: 6.1.1
       nf3: 0.3.18
       ocache: 0.1.5
@@ -7261,6 +7257,8 @@ snapshots:
   srvx@0.11.17: {}
 
   srvx@0.11.18: {}
+
+  srvx@0.11.20: {}
 
   stack-trace@1.0.0-pre2: {}
 
