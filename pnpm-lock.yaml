@@ -364,8 +364,8 @@ importers:
         specifier: 'catalog:'
         version: 2.0.3
       rou3:
-        specifier: 0.8.1
-        version: 0.8.1
+        specifier: 0.9.0
+        version: 0.9.0
       srvx:
         specifier: 'catalog:'
         version: 0.11.20
@@ -558,8 +558,8 @@ importers:
         specifier: 'catalog:'
         version: 2.0.3
       rou3:
-        specifier: 0.8.1
-        version: 0.8.1
+        specifier: 0.9.0
+        version: 0.9.0
       srvx:
         specifier: 'catalog:'
         version: 0.11.20
@@ -3682,6 +3682,9 @@ packages:
   rou3@0.8.1:
     resolution: {integrity: sha512-ePa+XGk00/3HuCqrEnK3LxJW7I0SdNg6EFzKUJG73hMAdDcOUC/i/aSz7LSDwLrGr33kal/rqOGydzwl6U7zBA==}
 
+  rou3@0.9.0:
+    resolution: {integrity: sha512-kccB4DcJaSBDjH+ihIjTk9x6FYC8tlrdjL3up/aPZ0msR04zcncfuytynAcvjqFytRHgM3la5O6VtYmTsC/lug==}
+
   safe-buffer@5.1.2:
     resolution: {integrity: sha512-Gd2UZBJDkXlY7GbJxfsE8/nvKkUEU1G38c1siN6QP6a9PT9MmHB8GnpscSmMJSoF8LOIrt8ud/wPtojys4G6+g==}
 
@@ -6402,12 +6405,12 @@ snapshots:
     optionalDependencies:
       crossws: 0.4.8(srvx@0.11.17)
 
-  h3@2.0.1-rc.22(crossws@0.4.8(srvx@0.11.18)):
+  h3@2.0.1-rc.22(crossws@0.4.8(srvx@0.11.20)):
     dependencies:
       rou3: 0.8.1
       srvx: 0.11.18
     optionalDependencies:
-      crossws: 0.4.8(srvx@0.11.18)
+      crossws: 0.4.8(srvx@0.11.20)
     optional: true
 
   has-flag@4.0.0: {}
@@ -6698,17 +6701,17 @@ snapshots:
   nitro@3.0.260311-beta(chokidar@5.0.0)(dotenv@17.4.2)(giget@3.3.0)(jiti@2.7.0)(lru-cache@11.5.1)(rollup@4.62.2)(vite@8.1.3(@types/node@26.1.0)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0)):
     dependencies:
       consola: 3.4.2
-      crossws: 0.4.8(srvx@0.11.18)
+      crossws: 0.4.8(srvx@0.11.20)
       db0: 0.3.4
       env-runner: 0.1.15
-      h3: 2.0.1-rc.22(crossws@0.4.8(srvx@0.11.18))
+      h3: 2.0.1-rc.22(crossws@0.4.8(srvx@0.11.20))
       hookable: 6.1.1
       nf3: 0.3.18
       ocache: 0.1.5
       ofetch: 2.0.0-alpha.3
       ohash: 2.0.11
       rolldown: 1.1.4
-      srvx: 0.11.18
+      srvx: 0.11.20
       unenv: 2.0.0-rc.24
       unstorage: 2.0.0-alpha.7(chokidar@5.0.0)(db0@0.3.4)(lru-cache@11.5.1)(ofetch@2.0.0-alpha.3)
     optionalDependencies:
@@ -7175,6 +7178,8 @@ snapshots:
     optional: true
 
   rou3@0.8.1: {}
+
+  rou3@0.9.0: {}
 
   safe-buffer@5.1.2: {}
 
