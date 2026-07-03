@@ -22,8 +22,8 @@ catalogs:
       specifier: 6.1.7
       version: 6.1.7
     env-runner:
-      specifier: 0.1.15
-      version: 0.1.15
+      specifier: 0.1.16
+      version: 0.1.16
     jiti:
       specifier: 2.7.0
       version: 2.7.0
@@ -553,7 +553,7 @@ importers:
         version: 6.1.7
       env-runner:
         specifier: 'catalog:'
-        version: 0.1.15
+        version: 0.1.16
       pathe:
         specifier: 'catalog:'
         version: 2.0.3
@@ -2707,6 +2707,24 @@ packages:
 
   env-runner@0.1.15:
     resolution: {integrity: sha512-Xiu7VUW1jlwEiZSGWJ5Wuv9D4iSC2JwIB3Bb/RI+1DBSCeCrCpdAwRvsi3e52wETPUBkV61b0Ixfi593hQmQ6w==}
+    hasBin: true
+    peerDependencies:
+      '@netlify/runtime': ^4.1.23
+      '@vercel/queue': '>=0.2.0'
+      miniflare: ^4.20260515.0
+      wrangler: ^4.0.0
+    peerDependenciesMeta:
+      '@netlify/runtime':
+        optional: true
+      '@vercel/queue':
+        optional: true
+      miniflare:
+        optional: true
+      wrangler:
+        optional: true
+
+  env-runner@0.1.16:
+    resolution: {integrity: sha512-2LRJM4P2KLX6J83QZZrMqvgCDt/D5ea7wPcI3yYiy5cG/9rX5QwdwZFx0D7ktWnjdRyZxYjttGGorb5nFqb1CA==}
     hasBin: true
     peerDependencies:
       '@netlify/runtime': ^4.1.23
@@ -6104,6 +6122,14 @@ snapshots:
       srvx: 0.11.18
 
   env-runner@0.1.15:
+    dependencies:
+      crossws: 0.4.8(srvx@0.11.20)
+      exsolve: 1.1.0
+      httpxy: 0.5.4
+      srvx: 0.11.20
+    optional: true
+
+  env-runner@0.1.16:
     dependencies:
       crossws: 0.4.8(srvx@0.11.20)
       exsolve: 1.1.0

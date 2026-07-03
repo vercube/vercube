@@ -12,7 +12,7 @@ catalog:
   nitro: 3.0.260610-beta
   ufo: 1.6.4
   defu: 6.1.7
-  env-runner: 0.1.15
+  env-runner: 0.1.16
   pathe: 2.0.3
   vite: 8.1.3
   rolldown: 1.1.4
