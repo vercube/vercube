@@ -32,7 +32,7 @@
     "c12": "catalog:",
     "defu": "catalog:",
     "pathe": "catalog:",
-    "rou3": "0.8.1",
+    "rou3": "0.9.0",
     "srvx": "catalog:"
   },
   "devDependencies": {

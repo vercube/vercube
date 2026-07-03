@@ -364,8 +364,8 @@ importers:
         specifier: 'catalog:'
         version: 2.0.3
       rou3:
-        specifier: 0.8.1
-        version: 0.8.1
+        specifier: 0.9.0
+        version: 0.9.0
       srvx:
         specifier: 'catalog:'
         version: 0.11.20
@@ -558,8 +558,8 @@ importers:
         specifier: 'catalog:'
         version: 2.0.3
       rou3:
-        specifier: 0.8.1
-        version: 0.8.1
+        specifier: 0.9.0
+        version: 0.9.0
       srvx:
         specifier: 'catalog:'
         version: 0.11.20
@@ -3671,6 +3671,9 @@ packages:
 
   rou3@0.8.1:
     resolution: {integrity: sha512-ePa+XGk00/3HuCqrEnK3LxJW7I0SdNg6EFzKUJG73hMAdDcOUC/i/aSz7LSDwLrGr33kal/rqOGydzwl6U7zBA==}
+
+  rou3@0.9.0:
+    resolution: {integrity: sha512-kccB4DcJaSBDjH+ihIjTk9x6FYC8tlrdjL3up/aPZ0msR04zcncfuytynAcvjqFytRHgM3la5O6VtYmTsC/lug==}
 
   safe-buffer@5.1.2:
     resolution: {integrity: sha512-Gd2UZBJDkXlY7GbJxfsE8/nvKkUEU1G38c1siN6QP6a9PT9MmHB8GnpscSmMJSoF8LOIrt8ud/wPtojys4G6+g==}
@@ -7127,6 +7130,8 @@ snapshots:
     optional: true
 
   rou3@0.8.1: {}
+
+  rou3@0.9.0: {}
 
   safe-buffer@5.1.2: {}
 
