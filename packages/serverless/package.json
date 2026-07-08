@@ -46,7 +46,7 @@
     "ufo": "catalog:"
   },
   "devDependencies": {
-    "@azure/functions": "4.16.1",
+    "@azure/functions": "4.16.2",
     "@types/aws-lambda": "8.10.162"
   },
   "publishConfig": {
