@@ -521,8 +521,8 @@ importers:
         version: 1.6.4
     devDependencies:
       '@azure/functions':
-        specifier: 4.16.1
-        version: 4.16.1
+        specifier: 4.16.2
+        version: 4.16.2
       '@types/aws-lambda':
         specifier: 8.10.162
         version: 8.10.162
@@ -798,6 +798,10 @@ packages:
 
   '@azure/functions@4.16.1':
     resolution: {integrity: sha512-A9obwC7IBg4NAmxUfTVfYEd8Xg6Px+o85JRprS3UJZt+GYYzIOmEecnFwTe3rl+aiHDewBk/8fnIVrSjR/fNGQ==}
+    engines: {node: '>=20.0'}
+
+  '@azure/functions@4.16.2':
+    resolution: {integrity: sha512-6uq0Z7e3njy8fHpgCVIJWDtbkZz+BYXc6L8fQjisf8+hPdnauM5yZ70j9YC8xas6zvL1dFA+EfLuZcNYyuWLTg==}
     engines: {node: '>=20.0'}
 
   '@babel/code-frame@7.29.7':
@@ -4374,6 +4378,11 @@ snapshots:
   '@azure/functions-extensions-base@0.3.0': {}
 
   '@azure/functions@4.16.1':
+    dependencies:
+      '@azure/functions-extensions-base': 0.3.0
+      cookie: 0.7.2
+
+  '@azure/functions@4.16.2':
     dependencies:
       '@azure/functions-extensions-base': 0.3.0
       cookie: 0.7.2
