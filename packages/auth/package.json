@@ -2,7 +2,7 @@
   "name": "@vercube/auth",
   "version": "1.1.5",
   "description": "Auth module for Vercube framework",
-  "packageManager": "pnpm@11.10.0",
+  "packageManager": "pnpm@11.11.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/vercube/vercube.git",
