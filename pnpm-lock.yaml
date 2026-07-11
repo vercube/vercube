@@ -37,8 +37,8 @@ catalogs:
       specifier: 1.1.5
       version: 1.1.5
     srvx:
-      specifier: 0.11.21
-      version: 0.11.21
+      specifier: 0.11.22
+      version: 0.11.22
     ufo:
       specifier: 1.6.4
       version: 1.6.4
@@ -335,7 +335,7 @@ importers:
         version: 2.0.3
       srvx:
         specifier: 'catalog:'
-        version: 0.11.21
+        version: 0.11.22
       std-env:
         specifier: 4.2.0
         version: 4.2.0
@@ -368,7 +368,7 @@ importers:
         version: 0.9.1
       srvx:
         specifier: 'catalog:'
-        version: 0.11.21
+        version: 0.11.22
     devDependencies:
       rolldown:
         specifier: 'catalog:'
@@ -515,7 +515,7 @@ importers:
         version: link:../di
       srvx:
         specifier: 'catalog:'
-        version: 0.11.21
+        version: 0.11.22
       ufo:
         specifier: 'catalog:'
         version: 1.6.4
@@ -562,7 +562,7 @@ importers:
         version: 0.9.1
       srvx:
         specifier: 'catalog:'
-        version: 0.11.21
+        version: 0.11.22
     devDependencies:
       vite:
         specifier: ^8.1.2
@@ -581,10 +581,10 @@ importers:
         version: link:../logger
       crossws:
         specifier: 0.4.9
-        version: 0.4.9(srvx@0.11.21)
+        version: 0.4.9(srvx@0.11.22)
       srvx:
         specifier: 'catalog:'
-        version: 0.11.21
+        version: 0.11.22
     devDependencies:
       zod:
         specifier: 'catalog:'
@@ -3529,6 +3529,11 @@ packages:
     engines: {node: '>=20.16.0'}
     hasBin: true
 
+  srvx@0.11.22:
+    resolution: {integrity: sha512-LqZxxBDMKuMAZzFzJnDCkFOrs9MZQZr0LvHiO/SuSZVdQaXD7xQ5UWTUxheJrQPve1qk9MG2B/yttUvJxw8egQ==}
+    engines: {node: '>=20.16.0'}
+    hasBin: true
+
   stack-trace@1.0.0-pre2:
     resolution: {integrity: sha512-2ztBJRek8IVofG9DBJqdy2N5kulaacX30Nz7xmkYF6ale9WBVmIy6mFBchvGX7Vx/MyjBhx+Rcxqrj+dbOnQ6A==}
     engines: {node: '>=16'}
@@ -5647,6 +5652,10 @@ snapshots:
     optionalDependencies:
       srvx: 0.11.21
 
+  crossws@0.4.9(srvx@0.11.22):
+    optionalDependencies:
+      srvx: 0.11.22
+
   csstype@3.2.3: {}
 
   data-uri-to-buffer@4.0.1: {}
@@ -5697,10 +5706,10 @@ snapshots:
 
   env-runner@0.1.16:
     dependencies:
-      crossws: 0.4.9(srvx@0.11.21)
+      crossws: 0.4.9(srvx@0.11.22)
       exsolve: 1.1.0
       httpxy: 0.5.4
-      srvx: 0.11.21
+      srvx: 0.11.22
 
   environment@1.1.0: {}
 
@@ -6692,6 +6701,8 @@ snapshots:
   source-map-js@1.2.1: {}
 
   srvx@0.11.21: {}
+
+  srvx@0.11.22: {}
 
   stack-trace@1.0.0-pre2: {}
 
