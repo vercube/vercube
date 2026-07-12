@@ -580,8 +580,8 @@ importers:
         specifier: workspace:*
         version: link:../logger
       crossws:
-        specifier: 0.4.9
-        version: 0.4.9(srvx@0.11.22)
+        specifier: 0.4.10
+        version: 0.4.10(srvx@0.11.22)
       srvx:
         specifier: 'catalog:'
         version: 0.11.22
@@ -2453,8 +2453,8 @@ packages:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
     engines: {node: '>= 8'}
 
-  crossws@0.4.9:
-    resolution: {integrity: sha512-iWx+1OMSG2aOHpjyf9AESOzkwsVdS49cXM9dVrI2PDhxU5l2RIWE/KG56gk4BbAnsMoycvniJ9OnOxO9LRzHVA==}
+  crossws@0.4.10:
+    resolution: {integrity: sha512-pz3oubH/dt12KjqsUB0IuXW4nwRDQ583iDsP4555Cpdqx0NoU7pGlWBcayyFI8f/l/idRpgjMEfwuOxSWJYlIA==}
     peerDependencies:
       srvx: '>=0.11.5'
     peerDependenciesMeta:
@@ -5648,11 +5648,11 @@ snapshots:
       shebang-command: 2.0.0
       which: 2.0.2
 
-  crossws@0.4.9(srvx@0.11.21):
+  crossws@0.4.10(srvx@0.11.21):
     optionalDependencies:
       srvx: 0.11.21
 
-  crossws@0.4.9(srvx@0.11.22):
+  crossws@0.4.10(srvx@0.11.22):
     optionalDependencies:
       srvx: 0.11.22
 
@@ -5706,7 +5706,7 @@ snapshots:
 
   env-runner@0.1.16:
     dependencies:
-      crossws: 0.4.9(srvx@0.11.22)
+      crossws: 0.4.10(srvx@0.11.22)
       exsolve: 1.1.0
       httpxy: 0.5.4
       srvx: 0.11.22
@@ -5910,12 +5910,12 @@ snapshots:
 
   gopd@1.2.0: {}
 
-  h3@2.0.1-rc.22(crossws@0.4.9(srvx@0.11.21)):
+  h3@2.0.1-rc.22(crossws@0.4.10(srvx@0.11.21)):
     dependencies:
       rou3: 0.8.1
       srvx: 0.11.21
     optionalDependencies:
-      crossws: 0.4.9(srvx@0.11.21)
+      crossws: 0.4.10(srvx@0.11.21)
 
   has-flag@4.0.0: {}
 
@@ -6199,10 +6199,10 @@ snapshots:
   nitro@3.0.260610-beta(chokidar@5.0.0)(dotenv@17.4.2)(giget@3.3.0)(jiti@2.7.0)(lru-cache@11.5.1)(vite@8.1.4(@types/node@26.1.1)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.0)(yaml@2.9.0)):
     dependencies:
       consola: 3.4.2
-      crossws: 0.4.9(srvx@0.11.21)
+      crossws: 0.4.10(srvx@0.11.21)
       db0: 0.3.4
       env-runner: 0.1.16
-      h3: 2.0.1-rc.22(crossws@0.4.9(srvx@0.11.21))
+      h3: 2.0.1-rc.22(crossws@0.4.10(srvx@0.11.21))
       hookable: 6.1.1
       nf3: 0.3.19
       ocache: 0.1.5
