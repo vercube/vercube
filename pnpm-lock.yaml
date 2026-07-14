@@ -99,7 +99,7 @@ importers:
         specifier: 2.10.5
         version: 2.10.5
       typescript:
-        specifier: ^7.0.2
+        specifier: 7.0.2
         version: 7.0.2
       unrun:
         specifier: 0.3.1
