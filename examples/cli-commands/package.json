@@ -2,7 +2,7 @@
   "name": "@examples/cli-commands",
   "version": "1.0.0",
   "description": "Example showing how to create custom CLI commands in Vercube",
-  "packageManager": "pnpm@10.33.0",
+  "packageManager": "pnpm@11.13.0",
   "private": true,
   "type": "module",
   "scripts": {

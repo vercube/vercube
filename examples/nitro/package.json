@@ -2,7 +2,7 @@
   "name": "@examples/nitro",
   "version": "1.0.0",
   "description": "Nitro example for Vercube",
-  "packageManager": "pnpm@10.27.0",
+  "packageManager": "pnpm@11.13.0",
   "private": true,
   "type": "module",
   "scripts": {
