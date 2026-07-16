@@ -14,7 +14,7 @@ catalog:
   defu: 6.1.7
   env-runner: 0.1.16
   pathe: 2.0.3
-  vite: 8.1.4
+  vite: 8.1.5
   rolldown: 1.2.0
   srvx: 0.11.22
   zod: 4.4.3
