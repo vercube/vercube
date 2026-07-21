@@ -11,6 +11,7 @@ export const mime = {
       '.gif': 'image/gif',
       '.svg': 'image/svg+xml',
       '.ico': 'image/x-icon',
+      '.wasm': 'application/wasm',
       // Add more as needed
     };
     return types[ext] || null;
