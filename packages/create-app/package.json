@@ -1,6 +1,6 @@
 {
   "name": "create-vercube",
-  "version": "1.1.6",
+  "version": "1.1.7",
   "description": "Create a Vercube app in seconds",
   "license": "MIT",
   "type": "module",
