@@ -37,8 +37,8 @@ catalogs:
       specifier: 1.2.0
       version: 1.2.0
     srvx:
-      specifier: 0.11.22
-      version: 0.11.22
+      specifier: 0.12.4
+      version: 0.12.4
     ufo:
       specifier: 1.6.4
       version: 1.6.4
@@ -55,7 +55,7 @@ importers:
     devDependencies:
       '@codspeed/vitest-plugin':
         specifier: 5.7.1
-        version: 5.7.1(tinybench@2.9.0)(vite@7.3.6(@types/node@26.1.1)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.23.0)(yaml@2.9.0))(vitest@4.1.10)
+        version: 5.7.1(debug@4.4.3(supports-color@7.2.0))(supports-color@7.2.0)(tinybench@2.9.0)(vite@7.3.6(@types/node@26.1.1)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.23.0)(yaml@2.9.0))(vitest@4.1.10)
       '@commitlint/cli':
         specifier: 21.2.1
         version: 21.2.1(@types/node@26.1.1)(conventional-commits-parser@7.0.1)(typescript@7.0.2)
@@ -133,7 +133,7 @@ importers:
         version: 4.39.0
       serverless-offline:
         specifier: 14.7.4
-        version: 14.7.4(serverless@4.39.0)
+        version: 14.7.4(serverless@4.39.0)(supports-color@7.2.0)
 
   examples/azure-functions:
     dependencies:
@@ -157,7 +157,7 @@ importers:
         version: link:../../packages/serverless
       azure-functions-core-tools:
         specifier: ~4.12.1
-        version: 4.12.1
+        version: 4.12.1(supports-color@7.2.0)
 
   examples/base:
     dependencies:
@@ -335,7 +335,7 @@ importers:
         version: 2.0.3
       srvx:
         specifier: 'catalog:'
-        version: 0.11.22
+        version: 0.12.4
       std-env:
         specifier: 4.2.0
         version: 4.2.0
@@ -368,7 +368,7 @@ importers:
         version: 0.9.1
       srvx:
         specifier: 'catalog:'
-        version: 0.11.22
+        version: 0.12.4
     devDependencies:
       rolldown:
         specifier: 'catalog:'
@@ -515,7 +515,7 @@ importers:
         version: link:../di
       srvx:
         specifier: 'catalog:'
-        version: 0.11.22
+        version: 0.12.4
       ufo:
         specifier: 'catalog:'
         version: 1.6.4
@@ -562,7 +562,7 @@ importers:
         version: 0.9.1
       srvx:
         specifier: 'catalog:'
-        version: 0.11.22
+        version: 0.12.4
     devDependencies:
       vite:
         specifier: ^8.1.5
@@ -581,10 +581,10 @@ importers:
         version: link:../logger
       crossws:
         specifier: 0.4.10
-        version: 0.4.10(srvx@0.11.22)
+        version: 0.4.10(srvx@0.12.4)
       srvx:
         specifier: 'catalog:'
-        version: 0.11.22
+        version: 0.12.4
     devDependencies:
       zod:
         specifier: 'catalog:'
@@ -621,7 +621,7 @@ importers:
         version: 4.40.0
       serverless-offline:
         specifier: 14.7.4
-        version: 14.7.4(serverless@4.40.0)
+        version: 14.7.4(serverless@4.40.0)(supports-color@7.2.0)
       tslib:
         specifier: 2.8.1
         version: 2.8.1
@@ -3914,6 +3914,11 @@ packages:
     engines: {node: '>=20.16.0'}
     hasBin: true
 
+  srvx@0.12.4:
+    resolution: {integrity: sha512-RixzFlMn3dvzDTpKIAXhXrqL4cy6vScNCP0VVwgVbUBU94o+DiXLsFnAZetbyKAEnK6Ox3hzHXWGsyv/Iibv7g==}
+    engines: {node: '>=20.16.0'}
+    hasBin: true
+
   stack-trace@1.0.0-pre2:
     resolution: {integrity: sha512-2ztBJRek8IVofG9DBJqdy2N5kulaacX30Nz7xmkYF6ale9WBVmIy6mFBchvGX7Vx/MyjBhx+Rcxqrj+dbOnQ6A==}
     engines: {node: '>=16'}
@@ -4867,9 +4872,9 @@ snapshots:
 
   '@bcoe/v8-coverage@1.0.2': {}
 
-  '@codspeed/core@5.7.1':
+  '@codspeed/core@5.7.1(debug@4.4.3(supports-color@7.2.0))(supports-color@7.2.0)':
     dependencies:
-      axios: 1.18.1
+      axios: 1.18.1(debug@4.4.3(supports-color@7.2.0))(supports-color@7.2.0)
       find-up: 6.3.0
       form-data: 4.0.6
       node-gyp-build: 4.8.4
@@ -4878,9 +4883,9 @@ snapshots:
       - debug
       - supports-color
 
-  '@codspeed/vitest-plugin@5.7.1(tinybench@2.9.0)(vite@7.3.6(@types/node@26.1.1)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.23.0)(yaml@2.9.0))(vitest@4.1.10)':
+  '@codspeed/vitest-plugin@5.7.1(debug@4.4.3(supports-color@7.2.0))(supports-color@7.2.0)(tinybench@2.9.0)(vite@7.3.6(@types/node@26.1.1)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.23.0)(yaml@2.9.0))(vitest@4.1.10)':
     dependencies:
-      '@codspeed/core': 5.7.1
+      '@codspeed/core': 5.7.1(debug@4.4.3(supports-color@7.2.0))(supports-color@7.2.0)
       tinybench: 2.9.0
       vite: 7.3.6(@types/node@26.1.1)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.23.0)(yaml@2.9.0)
       vitest: 4.1.10(@types/node@26.1.1)(@vitest/coverage-v8@4.1.10)(@vitest/ui@4.1.10)(vite@7.3.6(@types/node@26.1.1)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.23.0)(yaml@2.9.0))
@@ -6214,9 +6219,9 @@ snapshots:
 
   '@yuku-toolchain/types@0.7.2': {}
 
-  agent-base@6.0.2:
+  agent-base@6.0.2(supports-color@7.2.0):
     dependencies:
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@7.2.0)
     transitivePeerDependencies:
       - supports-color
 
@@ -6261,21 +6266,21 @@ snapshots:
 
   asynckit@0.4.0: {}
 
-  axios@1.18.1:
+  axios@1.18.1(debug@4.4.3(supports-color@7.2.0))(supports-color@7.2.0):
     dependencies:
-      follow-redirects: 1.16.0
+      follow-redirects: 1.16.0(debug@4.4.3(supports-color@7.2.0))
       form-data: 4.0.6
-      https-proxy-agent: 5.0.1
+      https-proxy-agent: 5.0.1(supports-color@7.2.0)
       proxy-from-env: 2.1.0
     transitivePeerDependencies:
       - debug
       - supports-color
 
-  azure-functions-core-tools@4.12.1:
+  azure-functions-core-tools@4.12.1(supports-color@7.2.0):
     dependencies:
       chalk: 4.1.2
-      extract-zip: 2.0.1
-      https-proxy-agent: 9.0.0
+      extract-zip: 2.0.1(supports-color@7.2.0)
+      https-proxy-agent: 9.0.0(supports-color@7.2.0)
       progress: 2.0.3
       rimraf: 6.1.3
     transitivePeerDependencies:
@@ -6440,15 +6445,21 @@ snapshots:
     optionalDependencies:
       srvx: 0.11.22
 
+  crossws@0.4.10(srvx@0.12.4):
+    optionalDependencies:
+      srvx: 0.12.4
+
   csstype@3.2.3: {}
 
   data-uri-to-buffer@4.0.1: {}
 
   db0@0.3.4: {}
 
-  debug@4.4.3:
+  debug@4.4.3(supports-color@7.2.0):
     dependencies:
       ms: 2.1.3
+    optionalDependencies:
+      supports-color: 7.2.0
 
   defu@6.1.7: {}
 
@@ -6575,9 +6586,9 @@ snapshots:
 
   exsolve@1.1.0: {}
 
-  extract-zip@2.0.1:
+  extract-zip@2.0.1(supports-color@7.2.0):
     dependencies:
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@7.2.0)
       get-stream: 5.2.0
       yauzl: 2.10.0
     optionalDependencies:
@@ -6611,7 +6622,9 @@ snapshots:
 
   flatted@3.4.2: {}
 
-  follow-redirects@1.16.0: {}
+  follow-redirects@1.16.0(debug@4.4.3(supports-color@7.2.0)):
+    optionalDependencies:
+      debug: 4.4.3(supports-color@7.2.0)
 
   foreground-child@3.3.1:
     dependencies:
@@ -6693,7 +6706,7 @@ snapshots:
   h3@2.0.1-rc.22(crossws@0.4.10(srvx@0.11.21)):
     dependencies:
       rou3: 0.8.1
-      srvx: 0.11.21
+      srvx: 0.11.22
     optionalDependencies:
       crossws: 0.4.10(srvx@0.11.21)
 
@@ -6713,17 +6726,17 @@ snapshots:
 
   html-escaper@2.0.2: {}
 
-  https-proxy-agent@5.0.1:
+  https-proxy-agent@5.0.1(supports-color@7.2.0):
     dependencies:
-      agent-base: 6.0.2
-      debug: 4.4.3
+      agent-base: 6.0.2(supports-color@7.2.0)
+      debug: 4.4.3(supports-color@7.2.0)
     transitivePeerDependencies:
       - supports-color
 
-  https-proxy-agent@9.0.0:
+  https-proxy-agent@9.0.0(supports-color@7.2.0):
     dependencies:
       agent-base: 9.0.0
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@7.2.0)
     transitivePeerDependencies:
       - supports-color
 
@@ -7007,9 +7020,9 @@ snapshots:
       - uploadthing
       - wrangler
 
-  nock@13.5.6:
+  nock@13.5.6(supports-color@7.2.0):
     dependencies:
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@7.2.0)
       json-stringify-safe: 5.0.1
       propagate: 2.0.1
     transitivePeerDependencies:
@@ -7390,7 +7403,7 @@ snapshots:
 
   semver@7.8.5: {}
 
-  serverless-offline@14.7.4(serverless@4.39.0):
+  serverless-offline@14.7.4(serverless@4.39.0)(supports-color@7.2.0):
     dependencies:
       '@aws-sdk/client-lambda': 3.1079.0
       '@hapi/boom': 10.0.1
@@ -7409,21 +7422,21 @@ snapshots:
       jsonschema: 1.5.0
       jszip: 3.10.1
       luxon: 3.7.2
-      nock: 13.5.6
+      nock: 13.5.6(supports-color@7.2.0)
       node-fetch: 3.3.2
       node-schedule: 2.1.1
       p-memoize: 7.1.1
       serverless: 4.39.0
       tree-kill: 1.2.2
       tsx: 4.23.0
-      velocityjs: 2.1.6
+      velocityjs: 2.1.6(supports-color@7.2.0)
       ws: 8.21.0
     transitivePeerDependencies:
       - bufferutil
       - supports-color
       - utf-8-validate
 
-  serverless-offline@14.7.4(serverless@4.40.0):
+  serverless-offline@14.7.4(serverless@4.40.0)(supports-color@7.2.0):
     dependencies:
       '@aws-sdk/client-lambda': 3.1079.0
       '@hapi/boom': 10.0.1
@@ -7442,14 +7455,14 @@ snapshots:
       jsonschema: 1.5.0
       jszip: 3.10.1
       luxon: 3.7.2
-      nock: 13.5.6
+      nock: 13.5.6(supports-color@7.2.0)
       node-fetch: 3.3.2
       node-schedule: 2.1.1
       p-memoize: 7.1.1
       serverless: 4.40.0
       tree-kill: 1.2.2
       tsx: 4.23.0
-      velocityjs: 2.1.6
+      velocityjs: 2.1.6(supports-color@7.2.0)
       ws: 8.21.0
     transitivePeerDependencies:
       - bufferutil
@@ -7493,6 +7506,8 @@ snapshots:
   srvx@0.11.21: {}
 
   srvx@0.11.22: {}
+
+  srvx@0.12.4: {}
 
   stack-trace@1.0.0-pre2: {}
 
@@ -7708,9 +7723,9 @@ snapshots:
 
   util-deprecate@1.0.2: {}
 
-  velocityjs@2.1.6:
+  velocityjs@2.1.6(supports-color@7.2.0):
     dependencies:
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@7.2.0)
     transitivePeerDependencies:
       - supports-color
 
