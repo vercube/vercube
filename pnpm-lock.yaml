@@ -37,8 +37,8 @@ catalogs:
       specifier: 1.2.0
       version: 1.2.0
     srvx:
-      specifier: 0.11.22
-      version: 0.11.22
+      specifier: 0.12.4
+      version: 0.12.4
     ufo:
       specifier: 1.6.4
       version: 1.6.4
@@ -129,11 +129,11 @@ importers:
         specifier: workspace:*
         version: link:../../packages/serverless
       serverless:
-        specifier: 4.39.0
-        version: 4.39.0
+        specifier: 4.40.0
+        version: 4.40.0
       serverless-offline:
         specifier: 14.7.4
-        version: 14.7.4(serverless@4.39.0)(supports-color@7.2.0)
+        version: 14.7.4(serverless@4.40.0)(supports-color@7.2.0)
 
   examples/azure-functions:
     dependencies:
@@ -335,7 +335,7 @@ importers:
         version: 2.0.3
       srvx:
         specifier: 'catalog:'
-        version: 0.11.22
+        version: 0.12.4
       std-env:
         specifier: 4.2.0
         version: 4.2.0
@@ -368,7 +368,7 @@ importers:
         version: 0.9.1
       srvx:
         specifier: 'catalog:'
-        version: 0.11.22
+        version: 0.12.4
     devDependencies:
       rolldown:
         specifier: 'catalog:'
@@ -433,8 +433,8 @@ importers:
         specifier: workspace:*
         version: link:../di
       evlog:
-        specifier: ^2.22.1
-        version: 2.22.1(vite@8.1.5(@types/node@26.1.2)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.0)(yaml@2.9.0))
+        specifier: ^2.22.4
+        version: 2.22.4(vite@8.1.5(@types/node@26.1.2)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.0)(yaml@2.9.0))
 
   packages/nitro:
     dependencies:
@@ -515,7 +515,7 @@ importers:
         version: link:../di
       srvx:
         specifier: 'catalog:'
-        version: 0.11.22
+        version: 0.12.4
       ufo:
         specifier: 'catalog:'
         version: 1.6.4
@@ -562,7 +562,7 @@ importers:
         version: 0.9.1
       srvx:
         specifier: 'catalog:'
-        version: 0.11.22
+        version: 0.12.4
     devDependencies:
       vite:
         specifier: ^8.1.5
@@ -581,10 +581,10 @@ importers:
         version: link:../logger
       crossws:
         specifier: 0.4.10
-        version: 0.4.10(srvx@0.11.22)
+        version: 0.4.10(srvx@0.12.4)
       srvx:
         specifier: 'catalog:'
-        version: 0.11.22
+        version: 0.12.4
     devDependencies:
       zod:
         specifier: 'catalog:'
@@ -3312,8 +3312,8 @@ packages:
   estree-walker@3.0.3:
     resolution: {integrity: sha512-7RUKfXgSMMkzt6ZuXmqapOurLGPPfgj6l9uRZ7lRGolvk0y2yocc35LdcxKC5PQZdn2DMqioAQ2NoWcrTKmm6g==}
 
-  evlog@2.22.1:
-    resolution: {integrity: sha512-5IfmtCk4Mq/ZsCtykxftgWV8LkqjQu28ssEcwWpqbnqYxkolzo4iyh+my2tM8cZoTCDMnnIFp+X9tyspVE8NsA==}
+  evlog@2.22.4:
+    resolution: {integrity: sha512-u0hsh+FudUWkqqfrlWGI1CvSd2pz1iWkLWjawGcvbnLp9BHZqY1xS7BlRt21/Qq/rs60IODaei/Wbmry/q/zeg==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       '@nestjs/common': '>=11.1.28'
@@ -4157,11 +4157,6 @@ packages:
     peerDependencies:
       serverless: ^4.0.0
 
-  serverless@4.39.0:
-    resolution: {integrity: sha512-BKGwcJFbuOC3QCRf4wiKU2IT81OquxEGp69CA8cbvLz7N7gq6jZZEnrau3NcWWPMgsKJHOmqNpu9gReU9oS0aQ==}
-    engines: {node: '>=18.17.0'}
-    hasBin: true
-
   serverless@4.40.0:
     resolution: {integrity: sha512-5PePQZRgJPbyfSjrZUWL7ys7U50t69EeBhokZnAe3CPedPsFGiVcn0aJHi91dYJDluWfYMDJY5zizkBPp1XHgA==}
     engines: {node: '>=18.17.0'}
@@ -4207,6 +4202,11 @@ packages:
 
   srvx@0.11.22:
     resolution: {integrity: sha512-LqZxxBDMKuMAZzFzJnDCkFOrs9MZQZr0LvHiO/SuSZVdQaXD7xQ5UWTUxheJrQPve1qk9MG2B/yttUvJxw8egQ==}
+    engines: {node: '>=20.16.0'}
+    hasBin: true
+
+  srvx@0.12.4:
+    resolution: {integrity: sha512-RixzFlMn3dvzDTpKIAXhXrqL4cy6vScNCP0VVwgVbUBU94o+DiXLsFnAZetbyKAEnK6Ox3hzHXWGsyv/Iibv7g==}
     engines: {node: '>=20.16.0'}
     hasBin: true
 
@@ -6914,6 +6914,10 @@ snapshots:
     optionalDependencies:
       srvx: 0.11.22
 
+  crossws@0.4.10(srvx@0.12.4):
+    optionalDependencies:
+      srvx: 0.12.4
+
   csstype@3.2.3: {}
 
   data-uri-to-buffer@4.0.1: {}
@@ -7031,7 +7035,7 @@ snapshots:
     dependencies:
       '@types/estree': 1.0.9
 
-  evlog@2.22.1(vite@8.1.5(@types/node@26.1.2)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.0)(yaml@2.9.0)):
+  evlog@2.22.4(vite@8.1.5(@types/node@26.1.2)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.0)(yaml@2.9.0)):
     optionalDependencies:
       vite: 8.1.5(@types/node@26.1.2)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.0)(yaml@2.9.0)
 
@@ -7171,7 +7175,7 @@ snapshots:
   h3@2.0.1-rc.22(crossws@0.4.10(srvx@0.11.21)):
     dependencies:
       rou3: 0.8.1
-      srvx: 0.11.21
+      srvx: 0.11.22
     optionalDependencies:
       crossws: 0.4.10(srvx@0.11.21)
 
@@ -7920,39 +7924,6 @@ snapshots:
 
   semver@7.8.5: {}
 
-  serverless-offline@14.7.4(serverless@4.39.0)(supports-color@7.2.0):
-    dependencies:
-      '@aws-sdk/client-lambda': 3.1079.0
-      '@hapi/boom': 10.0.1
-      '@hapi/h2o2': 10.0.4
-      '@hapi/hapi': 21.4.9
-      array-unflat-js: 0.1.3
-      boxen: 7.1.1
-      chalk: 5.6.2
-      desm: 1.3.1
-      execa: 8.0.1
-      is-wsl: 3.1.1
-      java-invoke-local: 0.0.6
-      jose: 5.10.0
-      js-string-escape: 1.0.1
-      jsonpath-plus: 10.4.0
-      jsonschema: 1.5.0
-      jszip: 3.10.1
-      luxon: 3.7.2
-      nock: 13.5.6(supports-color@7.2.0)
-      node-fetch: 3.3.2
-      node-schedule: 2.1.1
-      p-memoize: 7.1.1
-      serverless: 4.39.0
-      tree-kill: 1.2.2
-      tsx: 4.23.0
-      velocityjs: 2.1.6(supports-color@7.2.0)
-      ws: 8.21.0
-    transitivePeerDependencies:
-      - bufferutil
-      - supports-color
-      - utf-8-validate
-
   serverless-offline@14.7.4(serverless@4.40.0)(supports-color@7.2.0):
     dependencies:
       '@aws-sdk/client-lambda': 3.1079.0
@@ -7986,11 +7957,6 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  serverless@4.39.0:
-    dependencies:
-      rimraf: 5.0.10
-      undici: 6.27.0
-
   serverless@4.40.0:
     dependencies:
       rimraf: 5.0.10
@@ -8023,6 +7989,8 @@ snapshots:
   srvx@0.11.21: {}
 
   srvx@0.11.22: {}
+
+  srvx@0.12.4: {}
 
   stack-trace@1.0.0-pre2: {}
 

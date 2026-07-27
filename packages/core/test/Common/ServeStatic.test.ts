@@ -3,10 +3,10 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-const serveStatic = vi.hoisted(() => vi.fn(() => 'static-middleware'));
+const staticMiddleware = vi.hoisted(() => vi.fn(() => 'static-middleware'));
 
 vi.mock('srvx/static', () => ({
-  serveStatic,
+  staticMiddleware,
 }));
 
 import { serveStaticFiles, withSpaFallback } from '../../src/Common/ServeStatic';
@@ -16,7 +16,7 @@ describe('serveStaticFiles', () => {
     const server = { options: {} as { middleware?: unknown[] } };
     serveStaticFiles('/abs/public')(server as any);
 
-    expect(serveStatic).toHaveBeenCalledWith({ dir: '/abs/public' });
+    expect(staticMiddleware).toHaveBeenCalledWith({ dir: '/abs/public' });
     expect(server.options.middleware).toEqual(['static-middleware']);
   });
 

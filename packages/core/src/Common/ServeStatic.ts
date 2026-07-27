@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { extname, join, resolve } from 'node:path';
-import { serveStatic } from 'srvx/static';
+import { staticMiddleware } from 'srvx/static';
 import type { ServerPlugin } from 'srvx';
 
 /**
@@ -17,7 +17,7 @@ import type { ServerPlugin } from 'srvx';
 export function serveStaticFiles(dir: string): ServerPlugin {
   return (server) => {
     server.options.middleware ??= [];
-    server.options.middleware.push(serveStatic({ dir }));
+    server.options.middleware.push(staticMiddleware({ dir }));
   };
 }
 
