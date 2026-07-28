@@ -356,8 +356,8 @@ importers:
         specifier: 'catalog:'
         version: 2.7.0
       nypm:
-        specifier: 0.6.8
-        version: 0.6.8
+        specifier: 0.6.9
+        version: 0.6.9
       pathe:
         specifier: 'catalog:'
         version: 2.0.3
@@ -3928,8 +3928,8 @@ packages:
     resolution: {integrity: sha512-ppwTtiJZq0O/ai0z7yfudtBpWIoxM8yE6nHi1X47eFR2EWORqfbu6CnPlNsjeN683eT0qG6H/Pyf9fCcvjnnnQ==}
     engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
 
-  nypm@0.6.8:
-    resolution: {integrity: sha512-Q9K4Diu6l5u6xJQogeFSs/zKtyMSgFKFtRQV+tHP4kL7KPm2grpBU0dFIwFaXwNxN0MtfKWc43VpCugAa+LPsw==}
+  nypm@0.6.9:
+    resolution: {integrity: sha512-zxlE2yvSWZWmHcNdT3+5zV2lrCogeE9YOklHrR3dFjqutq5wO7GFDYLFDRXLsYnJzwvy/im9fYoxePvS0VTW0w==}
     engines: {node: '>=18'}
     hasBin: true
 
@@ -7552,7 +7552,7 @@ snapshots:
     dependencies:
       path-key: 4.0.0
 
-  nypm@0.6.8:
+  nypm@0.6.9:
     dependencies:
       citty: 0.2.2
       pathe: 2.0.3
