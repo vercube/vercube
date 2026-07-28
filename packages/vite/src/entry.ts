@@ -46,7 +46,7 @@ export function generateServerEntry(ctx: VercubePluginContext): string {
 
   lines.push(...imports.values(), '');
 
-  // The setup hook runs before the app initializes — early enough to register
+  // The setup hook runs before the app initializes - early enough to register
   // plugins (`app.addPlugin`), mount storage, or bind interface→implementation
   // tokens that auto-discovery can't infer. It also wires the production static
   // server (see below). Auto-discovered controllers/services are bound

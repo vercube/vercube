@@ -1,0 +1,41 @@
+{
+  "name": "@vercube/cache",
+  "version": "1.1.7",
+  "description": "Cache module for Vercube framework",
+  "packageManager": "pnpm@11.17.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vercube/vercube.git",
+    "directory": "packages/cache"
+  },
+  "license": "MIT",
+  "sideEffects": false,
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "exports": {
+    ".": "./dist/index.mjs",
+    "./package.json": "./package.json"
+  },
+  "types": "./dist/index.d.mts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsdown --config ../../tsdown.config.ts --config-loader=unrun"
+  },
+  "devDependencies": {
+    "@vercube/core": "workspace:*"
+  },
+  "dependencies": {
+    "@vercube/di": "workspace:*",
+    "@vercube/logger": "workspace:*",
+    "@vercube/storage": "workspace:*",
+    "ocache": "catalog:",
+    "ohash": "catalog:"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -11,9 +11,9 @@ import type { Duplex } from 'node:stream';
 
 /**
  * A Node.js `(req, socket, head)` upgrade handler exposed on `globalThis` so
- * environments that drive the server through a raw Node HTTP upgrade event —
+ * environments that drive the server through a raw Node HTTP upgrade event -
  * notably the `@vercube/vite` dev server, where the app runs inside a worker
- * without its own listening `srvx` server — can hand WebSocket upgrades to the
+ * without its own listening `srvx` server - can hand WebSocket upgrades to the
  * same `crossws` hooks. Unused in normal deployments, where `srvx` handles the
  * upgrade natively.
  */

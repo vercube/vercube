@@ -125,7 +125,7 @@ export interface ScanSourceOptions {
  * once.
  *
  * Unlike {@link scanProject}, this does not assume the Nitro convention of
- * dedicated `api`/`routes`/`services` subdirectories — decorated classes are
+ * dedicated `api`/`routes`/`services` subdirectories - decorated classes are
  * discovered wherever they live in the tree, which matches how Vercube apps are
  * typically organised. **Every** `@Controller` class is returned for binding
  * (not just those with HTTP routes), so WebSocket-only controllers are bound
