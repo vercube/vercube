@@ -10,7 +10,7 @@ import type { EnvironmentOptions } from 'vite';
 /**
  * Runtime dependencies of `@vercube/*` packages. When the framework is bundled
  * into `dist/index.mjs`, these imports surface at the bundle top level and must
- * be bundled too — pnpm does not hoist them to the app root.
+ * be bundled too - pnpm does not hoist them to the app root.
  */
 export const FRAMEWORK_RUNTIME_DEPS: (string | RegExp)[] = [
   /^srvx/,
@@ -92,7 +92,7 @@ export function createVercubeEnvironment(ctx: VercubePluginContext): Environment
 
   return {
     consumer: 'server',
-    // Class references are DI tokens — every module that shares a token (framework,
+    // Class references are DI tokens - every module that shares a token (framework,
     // app, plugins such as `@enp/auth`) must resolve to the same class identity.
     // Production bundles the full server dependency graph (see createProdExternal).
     resolve: ctx.dev ? { noExternal } : {},

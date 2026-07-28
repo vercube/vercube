@@ -83,9 +83,9 @@ node dist/index.mjs   # runs the built server
 
 ### `noExternal`
 
-Vercube keeps `@vercube/*` in a single module graph so class-reference DI tokens are not loaded twice. If a dependency imports `@vercube/core` from its published `dist` while your app resolves a different copy (common with pnpm), inject tokens such as `RequestContext` will not match — auth middleware writes to one instance, your services read from another.
+Vercube keeps `@vercube/*` in a single module graph so class-reference DI tokens are not loaded twice. If a dependency imports `@vercube/core` from its published `dist` while your app resolves a different copy (common with pnpm), inject tokens such as `RequestContext` will not match - auth middleware writes to one instance, your services read from another.
 
-The same patterns apply in **dev** (`resolve.noExternal`). In **production** the server bundle keeps `@vercube/*` and plugin packages as runtime imports — only app source (`@/…`) is inlined. Use **one** `@vercube/core` version across the app and dependencies (e.g. pnpm `overrides`), otherwise class-reference DI tokens such as `RequestContext` will not match between `@enp/auth` and your services.
+The same patterns apply in **dev** (`resolve.noExternal`). In **production** the server bundle keeps `@vercube/*` and plugin packages as runtime imports - only app source (`@/…`) is inlined. Use **one** `@vercube/core` version across the app and dependencies (e.g. pnpm `overrides`), otherwise class-reference DI tokens such as `RequestContext` will not match between `@enp/auth` and your services.
 
 Add packages that use Vercube DI tokens:
 

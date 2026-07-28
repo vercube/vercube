@@ -105,7 +105,7 @@ export function extractRoutes(code: string): RouteInfo[] {
  * regardless of whether it declares HTTP method routes.
  *
  * Unlike {@link extractRoutes} (which emits one entry per HTTP route method),
- * this returns one entry per controller class — so controllers that only carry
+ * this returns one entry per controller class - so controllers that only carry
  * non-HTTP handlers (e.g. WebSocket `@Message` methods) are still discovered for
  * binding into the DI container.
  *

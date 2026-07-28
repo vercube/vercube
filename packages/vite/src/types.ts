@@ -24,7 +24,7 @@ export interface VercubePluginConfig {
   /**
    * Path (relative to `rootDir`) to a module whose default export is
    * `(app: App) => void | Promise<void>`. Runs after auto-discovered classes are
-   * bound but before the container queue is flushed — use it to mount storage,
+   * bound but before the container queue is flushed - use it to mount storage,
    * bind tokens, configure the logger, or register plugins that auto-discovery
    * cannot infer.
    */

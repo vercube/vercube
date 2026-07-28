@@ -30,6 +30,12 @@ catalogs:
     nitro:
       specifier: 3.0.260610-beta
       version: 3.0.260610-beta
+    ocache:
+      specifier: 0.2.0
+      version: 0.2.0
+    ohash:
+      specifier: 2.0.11
+      version: 2.0.11
     pathe:
       specifier: 2.0.3
       version: 2.0.3
@@ -297,6 +303,28 @@ importers:
       '@vercube/logger':
         specifier: workspace:*
         version: link:../logger
+
+  packages/cache:
+    dependencies:
+      '@vercube/di':
+        specifier: workspace:*
+        version: link:../di
+      '@vercube/logger':
+        specifier: workspace:*
+        version: link:../logger
+      '@vercube/storage':
+        specifier: workspace:*
+        version: link:../storage
+      ocache:
+        specifier: 'catalog:'
+        version: 0.2.0
+      ohash:
+        specifier: 'catalog:'
+        version: 2.0.11
+    devDependencies:
+      '@vercube/core':
+        specifier: workspace:*
+        version: link:../core
 
   packages/cli:
     dependencies:
@@ -3916,6 +3944,9 @@ packages:
   ocache@0.1.5:
     resolution: {integrity: sha512-kNNnkkVQup/QDvmTz8Q84wc2ntiyoVHDxa6eHWKt5qdGAmFRBIxy83rxgCYEjW0x06UJ9E3P6VgM2yY4rOBH4w==}
 
+  ocache@0.2.0:
+    resolution: {integrity: sha512-QE+SxXf/A8yR01rEOg2X5KwUe+mARHo1xQXl+iwLMzLIH06S5lBOZhhHQWp7T5etfFa8nOnRhvjGuo9YBCWwig==}
+
   ofetch@2.0.0-alpha.3:
     resolution: {integrity: sha512-zpYTCs2byOuft65vI3z43Dd6iSdFbOZZLb9/d21aCpx2rGastVU9dOCv0lu4ykc1Ur1anAYjDi3SUvR0vq50JA==}
 
@@ -7532,6 +7563,10 @@ snapshots:
   obug@2.1.4: {}
 
   ocache@0.1.5:
+    dependencies:
+      ohash: 2.0.11
+
+  ocache@0.2.0:
     dependencies:
       ohash: 2.0.11
 
