@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 import { BaseDecorator, createDecorator } from '@vercube/di';
-import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
+import { initializeMetadata, initializeMetadataMethod, setMetadataArg } from '../../Utils/Utils';
 import type { MetadataTypes } from '../../Types/MetadataTypes';
 
 /**
@@ -23,7 +23,7 @@ class HeadersDecorator extends BaseDecorator<{}, MetadataTypes.Metadata> {
     initializeMetadata(this.prototype);
     const method = initializeMetadataMethod(this.prototype, this.propertyName);
 
-    method.args.push({
+    setMetadataArg(method, {
       idx: this.propertyIndex,
       type: 'headers',
     });

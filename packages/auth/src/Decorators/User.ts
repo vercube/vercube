@@ -1,4 +1,4 @@
-import { initializeMetadata, initializeMetadataMethod } from '@vercube/core';
+import { initializeMetadata, initializeMetadataMethod, setMetadataArg } from '@vercube/core';
 import { BaseDecorator, Container, createDecorator, Inject } from '@vercube/di';
 import { AuthProvider } from '../Services/AuthProvider';
 import type { RouterTypes } from '@vercube/core';
@@ -36,7 +36,7 @@ class UserDecorator extends BaseDecorator<UserDecoratorOptions> {
     const method = initializeMetadataMethod(this.prototype, this.propertyName);
 
     // add parameter to metadata
-    method.args.push({
+    setMetadataArg(method, {
       idx: this.propertyIndex,
       type: 'custom',
       resolver: async (event: RouterTypes.RouterEvent) => {

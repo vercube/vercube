@@ -38,7 +38,7 @@ class GetDecorator extends BaseDecorator<GetDecoratorOptions> {
     const method = initializeMetadataMethod(this.prototype, this.propertyName);
     method.method = 'GET';
 
-    this.options.path = this.gMetadataResolver.resolveUrl({
+    const path = this.gMetadataResolver.resolveUrl({
       instance: this.instance,
       path: this.options.path,
       propertyName: this.propertyName,
@@ -48,7 +48,7 @@ class GetDecorator extends BaseDecorator<GetDecoratorOptions> {
 
     for (const method of methods) {
       this.gRouter.addRoute({
-        path: this.options.path,
+        path,
         method,
         handler: this.gRequestHandler.prepareHandler({
           instance: this.instance,

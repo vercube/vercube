@@ -38,14 +38,14 @@ class PostDecorator extends BaseDecorator<PostDecoratorOptions> {
     const method = initializeMetadataMethod(this.prototype, this.propertyName);
     method.method = 'POST';
 
-    this.options.path = this.gMetadataResolver.resolveUrl({
+    const path = this.gMetadataResolver.resolveUrl({
       instance: this.instance,
       path: this.options.path,
       propertyName: this.propertyName,
     });
 
     this.gRouter.addRoute({
-      path: this.options.path,
+      path,
       method: 'POST',
       handler: this.gRequestHandler.prepareHandler({
         instance: this.instance,

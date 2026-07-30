@@ -18,6 +18,7 @@
   "dependencies": {
     "@vercube/auth": "workspace:*",
     "@vercube/core": "workspace:*",
+    "@vercube/devtools": "workspace:*",
     "@vercube/di": "workspace:*",
     "@vercube/logger": "workspace:*",
     "@vercube/schema": "workspace:*",

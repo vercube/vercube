@@ -9,6 +9,14 @@ import { StaticRequestHandler } from '../Router/StaticRequestHandler';
 import type { ConfigTypes } from '../../Types/ConfigTypes';
 import type { Server, ServerPlugin } from 'srvx';
 
+/** Platforms where Node.js can bind with `SO_REUSEPORT` (macOS/Windows throw `ENOTSUP`). */
+const REUSE_PORT_PLATFORMS: ReadonlySet<string> = new Set(['linux', 'freebsd', 'sunos', 'aix']);
+
+function isReusePortSupported(): boolean {
+  const platform = (globalThis as { process?: { platform?: string } }).process?.platform;
+  return platform !== undefined && REUSE_PORT_PLATFORMS.has(platform);
+}
+
 /**
  * HTTP server implementation for handling incoming web requests
  *
@@ -86,7 +94,7 @@ export class HttpServer {
    * @returns {Promise<void>} A promise that resolves when the server is ready
    */
   public async initialize(config: ConfigTypes.Config): Promise<void> {
-    const { port, host } = config.server ?? {};
+    const { port, host, reusePort } = config.server ?? {};
 
     this.fServer = serve({
       bun: {
@@ -100,7 +108,7 @@ export class HttpServer {
         },
       },
       hostname: host,
-      reusePort: true,
+      reusePort: reusePort ?? isReusePortSupported(),
       port,
       fetch: this.handleRequest.bind(this),
       plugins: this.fPlugins,

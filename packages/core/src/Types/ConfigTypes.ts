@@ -114,6 +114,12 @@ export namespace ConfigTypes {
     port?: number;
 
     /**
+     * Enable `SO_REUSEPORT`. Defaults to true on Linux/FreeBSD/Solaris/AIX;
+     * false elsewhere (forced true on macOS/Windows fails with `ENOTSUP`).
+     */
+    reusePort?: boolean;
+
+    /**
      * HTTPS configuration options.
      */
     https?:

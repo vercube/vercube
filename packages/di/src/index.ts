@@ -10,6 +10,10 @@ export * from './Decorators/Injectable';
 
 // Domain
 export * from './Domain/Container';
+export * from './Domain/ContainerEvents';
+export * from './Domain/DevtoolsHook';
+export { IOCEngine } from './Domain/Engine';
+export type { IClassDep, IClassMapEntry } from './Domain/Engine';
 
 // Types
 export * from './Types/IOCTypes';

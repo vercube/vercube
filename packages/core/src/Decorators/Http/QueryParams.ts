@@ -1,6 +1,6 @@
 import { BaseDecorator, createDecorator } from '@vercube/di';
 import { ValidationMiddleware } from '../../Middleware/ValidationMiddleware';
-import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
+import { addMetadataMiddleware, initializeMetadata, initializeMetadataMethod, setMetadataArg } from '../../Utils/Utils';
 import type { MetadataTypes } from '../../Types/MetadataTypes';
 import type { ValidationTypes } from '../../Types/ValidationTypes';
 
@@ -29,7 +29,7 @@ class QueryParamsDecorator extends BaseDecorator<QueryParamsDecoratorOptions, Me
     const method = initializeMetadataMethod(this.prototype, this.propertyName);
 
     // add body to metadata
-    method.args.push({
+    setMetadataArg(method, {
       idx: this.propertyIndex,
       type: 'query-params',
       data: {},
@@ -38,12 +38,16 @@ class QueryParamsDecorator extends BaseDecorator<QueryParamsDecoratorOptions, Me
     });
 
     // add query parameter to metadata
-    meta.__middlewares.unshift({
-      target: this.propertyName,
-      priority: -1,
-      args: {},
-      middleware: ValidationMiddleware,
-    });
+    addMetadataMiddleware(
+      meta,
+      {
+        target: this.propertyName,
+        priority: -1,
+        args: {},
+        middleware: ValidationMiddleware,
+      },
+      'first',
+    );
   }
 }
 

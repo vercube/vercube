@@ -9,6 +9,7 @@
     "node_modules/**/*",
     ".github",
     "*.json", // json files are not supported by oxfmt yet
+    "packages/devtools/src/Generated/**/*", // emitted by the devtools UI build
   ],
 
   // Roles

@@ -27,6 +27,19 @@ export class Router {
   private fRouterContext!: RouterContext<RouterTypes.RouterHandler>;
 
   /**
+   * Flat list of registered routes (rou3 cannot be enumerated).
+   * @private
+   */
+  private fRoutes: RouterTypes.Route[] = [];
+
+  /**
+   * All routes registered in this router, in registration order.
+   */
+  public get routes(): readonly RouterTypes.Route[] {
+    return this.fRoutes;
+  }
+
+  /**
    * Registers a new route in the router
    *
    * @param {RouterTypes.Route} route - The route configuration to add
@@ -38,6 +51,7 @@ export class Router {
     }
 
     addRoute(this.fRouterContext, route.method.toUpperCase(), route.path, route.handler);
+    this.fRoutes.push(route);
   }
 
   /**
@@ -51,6 +65,7 @@ export class Router {
     this.gHooksService.trigger(RouterBeforeInitHook);
 
     this.fRouterContext = createRouter<RouterTypes.RouterHandler>();
+    this.fRoutes = [];
 
     // trigger after init hook
     this.gHooksService.trigger(RouterAfterInitHook);
