@@ -34,7 +34,7 @@
     "@commitlint/cli": "21.2.1",
     "@commitlint/config-conventional": "21.2.0",
     "@oxc-project/runtime": "catalog:",
-    "@types/node": "26.1.2",
+    "@types/node": "26.2.0",
     "@vitest/coverage-v8": "4.1.10",
     "@vitest/ui": "4.1.10",
     "bumpp": "12.2.0",
@@ -44,7 +44,7 @@
     "simple-git-hooks": "2.13.1",
     "tsdown": "0.22.14",
     "tslib": "2.8.1",
-    "turbo": "2.10.8",
+    "turbo": "2.10.9",
     "typescript": "7.0.2",
     "unrun": "0.3.1",
     "vitest": "4.1.10"
