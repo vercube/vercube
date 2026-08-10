@@ -95,8 +95,9 @@ export class HttpServer {
         },
       },
       deno: {
-        onError: (error: Error) => {
-          return this.gContainer.get(ErrorHandlerProvider).handleError(error);
+        onError: (error: unknown) => {
+          const _error = error instanceof Error ? error : new Error(String(error));
+          return this.gContainer.get(ErrorHandlerProvider).handleError(_error);
         },
       },
       hostname: host,
