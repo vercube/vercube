@@ -2,7 +2,7 @@
   "name": "@vercube/vite",
   "version": "1.1.7",
   "description": "Vite plugin integrating Vercube with the Vite Environment API",
-  "packageManager": "pnpm@11.17.0",
+  "packageManager": "pnpm@11.22.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/vercube/vercube.git",
@@ -39,14 +39,14 @@
     "defu": "catalog:",
     "env-runner": "catalog:",
     "pathe": "catalog:",
-    "rou3": "0.9.1",
+    "rou3": "0.9.2",
     "srvx": "catalog:"
   },
   "peerDependencies": {
     "vite": "^8.0.0"
   },
   "devDependencies": {
-    "vite": "^8.1.5"
+    "vite": "^8.2.1"
   },
   "publishConfig": {
     "access": "public"

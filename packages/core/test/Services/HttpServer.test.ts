@@ -29,7 +29,7 @@ const config: ConfigTypes.Config = {
   },
 };
 
-const defaultReusePort = ['linux', 'freebsd', 'sunos', 'aix'].includes(process.platform);
+const defaultReusePort = process.platform === 'linux';
 
 describe('HttpServer', () => {
   let httpServer: HttpServer;
@@ -50,7 +50,7 @@ describe('HttpServer', () => {
       handleRequest: vi.fn(),
     };
     mockRouter = {
-      resolve: vi.fn(),
+      match: vi.fn(),
     };
     mockErrorHandler = {
       handleError: vi.fn(),
@@ -227,15 +227,12 @@ describe('HttpServer', () => {
       const mockRoute = { path: '/test', method: 'GET' };
       const expectedResponse = new Response('OK');
 
-      mockRouter.resolve.mockReturnValue(mockRoute);
+      mockRouter.match.mockReturnValue(mockRoute);
       mockRequestHandler.handleRequest.mockResolvedValue(expectedResponse);
 
       const result = await httpServer.handleRequest(request);
 
-      expect(mockRouter.resolve).toHaveBeenCalledWith({
-        path: new URL(request.url).pathname,
-        method: request.method,
-      });
+      expect(mockRouter.match).toHaveBeenCalledWith(request.method, new URL(request.url).pathname);
       expect(mockRequestHandler.handleRequest).toHaveBeenCalledWith(request, mockRoute);
       expect(result).toBe(expectedResponse);
     });
@@ -244,15 +241,12 @@ describe('HttpServer', () => {
       const request = new Request('http://localhost/static/file.js');
       const staticResponse = new Response('static content');
 
-      mockRouter.resolve.mockReturnValue(null);
+      mockRouter.match.mockReturnValue(null);
       mockStaticRequestHandler.handleRequest.mockResolvedValue(staticResponse);
 
       const result = await httpServer.handleRequest(request);
 
-      expect(mockRouter.resolve).toHaveBeenCalledWith({
-        path: new URL(request.url).pathname,
-        method: request.method,
-      });
+      expect(mockRouter.match).toHaveBeenCalledWith(request.method, new URL(request.url).pathname);
       expect(mockStaticRequestHandler.handleRequest).toHaveBeenCalledWith(request);
       expect(result).toBe(staticResponse);
     });
@@ -264,7 +258,7 @@ describe('HttpServer', () => {
 
       try {
         const request = new Request('http://localhost/test');
-        mockRouter.resolve.mockReturnValue(null);
+        mockRouter.match.mockReturnValue(null);
         mockStaticRequestHandler.handleRequest.mockResolvedValue(null);
         httpServer.enableSpaFallback(publicDir);
 
@@ -281,16 +275,13 @@ describe('HttpServer', () => {
       const request = new Request('http://localhost/not-found');
       const errorResponse = new Response('Not Found', { status: 404 });
 
-      mockRouter.resolve.mockReturnValue(null);
+      mockRouter.match.mockReturnValue(null);
       mockStaticRequestHandler.handleRequest.mockResolvedValue(null);
       mockErrorHandler.handleError.mockReturnValue(errorResponse);
 
       const result = await httpServer.handleRequest(request);
 
-      expect(mockRouter.resolve).toHaveBeenCalledWith({
-        path: new URL(request.url).pathname,
-        method: request.method,
-      });
+      expect(mockRouter.match).toHaveBeenCalledWith(request.method, new URL(request.url).pathname);
       expect(mockStaticRequestHandler.handleRequest).toHaveBeenCalledWith(request);
       expect(mockErrorHandler.handleError).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -309,16 +300,13 @@ describe('HttpServer', () => {
         status: 500,
       });
 
-      mockRouter.resolve.mockReturnValue(null);
+      mockRouter.match.mockReturnValue(null);
       mockStaticRequestHandler.handleRequest.mockRejectedValue(staticError);
       mockErrorHandler.handleError.mockReturnValue(errorResponse);
 
       const result = await httpServer.handleRequest(request);
 
-      expect(mockRouter.resolve).toHaveBeenCalledWith({
-        path: new URL(request.url).pathname,
-        method: request.method,
-      });
+      expect(mockRouter.match).toHaveBeenCalledWith(request.method, new URL(request.url).pathname);
       expect(mockStaticRequestHandler.handleRequest).toHaveBeenCalledWith(request);
       expect(mockErrorHandler.handleError).toHaveBeenCalledWith(staticError);
       expect(result).toBe(errorResponse);
@@ -330,15 +318,12 @@ describe('HttpServer', () => {
       });
       const preflightResponse = new Response(null, { status: 204 });
 
-      mockRouter.resolve.mockReturnValue(null);
+      mockRouter.match.mockReturnValue(null);
       mockRequestHandler.handlePreflight = vi.fn().mockResolvedValue(preflightResponse);
 
       const result = await httpServer.handleRequest(preflightRequest);
 
-      expect(mockRouter.resolve).toHaveBeenCalledWith({
-        path: new URL(preflightRequest.url).pathname,
-        method: preflightRequest.method,
-      });
+      expect(mockRouter.match).toHaveBeenCalledWith(preflightRequest.method, new URL(preflightRequest.url).pathname);
       expect(mockRequestHandler.handlePreflight).toHaveBeenCalledWith(preflightRequest);
       expect(result).toBe(preflightResponse);
     });
@@ -350,16 +335,13 @@ describe('HttpServer', () => {
       const mockRoute = { path: '/test', method: 'OPTIONS' };
       const expectedResponse = new Response('OK');
 
-      mockRouter.resolve.mockReturnValue(mockRoute);
+      mockRouter.match.mockReturnValue(mockRoute);
       mockRequestHandler.handleRequest.mockResolvedValue(expectedResponse);
       mockErrorHandler.handlePreflight = vi.fn();
 
       const result = await httpServer.handleRequest(optionsRequest);
 
-      expect(mockRouter.resolve).toHaveBeenCalledWith({
-        path: new URL(optionsRequest.url).pathname,
-        method: optionsRequest.method,
-      });
+      expect(mockRouter.match).toHaveBeenCalledWith(optionsRequest.method, new URL(optionsRequest.url).pathname);
       expect(mockRequestHandler.handleRequest).toHaveBeenCalled();
       expect(mockErrorHandler.handlePreflight).not.toHaveBeenCalled();
       expect(result).toBe(expectedResponse);

@@ -2,7 +2,7 @@
   "name": "@vercube/logger",
   "version": "1.1.7",
   "description": "Logger module for Vercube framework",
-  "packageManager": "pnpm@11.17.0",
+  "packageManager": "pnpm@11.22.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/vercube/vercube.git",
@@ -36,7 +36,7 @@
   ],
   "dependencies": {
     "@vercube/di": "workspace:*",
-    "evlog": "^2.22.4"
+    "evlog": "^2.26.0"
   },
   "publishConfig": {
     "access": "public"

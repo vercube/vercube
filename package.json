@@ -2,7 +2,7 @@
   "name": "vercube-monorepo",
   "version": "1.1.7",
   "description": "An ultra-efficient JavaScript server framework that runs anywhere - Node.js, Bun, or Deno - with unmatched flexibility and complete configurability for developers who refuse to sacrifice speed or control.",
-  "packageManager": "pnpm@11.17.0",
+  "packageManager": "pnpm@11.22.0",
   "type": "module",
   "private": true,
   "engines": {
@@ -31,20 +31,20 @@
   },
   "devDependencies": {
     "@codspeed/vitest-plugin": "5.7.1",
-    "@commitlint/cli": "21.2.1",
-    "@commitlint/config-conventional": "21.2.0",
+    "@commitlint/cli": "21.2.2",
+    "@commitlint/config-conventional": "21.2.2",
     "@oxc-project/runtime": "catalog:",
-    "@types/node": "26.1.2",
+    "@types/node": "26.2.0",
     "@vitest/coverage-v8": "4.1.10",
     "@vitest/ui": "4.1.10",
-    "bumpp": "12.0.0",
-    "lint-staged": "17.2.0",
-    "oxfmt": "0.61.0",
-    "oxlint": "1.76.0",
+    "bumpp": "12.2.1",
+    "lint-staged": "17.3.0",
+    "oxfmt": "0.63.0",
+    "oxlint": "1.78.0",
     "simple-git-hooks": "2.13.1",
     "tsdown": "0.22.14",
     "tslib": "2.8.1",
-    "turbo": "2.10.7",
+    "turbo": "2.10.10",
     "typescript": "7.0.2",
     "unrun": "0.3.1",
     "vitest": "4.1.10"
@@ -53,5 +53,30 @@
     "pre-commit": "pnpm pre-commit",
     "commit-msg": "pnpm commitlint --edit $1",
     "pre-push": "pnpm test && pnpm test:tscheck"
+  },
+  "workspaces": {
+    "packages": [
+      "packages/*",
+      "examples/*",
+      "playground"
+    ],
+    "catalog": {
+      "@oxc-project/runtime": "0.144.0",
+      "@standard-schema/spec": "1.1.0",
+      "c12": "4.0.0-beta.5",
+      "consola": "3.4.2",
+      "jiti": "2.7.0",
+      "nitro": "3.0.260610-beta",
+      "ocache": "0.2.0",
+      "ohash": "2.0.11",
+      "ufo": "1.6.4",
+      "defu": "6.1.7",
+      "env-runner": "0.1.16",
+      "pathe": "2.0.3",
+      "vite": "8.2.1",
+      "rolldown": "1.2.3",
+      "srvx": "0.12.4",
+      "zod": "4.4.3"
+    }
   }
 }

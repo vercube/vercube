@@ -18,6 +18,21 @@ export interface RequestHandlerOptions {
   propertyName: string;
 }
 
+/** Default response `Content-Type` used when the request does not carry one. */
+const DEFAULT_CONTENT_TYPE = 'application/json';
+
+/**
+ * Shared response init for JSON-serialized handler results.
+ *
+ * Reused across requests: `Response` copies the init when it is constructed and
+ * never mutates the object handed to it.
+ */
+const JSON_RESPONSE_INIT: ResponseInit = Object.freeze({
+  status: 200,
+  statusText: 'OK',
+  headers: Object.freeze({ 'Content-Type': DEFAULT_CONTENT_TYPE }) as Record<string, string>,
+});
+
 /**
  * Handles HTTP requests by preparing and executing route handlers with their associated middlewares
  *
@@ -26,6 +41,11 @@ export interface RequestHandlerOptions {
  * - Executing middleware chains (before and after)
  * - Processing request/response lifecycle
  * - Error handling during request processing
+ *
+ * Everything that can be decided once - which middlewares run, whether any
+ * argument resolver is asynchronous, whether the route needs a mutable response
+ * object at all - is computed in {@link RequestHandler.prepareHandler} and
+ * cached on the route, so the per-request path stays as small as possible.
  */
 export class RequestHandler {
   /** Resolver for extracting metadata from controller classes and methods */
@@ -38,6 +58,15 @@ export class RequestHandler {
 
   @Inject(GlobalMiddlewareRegistry)
   private gGlobalMiddlewareRegistry!: GlobalMiddlewareRegistry;
+
+  /** Cached error handler; resolving it per request shows up under load. */
+  private fErrorHandler: ErrorHandlerProvider | undefined;
+
+  /** Cached request context provider (`null` when the app does not bind one). */
+  private fRequestContext: RequestContext | null | undefined;
+
+  /** Lazily resolved global middlewares used for CORS preflight responses. */
+  private fPreflightMiddlewares: RouterTypes.MiddlewareDefinition[] | undefined;
 
   /**
    * Prepares a route handler by resolving its metadata and middlewares
@@ -85,15 +114,35 @@ export class RequestHandler {
     beforeMiddlewares.sort((a, b) => (a?.priority ?? 999) - (b?.priority ?? 999));
     afterMiddlewares.sort((a, b) => (a?.priority ?? 999) - (b?.priority ?? 999));
 
+    const args = method.args.length <= 1 ? method.args : [...method.args].sort((a, b) => a.idx - b.idx);
+    const actions = method.actions;
+
+    // `@Res()` hands the intermediate response to the handler and a custom
+    // resolver receives the whole event, so both can mutate the response and
+    // expect the mutation to survive into the final one.
+    const observesResponse = args.some((arg) => arg.type === 'response' || arg.type === 'custom');
+
+    // Routes without middlewares and without response-mutating actions never
+    // observe the intermediate response, so they can skip building one.
+    const simple = beforeMiddlewares.length === 0 && afterMiddlewares.length === 0 && actions.length === 0 && !observesResponse;
+
     return {
       instance,
       propertyName,
-      args: method.args.length <= 1 ? method.args : [...method.args].sort((a, b) => a.idx - b.idx),
+      args,
       middlewares: {
         beforeMiddlewares,
         afterMiddlewares,
       },
-      actions: method.actions,
+      actions,
+      simple,
+      asyncArgs: args.some((arg) => MetadataResolver.isAsyncArg(arg)),
+      // The body can only be read once, and cloning is what makes it readable
+      // twice - at the cost of materializing a full native request per call.
+      // It is only skipped where nothing else can possibly read the body: a
+      // route with no middlewares that reads the body exactly once and does not
+      // receive the raw request.
+      cloneBody: !simple || args.some((arg) => arg.type === 'request') || args.filter((arg) => arg.type === 'body').length > 1,
     };
   }
 
@@ -110,9 +159,9 @@ export class RequestHandler {
    * @returns {Promise<Response>} The HTTP response
    */
   public async handlePreflight(request: Request): Promise<Response> {
-    return this.runWithContext(async () => {
-      return this.internalHandlePreflight(request);
-    });
+    const context = this.requestContext;
+
+    return context ? context.run(() => this.internalHandlePreflight(request)) : this.internalHandlePreflight(request);
   }
 
   /**
@@ -124,13 +173,12 @@ export class RequestHandler {
    */
   private async internalHandlePreflight(request: Request): Promise<Response> {
     try {
-      let fakeResponse = this.createInitialResponse(request);
+      const fakeResponse = this.createInitialResponse();
 
-      const globalMiddlewares = this.gGlobalMiddlewareRegistry.middlewares;
-      const resolvedMiddlewares = this.resolveMiddlewares(globalMiddlewares);
+      this.fPreflightMiddlewares ??= this.resolveMiddlewares(this.gGlobalMiddlewareRegistry.middlewares);
 
       // Execute both onRequest and onResponse for each middleware (preflight pattern)
-      const result = await this.executeMiddlewares(resolvedMiddlewares, {
+      const result = await this.executeMiddlewares(this.fPreflightMiddlewares, {
         request,
         response: fakeResponse,
         methodArgs: [],
@@ -162,12 +210,97 @@ export class RequestHandler {
    *
    * @param {Request} request - The incoming HTTP request
    * @param {RouterTypes.RouteMatched<RouterTypes.RouterHandler>} route - The matched route with handler data
-   * @returns {Promise<Response>} The HTTP response
+   * @returns {Response | Promise<Response>} The HTTP response, returned synchronously when the route allows it
    */
-  public async handleRequest(request: Request, route: RouterTypes.RouteMatched<RouterTypes.RouterHandler>): Promise<Response> {
-    return this.runWithContext(async () => {
-      return this.internalHandleRequest(request, route);
-    });
+  public handleRequest(
+    request: Request,
+    route: RouterTypes.RouteMatched<RouterTypes.RouterHandler>,
+  ): Response | Promise<Response> {
+    const context = this.requestContext;
+
+    if (context) {
+      return context.run(() => this.dispatch(request, route));
+    }
+
+    return this.dispatch(request, route);
+  }
+
+  /**
+   * Picks between the allocation-free path and the full middleware pipeline.
+   *
+   * @param {Request} request - The incoming HTTP request
+   * @param {RouterTypes.RouteMatched<RouterTypes.RouterHandler>} route - The matched route
+   * @returns {Response | Promise<Response>} The HTTP response
+   * @private
+   */
+  private dispatch(request: Request, route: RouterTypes.RouteMatched<RouterTypes.RouterHandler>): Response | Promise<Response> {
+    return route.data?.simple ? this.handleSimpleRequest(request, route) : this.internalHandleRequest(request, route);
+  }
+
+  /**
+   * Handles a route that has no middlewares and no response-mutating actions.
+   *
+   * Such a route never observes the intermediate response object, so nothing
+   * besides the handler arguments and the final response has to be allocated.
+   * When every argument resolver and the handler itself are synchronous, the
+   * response is produced without creating a single promise.
+   *
+   * @param {Request} request - The incoming HTTP request
+   * @param {RouterTypes.RouteMatched<RouterTypes.RouterHandler>} route - The matched route
+   * @returns {Response | Promise<Response>} The HTTP response
+   * @private
+   */
+  private handleSimpleRequest(
+    request: Request,
+    route: RouterTypes.RouteMatched<RouterTypes.RouterHandler>,
+  ): Response | Promise<Response> {
+    const { instance, propertyName, args, asyncArgs, cloneBody } = route.data;
+
+    try {
+      if (args.length === 0) {
+        return this.finalize(instance[propertyName]());
+      }
+
+      const event: RouterTypes.RouterEvent = {
+        data: route.data,
+        params: route.params,
+        request,
+        // A simple route has no argument that can observe the response, so the
+        // intermediate one never has to be allocated - see prepareHandler.
+        response: undefined as unknown as Response,
+        cloneBody,
+      };
+
+      if (asyncArgs) {
+        return this.gMetadataResolver.resolveArgValuesAsync(args, event).then(
+          (values) => this.finalize(instance[propertyName](...values)),
+          (error: unknown) => this.handleError(error),
+        );
+      }
+
+      const values = this.gMetadataResolver.resolveArgValues(args, event);
+      return this.finalize(instance[propertyName](...values));
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  /**
+   * Turns a handler result - which may still be a promise - into a response.
+   *
+   * @param {unknown} handlerResponse - The value returned by the route handler
+   * @returns {Response | Promise<Response>} The HTTP response
+   * @private
+   */
+  private finalize(handlerResponse: unknown): Response | Promise<Response> {
+    if (handlerResponse instanceof Promise) {
+      return handlerResponse.then(
+        (value: unknown) => this.createSimpleResponse(value),
+        (error: unknown) => this.handleError(error),
+      );
+    }
+
+    return this.createSimpleResponse(handlerResponse);
   }
 
   /**
@@ -190,32 +323,37 @@ export class RequestHandler {
         actions = [],
         args = [],
         middlewares = { beforeMiddlewares: [], afterMiddlewares: [] },
+        cloneBody = true,
       } = route.data;
-      let fakeResponse = this.createInitialResponse(request);
+      let fakeResponse = this.createInitialResponse();
 
       // 1. Resolve all args
       const resolvedArgs =
         args.length > 0
           ? await this.gMetadataResolver.resolveArgs(args, {
-              ...route,
+              data: route.data,
+              params: route.params,
               request,
               response: fakeResponse,
+              cloneBody,
             })
           : [];
 
       // 2. Call before route middlewares
-      const beforeResult = await this.executeMiddlewares(middlewares.beforeMiddlewares, {
-        request,
-        response: fakeResponse,
-        methodArgs: resolvedArgs,
-        handlerResponse: undefined,
-        executeRequest: true,
-        executeResponse: false,
-      });
-      if (beforeResult.earlyReturn) {
-        return beforeResult.earlyReturn;
+      if (middlewares.beforeMiddlewares.length > 0) {
+        const beforeResult = await this.executeMiddlewares(middlewares.beforeMiddlewares, {
+          request,
+          response: fakeResponse,
+          methodArgs: resolvedArgs,
+          handlerResponse: undefined,
+          executeRequest: true,
+          executeResponse: false,
+        });
+        if (beforeResult.earlyReturn) {
+          return beforeResult.earlyReturn;
+        }
+        fakeResponse = beforeResult.response;
       }
-      fakeResponse = beforeResult.response;
 
       // 3. Call every actions
       for (const action of actions) {
@@ -226,24 +364,26 @@ export class RequestHandler {
       }
 
       // 4. Call current route handler
-      let handlerResponse = instance[propertyName].call(instance, ...(resolvedArgs?.map((a) => a.resolved) ?? []));
+      let handlerResponse = instance[propertyName].call(instance, ...toValues(resolvedArgs));
       if (handlerResponse instanceof Promise) {
         handlerResponse = await handlerResponse;
       }
 
       // 5. Call after route middlewares
-      const afterResult = await this.executeMiddlewares(middlewares.afterMiddlewares, {
-        request,
-        response: fakeResponse,
-        methodArgs: resolvedArgs,
-        handlerResponse,
-        executeRequest: false,
-        executeResponse: true,
-      });
-      if (afterResult.earlyReturn) {
-        return afterResult.earlyReturn;
+      if (middlewares.afterMiddlewares.length > 0) {
+        const afterResult = await this.executeMiddlewares(middlewares.afterMiddlewares, {
+          request,
+          response: fakeResponse,
+          methodArgs: resolvedArgs,
+          handlerResponse,
+          executeRequest: false,
+          executeResponse: true,
+        });
+        if (afterResult.earlyReturn) {
+          return afterResult.earlyReturn;
+        }
+        fakeResponse = afterResult.response;
       }
-      fakeResponse = afterResult.response;
 
       // 6. If handlerResponse is already instance of Response, return it
       if (handlerResponse instanceof Response) {
@@ -258,33 +398,44 @@ export class RequestHandler {
   }
 
   /**
-   * Runs a function within a request context if available, otherwise runs it directly
+   * Returns the request context provider, or `null` when none is bound.
    *
-   * @param fn - The function to run
-   * @returns The result of the function
+   * @returns {RequestContext | null} The request context provider
    * @private
    */
-  private async runWithContext<T>(fn: () => Promise<T>): Promise<T> {
-    const requestContext = this.gContainer.getOptional(RequestContext);
-    if (requestContext) {
-      return requestContext.run(fn);
+  private get requestContext(): RequestContext | null {
+    // `getOptional` returns `null` when unbound, which `??=` would treat as
+    // "not cached yet" and look up again on every single request.
+    if (this.fRequestContext === undefined) {
+      this.fRequestContext = this.gContainer.getOptional(RequestContext);
     }
-    return fn();
+
+    return this.fRequestContext;
   }
 
   /**
-   * Creates an initial FastResponse with Content-Type header from the request
+   * Creates the intermediate response that middlewares and actions mutate.
    *
-   * @param request - The incoming HTTP request
    * @returns The initial FastResponse
    * @private
    */
-  private createInitialResponse(request: Request): Response {
-    return new FastResponse(undefined, {
-      headers: {
-        'Content-Type': request.headers.get('Content-Type') ?? 'application/json',
-      },
-    });
+  private createInitialResponse(): Response {
+    return new FastResponse(undefined, { headers: { 'Content-Type': DEFAULT_CONTENT_TYPE } });
+  }
+
+  /**
+   * Serializes a handler result into the final response of a simple route.
+   *
+   * @param handlerResponse - The value returned by the route handler
+   * @returns The final Response object
+   * @private
+   */
+  private createSimpleResponse(handlerResponse: unknown): Response {
+    if (handlerResponse instanceof Response) {
+      return handlerResponse;
+    }
+
+    return new FastResponse(JSON.stringify(handlerResponse), JSON_RESPONSE_INIT);
   }
 
   /**
@@ -294,8 +445,9 @@ export class RequestHandler {
    * @returns The error response
    * @private
    */
-  private async handleError(error: unknown): Promise<Response> {
-    return this.gContainer.get(ErrorHandlerProvider).handleError(error as Error);
+  private handleError(error: unknown): Response | Promise<Response> {
+    this.fErrorHandler ??= this.gContainer.get(ErrorHandlerProvider);
+    return this.fErrorHandler.handleError(error as Error);
   }
 
   /**
@@ -450,7 +602,10 @@ export class RequestHandler {
         ? (fakeResponse as { body: string | null }).body
         : null;
     const body = fakeResponseBody ?? JSON.stringify(handlerResponse);
-    return new Response(body, {
+
+    // FastResponse leaves the body untouched until it is written to the socket,
+    // while the global Response would immediately wrap it in a ReadableStream.
+    return new FastResponse(body, {
       status: fakeResponse.status ?? defaultStatus,
       statusText: fakeResponse.statusText ?? defaultStatusText,
       headers: fakeResponse.headers,
@@ -487,4 +642,20 @@ export class RequestHandler {
 
     return fakeResponse;
   }
+}
+
+/**
+ * Extracts the resolved values of already resolved arguments.
+ *
+ * @param {MetadataTypes.Arg[]} args - Resolved arguments
+ * @returns {unknown[]} The values in handler parameter order
+ */
+function toValues(args: MetadataTypes.Arg[]): unknown[] {
+  const values: unknown[] = Array.from({ length: args.length });
+
+  for (let i = 0; i < args.length; i++) {
+    values[i] = args[i].resolved;
+  }
+
+  return values;
 }

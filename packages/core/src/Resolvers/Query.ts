@@ -1,3 +1,4 @@
+import { getRequestSearch } from '../Utils/Url';
 import type { RouterTypes } from '../Types/RouterTypes';
 
 /**
@@ -7,8 +8,13 @@ import type { RouterTypes } from '../Types/RouterTypes';
  * @returns The value of the query parameter if found, null otherwise
  */
 export function resolveQueryParam(name: string, event: RouterTypes.RouterEvent): string | null {
-  const url = new URL(event.request.url);
-  return url.searchParams.get(name);
+  const search = getRequestSearch(event.request);
+
+  if (search === '') {
+    return null;
+  }
+
+  return new URLSearchParams(search).get(name);
 }
 
 /**
@@ -17,10 +23,14 @@ export function resolveQueryParam(name: string, event: RouterTypes.RouterEvent):
  * @returns An object containing all query parameters as key-value pairs
  */
 export function resolveQueryParams(event: RouterTypes.RouterEvent): Record<string, string> {
-  const url = new URL(event.request.url);
   const params: Record<string, string> = {};
+  const search = getRequestSearch(event.request);
 
-  for (const [key, value] of url.searchParams) {
+  if (search === '') {
+    return params;
+  }
+
+  for (const [key, value] of new URLSearchParams(search)) {
     params[key] = value;
   }
 

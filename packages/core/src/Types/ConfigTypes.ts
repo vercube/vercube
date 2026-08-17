@@ -114,8 +114,9 @@ export namespace ConfigTypes {
     port?: number;
 
     /**
-     * Enable `SO_REUSEPORT`. Defaults to true on Linux/FreeBSD/Solaris/AIX;
-     * false elsewhere (forced true on macOS/Windows fails with `ENOTSUP`).
+     * Enable `SO_REUSEPORT`. Defaults to true on Linux (the only platform
+     * that load-balances with it); false elsewhere. Forced true on macOS
+     * fails `listen()` with `ENOTSUP`.
      */
     reusePort?: boolean;
 
@@ -173,6 +174,18 @@ export namespace ConfigTypes {
      * @default true
      */
     requestLogging?: boolean;
+
+    /**
+     * Enables the per-request context backed by `AsyncLocalStorage`.
+     *
+     * Every request pays for an async context frame whether or not anything
+     * reads from it, so applications that never inject `RequestContext` can
+     * turn it off. It is forced on while `requestLogging` is active, because
+     * the request logger stores its state there.
+     *
+     * @default true
+     */
+    requestContext?: boolean;
 
     /**
      * Server configuration options.
