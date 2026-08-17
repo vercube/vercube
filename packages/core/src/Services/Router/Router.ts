@@ -27,6 +27,18 @@ export class Router {
   private fRouterContext!: RouterContext<RouterTypes.RouterHandler>;
 
   /**
+   * Lookup tables for routes without parameters, one per HTTP method.
+   *
+   * Most routes of a real application are static, and a map hit is far cheaper
+   * than walking rou3's trie - which has to split the path into segments, and
+   * therefore allocate, on every request. Nesting the maps per method keeps the
+   * lookup key the pathname itself, so no key string has to be built either.
+   *
+   * @private
+   */
+  private fStaticRoutes: Map<string, Map<string, RouterTypes.RouteMatched<RouterTypes.RouterHandler>>> = new Map();
+
+  /**
    * Registers a new route in the router
    *
    * @param {RouterTypes.Route} route - The route configuration to add
@@ -37,7 +49,21 @@ export class Router {
       throw new Error('Router not initialized. Please call init() before adding routes.');
     }
 
-    addRoute(this.fRouterContext, route.method.toUpperCase(), route.path, route.handler);
+    const method = route.method.toUpperCase();
+    addRoute(this.fRouterContext, method, route.path, route.handler);
+
+    if (isStaticPath(route.path)) {
+      let byPath = this.fStaticRoutes.get(method);
+
+      if (!byPath) {
+        byPath = new Map();
+        this.fStaticRoutes.set(method, byPath);
+      }
+
+      // The matched object is immutable for static routes (no params), so a
+      // single instance can be shared by every request hitting this route.
+      byPath.set(normalizePath(route.path), { data: route.handler });
+    }
   }
 
   /**
@@ -51,6 +77,7 @@ export class Router {
     this.gHooksService.trigger(RouterBeforeInitHook);
 
     this.fRouterContext = createRouter<RouterTypes.RouterHandler>();
+    this.fStaticRoutes.clear();
 
     // trigger after init hook
     this.gHooksService.trigger(RouterAfterInitHook);
@@ -74,4 +101,64 @@ export class Router {
 
     return findRoute(this.fRouterContext, route.method.toUpperCase(), pathname);
   }
+
+  /**
+   * Resolves a route from an already normalized method and pathname.
+   *
+   * This is the variant used on the request hot path: it skips the absolute-URL
+   * normalization and the `toUpperCase()` of {@link Router.resolve} because the
+   * server hands over a method that is already uppercase and a bare pathname.
+   *
+   * @param {string} method - Uppercase HTTP method.
+   * @param {string} pathname - Request pathname, without query string.
+   * @returns {RouterTypes.RouteMatched<RouterTypes.RouterHandler> | undefined} The matched route or undefined if no match found
+   */
+  public match(method: string, pathname: string): RouterTypes.RouteMatched<RouterTypes.RouterHandler> | undefined {
+    const byPath = this.fStaticRoutes.get(method);
+
+    if (byPath !== undefined) {
+      const staticRoute = byPath.get(pathname);
+
+      if (staticRoute !== undefined) {
+        return staticRoute;
+      }
+
+      const normalized = normalizePath(pathname);
+
+      if (normalized !== pathname) {
+        const normalizedRoute = byPath.get(normalized);
+
+        if (normalizedRoute !== undefined) {
+          return normalizedRoute;
+        }
+      }
+    }
+
+    return findRoute(this.fRouterContext, method, pathname);
+  }
+}
+
+/**
+ * Tells whether a route path contains no parameter or wildcard segments.
+ *
+ * @param {string} path - The registered route path.
+ * @returns {boolean} True when the path can be matched by exact comparison.
+ */
+function isStaticPath(path: string): boolean {
+  return !path.includes(':') && !path.includes('*');
+}
+
+/**
+ * Normalizes a path so that registration and lookup agree.
+ *
+ * This mirrors what rou3 does when it splits a path into segments: a leading
+ * slash is implied and an empty trailing segment is dropped, which makes
+ * `/users` and `/users/` the same route.
+ *
+ * @param {string} path - The path to normalize.
+ * @returns {string} The path with a leading slash and without a trailing one.
+ */
+function normalizePath(path: string): string {
+  const withLeading = path.startsWith('/') ? path : `/${path}`;
+  return withLeading.length > 1 && withLeading.endsWith('/') ? withLeading.slice(0, -1) : withLeading;
 }

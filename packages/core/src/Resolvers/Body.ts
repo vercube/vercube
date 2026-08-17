@@ -23,8 +23,13 @@ import type { RouterTypes } from '../Types/RouterTypes';
  * - Throws BadRequestError for malformed JSON
  */
 export async function resolveRequestBody(event: RouterTypes.RouterEvent): Promise<unknown> {
-  // we have to clone the request to avoid the "Response body object should not be disturbed or locked" error
-  const text = await event.request.clone().text();
+  // Cloning is what makes the body readable twice, but it forces the runtime to
+  // materialize a full native Request with a teed stream - one of the most
+  // expensive things we can do per request. It is only needed when the handler
+  // also receives the raw request and may read the body itself.
+  const request = event.cloneBody === false ? event.request : event.request.clone();
+
+  const text = await request.text();
   if (!text) {
     return undefined;
   }

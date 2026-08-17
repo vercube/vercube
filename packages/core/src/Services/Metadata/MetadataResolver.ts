@@ -6,9 +6,25 @@ import type { MetadataTypes } from '../../Types/MetadataTypes';
 import type { RouterTypes } from '../../Types/RouterTypes';
 
 /**
+ * Argument types whose resolver may return a promise. Everything else is
+ * resolved synchronously, which lets a route skip promises entirely.
+ */
+const ASYNC_ARG_TYPES: ReadonlySet<string> = new Set(['body', 'multipart-form-data', 'session', 'custom']);
+
+/**
  * Class responsible for resolving metadata for route handlers.
  */
 export class MetadataResolver {
+  /**
+   * Tells whether resolving an argument may require awaiting.
+   *
+   * @param {MetadataTypes.Arg} arg - The argument definition to inspect.
+   * @returns {boolean} True when the argument has to be awaited.
+   */
+  public static isAsyncArg(arg: MetadataTypes.Arg): boolean {
+    return ASYNC_ARG_TYPES.has(arg.type);
+  }
+
   /**
    * Resolves the URL for a given instance and path.
    *
@@ -39,16 +55,7 @@ export class MetadataResolver {
    * @public
    */
   public async resolveArgs(args: MetadataTypes.Arg[], event: RouterTypes.RouterEvent): Promise<MetadataTypes.Arg[]> {
-    // Prepared routes pass args sorted by idx; support unsorted callers with a cheap O(n) check (no alloc when sorted)
-    let list = args;
-    if (args.length > 1) {
-      for (let i = 1; i < args.length; i++) {
-        if (args[i - 1].idx > args[i].idx) {
-          list = [...args].sort((a, b) => a.idx - b.idx);
-          break;
-        }
-      }
-    }
+    const list = sortArgs(args);
 
     const resolvedArgs: MetadataTypes.Arg[] = [];
     for (let i = 0; i < list.length; i++) {
@@ -60,6 +67,46 @@ export class MetadataResolver {
       resolvedArgs.push({ ...arg, resolved });
     }
     return resolvedArgs;
+  }
+
+  /**
+   * Resolves handler arguments to plain values, skipping the per-argument
+   * metadata copies that {@link MetadataResolver.resolveArgs} produces.
+   *
+   * Only valid for argument lists where {@link MetadataResolver.isAsyncArg}
+   * is false for every entry.
+   *
+   * @param {MetadataTypes.Arg[]} args - The arguments to resolve, sorted by index.
+   * @param {RouterTypes.RouterEvent} event - The event to resolve arguments for.
+   * @returns {unknown[]} The resolved values in handler parameter order.
+   */
+  public resolveArgValues(args: MetadataTypes.Arg[], event: RouterTypes.RouterEvent): unknown[] {
+    const values: unknown[] = Array.from({ length: args.length });
+
+    for (let i = 0; i < args.length; i++) {
+      values[i] = this.resolveArg(args[i], event);
+    }
+
+    return values;
+  }
+
+  /**
+   * Asynchronous counterpart of {@link MetadataResolver.resolveArgValues}, used
+   * when at least one argument resolver returns a promise.
+   *
+   * @param {MetadataTypes.Arg[]} args - The arguments to resolve, sorted by index.
+   * @param {RouterTypes.RouterEvent} event - The event to resolve arguments for.
+   * @returns {Promise<unknown[]>} The resolved values in handler parameter order.
+   */
+  public async resolveArgValuesAsync(args: MetadataTypes.Arg[], event: RouterTypes.RouterEvent): Promise<unknown[]> {
+    const values: unknown[] = Array.from({ length: args.length });
+
+    for (let i = 0; i < args.length; i++) {
+      const resolved = this.resolveArg(args[i], event);
+      values[i] = resolved instanceof Promise ? await resolved : resolved;
+    }
+
+    return values;
   }
 
   /**
@@ -138,4 +185,27 @@ export class MetadataResolver {
     // return middlewares sorted by global first
     return middlewares.sort((a) => (a.target === '__global__' ? -1 : 1));
   }
+}
+
+/**
+ * Returns the arguments ordered by parameter index.
+ *
+ * Prepared routes already pass them sorted, so unsorted callers are supported
+ * with a cheap O(n) check that allocates nothing in the common case.
+ *
+ * @param {MetadataTypes.Arg[]} args - Arguments to order.
+ * @returns {MetadataTypes.Arg[]} The arguments sorted by `idx`.
+ */
+function sortArgs(args: MetadataTypes.Arg[]): MetadataTypes.Arg[] {
+  if (args.length < 2) {
+    return args;
+  }
+
+  for (let i = 1; i < args.length; i++) {
+    if (args[i - 1].idx > args[i].idx) {
+      return [...args].sort((a, b) => a.idx - b.idx);
+    }
+  }
+
+  return args;
 }

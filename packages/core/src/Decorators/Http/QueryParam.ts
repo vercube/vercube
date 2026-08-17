@@ -39,12 +39,15 @@ class QueryParamDecorator extends BaseDecorator<QueryParamDecoratorOptions, Meta
       validationSchema: this.options?.validationSchema,
     });
 
-    meta.__middlewares.unshift({
-      target: this.propertyName,
-      priority: -1,
-      args: {},
-      middleware: ValidationMiddleware,
-    });
+    // the validation middleware only has work to do when a schema was given
+    if (this.options?.validationSchema) {
+      meta.__middlewares.unshift({
+        target: this.propertyName,
+        priority: -1,
+        args: {},
+        middleware: ValidationMiddleware,
+      });
+    }
   }
 }
 

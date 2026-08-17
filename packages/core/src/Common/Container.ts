@@ -45,14 +45,25 @@ export function createContainer(config: ConfigTypes.Config): Container {
   container.bind(RequestHandler);
   container.bind(RuntimeConfig);
   container.bind(GlobalMiddlewareRegistry);
-  container.bind(RequestContext);
 
   // bind validation providers
   // use StandardSchema as default
   container.bind(ValidationProvider, StandardSchemaValidationProvider);
 
-  // register evlog request middleware for per-request wide events (opt-out)
-  if (config.requestLogging !== false) {
+  // Register the evlog request middleware for per-request wide events (opt-out).
+  // `logLevel` deliberately plays no part here: evlog applies its `minLevel`
+  // only to the simple `log.*` API, so request wide events are still emitted at
+  // `warn` or `error`. Use `requestLogging: false` (or evlog sampling) to opt out.
+  const requestLogging = config.requestLogging !== false;
+
+  // The request context wraps every request in an AsyncLocalStorage frame, so
+  // it is only bound when it can actually be observed. Leaving it unbound makes
+  // the request handler skip the frame entirely.
+  if (config.requestContext !== false || requestLogging) {
+    container.bind(RequestContext);
+  }
+
+  if (requestLogging) {
     container.get(GlobalMiddlewareRegistry).registerGlobalMiddleware(EvlogMiddleware);
   }
 

@@ -1212,8 +1212,12 @@ describe('RequestHandler', () => {
 
       // Execute both requests concurrently with delays to ensure they overlap
       await Promise.all([
-        requestHandler.handleRequest(request1, route1).then(() => new Promise((resolve) => setTimeout(resolve, 5))),
-        requestHandler.handleRequest(request2, route2).then(() => new Promise((resolve) => setTimeout(resolve, 5))),
+        Promise.resolve(requestHandler.handleRequest(request1, route1)).then(
+          () => new Promise((resolve) => setTimeout(resolve, 5)),
+        ),
+        Promise.resolve(requestHandler.handleRequest(request2, route2)).then(
+          () => new Promise((resolve) => setTimeout(resolve, 5)),
+        ),
       ]);
 
       // Verify that each request got its own token and user ID
