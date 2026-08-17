@@ -8,6 +8,18 @@ import {
   secureReviver,
 } from '../../src/Utils/Security';
 
+/**
+ * Rewrites every character of `text` as a JSON `\uXXXX` escape, which parses
+ * back to the original key without the literal characters ever appearing in
+ * the payload.
+ *
+ * @param {string} text - The text to escape.
+ * @returns {string} The escaped text.
+ */
+function jsonUnicodeEscape(text: string): string {
+  return [...text].map((char) => `\\u${char.codePointAt(0)!.toString(16).padStart(4, '0')}`).join('');
+}
+
 describe('Security utilities for prototype pollution protection', () => {
   describe('DANGEROUS_PROPERTIES', () => {
     it('should contain all dangerous property names', () => {
@@ -94,6 +106,27 @@ describe('Security utilities for prototype pollution protection', () => {
       expect(result.name).toBe('John');
       // Verify that the constructor property wasn't set as an own property
       expect(Object.prototype.hasOwnProperty.call(result, 'constructor')).toBe(false);
+    });
+
+    it('should filter out __proto__ written with unicode escapes', () => {
+      const malicious = `{"name":"John","${jsonUnicodeEscape('__proto__')}":{"isAdmin":true}}`;
+      const result = safeJsonParse(malicious) as any;
+
+      expect(result.name).toBe('John');
+      expect(({} as any).isAdmin).toBeUndefined();
+      expect(Object.prototype.hasOwnProperty.call(result, '__proto__')).toBe(false);
+    });
+
+    it('should filter out constructor written with unicode escapes', () => {
+      const malicious = `{"${jsonUnicodeEscape('constructor')}":{"prototype":{"polluted":true}}}`;
+      const result = safeJsonParse(malicious) as any;
+
+      expect(Object.prototype.hasOwnProperty.call(result, 'constructor')).toBe(false);
+    });
+
+    it('should keep escaped but harmless payloads intact', () => {
+      const result = safeJsonParse(String.raw`{"name":"John \u0044oe","path":"a\\b"}`);
+      expect(result).toEqual({ name: 'John Doe', path: 'a\\b' });
     });
 
     it('should filter out prototype during parsing', () => {

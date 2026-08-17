@@ -62,6 +62,14 @@ export function safeJsonParse(text: string): unknown {
   // The reviver is invoked for every key of every object, which is a real cost
   // on the request hot path. A payload that does not even mention a dangerous
   // property cannot introduce one, so it can be parsed without the reviver.
+  //
+  // A JSON escape can spell out a dangerous property without containing it
+  // literally: a key written with Unicode escapes for its underscores still
+  // parses to `__proto__`, so any backslash disqualifies the fast path.
+  if (text.includes('\\')) {
+    return JSON.parse(text, secureReviver);
+  }
+
   for (const property of DANGEROUS_PROPERTIES) {
     if (text.includes(property)) {
       return JSON.parse(text, secureReviver);

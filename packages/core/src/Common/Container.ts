@@ -16,18 +16,6 @@ import { StaticRequestHandler } from '../Services/Router/StaticRequestHandler';
 import { StandardSchemaValidationProvider } from '../Services/Validation/StandardSchemaValidationProvider';
 import { ValidationProvider } from '../Services/Validation/ValidationProvider';
 import type { ConfigTypes } from '../Types/ConfigTypes';
-import type { LoggerTypes } from '@vercube/logger';
-
-/**
- * Tells whether request wide events would actually be emitted at the
- * configured log level.
- *
- * @param {LoggerTypes.Level | undefined} logLevel - Configured minimum log level.
- * @returns {boolean} True when `info` events are still emitted.
- */
-function isRequestLoggingAudible(logLevel: LoggerTypes.Level | undefined): boolean {
-  return logLevel === undefined || logLevel === 'debug' || logLevel === 'info';
-}
 
 /**
  * Creates and configures a new dependency injection container for the application.
@@ -63,9 +51,10 @@ export function createContainer(config: ConfigTypes.Config): Container {
   container.bind(ValidationProvider, StandardSchemaValidationProvider);
 
   // Register the evlog request middleware for per-request wide events (opt-out).
-  // The events are emitted at `info`, so a stricter log level would produce
-  // nothing while still paying the full per-request cost of the middleware.
-  const requestLogging = config.requestLogging !== false && isRequestLoggingAudible(config.logLevel);
+  // `logLevel` deliberately plays no part here: evlog applies its `minLevel`
+  // only to the simple `log.*` API, so request wide events are still emitted at
+  // `warn` or `error`. Use `requestLogging: false` (or evlog sampling) to opt out.
+  const requestLogging = config.requestLogging !== false;
 
   // The request context wraps every request in an AsyncLocalStorage frame, so
   // it is only bound when it can actually be observed. Leaving it unbound makes

@@ -13,20 +13,18 @@ import type { Server, ServerPlugin } from 'srvx';
 /**
  * Whether the current runtime/platform can bind a socket with `SO_REUSEPORT`.
  *
- * Node on macOS rejects `listen()` with `ENOTSUP` when `reusePort` is set,
- * which makes the server unable to start at all. Bun and Deno implement it
- * on every platform they support.
+ * Linux is the only platform where the flag actually load-balances incoming
+ * connections across processes. Elsewhere it is either ignored (Deno) or
+ * outright rejected - Node on macOS fails `listen()` with `ENOTSUP`, and no
+ * runtime implements it on Windows - so it is only requested on Linux.
  *
  * @returns {boolean} True when `reusePort` can be safely requested.
  */
 function isReusePortSupported(): boolean {
-  const globals = globalThis as { Bun?: unknown; Deno?: unknown };
+  const deno = (globalThis as { Deno?: { build?: { os?: string } } }).Deno;
+  const platform = deno?.build?.os ?? (typeof process === 'undefined' ? undefined : process.platform);
 
-  if (globals.Bun || globals.Deno) {
-    return true;
-  }
-
-  return typeof process === 'undefined' ? false : process.platform !== 'darwin';
+  return platform === 'linux';
 }
 
 /**
@@ -120,8 +118,8 @@ export class HttpServer {
         },
       },
       hostname: host,
-      // SO_REUSEPORT is not supported by Node on Darwin (listen fails with ENOTSUP),
-      // so it can only be enabled on platforms that actually implement it.
+      // SO_REUSEPORT only balances connections on Linux, and Node on Darwin even
+      // fails `listen()` with ENOTSUP when it is set - see isReusePortSupported.
       reusePort: isReusePortSupported(),
       port,
       fetch: this.handleRequest.bind(this),

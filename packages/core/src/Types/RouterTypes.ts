@@ -30,14 +30,13 @@ export namespace RouterTypes {
     };
     actions: MetadataTypes.Action[];
     /**
-     * True when the route has no middlewares and no actions, so the request can
-     * be served without building an intermediate response object.
+     * True when the route has no middlewares, no actions and no argument that
+     * observes the intermediate response, so the request can be served without
+     * building one.
      */
     simple?: boolean;
     /** True when at least one argument resolver returns a promise. */
     asyncArgs?: boolean;
-    /** True when the handler receives the intermediate response object. */
-    needsResponse?: boolean;
     /** True when the request body must be cloned before being consumed. */
     cloneBody?: boolean;
   }

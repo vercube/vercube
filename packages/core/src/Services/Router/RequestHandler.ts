@@ -117,9 +117,14 @@ export class RequestHandler {
     const args = method.args.length <= 1 ? method.args : [...method.args].sort((a, b) => a.idx - b.idx);
     const actions = method.actions;
 
+    // `@Res()` hands the intermediate response to the handler and a custom
+    // resolver receives the whole event, so both can mutate the response and
+    // expect the mutation to survive into the final one.
+    const observesResponse = args.some((arg) => arg.type === 'response' || arg.type === 'custom');
+
     // Routes without middlewares and without response-mutating actions never
     // observe the intermediate response, so they can skip building one.
-    const simple = beforeMiddlewares.length === 0 && afterMiddlewares.length === 0 && actions.length === 0;
+    const simple = beforeMiddlewares.length === 0 && afterMiddlewares.length === 0 && actions.length === 0 && !observesResponse;
 
     return {
       instance,
@@ -132,12 +137,12 @@ export class RequestHandler {
       actions,
       simple,
       asyncArgs: args.some((arg) => MetadataResolver.isAsyncArg(arg)),
-      needsResponse: args.some((arg) => arg.type === 'response'),
       // The body can only be read once, and cloning is what makes it readable
       // twice - at the cost of materializing a full native request per call.
       // It is only skipped where nothing else can possibly read the body: a
-      // route with no middlewares that does not receive the raw request.
-      cloneBody: !simple || args.some((arg) => arg.type === 'request'),
+      // route with no middlewares that reads the body exactly once and does not
+      // receive the raw request.
+      cloneBody: !simple || args.some((arg) => arg.type === 'request') || args.filter((arg) => arg.type === 'body').length > 1,
     };
   }
 
@@ -249,7 +254,7 @@ export class RequestHandler {
     request: Request,
     route: RouterTypes.RouteMatched<RouterTypes.RouterHandler>,
   ): Response | Promise<Response> {
-    const { instance, propertyName, args, asyncArgs, needsResponse, cloneBody } = route.data;
+    const { instance, propertyName, args, asyncArgs, cloneBody } = route.data;
 
     try {
       if (args.length === 0) {
@@ -260,7 +265,9 @@ export class RequestHandler {
         data: route.data,
         params: route.params,
         request,
-        response: needsResponse ? this.createInitialResponse() : (undefined as unknown as Response),
+        // A simple route has no argument that can observe the response, so the
+        // intermediate one never has to be allocated - see prepareHandler.
+        response: undefined as unknown as Response,
         cloneBody,
       };
 
@@ -397,7 +404,13 @@ export class RequestHandler {
    * @private
    */
   private get requestContext(): RequestContext | null {
-    return (this.fRequestContext ??= this.gContainer.getOptional(RequestContext));
+    // `getOptional` returns `null` when unbound, which `??=` would treat as
+    // "not cached yet" and look up again on every single request.
+    if (this.fRequestContext === undefined) {
+      this.fRequestContext = this.gContainer.getOptional(RequestContext);
+    }
+
+    return this.fRequestContext;
   }
 
   /**

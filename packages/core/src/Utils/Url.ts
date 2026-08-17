@@ -33,6 +33,85 @@ interface SrvxRequest extends Request {
 /** Character code of `/`, used to detect origin-form request targets. */
 const SLASH = 47;
 
+/** Path segments that the URL parser resolves to "the current directory". */
+const SINGLE_DOT_SEGMENTS: ReadonlySet<string> = new Set(['.', '%2e', '%2E']);
+
+/** Path segments that the URL parser resolves to "the parent directory". */
+const DOUBLE_DOT_SEGMENTS: ReadonlySet<string> = new Set([
+  '..',
+  '.%2e',
+  '.%2E',
+  '%2e.',
+  '%2E.',
+  '%2e%2e',
+  '%2E%2E',
+  '%2e%2E',
+  '%2E%2e',
+]);
+
+/**
+ * Removes `.` and `..` segments from a pathname, the way the URL parser does.
+ *
+ * The raw request target is used verbatim wherever the runtime exposes it, and
+ * unlike `new URL()` that string is not normalized. Routing has to see the same
+ * pathname either way, so the dot segments are resolved here.
+ *
+ * @param {string} pathname - The pathname to normalize.
+ * @returns {string} The pathname without dot segments.
+ */
+function removeDotSegments(pathname: string): string {
+  const output: string[] = [];
+  let lastWasDotSegment = false;
+
+  for (const segment of pathname.split('/')) {
+    if (SINGLE_DOT_SEGMENTS.has(segment)) {
+      lastWasDotSegment = true;
+      continue;
+    }
+
+    if (DOUBLE_DOT_SEGMENTS.has(segment)) {
+      lastWasDotSegment = true;
+
+      // The first entry is the empty segment carrying the root slash; popping
+      // it would let `..` escape above the root.
+      if (output.length > 1) {
+        output.pop();
+      }
+
+      continue;
+    }
+
+    lastWasDotSegment = false;
+    output.push(segment);
+  }
+
+  // A trailing dot segment leaves a trailing slash behind, exactly like the URL
+  // parser does for `/a/b/..` -> `/a/`.
+  if (lastWasDotSegment) {
+    output.push('');
+  }
+
+  const normalized = output.join('/');
+  return normalized.startsWith('/') ? normalized : `/${normalized}`;
+}
+
+/**
+ * Normalizes a pathname taken from a raw request target.
+ *
+ * Only pathnames that can actually contain a dot segment pay for the scan, so
+ * the common case is a single `indexOf` over a short string.
+ *
+ * @param {string} pathname - The pathname to normalize.
+ * @returns {string} The normalized pathname.
+ */
+function normalizeRawPathname(pathname: string): string {
+  if (!pathname.includes('.') && !pathname.includes('%2')) {
+    return pathname;
+  }
+
+  return removeDotSegments(pathname);
+}
+
 /**
  * Returns the raw request target (`pathname + search`) when the runtime can
  * hand it over without any parsing.
@@ -72,13 +151,13 @@ export function getRequestPathname(request: Request): string {
 
   if (target !== undefined) {
     const queryIndex = target.indexOf('?');
-    return queryIndex === -1 ? target : target.slice(0, queryIndex);
+    return normalizeRawPathname(queryIndex === -1 ? target : target.slice(0, queryIndex));
   }
 
   const fast = (request as SrvxRequest)._url;
 
   if (fast !== undefined) {
-    return fast.pathname;
+    return normalizeRawPathname(fast.pathname);
   }
 
   const url = request.url;
@@ -100,7 +179,7 @@ export function getRequestPathname(request: Request): string {
     end = hashIndex;
   }
 
-  return start === end ? '/' : url.slice(start, end);
+  return start === end ? '/' : normalizeRawPathname(url.slice(start, end));
 }
 
 /**
