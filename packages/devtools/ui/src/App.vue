@@ -68,14 +68,10 @@ const live = ref<RequestRecord[]>([]);
 
 const liveLogs = ref<LogEntry[]>([]);
 
-const unseenErrors = ref(0);
-
 const liveMetrics = ref<MetricsSample[]>([]);
 const connected = ref(false);
 const streaming = ref(true);
 const theme = ref<'dark' | 'light'>(readTheme());
-
-const unseen = ref(0);
 
 let closeStream: (() => void) | null = null;
 
@@ -105,14 +101,6 @@ watch(
 
 watch(active, (value) => {
   globalThis.history.replaceState(null, '', `#${value}`);
-
-  if (value === 'requests') {
-    unseen.value = 0;
-  }
-
-  if (value === 'logs') {
-    unseenErrors.value = 0;
-  }
 });
 
 watch(streaming, (value) => (value ? connect() : disconnect()));
@@ -125,11 +113,6 @@ function connect(): void {
 
       if (index === -1) {
         live.value = [record, ...live.value].slice(0, 500);
-
-        if (active.value !== 'requests') {
-          unseen.value++;
-        }
-
         return;
       }
 
@@ -139,10 +122,6 @@ function connect(): void {
     },
     onLog: (entry) => {
       liveLogs.value = [entry, ...liveLogs.value].slice(0, 1000);
-
-      if (active.value !== 'logs' && entry.level === 'error') {
-        unseenErrors.value++;
-      }
     },
     onMetrics: (sample) => {
       liveMetrics.value = [...liveMetrics.value, sample].slice(-120);
@@ -233,11 +212,7 @@ onUnmounted(() => {
               />
             </svg>
             <span class="label">{{ tab.label }}</span>
-            <span v-if="tab.id === 'requests' && unseen" class="badge">{{ unseen > 99 ? '99+' : unseen }}</span>
-            <span v-else-if="tab.id === 'logs' && unseenErrors" class="badge error">
-              {{ unseenErrors > 99 ? '99+' : unseenErrors }}
-            </span>
-            <kbd v-else class="key">{{ shortcut(tab.id) }}</kbd>
+            <kbd class="key">{{ shortcut(tab.id) }}</kbd>
           </button>
         </section>
       </nav>
@@ -465,22 +440,6 @@ onUnmounted(() => {
 .item:hover .key,
 .item.active .key {
   opacity: 1;
-}
-
-.badge.error {
-  background: var(--err);
-}
-
-.badge {
-  min-width: 18px;
-  padding: 0 5px;
-  border-radius: var(--radius-sm);
-  background: var(--brand);
-  color: #ffffff;
-  font-family: var(--mono);
-  font-size: 10px;
-  line-height: 16px;
-  text-align: center;
 }
 
 .foot {

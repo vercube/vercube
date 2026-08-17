@@ -709,7 +709,7 @@ onUnmounted(() => cancelAnimationFrame(frame));
   pointer-events: none;
 }
 
-.error {
+p.error {
   position: absolute;
   top: 16px;
   left: 26px;

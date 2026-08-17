@@ -1,4 +1,4 @@
-import { BaseMiddleware, Body, Controller, Get, Middleware, Post, QueryParam } from '@vercube/core';
+import { BaseMiddleware, Body, Controller, Get, Head, Middleware, Post, QueryParam } from '@vercube/core';
 import { Inject } from '@vercube/di';
 import { Logger } from '@vercube/logger';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -62,6 +62,9 @@ export class DemoController {
   public echo(@Body() body: unknown): unknown {
     return body;
   }
+
+  @Head('/probe')
+  public probe(): void {}
 }
 
 /**
@@ -111,8 +114,12 @@ describe('devtools API', () => {
   it('should list routes with their arguments and middleware chain', async () => {
     const app = await createDemoApp();
     const routes = await devtoolsJson<DevtoolsTypes.RouteInfo[]>(app, '/_devtools/api/routes');
-    const slow = routes.find((route) => route.method === 'GET' && route.path === '/demo/slow');
+    const slow = routes.find((route) => route.method === 'GET / HEAD' && route.path === '/demo/slow');
     const echo = routes.find((route) => route.method === 'POST' && route.path === '/demo/echo');
+    const headTwin = routes.find((route) => route.method === 'HEAD' && route.path === '/demo/slow');
+
+    expect(headTwin).toBeUndefined();
+    expect(routes.find((route) => route.path === '/demo/probe')?.method).toBe('HEAD');
 
     expect(slow?.controller).toBe('DemoController');
     expect(slow?.middlewares.map((middleware) => middleware.name)).toContain('SlowMiddleware');

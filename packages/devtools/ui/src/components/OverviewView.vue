@@ -158,7 +158,7 @@ onMounted(reloadAll);
 <template>
   <PageHeader title="Overview" :meta="meta" :loading="loading" @reload="reloadAll" />
 
-  <div class="scroll body">
+  <div class="scroll page">
     <p v-if="error" class="error">{{ error }}</p>
 
     
@@ -318,7 +318,7 @@ onMounted(reloadAll);
 
 <style scoped>
 
-.body {
+.page {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -326,7 +326,7 @@ onMounted(reloadAll);
   overflow: hidden;
 }
 
-.error {
+p.error {
   margin: 12px;
   padding: 10px 12px;
   border: 1px solid color-mix(in srgb, var(--err) 34%, transparent);
@@ -470,7 +470,7 @@ onMounted(reloadAll);
   color: var(--text-2);
 }
 
-.body {
+.cell .body {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
@@ -600,7 +600,7 @@ onMounted(reloadAll);
 }
 
 @media (max-width: 980px) {
-  .body {
+  .page {
     overflow: auto;
   }
 

@@ -68,7 +68,7 @@ watch(filtered, (routes) => {
 });
 
 function methodTone(method: string): string {
-  switch (method) {
+  switch (method.split(' / ')[0]) {
     case 'GET':
     case 'HEAD': {
       return 'read';
@@ -289,7 +289,7 @@ onMounted(reload);
 }
 
 .col-method {
-  width: 68px;
+  width: 96px;
 }
 
 .col-handler {
@@ -442,7 +442,7 @@ onMounted(reload);
   font-size: 12px;
 }
 
-.error {
+p.error {
   margin: 0;
   padding: 10px 12px;
   border: 1px solid color-mix(in srgb, var(--err) 34%, transparent);

@@ -20,9 +20,56 @@ export class RouteCollector {
    * @returns routes sorted by path, then by HTTP method
    */
   public collect(): DevtoolsTypes.RouteInfo[] {
-    const routes = this.gRouter.routes.map((route) => this.describe(route));
+    const routes = this.mergeImplicitHead(this.gRouter.routes.map((route) => this.describe(route)));
 
     return routes.sort((a, b) => a.path.localeCompare(b.path) || a.method.localeCompare(b.method));
+  }
+
+  /**
+   * Collapses the HEAD twin that `@Get` registers onto the matching GET row.
+   * A standalone `@Head` handler is left as its own route.
+   * @param routes described routes, one per router registration
+   * @returns routes with implicit GET+HEAD pairs shown as `GET / HEAD`
+   */
+  private mergeImplicitHead(routes: DevtoolsTypes.RouteInfo[]): DevtoolsTypes.RouteInfo[] {
+    const folded = new Set<DevtoolsTypes.RouteInfo>();
+    const merged: DevtoolsTypes.RouteInfo[] = [];
+
+    for (const route of routes) {
+      if (route.method !== 'GET') {
+        continue;
+      }
+
+      const head = routes.find(
+        (candidate) =>
+          candidate.method === 'HEAD' &&
+          candidate.path === route.path &&
+          candidate.controller === route.controller &&
+          candidate.handler === route.handler,
+      );
+
+      if (!head) {
+        merged.push(route);
+        continue;
+      }
+
+      folded.add(head);
+      merged.push({
+        ...route,
+        id: `GET / HEAD ${route.path}`,
+        method: 'GET / HEAD',
+      });
+    }
+
+    for (const route of routes) {
+      if (route.method === 'GET' || folded.has(route)) {
+        continue;
+      }
+
+      merged.push(route);
+    }
+
+    return merged;
   }
 
   /**

@@ -103,9 +103,9 @@ describe('DevtoolsPlugin', () => {
     expect(own.some((route) => route.path.includes('**'))).toBe(false);
     expect(own.map((route) => `${route.method} ${route.path}`)).toEqual(
       expect.arrayContaining([
-        'GET /_devtools/',
-        'GET /_devtools/api/graph',
-        'GET /_devtools/api/requests/:id',
+        'GET / HEAD /_devtools/',
+        'GET / HEAD /_devtools/api/graph',
+        'GET / HEAD /_devtools/api/requests/:id',
         'DELETE /_devtools/api/requests',
       ]),
     );

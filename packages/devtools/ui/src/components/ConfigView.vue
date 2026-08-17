@@ -147,7 +147,7 @@ onMounted(reload);
   font-size: 12px;
 }
 
-.error {
+p.error {
   margin: 12px;
   padding: 10px 12px;
   border: 1px solid color-mix(in srgb, var(--err) 34%, transparent);

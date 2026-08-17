@@ -126,6 +126,11 @@ onMounted(reload);
 
 <style scoped>
 .filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 8px;
   text-transform: capitalize;
 }
 
@@ -164,7 +169,7 @@ onMounted(reload);
   flex-direction: column;
 }
 
-.error {
+p.error {
   margin: 12px;
   padding: 10px 12px;
   border: 1px solid color-mix(in srgb, var(--err) 34%, transparent);
