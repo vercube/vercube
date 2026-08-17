@@ -2,6 +2,7 @@ import { InjectOptional } from '@vercube/di';
 import { createMiddlewareLogger, extractSafeHeaders } from '@vercube/logger/toolkit';
 import { BaseMiddleware } from '../Services/Middleware/BaseMiddleware';
 import { RequestContext } from '../Services/Router/RequestContext';
+import { getRequestPathname } from '../Utils/Url';
 import type { MiddlewareOptions } from '../Types/CommonTypes';
 import type { RequestLogger } from '@vercube/logger';
 import type { BaseEvlogOptions, MiddlewareLoggerResult } from '@vercube/logger/toolkit';
@@ -48,11 +49,10 @@ export class EvlogMiddleware extends BaseMiddleware<BaseEvlogOptions> {
     }
 
     const options = args?.middlewareArgs ?? {};
-    const url = new URL(request.url);
 
     const { logger, finish, skipped } = createMiddlewareLogger({
       method: request.method,
-      path: url.pathname,
+      path: getRequestPathname(request),
       requestId: request.headers.get('x-request-id') ?? crypto.randomUUID(),
       headers: extractSafeHeaders(request.headers),
       ...options,

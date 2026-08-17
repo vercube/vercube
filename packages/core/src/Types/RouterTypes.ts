@@ -29,6 +29,17 @@ export namespace RouterTypes {
       afterMiddlewares: MiddlewareDefinition[];
     };
     actions: MetadataTypes.Action[];
+    /**
+     * True when the route has no middlewares and no actions, so the request can
+     * be served without building an intermediate response object.
+     */
+    simple?: boolean;
+    /** True when at least one argument resolver returns a promise. */
+    asyncArgs?: boolean;
+    /** True when the handler receives the intermediate response object. */
+    needsResponse?: boolean;
+    /** True when the request body must be cloned before being consumed. */
+    cloneBody?: boolean;
   }
 
   export interface RouteMatched<T = unknown> {
@@ -39,5 +50,10 @@ export namespace RouterTypes {
   export type RouterEvent = RouterTypes.RouteMatched<RouterTypes.RouterHandler> & {
     request: Request;
     response: Response;
+    /**
+     * Whether the request has to be cloned before its body is consumed.
+     * Set by the request handler; defaults to cloning when absent.
+     */
+    cloneBody?: boolean;
   };
 }

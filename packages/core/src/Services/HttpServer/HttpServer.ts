@@ -2,12 +2,32 @@ import { Container, Inject } from '@vercube/di';
 import { serve } from 'srvx';
 import { tryServeSpaIndex } from '../../Common/ServeStatic';
 import { NotFoundError } from '../../Errors/Http/NotFoundError';
+import { getRequestPathname } from '../../Utils/Url';
 import { ErrorHandlerProvider } from '../ErrorHandler/ErrorHandlerProvider';
 import { RequestHandler } from '../Router/RequestHandler';
 import { Router } from '../Router/Router';
 import { StaticRequestHandler } from '../Router/StaticRequestHandler';
 import type { ConfigTypes } from '../../Types/ConfigTypes';
 import type { Server, ServerPlugin } from 'srvx';
+
+/**
+ * Whether the current runtime/platform can bind a socket with `SO_REUSEPORT`.
+ *
+ * Node on macOS rejects `listen()` with `ENOTSUP` when `reusePort` is set,
+ * which makes the server unable to start at all. Bun and Deno implement it
+ * on every platform they support.
+ *
+ * @returns {boolean} True when `reusePort` can be safely requested.
+ */
+function isReusePortSupported(): boolean {
+  const globals = globalThis as { Bun?: unknown; Deno?: unknown };
+
+  if (globals.Bun || globals.Deno) {
+    return true;
+  }
+
+  return typeof process === 'undefined' ? false : process.platform !== 'darwin';
+}
 
 /**
  * HTTP server implementation for handling incoming web requests
@@ -100,7 +120,9 @@ export class HttpServer {
         },
       },
       hostname: host,
-      reusePort: true,
+      // SO_REUSEPORT is not supported by Node on Darwin (listen fails with ENOTSUP),
+      // so it can only be enabled on platforms that actually implement it.
+      reusePort: isReusePortSupported(),
       port,
       fetch: this.handleRequest.bind(this),
       plugins: this.fPlugins,
@@ -126,42 +148,69 @@ export class HttpServer {
    * 2. Returns a 404 response if no route is found
    * 3. Delegates to the request handler for matched routes
    *
+   * The return type is deliberately not `Promise<Response>`: routes that are
+   * fully synchronous return a plain `Response`, which lets srvx write it out
+   * without scheduling a microtask.
+   *
+   * @param {Request} request - The incoming HTTP request
+   * @returns {Response | Promise<Response>} The HTTP response
+   * @private
+   */
+  public handleRequest(request: Request): Response | Promise<Response> {
+    try {
+      const route = this.gRouter.match(request.method, getRequestPathname(request));
+
+      if (route) {
+        return this.gRequestHandler.handleRequest(request, route);
+      }
+
+      // handle preflight request
+      if (request.method === 'OPTIONS') {
+        return this.gRequestHandler.handlePreflight(request);
+      }
+
+      // no route matched - static assets and the SPA fallback are the slow path
+      return this.handleUnmatchedRequest(request);
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  /**
+   * Handles a request that did not match any route by trying the static file
+   * handler and the SPA `index.html` fallback before giving up with a 404.
+   *
    * @param {Request} request - The incoming HTTP request
    * @returns {Promise<Response>} The HTTP response
    * @private
    */
-  public async handleRequest(request: Request): Promise<Response> {
+  private async handleUnmatchedRequest(request: Request): Promise<Response> {
     try {
-      const pathname = new URL(request.url).pathname;
-      const route = this.gRouter.resolve({
-        path: pathname,
-        method: request.method,
-      });
+      const response = await this.gStaticRequestHandler.handleRequest(request);
 
-      // handle preflight request
-      if (!route && request.method === 'OPTIONS') {
-        return this.gRequestHandler.handlePreflight(request);
+      if (response) {
+        return response;
       }
 
-      // if no route is found, try to serve static file
-      if (!route) {
-        const response = await this.gStaticRequestHandler.handleRequest(request);
-
-        if (response) {
-          return response;
-        }
-
-        const spaResponse = await tryServeSpaIndex(request, this.fSpaPublicDir);
-        if (spaResponse) {
-          return spaResponse;
-        }
-
-        throw new NotFoundError('Route not found');
+      const spaResponse = await tryServeSpaIndex(request, this.fSpaPublicDir);
+      if (spaResponse) {
+        return spaResponse;
       }
 
-      return this.gRequestHandler.handleRequest(request, route);
+      throw new NotFoundError('Route not found');
     } catch (error) {
-      return this.gContainer.get(ErrorHandlerProvider).handleError(error instanceof Error ? error : new Error(String(error)));
+      return this.handleError(error);
     }
+  }
+
+  /**
+   * Delegates an unknown failure to the configured error handler.
+   *
+   * @param {unknown} error - The thrown value
+   * @returns {Response | Promise<Response>} The error response
+   * @private
+   */
+  private handleError(error: unknown): Response | Promise<Response> {
+    return this.gContainer.get(ErrorHandlerProvider).handleError(error instanceof Error ? error : new Error(String(error)));
   }
 }

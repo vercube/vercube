@@ -19,17 +19,20 @@ interface GlobalMiddlewareStorageItem<T = unknown, U = unknown> {
 export class GlobalMiddlewareRegistry {
   private fMiddlewares: Set<GlobalMiddlewareStorageItem> = new Set();
 
+  /** Cached projection of {@link fMiddlewares}, invalidated on registration. */
+  private fResolved: MetadataTypes.Middleware[] | undefined;
+
   /**
    * Retrieves all registered global middleware configurations
    *
    * @returns {MetadataTypes.Middleware[]} An array of middleware configurations
    */
   public get middlewares(): MetadataTypes.Middleware[] {
-    return [...this.fMiddlewares.values()].map((m) => ({
+    return (this.fResolved ??= [...this.fMiddlewares.values()].map((m) => ({
       ...m.opts,
       target: '__global__',
       middleware: m.middleware,
-    }));
+    })));
   }
 
   /**
@@ -47,5 +50,7 @@ export class GlobalMiddlewareRegistry {
       middleware,
       opts,
     });
+
+    this.fResolved = undefined;
   }
 }

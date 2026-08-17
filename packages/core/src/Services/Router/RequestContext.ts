@@ -1,18 +1,28 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 
 /**
+ * Store held by {@link AsyncLocalStorage} for the duration of one request.
+ *
+ * The backing map is created on first write: most requests never touch the
+ * context, so allocating a `Map` for every one of them is pure overhead.
+ */
+interface RequestContextStore {
+  map: Map<string, unknown> | null;
+}
+
+/**
  * Request context storage using AsyncLocalStorage.
  * This allows storing request-specific data that is automatically cleaned up after the request completes.
  */
 export class RequestContext {
   /** The storage for the request context */
-  private readonly fStorage: AsyncLocalStorage<Map<string, unknown>>;
+  private readonly fStorage: AsyncLocalStorage<RequestContextStore>;
 
   /**
    * Initializes the request storage.
    */
   constructor() {
-    this.fStorage = new AsyncLocalStorage<Map<string, unknown>>();
+    this.fStorage = new AsyncLocalStorage<RequestContextStore>();
   }
 
   /**
@@ -26,13 +36,15 @@ export class RequestContext {
    * including all nested async operations, but is automatically destroyed when the function
    * passed to `run()` completes.
    *
+   * The return value is passed through unchanged, so a synchronous callback stays
+   * synchronous instead of being wrapped in a promise.
+   *
    * @param fn - The function to run within the context
    * @returns The result of the function
    */
-  public async run<T>(fn: () => Promise<T>): Promise<T> {
-    const context = new Map<string, unknown>();
+  public run<T>(fn: () => T): T {
     // AsyncLocalStorage automatically cleans up the context when fn() completes
-    return this.fStorage.run(context, fn);
+    return this.fStorage.run({ map: null }, fn);
   }
 
   /**
@@ -43,15 +55,15 @@ export class RequestContext {
    * @throws Error if called outside of a request context
    */
   public set(key: string, value: unknown): void {
-    const context = this.fStorage.getStore();
+    const store = this.fStorage.getStore();
 
-    if (!context) {
+    if (!store) {
       throw new Error(
         'RequestContext.set() called outside of request context. The context is automatically initialized by RequestHandler.',
       );
     }
 
-    context.set(key, value);
+    (store.map ??= new Map<string, unknown>()).set(key, value);
   }
 
   /**
@@ -62,15 +74,15 @@ export class RequestContext {
    * @throws Error if called outside of a request context
    */
   public get<T = unknown>(key: string): T | undefined {
-    const context = this.fStorage.getStore();
+    const store = this.fStorage.getStore();
 
-    if (!context) {
+    if (!store) {
       throw new Error(
         'RequestContext.get() called outside of request context. The context is automatically initialized by RequestHandler.',
       );
     }
 
-    return context.get(key) as T | undefined;
+    return store.map?.get(key) as T | undefined;
   }
 
   /**
@@ -92,13 +104,7 @@ export class RequestContext {
    * @returns True if the key exists, false otherwise
    */
   public has(key: string): boolean {
-    const context = this.fStorage.getStore();
-
-    if (!context) {
-      return false;
-    }
-
-    return context.has(key);
+    return this.fStorage.getStore()?.map?.has(key) ?? false;
   }
 
   /**
@@ -107,13 +113,8 @@ export class RequestContext {
    * @returns Array of keys in the context
    */
   public keys(): string[] {
-    const context = this.fStorage.getStore();
-
-    if (!context) {
-      return [];
-    }
-
-    return [...context.keys()];
+    const map = this.fStorage.getStore()?.map;
+    return map ? [...map.keys()] : [];
   }
 
   /**
@@ -122,12 +123,7 @@ export class RequestContext {
    * @returns Map of all key-value pairs in the context
    */
   public getAll(): Map<string, unknown> {
-    const context = this.fStorage.getStore();
-
-    if (!context) {
-      return new Map();
-    }
-
-    return new Map(context);
+    const map = this.fStorage.getStore()?.map;
+    return map ? new Map(map) : new Map();
   }
 }

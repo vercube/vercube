@@ -59,7 +59,16 @@ export function secureReviver(key: string, value: unknown): unknown {
  * // Returns {} - dangerous properties are filtered out
  */
 export function safeJsonParse(text: string): unknown {
-  return JSON.parse(text, secureReviver);
+  // The reviver is invoked for every key of every object, which is a real cost
+  // on the request hot path. A payload that does not even mention a dangerous
+  // property cannot introduce one, so it can be parsed without the reviver.
+  for (const property of DANGEROUS_PROPERTIES) {
+    if (text.includes(property)) {
+      return JSON.parse(text, secureReviver);
+    }
+  }
+
+  return JSON.parse(text);
 }
 
 /**
