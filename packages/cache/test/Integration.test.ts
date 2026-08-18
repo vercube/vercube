@@ -86,7 +86,12 @@ describe('@Cache in a live request pipeline', () => {
 
     const keys = await storageManager.getKeys({ storage: 'cache' });
 
-    expect(keys.some((key) => key.startsWith('/cache/cache:functions:ProductsController.getProduct:'))).toBe(true);
+    const expected = await app.container
+      .get(CacheManager)
+      .resolveKeys({ name: 'ProductsController.getProduct', storage: 'cache' }, '1');
+
+    expect(expected).toHaveLength(1);
+    expect(keys).toEqual(expect.arrayContaining(expected));
     await expect(storageManager.size({ storage: 'cache' })).resolves.toBe(1);
   });
 
