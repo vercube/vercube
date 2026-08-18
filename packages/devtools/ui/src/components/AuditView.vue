@@ -51,10 +51,11 @@ onMounted(reload);
 <template>
   <PageHeader title="Audit" :meta="meta" :loading="loading" @reload="reload">
     <template #tools>
-      
       <button
-        v-for="severity in severities" :key="severity"
-        class="filter" :class="{ off: hidden.has(severity) }"
+        v-for="severity in severities"
+        :key="severity"
+        class="filter"
+        :class="{ off: hidden.has(severity) }"
         type="button"
         :aria-pressed="!hidden.has(severity)"
         @click="toggle(severity)"
@@ -68,7 +69,6 @@ onMounted(reload);
   <div class="body">
     <p v-if="error" class="error">{{ error }}</p>
 
-    
     <section v-if="data" class="verdict">
       <div class="score" :class="scoreTone">
         <strong class="num">{{ data.score }}</strong>

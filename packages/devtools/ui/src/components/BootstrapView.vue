@@ -101,7 +101,6 @@ onMounted(reload);
     </div>
 
     <template v-if="data && data.count > 0">
-      
       <section class="summary">
         <div class="stat">
           <span class="label">Total</span>

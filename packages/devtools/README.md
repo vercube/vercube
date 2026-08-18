@@ -71,15 +71,15 @@ export default defineConfig({
 });
 ```
 
-| Option           | Default        | Description                                                         |
-| ---------------- | -------------- | ------------------------------------------------------------------- |
-| `enabled`        | `config.dev`   | Master switch. Off in production unless explicitly enabled. |
-| `path`           | `'/_devtools'` | Where the UI and its API are mounted.                       |
-| `token`          | `null`         | Required as `?token=` or `x-devtools-token` when set.       |
-| `maxRequests`    | `250`          | Size of the in-memory request ring buffer.                  |
-| `trackRequests`  | `true`         | Record per-request timelines.                               |
+| Option           | Default        | Description                                                  |
+| ---------------- | -------------- | ------------------------------------------------------------ |
+| `enabled`        | `config.dev`   | Master switch. Off in production unless explicitly enabled.  |
+| `path`           | `'/_devtools'` | Where the UI and its API are mounted.                        |
+| `token`          | `null`         | Required as `?token=` or `x-devtools-token` when set.        |
+| `maxRequests`    | `250`          | Size of the in-memory request ring buffer.                   |
+| `trackRequests`  | `true`         | Record per-request timelines.                                |
 | `captureHeaders` | `true`         | Capture request/response headers (credentials are redacted). |
-| `redactHeaders`  | `[]`           | Extra header names to redact on top of the built-in list.   |
+| `redactHeaders`  | `[]`           | Extra header names to redact on top of the built-in list.    |
 
 ### HTTP API
 

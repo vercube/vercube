@@ -311,7 +311,8 @@ onUnmounted(() => cancelAnimationFrame(frame));
 
   <div class="filters">
     <button
-      v-for="role in roles" :key="role"
+      v-for="role in roles"
+      :key="role"
       class="chip"
       :class="[role, { off: hidden.has(role) }]"
       type="button"
@@ -370,7 +371,8 @@ onUnmounted(() => cancelAnimationFrame(frame));
 
         <g class="nodes">
           <g
-            v-for="entry in placed" :key="entry.node.id"
+            v-for="entry in placed"
+            :key="entry.node.id"
             :transform="`translate(${entry.x} ${entry.y})`"
             :opacity="nodeOpacity(entry.node.id)"
             :class="[`node ${entry.node.role}`, { selected: selectedId === entry.node.id }]"

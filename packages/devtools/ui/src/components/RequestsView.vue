@@ -180,9 +180,7 @@ onMounted(reloadAll);
   <PageHeader title="Requests" :meta="meta" :loading="loading" @reload="reloadAll">
     <template #tools>
       <input v-model="query" class="field search" type="search" placeholder="Filter requests…" />
-      <button class="btn" :class="{ active: onlyErrors }" type="button" @click="onlyErrors = !onlyErrors">
-        Errors only
-      </button>
+      <button class="btn" :class="{ active: onlyErrors }" type="button" @click="onlyErrors = !onlyErrors">Errors only</button>
       <button class="btn" type="button" @click="clear">Clear</button>
     </template>
   </PageHeader>
@@ -210,7 +208,8 @@ onMounted(reloadAll);
           </thead>
           <tbody>
             <tr
-              v-for="record in filtered" :key="record.id"
+              v-for="record in filtered"
+              :key="record.id"
               class="item"
               :class="{ selected: selectedId === record.id }"
               tabindex="0"
@@ -225,7 +224,6 @@ onMounted(reloadAll);
               <td class="mono faint col-time">{{ formatTime(record.startedAt) }}</td>
               <td class="mono col-took">{{ formatMs(record.durationMs) }}</td>
               <td class="col-bar">
-                
                 <span class="spark">
                   <span
                     class="fill"

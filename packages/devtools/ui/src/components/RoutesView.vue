@@ -114,7 +114,6 @@ onMounted(reload);
       <span>Clear the filter to see all {{ data?.length ?? 0 }} of them.</span>
     </div>
 
-    
     <div v-else class="ledger">
       <table class="table">
         <thead>

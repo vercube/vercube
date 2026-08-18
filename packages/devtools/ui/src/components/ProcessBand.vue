@@ -129,7 +129,7 @@ const loopTone = computed(() => {
 
       <div class="body list">
         <strong class="num value">{{ latest?.resources?.total ?? '--' }}</strong>
-        
+
         <ul v-if="latest?.resources" class="kinds">
           <li v-for="(count, kind) in latest.resources.kinds" :key="kind">
             <span class="faint">{{ kind }}</span>

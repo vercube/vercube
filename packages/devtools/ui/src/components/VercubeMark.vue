@@ -1,5 +1,4 @@
 <script setup lang="ts">
-
 withDefaults(defineProps<{ tone?: 'brand' | 'mono' }>(), { tone: 'brand' });
 
 const gradientId = `vercube-mark-${Math.random().toString(36).slice(2, 9)}`;

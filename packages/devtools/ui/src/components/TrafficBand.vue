@@ -215,7 +215,7 @@ onBeforeUnmount(() => globalThis.clearInterval(timer));
               :class="part.tone"
               vector-effect="non-scaling-stroke"
             />
-            
+
             <rect
               :x="bar.index * step"
               y="0"
@@ -232,7 +232,6 @@ onBeforeUnmount(() => globalThis.clearInterval(timer));
           <span class="mono">{{ formatClock(series[series.length - 1].at) }}</span>
         </div>
 
-        
         <ul class="legend">
           <li>
             <span class="swatch ok" />2xx–3xx <b class="mono">{{ totals.ok }}</b>
@@ -266,16 +265,8 @@ onBeforeUnmount(() => globalThis.clearInterval(timer));
         >
           <path :d="latency.area" class="area" />
           <path :d="latency.line" class="line" vector-effect="non-scaling-stroke" fill="none" />
-          
-          <rect
-            v-for="dot in latency.dots"
-            :key="dot.x"
-            :x="dot.x - 0.5"
-            :y="dot.y - 0.5"
-            width="1"
-            height="1"
-            class="dot"
-          />
+
+          <rect v-for="dot in latency.dots" :key="dot.x" :x="dot.x - 0.5" :y="dot.y - 0.5" width="1" height="1" class="dot" />
           <line
             v-if="shown && shown.total > 0"
             :x1="latency.points[hovered!].x"
@@ -286,7 +277,8 @@ onBeforeUnmount(() => globalThis.clearInterval(timer));
             vector-effect="non-scaling-stroke"
           />
           <rect
-            v-for="bar in bars" :key="bar.index"
+            v-for="bar in bars"
+            :key="bar.index"
             :x="bar.index * step"
             y="0"
             :width="step"

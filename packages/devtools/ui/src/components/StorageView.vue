@@ -118,7 +118,6 @@ onMounted(reload);
   <div class="body" :class="{ open: selected }" :style="{ '--inspector': `${inspectorWidth}px` }">
     <p v-if="error" class="error">{{ error }}</p>
 
-    
     <div v-else-if="data && !data.available && !data.cache.available" class="empty">
       <span>This application does not use storage.</span>
       <span>Mount @vercube/storage or add @vercube/cache and their contents appear here.</span>

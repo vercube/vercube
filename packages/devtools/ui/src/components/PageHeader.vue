@@ -35,7 +35,6 @@ defineEmits<{ reload: [] }>();
 </template>
 
 <style scoped>
-
 .topbar {
   flex: none;
   display: flex;

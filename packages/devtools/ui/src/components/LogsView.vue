@@ -96,8 +96,10 @@ onMounted(reload);
     <template #tools>
       <input v-model="query" class="field search" type="search" placeholder="Filter logs…" />
       <button
-        v-for="level in levels" :key="level"
-        class="filter" :class="{ off: hidden.has(level) }"
+        v-for="level in levels"
+        :key="level"
+        class="filter"
+        :class="{ off: hidden.has(level) }"
         type="button"
         :aria-pressed="!hidden.has(level)"
         @click="toggle(level)"
@@ -151,7 +153,7 @@ onMounted(reload);
                 {{ entry.message }}
                 <span v-if="entry.context" class="fields mono">{{ Object.keys(entry.context).join(' ') }}</span>
               </td>
-              
+
               <td class="mono faint col-request">{{ entry.requestId ? `#${entry.requestId}` : '--' }}</td>
             </tr>
 

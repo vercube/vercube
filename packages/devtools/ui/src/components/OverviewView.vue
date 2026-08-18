@@ -161,7 +161,6 @@ onMounted(reloadAll);
   <div class="scroll page">
     <p v-if="error" class="error">{{ error }}</p>
 
-    
     <section class="masthead rise" :style="{ '--i': 0 }">
       <ParticleField class="particles" />
       <div class="veil" />
@@ -198,7 +197,6 @@ onMounted(reloadAll);
     </section>
 
     <template v-if="data">
-      
       <section class="strip">
         <button v-for="group in groups" :key="group.label" class="cell" type="button" @click="$emit('navigate', group.tab)">
           <span class="label">
@@ -223,7 +221,6 @@ onMounted(reloadAll);
           </span>
         </button>
 
-        
         <div class="cell static">
           <span class="label">Extensions</span>
 
@@ -241,7 +238,6 @@ onMounted(reloadAll);
       <ProcessBand :samples="metrics" />
 
       <section class="split">
-        
         <div class="surface feed">
           <div class="surface-head">
             <span class="label">Recent requests</span>
@@ -262,7 +258,7 @@ onMounted(reloadAll);
                   <td>
                     <span class="status" :class="statusClass(record.status)">{{ record.status || '---' }}</span>
                   </td>
-                  
+
                   <td class="mono path" :title="`${record.method} ${record.path}`">
                     <span class="faint verb">{{ record.method }}</span
                     >{{ record.path }}
@@ -317,7 +313,6 @@ onMounted(reloadAll);
 </template>
 
 <style scoped>
-
 .page {
   flex: 1;
   display: flex;
