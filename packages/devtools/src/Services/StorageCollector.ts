@@ -1,5 +1,5 @@
 import { Container, Inject } from '@vercube/di';
-import { flattenConfig } from '../Utils/Flatten';
+import { flattenConfig, isSecretKey } from '../Utils/Flatten';
 import { describeKey } from '../Utils/Introspect';
 import { previewValue } from '../Utils/Preview';
 import type { DevtoolsTypes } from '../Types/DevtoolsTypes';
@@ -46,6 +46,7 @@ export class StorageCollector {
 
   /**
    * Reads a single value from a named mount.
+   * Values stored under a credential-looking key are never returned.
    * @param mount name of the mount to read from
    * @param key key to read
    * @returns a preview of the value, or an error description
@@ -61,6 +62,10 @@ export class StorageCollector {
 
     if (typeof driver.getItem !== 'function') {
       return { mount, key, type: 'undefined', size: 0, truncated: false, error: 'This driver cannot read a single key.' };
+    }
+
+    if (isSecretKey(key)) {
+      return { mount, key, type: 'redacted', size: 0, truncated: false, text: '<redacted>' };
     }
 
     try {

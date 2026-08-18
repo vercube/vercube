@@ -16,6 +16,9 @@ export const DEFAULT_DEVTOOLS_OPTIONS: Omit<DevtoolsTypes.ResolvedOptions, 'enab
   maxLogs: 500,
 };
 
+/** Cookie the UI uses to carry the access token after the first page load. */
+export const DEVTOOLS_TOKEN_COOKIE = 'vercube_devtools_token';
+
 /**
  * Content types previewed as text. Everything else is recorded as binary.
  */

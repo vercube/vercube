@@ -54,6 +54,26 @@ const traffic = computed(() => {
 
 const recent = computed(() => traffic.value.slice(0, 40));
 
+/** Traffic totals recomputed from the merged records, so live events are reflected at once. */
+const trafficStats = computed(() => {
+  const records = traffic.value;
+  const total = records.length;
+
+  if (total === 0) {
+    return { total: 0, errors: 0, averageMs: 0, p95Ms: 0 };
+  }
+
+  const durations = records.map((record) => record.durationMs).sort((a, b) => a - b);
+  const sum = durations.reduce((accumulator, value) => accumulator + value, 0);
+
+  return {
+    total,
+    errors: records.filter((record) => record.status >= 400).length,
+    averageMs: Math.round((sum / total) * 1000) / 1000,
+    p95Ms: durations[Math.min(total - 1, Math.floor(total * 0.95))],
+  };
+});
+
 function formatTime(epoch: number): string {
   return new Date(epoch).toLocaleTimeString(undefined, { hour12: false });
 }
@@ -77,7 +97,8 @@ const groups = computed(() => {
     return [];
   }
 
-  const { counts, requests } = overview;
+  const { counts } = overview;
+  const requests = trafficStats.value;
 
   return [
     {
@@ -190,7 +211,7 @@ onMounted(reloadAll);
           </div>
           <div>
             <dt>Average latency</dt>
-            <dd class="mono">{{ data.requests.total ? formatMs(data.requests.averageMs) : '--' }}</dd>
+            <dd class="mono">{{ trafficStats.total ? formatMs(trafficStats.averageMs) : '--' }}</dd>
           </div>
         </dl>
       </div>

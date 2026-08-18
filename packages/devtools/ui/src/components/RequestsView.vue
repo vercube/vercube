@@ -678,7 +678,8 @@ p.error {
 }
 
 @media (max-width: 1080px) {
-  .split {
+  .split,
+  .split.open {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
   }
@@ -686,6 +687,11 @@ p.error {
   .list {
     border-right: none;
     border-bottom: 1px solid var(--edge);
+  }
+
+  /* The inspector is stacked below the list, so there is no vertical edge to drag. */
+  .split :deep(.handle) {
+    display: none;
   }
 }
 </style>

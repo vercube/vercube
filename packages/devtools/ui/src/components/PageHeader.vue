@@ -79,5 +79,18 @@ defineEmits<{ reload: [] }>();
   .meta {
     display: none;
   }
+
+  .topbar {
+    height: auto;
+    min-height: 53px;
+    flex-wrap: wrap;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  .tools {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+  }
 }
 </style>

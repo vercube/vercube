@@ -227,10 +227,45 @@ describe('devtools API', () => {
 
     const [record] = await devtoolsJson<DevtoolsTypes.RequestRecord[]>(app, '/_devtools/api/requests');
 
-    // Undeclared length: body is buffered then truncated to the cap.
+    // Undeclared length: only the cap is kept, the rest is drained.
     expect(record.requestBody?.truncated).toBe(true);
     expect(record.requestBody?.size).toBe(body.length);
     expect(record.requestBody?.text).toBe(body.slice(0, 16));
+  });
+
+  it('should keep only the cap in memory for a streamed body', async () => {
+    const app = await createCappedApp();
+    const chunk = 'x'.repeat(1024);
+    const chunks = 64;
+
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        for (let index = 0; index < chunks; index++) {
+          controller.enqueue(new TextEncoder().encode(chunk));
+        }
+
+        controller.close();
+      },
+    });
+
+    await app.fetch(
+      new Request('http://localhost/demo/echo', {
+        method: 'POST',
+        headers: { 'content-type': 'text/plain' },
+        body: stream,
+        duplex: 'half',
+      } as RequestInit),
+    );
+
+    await settleBodies();
+
+    const [record] = await devtoolsJson<DevtoolsTypes.RequestRecord[]>(app, '/_devtools/api/requests');
+
+    // No content-length to short-circuit on: the reader stops collecting at the
+    // cap but keeps counting, so the size stays exact.
+    expect(record.requestBody?.truncated).toBe(true);
+    expect(record.requestBody?.size).toBe(chunk.length * chunks);
+    expect(record.requestBody?.text).toHaveLength(16);
   });
 
   it('should skip a body that declares a length over the cap', async () => {

@@ -29,6 +29,23 @@ const canvas = ref<SVGSVGElement | null>(null);
 const width = 1200;
 const height = 780;
 
+/** Force layout tuning. */
+const ITERATIONS = 360;
+const REPULSION = 12_000;
+const SPRING_LENGTH = 165;
+
+/** How long one animation frame may spend on the simulation. */
+const FRAME_BUDGET_MS = 8;
+
+/** An edge between two laid out nodes. */
+interface Link {
+  source: Placed;
+  target: Placed;
+}
+
+/** The layout in progress, or null when it has settled. */
+let simulation: { entries: Placed[]; links: Link[]; step: number } | null = null;
+
 let frame = 0;
 
 const visibleNodes = computed(() => (data.value?.nodes ?? []).filter((node) => !hidden.value.has(node.role as Role)));
@@ -102,6 +119,8 @@ const viewBox = computed(() => {
 function layout(): void {
   const nodes = visibleNodes.value;
 
+  simulation = null;
+
   if (nodes.length === 0) {
     placed.value = [];
     return;
@@ -128,65 +147,95 @@ function layout(): void {
     .map((edge) => ({ source: index.get(edge.from)!, target: index.get(edge.to)! }))
     .filter((link) => link.source && link.target && link.source !== link.target);
 
-  const iterations = 360;
-  const repulsion = 12_000;
-  const springLength = 165;
+  simulation = { entries, links, step: 0 };
+  placed.value = entries;
+  frame = requestAnimationFrame(advance);
+}
 
-  for (let step = 0; step < iterations; step++) {
-    const alpha = 1 - step / iterations;
+/**
+ * Runs as many simulation steps as fit in one frame, then yields.
+ * Keeps a large graph from freezing the inspector and shows it settling.
+ */
+function advance(): void {
+  const state = simulation;
 
-    for (let i = 0; i < entries.length; i++) {
-      const a = entries[i];
+  if (!state) {
+    return;
+  }
 
-      for (let j = i + 1; j < entries.length; j++) {
-        const b = entries[j];
-        let dx = b.x - a.x;
-        let dy = b.y - a.y;
-        let distanceSquared = dx * dx + dy * dy;
+  const deadline = performance.now() + FRAME_BUDGET_MS;
 
-        if (distanceSquared < 1) {
-          dx = (i - j) * 0.5 + 0.1;
-          dy = (j - i) * 0.5 + 0.1;
-          distanceSquared = dx * dx + dy * dy;
-        }
+  do {
+    simulate(state.entries, state.links, 1 - state.step / ITERATIONS);
+    state.step++;
+  } while (state.step < ITERATIONS && performance.now() < deadline);
 
-        const force = repulsion / distanceSquared;
-        const distance = Math.sqrt(distanceSquared);
-        const fx = (dx / distance) * force;
-        const fy = (dy / distance) * force;
+  placed.value = [...state.entries];
 
-        a.vx -= fx;
-        a.vy -= fy;
-        b.vx += fx;
-        b.vy += fy;
+  if (state.step < ITERATIONS) {
+    frame = requestAnimationFrame(advance);
+    return;
+  }
+
+  simulation = null;
+}
+
+/**
+ * Applies one force step in place.
+ * @param entries nodes being laid out
+ * @param links edges between them
+ * @param alpha how much of the step is applied, decaying to zero
+ */
+function simulate(entries: Placed[], links: Link[], alpha: number): void {
+  for (let i = 0; i < entries.length; i++) {
+    const a = entries[i];
+
+    for (let j = i + 1; j < entries.length; j++) {
+      const b = entries[j];
+      let dx = b.x - a.x;
+      let dy = b.y - a.y;
+      let distanceSquared = dx * dx + dy * dy;
+
+      if (distanceSquared < 1) {
+        dx = (i - j) * 0.5 + 0.1;
+        dy = (j - i) * 0.5 + 0.1;
+        distanceSquared = dx * dx + dy * dy;
       }
-    }
 
-    for (const link of links) {
-      const dx = link.target.x - link.source.x;
-      const dy = link.target.y - link.source.y;
-      const distance = Math.max(1, Math.hypot(dx, dy));
-      const force = (distance - springLength) * 0.06;
+      const force = REPULSION / distanceSquared;
+      const distance = Math.sqrt(distanceSquared);
       const fx = (dx / distance) * force;
       const fy = (dy / distance) * force;
 
-      link.source.vx += fx;
-      link.source.vy += fy;
-      link.target.vx -= fx;
-      link.target.vy -= fy;
-    }
-
-    for (const entry of entries) {
-      entry.vx += (width / 2 - entry.x) * 0.012;
-      entry.vy += (height / 2 - entry.y) * 0.012;
-      entry.x += entry.vx * alpha * 0.35;
-      entry.y += entry.vy * alpha * 0.35;
-      entry.vx *= 0.82;
-      entry.vy *= 0.82;
+      a.vx -= fx;
+      a.vy -= fy;
+      b.vx += fx;
+      b.vy += fy;
     }
   }
 
-  placed.value = entries;
+  for (const link of links) {
+    const dx = link.target.x - link.source.x;
+    const dy = link.target.y - link.source.y;
+    const distance = Math.max(1, Math.hypot(dx, dy));
+    const force = (distance - SPRING_LENGTH) * 0.06;
+    const fx = (dx / distance) * force;
+    const fy = (dy / distance) * force;
+
+    link.source.vx += fx;
+    link.source.vy += fy;
+    link.target.vx -= fx;
+    link.target.vy -= fy;
+  }
+
+  for (const entry of entries) {
+    entry.vx += (width / 2 - entry.x) * 0.012;
+    entry.vy += (height / 2 - entry.y) * 0.012;
+    entry.x += entry.vx * alpha * 0.35;
+    entry.y += entry.vy * alpha * 0.35;
+    entry.vx *= 0.82;
+    entry.vy *= 0.82;
+  }
 }
 
 function nodeOpacity(id: string): number {
@@ -229,6 +278,12 @@ function unitsPerPixel(): number {
 function onPointerDown(event: PointerEvent, id: string | null): void {
   (event.currentTarget as Element).setPointerCapture?.(event.pointerId);
   const origin = id ? placedById.value.get(id) : null;
+
+  if (id) {
+    // A dragged node owns its position; let the layout settle where it is.
+    simulation = null;
+    cancelAnimationFrame(frame);
+  }
 
   dragging.value = {
     id,
@@ -298,7 +353,10 @@ const meta = computed(() => {
 });
 
 onMounted(reload);
-onUnmounted(() => cancelAnimationFrame(frame));
+onUnmounted(() => {
+  simulation = null;
+  cancelAnimationFrame(frame);
+});
 </script>
 
 <template>

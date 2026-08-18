@@ -69,6 +69,18 @@ export class DevtoolsPlugin extends BasePlugin<DevtoolsTypes.Options> {
 
     const resolved = this.resolveOptions(config, options);
 
+    // The inspector exposes traffic, logs and resolved config. Outside development
+    // it only mounts behind an explicit token.
+    if (config.production === true && !resolved.token) {
+      app.container
+        .get(Logger)
+        .error(
+          '[DevtoolsPlugin] Not mounting: devtools in production require an access token. Set `token` in the plugin options.',
+        );
+
+      return;
+    }
+
     installBootstrapProfiler();
 
     app.container.bindInstance($DevtoolsOptions, resolved);
@@ -118,10 +130,13 @@ export class DevtoolsPlugin extends BasePlugin<DevtoolsTypes.Options> {
   private resolveOptions(config: ConfigTypes.Config, options?: DevtoolsTypes.Options): DevtoolsTypes.ResolvedOptions {
     const merged = defu(options ?? {}, DEFAULT_DEVTOOLS_OPTIONS) as DevtoolsTypes.ResolvedOptions;
 
+    // An empty or slash-only mount would claim every route, so fall back to the default.
+    const trimmed = merged.path.replace(/^\/+|\/+$/g, '');
+
     return {
       ...merged,
       enabled: this.isEnabled(config, options),
-      path: `/${merged.path.replace(/^\/+|\/+$/g, '')}`,
+      path: trimmed ? `/${trimmed}` : DEFAULT_DEVTOOLS_OPTIONS.path,
     };
   }
 }

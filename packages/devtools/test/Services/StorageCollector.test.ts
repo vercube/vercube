@@ -113,6 +113,18 @@ describe('StorageCollector', () => {
     expect(value.error).toMatch(/no "elsewhere" mount/i);
   });
 
+  it('never returns a value stored under a credential-looking key', async () => {
+    const app = await createStorageApp({ default: { 'session:refresh_token': 'leak-me', 'user:1': 'fine' } });
+    const collector = app.container.get(StorageCollector);
+
+    const secret = await collector.readValue('default', 'session:refresh_token');
+    const plain = await collector.readValue('default', 'user:1');
+
+    expect(secret.text).toBe('<redacted>');
+    expect(secret.text).not.toContain('leak-me');
+    expect(plain.text).toContain('fine');
+  });
+
   it('renders Map and Set values instead of dropping them', async () => {
     const app = await createStorageApp({
       default: { config: new Map([['a', 1]]), tags: new Set(['x', 'y']) },

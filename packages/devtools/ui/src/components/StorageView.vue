@@ -9,7 +9,8 @@ import type { StorageValue, StorageView } from '../api';
 const { data, error, loading, reload } = useResource<StorageView>('/api/storage');
 
 const query = ref('');
-const selectedId = ref<string | null>(null);
+// Kept as a pair: storage keys may contain any character, including separators.
+const selected = ref<{ mount: string; key: string } | null>(null);
 
 const DEFAULT_INSPECTOR_WIDTH = 420;
 
@@ -37,22 +38,13 @@ const meta = computed(() => {
   return `${mountCount} mount${mountCount === 1 ? '' : 's'} · ${totalKeys.value} key${totalKeys.value === 1 ? '' : 's'}`;
 });
 
-function keyOf(mount: string, key: string): string {
-  return `${mount} ${key}`;
+function isSelected(mount: string, key: string): boolean {
+  return selected.value?.mount === mount && selected.value.key === key;
 }
 
-const selected = computed(() => {
-  if (!selectedId.value) {
-    return null;
-  }
-
-  const [mount, key] = selectedId.value.split(' ');
-  return { mount, key };
-});
-
 watch(mounts, (groups) => {
-  if (selectedId.value && !groups.some((group) => group.matches.some((key) => keyOf(group.name, key) === selectedId.value))) {
-    selectedId.value = null;
+  if (selected.value && !groups.some((group) => group.matches.some((key) => isSelected(group.name, key)))) {
+    selected.value = null;
   }
 });
 
@@ -61,10 +53,9 @@ const valueLoading = ref(false);
 const valueError = ref<string | null>(null);
 
 function select(mount: string, key: string): void {
-  const id = keyOf(mount, key);
-  selectedId.value = selectedId.value === id ? null : id;
+  selected.value = isSelected(mount, key) ? null : { mount, key };
 
-  if (selectedId.value) {
+  if (selected.value) {
     void loadValue(mount, key);
   }
 }
@@ -172,12 +163,12 @@ onMounted(reload);
 
             <tr
               v-for="key in mount.matches"
-              :key="keyOf(mount.name, key)"
+              :key="key"
               class="row"
-              :class="{ open: selectedId === keyOf(mount.name, key) }"
+              :class="{ open: isSelected(mount.name, key) }"
               tabindex="0"
               role="button"
-              :aria-pressed="selectedId === keyOf(mount.name, key)"
+              :aria-pressed="isSelected(mount.name, key)"
               @click="select(mount.name, key)"
               @keydown.enter.prevent="select(mount.name, key)"
               @keydown.space.prevent="select(mount.name, key)"
@@ -224,7 +215,7 @@ onMounted(reload);
               />
             </svg>
           </button>
-          <button class="close" type="button" title="Close the value inspector" @click="selectedId = null">
+          <button class="close" type="button" title="Close the value inspector" @click="selected = null">
             <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">
               <path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
             </svg>

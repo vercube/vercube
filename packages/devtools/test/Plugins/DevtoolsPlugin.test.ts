@@ -149,4 +149,95 @@ describe('DevtoolsPlugin', () => {
     expect((await devtoolsFetch(app, '/_devtools/api/overview')).status).toBe(401);
     expect((await devtoolsFetch(app, '/_devtools/api/overview?token=keep-me')).status).toBe(200);
   });
+
+  it('should accept the token from a cookie', async () => {
+    const app = await createDevtoolsApp({ token: 'keep-me' });
+
+    const response = await devtoolsFetch(app, '/_devtools/api/overview', {
+      headers: { cookie: 'other=1; vercube_devtools_token=keep-me' },
+    });
+
+    expect(response.status).toBe(200);
+  });
+
+  it('should keep global middlewares on routes that merely share the mount prefix', async () => {
+    const seen: string[] = [];
+
+    class TracingMiddleware extends BaseMiddleware {
+      public onRequest(request: Request): void {
+        seen.push(new URL(request.url).pathname);
+      }
+    }
+
+    @Controller('/_devtools-admin')
+    class LookalikeController {
+      @Get('/ping')
+      public ping(): string {
+        return 'pong';
+      }
+    }
+
+    const app = await createDevtoolsApp({}, (app) => {
+      app.container.get(GlobalMiddlewareRegistry).registerGlobalMiddleware(TracingMiddleware);
+      app.container.bind(LookalikeController);
+    });
+
+    // The first request triggers the post-boot pass that detaches global middlewares.
+    await app.fetch(new Request('http://localhost/_devtools-admin/ping'));
+    await app.fetch(new Request('http://localhost/_devtools-admin/ping'));
+
+    expect(seen).toEqual(['/_devtools-admin/ping', '/_devtools-admin/ping']);
+  });
+
+  it('should fall back to the default mount when the configured path is empty', async () => {
+    const seen: string[] = [];
+
+    class TracingMiddleware extends BaseMiddleware {
+      public onRequest(request: Request): void {
+        seen.push(new URL(request.url).pathname);
+      }
+    }
+
+    @Controller('/app')
+    class AppController {
+      @Get('/ping')
+      public ping(): string {
+        return 'pong';
+      }
+    }
+
+    const app = await createDevtoolsApp({ path: '/' }, (app) => {
+      app.container.get(GlobalMiddlewareRegistry).registerGlobalMiddleware(TracingMiddleware);
+      app.container.bind(AppController);
+    });
+
+    await app.fetch(new Request('http://localhost/app/ping'));
+    await app.fetch(new Request('http://localhost/app/ping'));
+
+    expect(seen).toHaveLength(2);
+    expect((await devtoolsFetch(app, '/_devtools')).status).toBe(200);
+  });
+
+  it('should refuse to mount in production without a token', async () => {
+    const app = await createApp({
+      cfg: { requestLogging: false, dev: true, production: true },
+      setup: (app) => {
+        app.addPlugin(DevtoolsPlugin, { enabled: true });
+      },
+    });
+
+    expect((await devtoolsFetch(app, '/_devtools')).status).toBe(404);
+  });
+
+  it('should mount in production when a token is configured', async () => {
+    const app = await createApp({
+      cfg: { requestLogging: false, dev: true, production: true },
+      setup: (app) => {
+        app.addPlugin(DevtoolsPlugin, { enabled: true, token: 'prod-token' });
+      },
+    });
+
+    expect((await devtoolsFetch(app, '/_devtools')).status).toBe(401);
+    expect((await devtoolsFetch(app, '/_devtools?token=prod-token')).status).toBe(200);
+  });
 });

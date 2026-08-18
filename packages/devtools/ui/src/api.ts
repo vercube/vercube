@@ -21,21 +21,46 @@ export type AuditReport = DevtoolsTypes.AuditReport;
 
 export const base: string = globalThis.location.pathname.replace(/\/+$/, '') || '/_devtools';
 
-const token: string | null = new URLSearchParams(globalThis.location.search).get('token');
+/** Cookie the server reads once the token has left the URL. */
+const TOKEN_COOKIE = 'vercube_devtools_token';
 
-export function apiUrl(path: string): string {
-  const url = new URL(`${base}${path}`, globalThis.location.origin);
+/**
+ * Moves a `?token=` bootstrap parameter into a cookie and drops it from the URL,
+ * so the secret is not repeated on every API request, `Referer` or history entry.
+ * The cookie is what authenticates later fetches, `EventSource` and downloads.
+ * @returns the active token, when this instance is protected
+ */
+function adoptToken(): string | null {
+  const params = new URLSearchParams(globalThis.location.search);
+  const fromQuery = params.get('token');
 
-  if (token) {
-    url.searchParams.set('token', token);
+  if (!fromQuery) {
+    return null;
   }
 
-  return url.toString();
+  // The Cookie Store API is not available everywhere the inspector runs.
+  /* oxlint-disable-next-line unicorn/no-document-cookie */
+  document.cookie = `${TOKEN_COOKIE}=${encodeURIComponent(fromQuery)}; path=${base}; SameSite=Strict`;
+  params.delete('token');
+
+  const query = params.size > 0 ? `?${params}` : '';
+  globalThis.history.replaceState(null, '', `${globalThis.location.pathname}${query}${globalThis.location.hash}`);
+
+  return fromQuery;
+}
+
+const token: string | null = adoptToken();
+
+export function apiUrl(path: string): string {
+  return new URL(`${base}${path}`, globalThis.location.origin).toString();
 }
 
 /** Fetches a JSON payload from a devtools API path. */
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(apiUrl(path), { ...init, headers: { Accept: 'application/json', ...init?.headers } });
+  const response = await fetch(apiUrl(path), {
+    ...init,
+    headers: { Accept: 'application/json', ...(token ? { 'x-devtools-token': token } : {}), ...init?.headers },
+  });
 
   if (!response.ok) {
     const detail = await response.text().catch(() => '');

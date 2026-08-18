@@ -1,10 +1,18 @@
+import { timingSafeEqual } from 'node:crypto';
 import { BaseMiddleware } from '@vercube/core';
 import { Inject } from '@vercube/di';
+import { DEVTOOLS_TOKEN_COOKIE } from '../Constants/DevtoolsDefaults';
 import { $DevtoolsOptions } from '../Symbols/DevtoolsSymbols';
 import type { DevtoolsTypes } from '../Types/DevtoolsTypes';
 
 /**
  * Guards every devtools endpoint with the configured access token.
+ *
+ * The token may arrive as the `x-devtools-token` header, as the
+ * `vercube_devtools_token` cookie, or — only to bootstrap a browser session —
+ * as a `?token=` query parameter. The UI moves the query parameter into the
+ * cookie and drops it from the URL on first load, so it is not repeated on
+ * every request.
  */
 export class DevtoolsAuthMiddleware extends BaseMiddleware {
   @Inject($DevtoolsOptions)
@@ -23,9 +31,13 @@ export class DevtoolsAuthMiddleware extends BaseMiddleware {
     }
 
     const url = new URL(request.url);
-    const provided = request.headers.get('x-devtools-token') ?? url.searchParams.get('token');
+    const candidates = [
+      request.headers.get('x-devtools-token'),
+      this.readCookie(request.headers.get('cookie')),
+      url.searchParams.get('token'),
+    ];
 
-    if (provided === token) {
+    if (candidates.some((candidate) => this.matches(candidate, token))) {
       return;
     }
 
@@ -45,5 +57,42 @@ export class DevtoolsAuthMiddleware extends BaseMiddleware {
       status: 401,
       headers: { 'Content-Type': 'application/json; charset=utf-8' },
     });
+  }
+
+  /**
+   * Compares a candidate against the configured token without leaking its length through timing.
+   * @param candidate value taken from the request, when present
+   * @param token the configured token
+   * @returns whether the candidate is the token
+   */
+  private matches(candidate: string | null, token: string): boolean {
+    if (!candidate) {
+      return false;
+    }
+
+    const provided = Buffer.from(candidate, 'utf8');
+    const expected = Buffer.from(token, 'utf8');
+
+    return provided.length === expected.length && timingSafeEqual(provided, expected);
+  }
+
+  /**
+   * @param header raw `Cookie` header, when present
+   * @returns the devtools token carried by the cookie, or null
+   */
+  private readCookie(header: string | null): string | null {
+    if (!header) {
+      return null;
+    }
+
+    for (const pair of header.split(';')) {
+      const separator = pair.indexOf('=');
+
+      if (separator > 0 && pair.slice(0, separator).trim() === DEVTOOLS_TOKEN_COOKIE) {
+        return decodeURIComponent(pair.slice(separator + 1).trim());
+      }
+    }
+
+    return null;
   }
 }

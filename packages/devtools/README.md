@@ -71,15 +71,15 @@ export default defineConfig({
 });
 ```
 
-| Option           | Default        | Description                                                  |
-| ---------------- | -------------- | ------------------------------------------------------------ |
-| `enabled`        | `config.dev`   | Master switch. Off in production unless explicitly enabled.  |
-| `path`           | `'/_devtools'` | Where the UI and its API are mounted.                        |
-| `token`          | `null`         | Required as `?token=` or `x-devtools-token` when set.        |
-| `maxRequests`    | `250`          | Size of the in-memory request ring buffer.                   |
-| `trackRequests`  | `true`         | Record per-request timelines.                                |
-| `captureHeaders` | `true`         | Capture request/response headers (credentials are redacted). |
-| `redactHeaders`  | `[]`           | Extra header names to redact on top of the built-in list.    |
+| Option           | Default        | Description                                                                                           |
+| ---------------- | -------------- | ----------------------------------------------------------------------------------------------------- |
+| `enabled`        | `config.dev`   | Master switch. Off in production unless explicitly enabled.                                           |
+| `path`           | `'/_devtools'` | Where the UI and its API are mounted.                                                                 |
+| `token`          | `null`         | Access token. Required in production. Sent as `x-devtools-token`, cookie, or `?token=` on first load. |
+| `maxRequests`    | `250`          | Size of the in-memory request ring buffer.                                                            |
+| `trackRequests`  | `true`         | Record per-request timelines.                                                                         |
+| `captureHeaders` | `true`         | Capture request/response headers (credentials are redacted).                                          |
+| `redactHeaders`  | `[]`           | Extra header names to redact on top of the built-in list.                                             |
 
 ### HTTP API
 
@@ -103,13 +103,21 @@ Everything the UI shows is plain JSON:
 
 Devtools expose the internal structure of your application. They are disabled
 unless the app runs in development mode; turning them on elsewhere requires
-`enabled: true`, and you should set a `token` when you do. Credential-bearing
-headers (`authorization`, `cookie`, API keys) are always replaced with
-`<redacted>`.
+`enabled: true`. **In production the plugin refuses to mount without a `token`**
+and logs an error instead.
 
-The endpoints are ordinary `@Controller` routes, but the plugin detaches your
-application's **global** middlewares from them. Use the `token` option for access
-control instead.
+Credential-bearing headers (`authorization`, `cookie`, API keys) are always
+replaced with `<redacted>`, as are config entries and storage keys whose name
+reads like a credential (`apiKey`, `jwt_secret`, `AWS_SECRET_ACCESS_KEY`, …).
+
+The endpoints are ordinary `@Controller` routes mounted under `path`, and the
+plugin detaches your application's **global** middlewares from that mount only —
+routes that merely share the prefix keep theirs. Use the `token` option for
+access control instead.
+
+Open the UI once with `?token=…`; it moves the token into a `SameSite=Strict`
+cookie and drops it from the URL, so it is not repeated in later requests,
+`Referer` headers or browser history.
 
 Check out the full [documentation](https://vercube.dev/docs/modules/devtools/overview)
 

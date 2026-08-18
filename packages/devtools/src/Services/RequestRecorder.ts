@@ -142,7 +142,7 @@ export class RequestRecorder {
 
       const url = new URL(request.url);
 
-      if (!this.gOptions.trackRequests || url.pathname.startsWith(this.gOptions.path)) {
+      if (!this.gOptions.trackRequests || this.isDevtoolsPath(url.pathname)) {
         return original(request);
       }
 
@@ -182,7 +182,7 @@ export class RequestRecorder {
     const globals = new Set(this.gGlobalMiddlewares.middlewares.map((entry) => entry.middleware));
 
     for (const route of routes) {
-      if (route.path.startsWith(this.gOptions.path)) {
+      if (this.isDevtoolsPath(route.path)) {
         this.detachGlobalMiddlewares(route.handler, globals);
         continue;
       }
@@ -197,6 +197,18 @@ export class RequestRecorder {
         this.instrumentMiddleware(definition, 'onResponse', 'middleware:after');
       }
     }
+  }
+
+  /**
+   * Matches the devtools mount on whole path segments, so a mount of `/_devtools`
+   * never claims a sibling route such as `/_devtools-admin`.
+   * @param path route or request pathname
+   * @returns whether the path belongs to the devtools mount
+   */
+  private isDevtoolsPath(path: string): boolean {
+    const mount = this.gOptions.path;
+
+    return path === mount || path.startsWith(`${mount}/`);
   }
 
   /**
@@ -503,8 +515,7 @@ export class RequestRecorder {
       return this.omitted(contentType, 'too-large', declared);
     }
 
-    const buffer = await message.arrayBuffer();
-    const size = buffer.byteLength;
+    const { bytes, size } = await this.readCapped(message);
 
     if (size === 0) {
       return this.omitted(contentType, 'empty');
@@ -515,16 +526,66 @@ export class RequestRecorder {
     }
 
     if (size > this.gOptions.maxBodyBytes) {
-      const head = new TextDecoder().decode(buffer.slice(0, this.gOptions.maxBodyBytes));
+      const head = new TextDecoder().decode(bytes);
       return { contentType, size, text: head.replace(/�+$/, ''), truncated: true };
     }
 
     try {
-      const text = new TextDecoder('utf-8', { fatal: true }).decode(buffer);
+      const text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
       return { contentType, size, text, truncated: false };
     } catch {
       return this.omitted(contentType, 'binary', size);
     }
+  }
+
+  /**
+   * Streams a message body, keeping at most `maxBodyBytes` of it in memory.
+   * The rest is drained rather than cancelled, so `size` stays exact and the
+   * clone never makes the tee buffer grow.
+   * @param message a clone of the request or response
+   * @returns the captured prefix and the total byte size
+   */
+  private async readCapped(message: Request | Response): Promise<{ bytes: Uint8Array; size: number }> {
+    const reader = message.body?.getReader();
+
+    if (!reader) {
+      return { bytes: new Uint8Array(0), size: 0 };
+    }
+
+    const limit = this.gOptions.maxBodyBytes;
+    const chunks: Uint8Array[] = [];
+    let captured = 0;
+    let size = 0;
+
+    try {
+      for (;;) {
+        const { value, done } = await reader.read();
+
+        if (done) {
+          break;
+        }
+
+        size += value.byteLength;
+
+        if (captured < limit) {
+          const slice = value.subarray(0, limit - captured);
+          chunks.push(slice);
+          captured += slice.byteLength;
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+
+    const bytes = new Uint8Array(captured);
+    let offset = 0;
+
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+
+    return { bytes, size };
   }
 
   /**

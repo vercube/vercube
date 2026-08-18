@@ -1,21 +1,65 @@
 import type { DevtoolsTypes } from '../Types/DevtoolsTypes';
 
 /**
- * Key names whose values are never shown.
- * Matched on whole path segments so substrings like `keys` are not redacted.
+ * Words whose values are never shown. Matched against the words of a path
+ * segment, so `keys` stays visible while `accessKeys` does not.
  */
-const SECRET_SEGMENT =
-  /(^|[._-])(token|secret|password|passwd|pwd|credential|credentials|privatekey|apikey|accesskey|secretkey|dsn|connectionstring)([._-]|$)/i;
+const SECRET_WORDS: ReadonlySet<string> = new Set([
+  'token',
+  'secret',
+  'password',
+  'passwd',
+  'pwd',
+  'credential',
+  'privatekey',
+  'apikey',
+  'accesskey',
+  'secretkey',
+  'dsn',
+  'connectionstring',
+]);
 
 /** Maximum recursion depth when flattening. */
 const MAX_DEPTH = 8;
+
+/**
+ * Splits a path segment into lowercase words on separators, digits and camelCase boundaries.
+ * @param segment one dotted path segment
+ * @returns the words the segment is built from
+ */
+function words(segment: string): string[] {
+  return segment
+    .replaceAll(/([a-z\d])([A-Z])/g, '$1 $2')
+    .replaceAll(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+    .toLowerCase()
+    .split(/[^a-z]+/)
+    .filter(Boolean);
+}
+
+/**
+ * @param word a single lowercase word, or two adjacent words joined
+ * @returns whether the word names a credential
+ */
+function isSecretWord(word: string): boolean {
+  return SECRET_WORDS.has(word) || (word.endsWith('s') && SECRET_WORDS.has(word.slice(0, -1)));
+}
+
+/**
+ * @param key one key or path segment
+ * @returns whether a value stored under this name should be withheld
+ */
+export function isSecretKey(key: string): boolean {
+  const parts = words(key);
+
+  return parts.some((word, index) => isSecretWord(word) || (index > 0 && isSecretWord(parts[index - 1] + word)));
+}
 
 /**
  * @param path dotted path of the value
  * @returns whether the value should be withheld
  */
 function isSecret(path: string): boolean {
-  return path.split('.').some((segment) => SECRET_SEGMENT.test(segment.replaceAll(/[^a-z]/gi, '')));
+  return path.split('.').some((segment) => isSecretKey(segment));
 }
 
 /**

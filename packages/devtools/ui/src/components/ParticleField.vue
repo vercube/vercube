@@ -243,11 +243,24 @@ function resize(): boolean {
 
 const REVEAL_SECONDS = 3.5;
 
+/** Frames spent waiting for the canvas to get a layout size before giving up. */
+const MAX_RESIZE_RETRIES = 120;
+
+let retries = 0;
+
 function draw(now: number): void {
   if (!gl || !resize()) {
-    frame = requestAnimationFrame(draw);
+    // The canvas has no layout size yet. Retry for a while, then stop, so a
+    // hidden or reduced-motion field never spins at the display refresh rate.
+    if (gl && retries < MAX_RESIZE_RETRIES) {
+      retries++;
+      frame = requestAnimationFrame(draw);
+    }
+
     return;
   }
+
+  retries = 0;
 
   if (start === 0) {
     start = now;
@@ -375,6 +388,7 @@ onMounted(() => {
     visible = shown;
 
     if (shown) {
+      retries = 0;
       frame = requestAnimationFrame(draw);
     } else {
       cancelAnimationFrame(frame);

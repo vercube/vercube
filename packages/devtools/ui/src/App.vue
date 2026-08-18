@@ -562,8 +562,7 @@ onUnmounted(() => {
   .key,
   .legend,
   .text,
-  .label,
-  .icon {
+  .status .icon {
     display: none;
   }
 

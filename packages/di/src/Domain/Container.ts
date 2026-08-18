@@ -398,7 +398,16 @@ export class Container {
       this.fSingletonInstances.set(serviceDef.serviceKey, instance);
     }
 
-    this.internalProcessInjects(instance, this.fInjectMethod);
+    try {
+      this.internalProcessInjects(instance, this.fInjectMethod);
+    } catch (error) {
+      // drop the half-injected instance so the next get() retries construction
+      if (singleton) {
+        this.fSingletonInstances.delete(serviceDef.serviceKey);
+      }
+
+      throw error;
+    }
 
     if (onResolved) {
       onResolved({

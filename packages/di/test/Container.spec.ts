@@ -535,6 +535,26 @@ describe('[Framework][IOC] Container', () => {
     expect(instance).toBeInstanceOf(TestTransientClass);
   });
 
+  it('should not cache a singleton whose dependencies failed to resolve', () => {
+    class MissingDependency {}
+
+    class BrokenService {
+      @Inject(MissingDependency)
+      public missing!: MissingDependency;
+    }
+
+    container.bind(BrokenService);
+
+    expect(() => container.get(BrokenService)).toThrow();
+    expect(container.hasInstance(BrokenService)).toBe(false);
+
+    // Once the dependency is available, construction succeeds instead of
+    // returning the half-injected instance from the failed attempt.
+    container.bind(MissingDependency);
+
+    expect(container.get(BrokenService).missing).toBeInstanceOf(MissingDependency);
+  });
+
   it('should handle flushQueue with empty queue after clearing', () => {
     // First, add something to the queue
     container.bind(TestSingletonClass);
