@@ -121,7 +121,7 @@ cookie and drops it from the URL, so it is not repeated in later requests,
 the UI page — API endpoints require the header or the cookie, so the token
 never reaches an API URL in an access log.
 
-Check out the full [documentation](https://vercube.dev/docs/modules/devtools/overview)
+Check out the full [documentation](https://vercube.dev/docs/modules/devtools/overview) and the [configuration reference](https://vercube.dev/docs/modules/devtools/configuration).
 
 ## 📜 License
 
