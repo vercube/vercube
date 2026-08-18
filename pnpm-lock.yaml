@@ -31,8 +31,8 @@ catalogs:
       specifier: 3.0.260610-beta
       version: 3.0.260610-beta
     ocache:
-      specifier: 0.2.0
-      version: 0.2.0
+      specifier: 0.3.0
+      version: 0.3.0
     ohash:
       specifier: 2.0.12
       version: 2.0.12
@@ -317,7 +317,7 @@ importers:
         version: link:../storage
       ocache:
         specifier: 'catalog:'
-        version: 0.2.0
+        version: 0.3.0
       ohash:
         specifier: 'catalog:'
         version: 2.0.12
@@ -3525,8 +3525,8 @@ packages:
   ocache@0.1.5:
     resolution: {integrity: sha512-kNNnkkVQup/QDvmTz8Q84wc2ntiyoVHDxa6eHWKt5qdGAmFRBIxy83rxgCYEjW0x06UJ9E3P6VgM2yY4rOBH4w==}
 
-  ocache@0.2.0:
-    resolution: {integrity: sha512-QE+SxXf/A8yR01rEOg2X5KwUe+mARHo1xQXl+iwLMzLIH06S5lBOZhhHQWp7T5etfFa8nOnRhvjGuo9YBCWwig==}
+  ocache@0.3.0:
+    resolution: {integrity: sha512-RS/9P0zeBb0gDJmadGERLH8lZNXK7xbufTDhclkXGvFGTsj0G4M5/cLk+mizcERH29mLXNnocfB5wjcK70wGJg==}
 
   ofetch@2.0.0-alpha.3:
     resolution: {integrity: sha512-zpYTCs2byOuft65vI3z43Dd6iSdFbOZZLb9/d21aCpx2rGastVU9dOCv0lu4ykc1Ur1anAYjDi3SUvR0vq50JA==}
@@ -6645,9 +6645,7 @@ snapshots:
     dependencies:
       ohash: 2.0.11
 
-  ocache@0.2.0:
-    dependencies:
-      ohash: 2.0.12
+  ocache@0.3.0: {}
 
   ofetch@2.0.0-alpha.3: {}
 

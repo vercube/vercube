@@ -160,14 +160,20 @@ describe('@Cache', () => {
       await usersService.getUser('1');
 
       const keys = await storageManager.getKeys({});
-      expect(keys.some((key) => key.startsWith('/cache:functions:UsersService.getUser:'))).toBe(true);
+      const expected = await container.get(CacheManager).resolveKeys({ name: 'UsersService.getUser' }, '1');
+
+      expect(expected).toHaveLength(1);
+      expect(keys).toEqual(expect.arrayContaining(expected));
     });
 
     it('should use an explicit name when given', async () => {
       await usersService.named();
 
       const keys = await storageManager.getKeys({});
-      expect(keys.some((key) => key.startsWith('/cache:functions:custom-name:'))).toBe(true);
+      const expected = await container.get(CacheManager).resolveKeys({ name: 'custom-name' });
+
+      expect(expected).toHaveLength(1);
+      expect(keys).toEqual(expect.arrayContaining(expected));
     });
 
     it('should store entries in the requested storage', async () => {
@@ -278,7 +284,10 @@ describe('@Cache', () => {
       await (instance.value as () => Promise<string>)();
 
       const keys = await storageManager.getKeys({});
-      expect(keys.some((key) => key.startsWith('/cache:functions:anonymous.value:'))).toBe(true);
+      const expected = await container.get(CacheManager).resolveKeys({ name: 'anonymous.value' });
+
+      expect(expected).toHaveLength(1);
+      expect(keys).toEqual(expect.arrayContaining(expected));
     });
 
     it('should restore the original method on destroy', async () => {

@@ -29,11 +29,12 @@ export namespace CacheTypes {
   /**
    * Options accepted by {@link CacheManager.cached} and the `@Cache()` decorator.
    *
-   * This is the ocache option set with the low level `base` option replaced by the
-   * Vercube native `storage` option - `base` is derived from it so that cache keys
-   * can be routed to the right mounted storage.
+   * This is the ocache option set with the low level `base` and `storage` options
+   * replaced by the Vercube native `storage` option - `base` is derived from it so
+   * that cache keys can be routed to the right mounted storage, and the backend is
+   * always the {@link CacheStorageAdapter} the CacheManager owns.
    */
-  export type Options<T = any, ArgsT extends unknown[] = any[]> = Omit<CacheOptions<T, ArgsT>, 'base'> & {
+  export type Options<T = any, ArgsT extends unknown[] = any[]> = Omit<CacheOptions<T, ArgsT>, 'base' | 'storage'> & {
     /** Storage (or storages, for multi-tier caching) mounted in StorageManager to keep entries in. */
     storage?: StorageRef;
   };

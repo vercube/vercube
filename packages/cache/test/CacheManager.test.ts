@@ -272,7 +272,10 @@ describe('CacheManager', () => {
       await cached();
 
       const keys = await storageManager.getKeys({});
-      expect(keys.some((key) => key.startsWith('/cache:functions:default-storage:'))).toBe(true);
+      const expected = await cacheManager.resolveKeys({ name: 'default-storage' });
+
+      expect(expected).toHaveLength(1);
+      expect(keys).toEqual(expect.arrayContaining(expected));
       await expect(storageManager.size({ storage: 'secondary' })).resolves.toBe(0);
     });
 

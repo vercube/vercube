@@ -1,7 +1,7 @@
 import { Container, Init, Inject, InjectOptional } from '@vercube/di';
 import { Logger } from '@vercube/logger';
 import { StorageManager } from '@vercube/storage';
-import { defineCachedFunction, expireCache, invalidateCache, resolveCacheKeys, setStorage, useStorage } from 'ocache';
+import { defineCachedFunction, expireCache, invalidateCache, resolveCacheKeys } from 'ocache';
 import { CacheError } from '../Errors/CacheError';
 import { cacheBaseForStorage, CacheStorageAdapter } from './CacheStorageAdapter';
 import type { CacheTypes } from '../Types/CacheTypes';
@@ -44,7 +44,7 @@ export class CacheManager {
   protected fAdapter: CacheStorageAdapter | null = null;
 
   /**
-   * Returns the storage adapter this manager installed into the caching engine.
+   * Returns the storage adapter this manager binds every cached function to.
    *
    * @returns {CacheStorageAdapter | null} The adapter, or null before initialization
    */
@@ -177,7 +177,21 @@ export class CacheManager {
     return {
       ...rest,
       base: base.length === 1 ? base[0] : base,
+      storage: this.resolveAdapter(),
     } as CacheOptions<T, ArgsT>;
+  }
+
+  /**
+   * Returns the storage adapter every cached function of this manager is bound to,
+   * resolving it on first use so that options can be built before `@Init()` ran.
+   *
+   * @returns {CacheStorageAdapter} The adapter backing this manager
+   * @protected
+   */
+  protected resolveAdapter(): CacheStorageAdapter {
+    this.fAdapter ??= this.gContainer.resolve(CacheStorageAdapter);
+
+    return this.fAdapter;
   }
 
   /**
@@ -194,7 +208,7 @@ export class CacheManager {
   }
 
   /**
-   * Installs the storage adapter into the caching engine.
+   * Creates the storage adapter every cached function of this manager routes through.
    * Called automatically with the `@Init()` decorator.
    *
    * @returns {void}
@@ -208,16 +222,6 @@ export class CacheManager {
       );
     }
 
-    // the caching engine keeps a single process-wide storage, so a second
-    // CacheManager takes over every cached function in the process
-    if (useStorage() instanceof CacheStorageAdapter) {
-      this.gLogger?.warn(
-        'Vercube/CacheManager::another CacheManager is already installed in this process - ' +
-          'cached functions from every container will now route through this one',
-      );
-    }
-
-    this.fAdapter = this.gContainer.resolve(CacheStorageAdapter);
-    setStorage(this.fAdapter);
+    this.resolveAdapter();
   }
 }
