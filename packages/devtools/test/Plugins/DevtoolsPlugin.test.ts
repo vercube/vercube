@@ -1,4 +1,12 @@
-import { BaseMiddleware, Controller, createApp, Get, GlobalMiddlewareRegistry } from '@vercube/core';
+import {
+  BaseMiddleware,
+  BasePlugin,
+  Controller,
+  createApp,
+  Get,
+  GlobalMiddlewareRegistry,
+  vercubePluginFromClass,
+} from '@vercube/core';
 import { afterEach, describe, expect, it } from 'vitest';
 import { DevtoolsPlugin } from '../../src/Plugins/DevtoolsPlugin';
 import { resetBootstrapProfiler } from '../../src/Services/BootstrapProfiler';
@@ -82,7 +90,10 @@ describe('DevtoolsPlugin', () => {
 
     expect((await devtoolsFetch(app, '/_devtools/api/routes')).status).toBe(401);
     expect((await devtoolsFetch(app, '/_devtools/api/routes?token=nope')).status).toBe(401);
-    expect((await devtoolsFetch(app, '/_devtools/api/routes?token=s3cret')).status).toBe(200);
+
+    // The query parameter only bootstraps the UI page; on an API path it is ignored.
+    expect((await devtoolsFetch(app, '/_devtools/api/routes?token=s3cret')).status).toBe(401);
+    expect((await devtoolsFetch(app, '/_devtools?token=s3cret')).status).toBe(200);
 
     const withHeader = await devtoolsFetch(app, '/_devtools/api/routes', { headers: { 'x-devtools-token': 's3cret' } });
     expect(withHeader.status).toBe(200);
@@ -147,7 +158,22 @@ describe('DevtoolsPlugin', () => {
     await app.fetch(new Request('http://localhost/whatever'));
 
     expect((await devtoolsFetch(app, '/_devtools/api/overview')).status).toBe(401);
-    expect((await devtoolsFetch(app, '/_devtools/api/overview?token=keep-me')).status).toBe(200);
+
+    const authorised = await devtoolsFetch(app, '/_devtools/api/overview', {
+      headers: { 'x-devtools-token': 'keep-me' },
+    });
+
+    expect(authorised.status).toBe(200);
+  });
+
+  it('should ignore a malformed token cookie instead of failing the request', async () => {
+    const app = await createDevtoolsApp({ token: 'keep-me' });
+
+    const response = await devtoolsFetch(app, '/_devtools/api/overview', {
+      headers: { cookie: 'vercube_devtools_token=%E0%A4%A', 'x-devtools-token': 'keep-me' },
+    });
+
+    expect(response.status).toBe(200);
   });
 
   it('should accept the token from a cookie', async () => {
@@ -216,6 +242,35 @@ describe('DevtoolsPlugin', () => {
 
     expect(seen).toHaveLength(2);
     expect((await devtoolsFetch(app, '/_devtools')).status).toBe(200);
+  });
+
+  it('should list plugins registered through defineConfig alongside registry plugins', async () => {
+    class OtherPlugin extends BasePlugin {
+      public override name = 'OtherPlugin';
+
+      public override use(): void {
+        /* nothing to wire */
+      }
+    }
+
+    const app = await createApp({
+      cfg: {
+        requestLogging: false,
+        dev: true,
+        // Shape produced by `normalizeVercubePluginInputs` for `defineConfig({ plugins })`.
+        plugins: [vercubePluginFromClass(DevtoolsPlugin, { enabled: true })],
+      },
+      setup: (app) => {
+        app.addPlugin(OtherPlugin);
+      },
+    });
+
+    const overview = await devtoolsJson<DevtoolsTypes.Overview>(app, '/_devtools/api/overview');
+    const names = overview.plugins.map((plugin) => plugin.name);
+
+    expect(names).toContain('DevtoolsPlugin');
+    expect(names).toContain('OtherPlugin');
+    expect(overview.counts.plugins).toBe(names.length);
   });
 
   it('should refuse to mount in production without a token', async () => {

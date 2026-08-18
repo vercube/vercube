@@ -135,6 +135,35 @@ describe('devtools API', () => {
     expect(routes.every((route) => !route.internal || route.path.startsWith('/_devtools'))).toBe(true);
   });
 
+  it('should not mark a route that merely shares the mount prefix as internal', async () => {
+    @Controller('/_devtools-admin')
+    class LookalikeController {
+      @Get('/ping')
+      public ping(): string {
+        return 'pong';
+      }
+    }
+
+    const app = await createDevtoolsApp({}, (app) => {
+      app.container.bind(LookalikeController);
+    });
+
+    const routes = await devtoolsJson<DevtoolsTypes.RouteInfo[]>(app, '/_devtools/api/routes');
+    const lookalike = routes.find((route) => route.path === '/_devtools-admin/ping');
+
+    expect(lookalike?.internal).toBe(false);
+  });
+
+  it('should redact credential-looking query parameters', async () => {
+    const app = await createDemoApp();
+
+    await app.fetch(new Request('http://localhost/demo/ok?name=vercube&access_token=leak-me&api_key=leak-me-too'));
+
+    const [record] = await devtoolsJson<DevtoolsTypes.RequestRecord[]>(app, '/_devtools/api/requests');
+
+    expect(record.query).toEqual({ name: 'vercube', access_token: '<redacted>', api_key: '<redacted>' });
+  });
+
   it('should record requests with a span for every middleware and the handler', async () => {
     const app = await createDemoApp();
 

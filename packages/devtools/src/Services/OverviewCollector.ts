@@ -2,12 +2,14 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { GlobalMiddlewareRegistry, PluginsRegistry } from '@vercube/core';
 import { Inject } from '@vercube/di';
+import { $DevtoolsAppConfig } from '../Symbols/DevtoolsSymbols';
 import { AuditService } from './AuditService';
 import { getBootstrapProfile } from './BootstrapProfiler';
 import { GraphCollector } from './GraphCollector';
 import { RequestRecorder } from './RequestRecorder';
 import { RouteCollector } from './RouteCollector';
 import type { DevtoolsTypes } from '../Types/DevtoolsTypes';
+import type { ConfigTypes } from '@vercube/core';
 
 /** Cached `package.json` lookup for the process lifetime. */
 let cachedPackage: { name: string; version: string | null } | null | undefined;
@@ -33,6 +35,9 @@ export class OverviewCollector {
 
   @Inject(GlobalMiddlewareRegistry)
   private readonly gGlobalMiddlewares!: GlobalMiddlewareRegistry;
+
+  @Inject($DevtoolsAppConfig)
+  private readonly gAppConfig!: ConfigTypes.Config;
 
   /** Development mode flag, provided by the plugin at registration time. */
   private fDev: boolean = false;
@@ -63,6 +68,8 @@ export class OverviewCollector {
     // Middlewares are resolved per route; the route table is the source of truth.
     const middlewares = new Set(routes.flatMap((route) => route.middlewares.map((middleware) => middleware.name)));
 
+    const plugins = this.readPlugins();
+
     return {
       name: pkg?.name ?? 'Vercube application',
       version: pkg?.version ?? null,
@@ -75,17 +82,38 @@ export class OverviewCollector {
         services: graph.nodes.length,
         controllers: graph.nodes.filter((node) => node.role === 'controller').length,
         middlewares: middlewares.size,
-        plugins: this.gPlugins.plugins.length,
+        plugins: plugins.length,
         routes: routes.filter((route) => !route.internal).length,
         cycles: graph.cycles.length,
         issues: audit.issues.length,
       },
       score: audit.score,
-      plugins: this.gPlugins.plugins.map((plugin) => ({ name: plugin.name })),
+      plugins,
       globalMiddlewares: this.gGlobalMiddlewares.middlewares.map((m) => m.middleware?.name ?? 'Middleware'),
       bootstrapMs: getBootstrapProfile().totalMs,
       requests: this.gRequests.stats(),
     };
+  }
+
+  /**
+   * Lists the plugins the application runs with.
+   * `PluginsRegistry` only holds what `app.addPlugin()` registered; plugins declared
+   * in `defineConfig({ plugins })` reach `use()` through the config adapter instead,
+   * so both sources are merged here.
+   * @returns one entry per plugin, in registration order, without duplicates
+   */
+  private readPlugins(): DevtoolsTypes.Overview['plugins'] {
+    const names = new Set<string>();
+
+    for (const plugin of this.gPlugins.plugins) {
+      names.add(plugin.name);
+    }
+
+    for (const plugin of (this.gAppConfig.plugins ?? []) as { name?: string }[]) {
+      names.add(plugin?.name ?? 'Plugin');
+    }
+
+    return [...names].map((name) => ({ name }));
   }
 
   /**

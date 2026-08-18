@@ -3,6 +3,8 @@ import { GlobalMiddlewareRegistry, Router } from '@vercube/core';
 import { Inject } from '@vercube/di';
 import { REDACTED_HEADERS, TEXT_CONTENT_TYPES } from '../Constants/DevtoolsDefaults';
 import { $DevtoolsOptions } from '../Symbols/DevtoolsSymbols';
+import { isSecretKey } from '../Utils/Flatten';
+import { isUnderMount } from '../Utils/Mount';
 import { finalizeBootstrapProfile } from './BootstrapProfiler';
 import { DevtoolsEventBus } from './DevtoolsEventBus';
 import type { DevtoolsTypes } from '../Types/DevtoolsTypes';
@@ -142,7 +144,7 @@ export class RequestRecorder {
 
       const url = new URL(request.url);
 
-      if (!this.gOptions.trackRequests || this.isDevtoolsPath(url.pathname)) {
+      if (!this.gOptions.trackRequests || isUnderMount(url.pathname, this.gOptions.path)) {
         return original(request);
       }
 
@@ -182,7 +184,7 @@ export class RequestRecorder {
     const globals = new Set(this.gGlobalMiddlewares.middlewares.map((entry) => entry.middleware));
 
     for (const route of routes) {
-      if (this.isDevtoolsPath(route.path)) {
+      if (isUnderMount(route.path, this.gOptions.path)) {
         this.detachGlobalMiddlewares(route.handler, globals);
         continue;
       }
@@ -197,18 +199,6 @@ export class RequestRecorder {
         this.instrumentMiddleware(definition, 'onResponse', 'middleware:after');
       }
     }
-  }
-
-  /**
-   * Matches the devtools mount on whole path segments, so a mount of `/_devtools`
-   * never claims a sibling route such as `/_devtools-admin`.
-   * @param path route or request pathname
-   * @returns whether the path belongs to the devtools mount
-   */
-  private isDevtoolsPath(path: string): boolean {
-    const mount = this.gOptions.path;
-
-    return path === mount || path.startsWith(`${mount}/`);
   }
 
   /**
@@ -247,7 +237,7 @@ export class RequestRecorder {
         id: String(this.fNextId++),
         method: request.method,
         path: url.pathname,
-        query: Object.fromEntries(url.searchParams),
+        query: this.readQuery(url.searchParams),
         status: 0,
         durationMs: 0,
         startedAt: Date.now(),
@@ -599,6 +589,24 @@ export class RequestRecorder {
 
     const normalized = contentType.toLowerCase();
     return TEXT_CONTENT_TYPES.some((candidate) => normalized.includes(candidate));
+  }
+
+  /**
+   * Copies query parameters, redacting credential-bearing names.
+   * `?access_token=…` in a recorded URL is as sensitive as an `Authorization` header.
+   * @param params parsed query string
+   * @returns plain object with sensitive values replaced
+   */
+  private readQuery(params: URLSearchParams): Record<string, string> {
+    const extra = new Set(this.gOptions.redactHeaders.map((header) => header.toLowerCase()));
+    const result: Record<string, string> = {};
+
+    for (const [key, value] of params.entries()) {
+      const name = key.toLowerCase();
+      result[key] = isSecretKey(key) || REDACTED_HEADERS.has(name) || extra.has(name) ? '<redacted>' : value;
+    }
+
+    return result;
   }
 
   /**

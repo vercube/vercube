@@ -8,11 +8,10 @@ import type { DevtoolsTypes } from '../Types/DevtoolsTypes';
 /**
  * Guards every devtools endpoint with the configured access token.
  *
- * The token may arrive as the `x-devtools-token` header, as the
- * `vercube_devtools_token` cookie, or — only to bootstrap a browser session —
- * as a `?token=` query parameter. The UI moves the query parameter into the
- * cookie and drops it from the URL on first load, so it is not repeated on
- * every request.
+ * The token may arrive as the `x-devtools-token` header or as the
+ * `vercube_devtools_token` cookie. A `?token=` query parameter is accepted on
+ * the UI page alone, to bootstrap a browser session: the UI then moves it into
+ * the cookie and drops it from the URL, so it never reaches an API URL.
  */
 export class DevtoolsAuthMiddleware extends BaseMiddleware {
   @Inject($DevtoolsOptions)
@@ -31,17 +30,19 @@ export class DevtoolsAuthMiddleware extends BaseMiddleware {
     }
 
     const url = new URL(request.url);
+    const isUi = url.pathname.replace(/\/+$/, '') === this.gOptions.path;
+
     const candidates = [
       request.headers.get('x-devtools-token'),
       this.readCookie(request.headers.get('cookie')),
-      url.searchParams.get('token'),
+      // Only the UI page accepts the token in the URL. On an API path it would
+      // end up in access and proxy logs for no benefit: the UI has the cookie by then.
+      isUi ? url.searchParams.get('token') : null,
     ];
 
     if (candidates.some((candidate) => this.matches(candidate, token))) {
       return;
     }
-
-    const isUi = url.pathname.replace(/\/+$/, '') === this.gOptions.path;
 
     if (isUi) {
       return new Response(
@@ -89,7 +90,12 @@ export class DevtoolsAuthMiddleware extends BaseMiddleware {
       const separator = pair.indexOf('=');
 
       if (separator > 0 && pair.slice(0, separator).trim() === DEVTOOLS_TOKEN_COOKIE) {
-        return decodeURIComponent(pair.slice(separator + 1).trim());
+        try {
+          return decodeURIComponent(pair.slice(separator + 1).trim());
+        } catch {
+          // A malformed cookie is not a token; fall through to the other candidates.
+          return null;
+        }
       }
     }
 

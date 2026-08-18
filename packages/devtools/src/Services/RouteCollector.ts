@@ -2,6 +2,7 @@ import { Router } from '@vercube/core';
 import { Inject } from '@vercube/di';
 import { $DevtoolsOptions } from '../Symbols/DevtoolsSymbols';
 import { readControllerPath } from '../Utils/Introspect';
+import { isUnderMount } from '../Utils/Mount';
 import type { DevtoolsTypes } from '../Types/DevtoolsTypes';
 import type { MetadataTypes, RouterTypes } from '@vercube/core';
 
@@ -114,7 +115,7 @@ export class RouteCollector {
         ...(handler.middlewares?.afterMiddlewares ?? []).map((m) => this.describeMiddleware(m, 'after')),
       ],
       actions: handler.actions?.length ?? 0,
-      internal: route.path.startsWith(this.gOptions.path) || basePath === this.gOptions.path,
+      internal: isUnderMount(route.path, this.gOptions.path) || basePath === this.gOptions.path,
     };
   }
 

@@ -71,15 +71,15 @@ export default defineConfig({
 });
 ```
 
-| Option           | Default        | Description                                                                                           |
-| ---------------- | -------------- | ----------------------------------------------------------------------------------------------------- |
-| `enabled`        | `config.dev`   | Master switch. Off in production unless explicitly enabled.                                           |
-| `path`           | `'/_devtools'` | Where the UI and its API are mounted.                                                                 |
-| `token`          | `null`         | Access token. Required in production. Sent as `x-devtools-token`, cookie, or `?token=` on first load. |
-| `maxRequests`    | `250`          | Size of the in-memory request ring buffer.                                                            |
-| `trackRequests`  | `true`         | Record per-request timelines.                                                                         |
-| `captureHeaders` | `true`         | Capture request/response headers (credentials are redacted).                                          |
-| `redactHeaders`  | `[]`           | Extra header names to redact on top of the built-in list.                                             |
+| Option           | Default        | Description                                                                                                                  |
+| ---------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `enabled`        | `config.dev`   | Master switch. Off in production unless explicitly enabled.                                                                  |
+| `path`           | `'/_devtools'` | Where the UI and its API are mounted.                                                                                        |
+| `token`          | `null`         | Access token. Required in production. Sent as `x-devtools-token` or the session cookie; `?token=` works on the UI page only. |
+| `maxRequests`    | `250`          | Size of the in-memory request ring buffer.                                                                                   |
+| `trackRequests`  | `true`         | Record per-request timelines.                                                                                                |
+| `captureHeaders` | `true`         | Capture request/response headers (credentials are redacted).                                                                 |
+| `redactHeaders`  | `[]`           | Extra header names to redact on top of the built-in list.                                                                    |
 
 ### HTTP API
 
@@ -117,7 +117,9 @@ access control instead.
 
 Open the UI once with `?token=…`; it moves the token into a `SameSite=Strict`
 cookie and drops it from the URL, so it is not repeated in later requests,
-`Referer` headers or browser history.
+`Referer` headers or browser history. The query parameter is only honoured on
+the UI page — API endpoints require the header or the cookie, so the token
+never reaches an API URL in an access log.
 
 Check out the full [documentation](https://vercube.dev/docs/modules/devtools/overview)
 
