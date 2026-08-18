@@ -39,14 +39,14 @@ class DeleteDecorator extends BaseDecorator<DeleteDecoratorOptions, MetadataType
     const method = initializeMetadataMethod(this.prototype, this.propertyName);
     method.method = 'DELETE';
 
-    this.options.path = this.gMetadataResolver.resolveUrl({
+    const path = this.gMetadataResolver.resolveUrl({
       instance: this.instance,
       path: this.options.path,
       propertyName: this.propertyName,
     });
 
     this.gRouter.addRoute({
-      path: this.options.path,
+      path,
       method: 'DELETE',
       handler: this.gRequestHandler.prepareHandler({
         instance: this.instance,

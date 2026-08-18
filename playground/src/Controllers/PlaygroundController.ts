@@ -15,7 +15,6 @@ import {
   Status,
 } from '@vercube/core';
 import { Inject } from '@vercube/di';
-import { Logger } from '@vercube/logger';
 import { Schema, z } from '@vercube/schema';
 import { StorageManager } from '@vercube/storage';
 import { Emit, Message, Namespace } from '@vercube/ws';
@@ -52,13 +51,10 @@ const schemaQueryParams = z.object({
 @Middleware(FirstMiddleware)
 export default class PlaygroundController {
   @Inject(StorageManager)
-  private gStorageManager: StorageManager;
-
-  @Inject(Logger)
-  private gLogger: Logger;
+  private gStorageManager!: StorageManager;
 
   @Inject(RuntimeConfig)
-  private gRuntimeConfig: RuntimeConfig<AppTypes.Config>;
+  private gRuntimeConfig!: RuntimeConfig<AppTypes.Config>;
 
   @Message({ event: 'message' })
   @Emit('message')

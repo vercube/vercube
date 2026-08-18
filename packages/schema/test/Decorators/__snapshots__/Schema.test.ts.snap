@@ -12,7 +12,7 @@ exports[`SchemaDecorator > should generate schema correctly 1`] = `
   },
   "openapi": "3.0.0",
   "paths": {
-    "/mock/mock/": {
+    "/mock/": {
       "get": {
         "responses": {
           "200": {

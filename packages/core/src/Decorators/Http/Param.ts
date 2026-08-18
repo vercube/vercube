@@ -1,6 +1,6 @@
 import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
 import { MetadataResolver } from '../../Services/Metadata/MetadataResolver';
-import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
+import { initializeMetadata, initializeMetadataMethod, setMetadataArg } from '../../Utils/Utils';
 import type { MetadataTypes } from '../../Types/MetadataTypes';
 
 interface ParamDecoratorOptions {
@@ -32,7 +32,7 @@ class ParamDecorator extends BaseDecorator<ParamDecoratorOptions, MetadataTypes.
     const method = initializeMetadataMethod(this.prototype, this.propertyName);
 
     // add parameter to metadata
-    method.args.push({
+    setMetadataArg(method, {
       idx: this.propertyIndex,
       type: 'param',
       data: {

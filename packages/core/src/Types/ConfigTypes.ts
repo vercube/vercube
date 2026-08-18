@@ -114,6 +114,13 @@ export namespace ConfigTypes {
     port?: number;
 
     /**
+     * Enable `SO_REUSEPORT`. Defaults to true on Linux (the only platform
+     * that load-balances with it); false elsewhere. Forced true on macOS
+     * fails `listen()` with `ENOTSUP`.
+     */
+    reusePort?: boolean;
+
+    /**
      * HTTPS configuration options.
      */
     https?:

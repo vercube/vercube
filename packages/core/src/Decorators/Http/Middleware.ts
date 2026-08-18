@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 import { BaseMiddleware } from '../../Services/Middleware/BaseMiddleware';
-import { initializeMetadata } from '../../Utils/Utils';
+import { addMetadataMiddleware, initializeMetadata } from '../../Utils/Utils';
 import type { MetadataTypes } from '../../Types/MetadataTypes';
 
 interface MiddlewareDecoratorParams extends Omit<MetadataTypes.Middleware, 'middleware' | 'target'> {}
@@ -32,7 +32,7 @@ export function Middleware(middleware: typeof BaseMiddleware, opts?: MiddlewareD
     const ctx = (propertyName ? target : target.prototype) as MetadataTypes.Metadata;
     const meta = initializeMetadata(ctx);
 
-    meta.__middlewares.push({
+    addMetadataMiddleware(meta, {
       target: propertyName ?? '__global__',
       priority: opts?.priority ?? 999, // default priority is 999 to ensure it runs last
       middleware,

@@ -1,4 +1,4 @@
-import { initializeMetadata, initializeMetadataMethod } from '@vercube/core';
+import { addMetadataMiddleware, initializeMetadata, initializeMetadataMethod } from '@vercube/core';
 import { AuthMiddleware } from '../Middleware/AuthMiddleware';
 import type { AuthTypes } from '../Types/AuthTypes';
 
@@ -15,7 +15,7 @@ export function Auth(options?: AuthTypes.MiddlewareOptions): Function {
       initializeMetadataMethod(target, propertyName);
     }
 
-    meta.__middlewares.push({
+    addMetadataMiddleware(meta, {
       target: propertyName ?? '__global__',
       priority: -999,
       middleware: AuthMiddleware,

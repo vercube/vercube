@@ -1,5 +1,5 @@
 import { BaseDecorator, createDecorator } from '@vercube/di';
-import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
+import { initializeMetadata, initializeMetadataMethod, setMetadataArg } from '../../Utils/Utils';
 import type { MetadataTypes } from '../../Types/MetadataTypes';
 
 interface HeaderDecoratorOptions {
@@ -26,7 +26,7 @@ class HeaderDecorator extends BaseDecorator<HeaderDecoratorOptions, MetadataType
     initializeMetadata(this.prototype);
     const method = initializeMetadataMethod(this.prototype, this.propertyName);
 
-    method.args.push({
+    setMetadataArg(method, {
       idx: this.propertyIndex,
       type: 'header',
       data: {

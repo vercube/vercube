@@ -44,6 +44,51 @@ export function initializeMetadataMethod(target: any, propertyName: string): Met
 }
 
 /**
+ * Registers a handler argument in the method metadata.
+ * Replaces an existing argument at the same index to keep re-initialization idempotent.
+ * @param {MetadataTypes.Method} method - Method metadata to register the argument in.
+ * @param {MetadataTypes.Arg} arg - The argument to register.
+ */
+export function setMetadataArg(method: MetadataTypes.Method, arg: MetadataTypes.Arg): void {
+  const index = method.args.findIndex((entry) => entry.idx === arg.idx);
+
+  if (index === -1) {
+    method.args.push(arg);
+    return;
+  }
+
+  method.args[index] = arg;
+}
+
+/**
+ * Registers a middleware in the metadata context.
+ * Skips duplicates identified by target + middleware class.
+ * @param {MetadataTypes.Ctx} meta - Metadata context to register the middleware in.
+ * @param {MetadataTypes.Middleware} middleware - The middleware to register.
+ * @param {'first' | 'last'} position - Whether the middleware goes to the front of the list.
+ */
+export function addMetadataMiddleware(
+  meta: MetadataTypes.Ctx,
+  middleware: MetadataTypes.Middleware,
+  position: 'first' | 'last' = 'last',
+): void {
+  const exists = meta.__middlewares.some(
+    (entry) => entry.target === middleware.target && entry.middleware === middleware.middleware,
+  );
+
+  if (exists) {
+    return;
+  }
+
+  if (position === 'first') {
+    meta.__middlewares.unshift(middleware);
+    return;
+  }
+
+  meta.__middlewares.push(middleware);
+}
+
+/**
  * Initializes the metadata for a given target.
  * @param {any} target - The target to initialize metadata for.
  */

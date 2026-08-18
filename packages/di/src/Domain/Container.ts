@@ -1,6 +1,7 @@
 import { IOC } from '../Types/IOCTypes';
 import { destroyDecorators, initializeDecorators } from '../Utils/Utils';
 import { ContainerEvents } from './ContainerEvents';
+import { getIOCDevtoolsHook } from './DevtoolsHook';
 import { IOCEngine } from './Engine';
 import type { IDecoratedInstance } from '../Utils/Utils';
 
@@ -49,6 +50,8 @@ export class Container {
 
     // container should always bind itself
     this.bindInstance(Container, this);
+
+    getIOCDevtoolsHook()?.onContainerCreated?.(this);
   }
 
   /**
@@ -57,6 +60,23 @@ export class Container {
    */
   public get servicesKeys(): IOC.ServiceKey[] {
     return [...this.fServices.keys()];
+  }
+
+  /**
+   * Returns a read-only view of all service definitions without instantiating them.
+   * @returns {ReadonlyMap} map of service key to its definition
+   */
+  public get services(): ReadonlyMap<IOC.ServiceKey, Readonly<IOC.ServiceDef>> {
+    return this.fServices;
+  }
+
+  /**
+   * Checks whether a singleton instance for a given key has already been constructed.
+   * @param key service key to check
+   * @returns {boolean} true when a singleton instance already exists
+   */
+  public hasInstance(key: IOC.ServiceKey): boolean {
+    return this.fSingletonInstances.has(key);
   }
 
   /**
@@ -307,7 +327,8 @@ export class Container {
   protected internalGet<T>(key: IOC.ServiceKey<T>, parent?: IOC.Instance): T {
     const serviceDef = this.fServices.get(key);
     if (!serviceDef) {
-      throw new Error(`Unresolved dependency for [${this.getKeyDescription(key)}]`);
+      const owner = parent?.constructor?.name;
+      throw new Error(`Unresolved dependency for [${this.getKeyDescription(key)}]${owner ? ` required by [${owner}]` : ''}`);
     }
 
     return this.internalResolve(serviceDef) as T;
@@ -343,27 +364,63 @@ export class Container {
 
       case IOC.ServiceFactoryType.CLASS_SINGLETON: {
         if (!this.fSingletonInstances.has(serviceDef.serviceKey)) {
-          const constructor = serviceDef.serviceValue as IOC.Newable<unknown>;
-          const instance = new constructor();
-          this.fSingletonInstances.set(serviceDef.serviceKey, instance);
-          this.internalProcessInjects(instance, this.fInjectMethod);
-          return instance;
+          return this.internalConstruct(serviceDef, true);
         }
 
         return this.fSingletonInstances.get(serviceDef.serviceKey);
       }
 
       case IOC.ServiceFactoryType.CLASS: {
-        const constructor = serviceDef.serviceValue as IOC.Newable<unknown>;
-        const instance = new constructor();
-        this.internalProcessInjects(instance, this.fInjectMethod);
-        return instance;
+        return this.internalConstruct(serviceDef, false);
       }
 
       default: {
         throw new Error(`Container - invalid factory type: ${serviceDef.type}`);
       }
     }
+  }
+
+  /**
+   * Constructs a new instance for a service def and injects its dependencies.
+   * @param serviceDef service def to construct
+   * @param singleton whether resulting instance should be cached as a singleton
+   * @returns newly created class instance
+   */
+  protected internalConstruct(serviceDef: IOC.ServiceDef, singleton: boolean): IOC.Instance {
+    const onResolved = getIOCDevtoolsHook()?.onResolved;
+    const start = onResolved ? performance.now() : 0;
+
+    const constructor = serviceDef.serviceValue as IOC.Newable<unknown>;
+    const instance = new constructor();
+
+    // cache before inject so circular deps resolve to this instance
+    if (singleton) {
+      this.fSingletonInstances.set(serviceDef.serviceKey, instance);
+    }
+
+    try {
+      this.internalProcessInjects(instance, this.fInjectMethod);
+    } catch (error) {
+      // drop the half-injected instance so the next get() retries construction
+      if (singleton) {
+        this.fSingletonInstances.delete(serviceDef.serviceKey);
+      }
+
+      throw error;
+    }
+
+    if (onResolved) {
+      onResolved({
+        key: serviceDef.serviceKey,
+        name: this.getKeyDescription(serviceDef.serviceKey),
+        type: serviceDef.type,
+        context: this.fContext,
+        start,
+        end: performance.now(),
+      });
+    }
+
+    return instance;
   }
 
   /**
@@ -417,9 +474,7 @@ export class Container {
           const isOptional = inj.type === IOC.DependencyType.OPTIONAL;
 
           // create empty instance & save it
-          const childInstance = isOptional
-            ? this.internalGetOptional(inj.dependency)
-            : this.internalGet(inj.dependency, instance);
+          const childInstance = isOptional ? this.internalGetOptional(inj.dependency) : this.internalGet(inj.dependency, element);
 
           elementSet.add(inj.dependency);
 
@@ -477,13 +532,15 @@ export class Container {
    */
   protected getKeyDescription(key: IOC.ServiceKey): string {
     if (typeof key === 'symbol') {
-      return key.description!;
+      return key.description ?? 'Symbol()';
+    } else if (typeof key === 'string') {
+      return key;
     } else if (typeof key === 'function') {
-      return key.name;
-    } else if (typeof key === 'object') {
+      return key.name || 'AnonymousClass';
+    } else if (typeof key === 'object' && key !== null) {
       return key.constructor?.name ?? 'Unknown object';
     }
 
-    return 'Unknown';
+    return `Unknown (${typeof key})`;
   }
 }

@@ -29,6 +29,8 @@ const config: ConfigTypes.Config = {
   },
 };
 
+const defaultReusePort = process.platform === 'linux';
+
 describe('HttpServer', () => {
   let httpServer: HttpServer;
   let container: Container;
@@ -81,7 +83,7 @@ describe('HttpServer', () => {
           onError: expect.any(Function),
         },
         hostname: 'localhost',
-        reusePort: expect.any(Boolean),
+        reusePort: defaultReusePort,
         port: 3000,
         fetch: expect.any(Function),
         plugins: [],
@@ -103,12 +105,31 @@ describe('HttpServer', () => {
           onError: expect.any(Function),
         },
         hostname: undefined,
-        reusePort: expect.any(Boolean),
+        reusePort: defaultReusePort,
         port: undefined,
         fetch: expect.any(Function),
         plugins: [],
         manual: true,
       });
+    });
+
+    it('should not enable reusePort on platforms that cannot bind it', async () => {
+      await httpServer.initialize(config);
+
+      const options = vi.mocked(srvx.serve).mock.calls[0][0] as { reusePort: boolean };
+
+      expect(options.reusePort).toBe(defaultReusePort);
+      expect(['darwin', 'win32'].includes(process.platform) && options.reusePort).toBe(false);
+    });
+
+    it('should let the config force reusePort on or off', async () => {
+      await httpServer.initialize({ server: { ...config.server, reusePort: true } });
+      expect((vi.mocked(srvx.serve).mock.calls[0][0] as { reusePort: boolean }).reusePort).toBe(true);
+
+      vi.mocked(srvx.serve).mockClear();
+
+      await httpServer.initialize({ server: { ...config.server, reusePort: false } });
+      expect((vi.mocked(srvx.serve).mock.calls[0][0] as { reusePort: boolean }).reusePort).toBe(false);
     });
 
     it('should handle bun error through error handler', async () => {

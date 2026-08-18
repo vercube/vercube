@@ -38,14 +38,14 @@ class PutDecorator extends BaseDecorator<PutDecoratorOptions> {
     const method = initializeMetadataMethod(this.prototype, this.propertyName);
     method.method = 'PUT';
 
-    this.options.path = this.gMetadataResolver.resolveUrl({
+    const path = this.gMetadataResolver.resolveUrl({
       instance: this.instance,
       path: this.options.path,
       propertyName: this.propertyName,
     });
 
     this.gRouter.addRoute({
-      path: this.options.path,
+      path,
       method: 'PUT',
       handler: this.gRequestHandler.prepareHandler({
         instance: this.instance,

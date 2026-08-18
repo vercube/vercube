@@ -27,6 +27,12 @@ export class Router {
   private fRouterContext!: RouterContext<RouterTypes.RouterHandler>;
 
   /**
+   * Flat list of registered routes (rou3 cannot be enumerated).
+   * @private
+   */
+  private fRoutes: RouterTypes.Route[] = [];
+
+  /**
    * Lookup tables for routes without parameters, one per HTTP method.
    *
    * Most routes of a real application are static, and a map hit is far cheaper
@@ -37,6 +43,13 @@ export class Router {
    * @private
    */
   private fStaticRoutes: Map<string, Map<string, RouterTypes.RouteMatched<RouterTypes.RouterHandler>>> = new Map();
+
+  /**
+   * All routes registered in this router, in registration order.
+   */
+  public get routes(): readonly RouterTypes.Route[] {
+    return this.fRoutes;
+  }
 
   /**
    * Registers a new route in the router
@@ -51,6 +64,7 @@ export class Router {
 
     const method = route.method.toUpperCase();
     addRoute(this.fRouterContext, method, route.path, route.handler);
+    this.fRoutes.push(route);
 
     if (isStaticPath(route.path)) {
       let byPath = this.fStaticRoutes.get(method);
@@ -77,6 +91,7 @@ export class Router {
     this.gHooksService.trigger(RouterBeforeInitHook);
 
     this.fRouterContext = createRouter<RouterTypes.RouterHandler>();
+    this.fRoutes = [];
     this.fStaticRoutes.clear();
 
     // trigger after init hook

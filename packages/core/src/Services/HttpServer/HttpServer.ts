@@ -104,7 +104,7 @@ export class HttpServer {
    * @returns {Promise<void>} A promise that resolves when the server is ready
    */
   public async initialize(config: ConfigTypes.Config): Promise<void> {
-    const { port, host } = config.server ?? {};
+    const { port, host, reusePort } = config.server ?? {};
 
     this.fServer = serve({
       bun: {
@@ -121,7 +121,8 @@ export class HttpServer {
       hostname: host,
       // SO_REUSEPORT only balances connections on Linux, and Node on Darwin even
       // fails `listen()` with ENOTSUP when it is set - see isReusePortSupported.
-      reusePort: isReusePortSupported(),
+      // Config can still force it on or off.
+      reusePort: reusePort ?? isReusePortSupported(),
       port,
       fetch: this.handleRequest.bind(this),
       plugins: this.fPlugins,

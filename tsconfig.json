@@ -29,9 +29,13 @@
   "include": [
     "./packages/**/*.ts",
     "./scripts/**/*.ts",
+    "./playground/**/*.ts",
     "./tsdown.config.ts",
     "./examples/custom-plugin/**/*.ts",
     "./examples/cli-commands/**/*.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    "packages/devtools/ui"
+  ]
 }

@@ -36,9 +36,12 @@ export * from './Decorators/Http/MultipartFormData';
 // Hooks
 export * from './Decorators/Hooks/Listen';
 export * from './Services/Hooks/HooksService';
+export * from './Hooks/Router/RouterAfterInitHook';
+export * from './Hooks/Router/RouterBeforeInitHook';
 
 // Plugins
 export * from './Services/Plugins/BasePlugin';
+export * from './Services/Plugins/PluginsRegistry';
 export * from './Types/Plugin';
 export {
   applyVercubePluginHooks,

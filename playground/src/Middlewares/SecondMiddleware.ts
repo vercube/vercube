@@ -1,14 +1,9 @@
 import { BaseMiddleware } from '@vercube/core';
-import { Inject } from '@vercube/di';
-import { Logger } from '@vercube/logger';
 
 /**
  * SecondMiddleware class that implements the BaseMiddleware interface.
  */
 export class SecondMiddleware implements BaseMiddleware {
-  @Inject(Logger)
-  private gLogger: Logger;
-
   /**
    * Middleware function that processes the HTTP event.
    *
