@@ -339,6 +339,103 @@ export namespace DevtoolsTypes {
     };
   }
 
+  /** One mounted queue transport. */
+  export interface QueueMount {
+    /** Name the strategy is mounted under. */
+    name: string;
+    /** Transport it talks to, for example `bullmq`. */
+    transport: string;
+    /** Class name of the strategy. */
+    driver: string;
+    /** Whether it is connected, idle, closed or broken. */
+    status: string;
+    /** What the transport supports on its own. */
+    capabilities: Record<string, boolean>;
+    /** Set when the strategy failed. */
+    error?: string;
+  }
+
+  /** One registered job handler. */
+  export interface QueueHandler {
+    strategy: string;
+    queue: string;
+    job: string;
+    /** Handler, in the `Class.method` form. */
+    source: string;
+    /** Attempts applied when the job carries none. */
+    attempts: number;
+    /** Handler time limit in milliseconds, when one is set. */
+    timeout?: number;
+    /** Whether the payload is validated before the handler runs. */
+    validated: boolean;
+    /** Whether the queue is currently being consumed. */
+    running: boolean;
+  }
+
+  /** Counters the transport itself reports for a queue. */
+  export type QueueTransportStats = Record<string, number | undefined>;
+
+  /** Counters the queue module keeps per queue. */
+  export interface QueueMetrics {
+    strategy: string;
+    queue: string;
+    published: number;
+    processed: number;
+    failed: number;
+    retried: number;
+    unhandled: number;
+    active: number;
+    lastError?: string;
+  }
+
+  /** A queue, with everything known about it. */
+  export interface QueueLine extends QueueMetrics {
+    /** Job names handled on this queue. */
+    jobs: string[];
+    /** Whether a consumer is running for it. */
+    running: boolean;
+    /** What the transport reports, when it reports anything. */
+    stats: QueueTransportStats | null;
+  }
+
+  /** A processed job. */
+  export interface QueueJob {
+    /** Epoch milliseconds the attempt finished at. */
+    at: number;
+    strategy: string;
+    queue: string;
+    job: string;
+    id: string;
+    attempt: number;
+    /** How the attempt ended. */
+    status: string;
+    /** Handler duration in milliseconds. */
+    duration: number;
+    error?: string;
+  }
+
+  /** What the queue manager exposes about itself. */
+  export interface QueueSnapshot {
+    started: boolean;
+    strategies: QueueMount[];
+    consumers: QueueHandler[];
+    metrics: QueueMetrics[];
+    events: QueueJob[];
+  }
+
+  /** Queue inspection result. */
+  export interface QueueView {
+    /** False when `@vercube/queue` is not in use. */
+    available: boolean;
+    /** Whether consumers have been started. */
+    started: boolean;
+    mounts: QueueMount[];
+    handlers: QueueHandler[];
+    queues: QueueLine[];
+    /** Recently processed jobs, newest first. */
+    events: QueueJob[];
+  }
+
   /** Severity of a captured log line, matching the logger's own levels. */
   export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 

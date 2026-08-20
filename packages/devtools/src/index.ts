@@ -13,6 +13,7 @@ export * from './Services/DevtoolsEventBus';
 export * from './Services/GraphCollector';
 export * from './Services/OverviewCollector';
 export * from './Services/RequestRecorder';
+export * from './Services/QueueCollector';
 export * from './Services/RouteCollector';
 export {
   finalizeBootstrapProfile,

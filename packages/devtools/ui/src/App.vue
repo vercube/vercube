@@ -7,13 +7,14 @@ import ConfigView from './components/ConfigView.vue';
 import GraphView from './components/GraphView.vue';
 import LogsView from './components/LogsView.vue';
 import OverviewView from './components/OverviewView.vue';
+import QueuesView from './components/QueuesView.vue';
 import RequestsView from './components/RequestsView.vue';
 import RoutesView from './components/RoutesView.vue';
 import StorageView from './components/StorageView.vue';
 import VercubeMark from './components/VercubeMark.vue';
 import type { LogEntry, MetricsSample, RequestRecord } from './api';
 
-type TabId = 'overview' | 'requests' | 'logs' | 'storage' | 'routes' | 'graph' | 'config' | 'bootstrap' | 'audit';
+type TabId = 'overview' | 'requests' | 'logs' | 'storage' | 'queues' | 'routes' | 'graph' | 'config' | 'bootstrap' | 'audit';
 
 interface Tab {
   id: TabId;
@@ -33,6 +34,7 @@ const groups: { label: string; tabs: Tab[] }[] = [
         label: 'Storage',
         icon: 'M4 7c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3Zm0 0v10c0 1.7 3.6 3 8 3s8-1.3 8-3V7M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3',
       },
+      { id: 'queues', label: 'Queues', icon: 'm12 4 8 4-8 4-8-4 8-4Zm8 8-8 4-8-4m16 4-8 4-8-4' },
     ],
   },
   {
@@ -294,6 +296,8 @@ onUnmounted(() => {
       <RequestsView v-else-if="active === 'requests'" :live="live" :live-logs="liveLogs" />
       <LogsView v-else-if="active === 'logs'" :live="liveLogs" />
       <StorageView v-else-if="active === 'storage'" />
+
+      <QueuesView v-else-if="active === 'queues'" />
       <ConfigView v-else-if="active === 'config'" />
       <RoutesView v-else-if="active === 'routes'" />
       <GraphView v-else-if="active === 'graph'" />
