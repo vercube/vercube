@@ -18,7 +18,7 @@ catalog:
   pathe: 2.0.3
   vite: 8.2.2
   rolldown: 1.2.5
-  srvx: 0.12.5
+  srvx: 0.12.7
   zod: 4.4.3
 
 ignoredBuiltDependencies:
