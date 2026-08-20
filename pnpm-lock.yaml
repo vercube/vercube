@@ -245,6 +245,34 @@ importers:
         specifier: 'catalog:'
         version: 1.2.5
 
+  examples/queue:
+    dependencies:
+      '@oxc-project/runtime':
+        specifier: 'catalog:'
+        version: 0.146.0
+      '@vercube/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@vercube/devtools':
+        specifier: workspace:*
+        version: link:../../packages/devtools
+      '@vercube/di':
+        specifier: workspace:*
+        version: link:../../packages/di
+      '@vercube/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
+      '@vercube/queue':
+        specifier: workspace:*
+        version: link:../../packages/queue
+      zod:
+        specifier: 'catalog:'
+        version: 4.4.3
+    devDependencies:
+      '@vercube/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+
   examples/vite:
     dependencies:
       '@vercube/core':
