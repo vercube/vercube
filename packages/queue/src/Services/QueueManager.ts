@@ -93,6 +93,9 @@ export class QueueManager {
   /** Retries waiting for their backoff to elapse */
   protected fPendingRetries: Set<Promise<void>> = new Set();
 
+  /** Listeners following the jobs this manager processes */
+  protected fListeners: Set<QueueTypes.JobListener> = new Set();
+
   /**
    * Whether consumers have been started.
    *
@@ -410,6 +413,24 @@ export class QueueManager {
 
       return {};
     }
+  }
+
+  /**
+   * Follows every job this manager finishes, as it finishes it.
+   *
+   * The listener is called with the same event that goes into the inspection
+   * buffer, right after the job settled, so a listener sees a queue live instead
+   * of polling it. A listener that throws is reported and kept.
+   *
+   * @param {QueueTypes.JobListener} listener - Called once per processed job
+   * @returns {() => void} Removes the listener again
+   */
+  public subscribe(listener: QueueTypes.JobListener): () => void {
+    this.fListeners.add(listener);
+
+    return () => {
+      this.fListeners.delete(listener);
+    };
   }
 
   /**
@@ -1032,10 +1053,6 @@ export class QueueManager {
    * @returns {void}
    */
   protected record(event: Omit<QueueTypes.JobEvent, 'at'>, payload?: unknown, headers?: Record<string, string>): void {
-    if (this.fDefaults.maxEvents <= 0) {
-      return;
-    }
-
     const captured =
       this.fDefaults.capturePayloads && event.status !== 'completed'
         ? {
@@ -1044,7 +1061,22 @@ export class QueueManager {
           }
         : {};
 
-    this.fEvents.unshift({ ...event, ...captured, at: Date.now() });
+    const recorded: QueueTypes.JobEvent = { ...event, ...captured, at: Date.now() };
+
+    // listeners are told even when no buffer is kept, so a live view keeps working
+    for (const listener of this.fListeners) {
+      try {
+        listener(recorded);
+      } catch (error) {
+        this.gLogger?.error('Vercube/QueueManager::Job listener threw', error);
+      }
+    }
+
+    if (this.fDefaults.maxEvents <= 0) {
+      return;
+    }
+
+    this.fEvents.unshift(recorded);
 
     if (this.fEvents.length > this.fDefaults.maxEvents) {
       this.fEvents.length = this.fDefaults.maxEvents;

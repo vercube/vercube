@@ -12,7 +12,7 @@ import RequestsView from './components/RequestsView.vue';
 import RoutesView from './components/RoutesView.vue';
 import StorageView from './components/StorageView.vue';
 import VercubeMark from './components/VercubeMark.vue';
-import type { LogEntry, MetricsSample, RequestRecord } from './api';
+import type { LogEntry, MetricsSample, QueueJob, QueueMetrics, RequestRecord } from './api';
 
 type TabId = 'overview' | 'requests' | 'logs' | 'storage' | 'queues' | 'routes' | 'graph' | 'config' | 'bootstrap' | 'audit';
 
@@ -71,6 +71,10 @@ const live = ref<RequestRecord[]>([]);
 const liveLogs = ref<LogEntry[]>([]);
 
 const liveMetrics = ref<MetricsSample[]>([]);
+
+const liveQueueJobs = ref<QueueJob[]>([]);
+const liveQueueMetrics = ref<QueueMetrics[]>([]);
+const liveQueueDropped = ref(0);
 const connected = ref(false);
 const streaming = ref(true);
 const theme = ref<'dark' | 'light'>(readTheme());
@@ -127,6 +131,11 @@ function connect(): void {
     },
     onMetrics: (sample) => {
       liveMetrics.value = [...liveMetrics.value, sample].slice(-120);
+    },
+    onQueue: (batch) => {
+      liveQueueJobs.value = [...batch.events, ...liveQueueJobs.value].slice(0, 500);
+      liveQueueMetrics.value = batch.metrics;
+      liveQueueDropped.value += batch.dropped;
     },
     onStatus: (state) => (connected.value = state),
   });
@@ -297,7 +306,12 @@ onUnmounted(() => {
       <LogsView v-else-if="active === 'logs'" :live="liveLogs" />
       <StorageView v-else-if="active === 'storage'" />
 
-      <QueuesView v-else-if="active === 'queues'" />
+      <QueuesView
+        v-else-if="active === 'queues'"
+        :live="liveQueueJobs"
+        :live-metrics="liveQueueMetrics"
+        :dropped="liveQueueDropped"
+      />
       <ConfigView v-else-if="active === 'config'" />
       <RoutesView v-else-if="active === 'routes'" />
       <GraphView v-else-if="active === 'graph'" />

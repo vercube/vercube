@@ -1051,6 +1051,87 @@ describe('QueueManager', () => {
     });
   });
 
+  describe('following jobs live', () => {
+    it('should tell listeners about every processed job', async () => {
+      const strategy = await mountRecording();
+      const seen: QueueTypes.JobEvent[] = [];
+
+      manager.subscribe((event) => seen.push(event));
+      manager.registerConsumer(registration());
+      manager.registerConsumer(registration({ job: 'bounce', handler: vi.fn().mockRejectedValue(new Error('boom')) }));
+      await manager.start();
+
+      await strategy.deliver('emails', { job: 'welcome' });
+      await expect(strategy.deliver('emails', { job: 'bounce' })).rejects.toThrow();
+      await strategy.deliver('emails', { job: 'nobody-home' });
+
+      expect(seen.map((event) => `${event.job}:${event.status}`)).toEqual([
+        'welcome:completed',
+        'bounce:failed',
+        'nobody-home:unhandled',
+      ]);
+    });
+
+    it('should hand listeners the same event the buffer keeps', async () => {
+      const strategy = await mountRecording();
+      const seen: QueueTypes.JobEvent[] = [];
+
+      manager.subscribe((event) => seen.push(event));
+      manager.registerConsumer(registration());
+      await manager.start();
+
+      await strategy.deliver('emails', { job: 'welcome' });
+
+      // inspect() hands out copies, so compare by value
+      expect(seen[0]).toEqual(manager.inspect().events[0]);
+    });
+
+    it('should keep telling listeners when no buffer is kept', async () => {
+      const strategy = await mountRecording();
+      const seen: QueueTypes.JobEvent[] = [];
+
+      manager.configure({ maxEvents: 0 });
+      manager.subscribe((event) => seen.push(event));
+      manager.registerConsumer(registration());
+      await manager.start();
+
+      await strategy.deliver('emails', { job: 'welcome' });
+
+      expect(seen).toHaveLength(1);
+      expect(manager.inspect().events).toEqual([]);
+    });
+
+    it('should stop telling a listener that unsubscribed', async () => {
+      const strategy = await mountRecording();
+      const listener = vi.fn();
+
+      const stop = manager.subscribe(listener);
+
+      manager.registerConsumer(registration());
+      await manager.start();
+
+      await strategy.deliver('emails', { job: 'welcome' });
+      stop();
+      await strategy.deliver('emails', { job: 'welcome' });
+
+      expect(listener).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not let a throwing listener break the job', async () => {
+      const strategy = await mountRecording();
+
+      manager.subscribe(() => {
+        throw new Error('listener down');
+      });
+      manager.registerConsumer(registration());
+      await manager.start();
+
+      await expect(strategy.deliver('emails', { job: 'welcome' })).resolves.toBeUndefined();
+      expect(logger.error).toHaveBeenCalledWith('Vercube/QueueManager::Job listener threw', expect.anything());
+      expect(manager.inspect().metrics[0]).toMatchObject({ processed: 1 });
+    });
+  });
+
   describe('inspection', () => {
     it('should describe strategies, handlers and counters', async () => {
       const strategy = await mountRecording();

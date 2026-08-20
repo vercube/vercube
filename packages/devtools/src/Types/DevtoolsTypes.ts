@@ -444,6 +444,16 @@ export namespace DevtoolsTypes {
     events: QueueJob[];
   }
 
+  /** A batch of processed jobs pushed over the stream. */
+  export interface QueueBatch {
+    /** Jobs that finished since the last batch, newest first. */
+    events: QueueJob[];
+    /** Per-queue counters as they stand after the batch. */
+    metrics: QueueMetrics[];
+    /** Jobs left out because the batch was capped. */
+    dropped: number;
+  }
+
   /** Queue inspection result. */
   export interface QueueView {
     /** False when `@vercube/queue` is not in use. */
@@ -528,5 +538,6 @@ export namespace DevtoolsTypes {
     | { type: 'request'; payload: RequestRecord }
     | { type: 'log'; payload: LogEntry }
     | { type: 'metrics'; payload: MetricsSample }
+    | { type: 'queue'; payload: QueueBatch }
     | { type: 'ping'; payload: { at: number } };
 }

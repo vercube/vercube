@@ -4,7 +4,16 @@ import { formatMs, useResource } from '../api';
 import { useInspectorWidth } from '../inspector';
 import PageHeader from './PageHeader.vue';
 import SplitHandle from './SplitHandle.vue';
-import type { QueueJob, QueueLine, QueueView } from '../api';
+import type { QueueJob, QueueLine, QueueMetrics, QueueView } from '../api';
+
+const props = defineProps<{
+  /** Jobs pushed over the stream since the page was opened, newest first. */
+  live?: QueueJob[];
+  /** Counters as of the last batch. */
+  liveMetrics?: QueueMetrics[];
+  /** Jobs the stream left out because a batch was full. */
+  dropped?: number;
+}>();
 
 const { data, error, loading, reload } = useResource<QueueView>('/api/queues');
 
@@ -18,11 +27,27 @@ const DEFAULT_INSPECTOR_WIDTH = 420;
 
 const inspectorWidth = useInspectorWidth('queues-inspector', DEFAULT_INSPECTOR_WIDTH);
 
+/**
+ * The fetched queues with the counters of the last streamed batch applied, so
+ * the ledger keeps up without refetching. Transport counters stay as fetched:
+ * reading those costs a broker round trip.
+ */
+const lines = computed<QueueLine[]>(() => {
+  const fetched = data.value?.queues ?? [];
+  const live = new Map((props.liveMetrics ?? []).map((entry) => [`${entry.strategy}::${entry.queue}`, entry]));
+
+  return fetched.map((line) => {
+    const fresh = live.get(keyOf(line));
+
+    return fresh ? { ...line, ...fresh } : line;
+  });
+});
+
 /** Queues match on their own name, their strategy or any job they handle. */
 const queues = computed(() => {
   const needle = query.value.trim().toLowerCase();
 
-  return (data.value?.queues ?? []).filter(
+  return lines.value.filter(
     (queue) =>
       !needle ||
       queue.queue.toLowerCase().includes(needle) ||
@@ -31,10 +56,27 @@ const queues = computed(() => {
   );
 });
 
+/** Streamed jobs first, then whatever the last fetch knew, without repeating any. */
+const journal = computed<QueueJob[]>(() => {
+  const seen = new Set<string>();
+  const merged: QueueJob[] = [];
+
+  for (const event of [...(props.live ?? []), ...(data.value?.events ?? [])]) {
+    const key = `${event.at}-${event.strategy}-${event.queue}-${event.id}-${event.attempt}-${event.status}`;
+
+    if (!seen.has(key)) {
+      seen.add(key);
+      merged.push(event);
+    }
+  }
+
+  return merged;
+});
+
 const events = computed(() => {
   const needle = query.value.trim().toLowerCase();
 
-  return (data.value?.events ?? []).filter(
+  return journal.value.filter(
     (event) =>
       !needle ||
       event.queue.toLowerCase().includes(needle) ||
@@ -78,7 +120,22 @@ const handlers = computed(() =>
 );
 
 const queueEvents = computed(() =>
-  (data.value?.events ?? []).filter((event) => queue.value && keyOf(event) === keyOf(queue.value)).slice(0, 25),
+  journal.value.filter((event) => queue.value && keyOf(event) === keyOf(queue.value)).slice(0, 25),
+);
+
+/**
+ * A queue nobody fetched yet can show up in a streamed batch. Its counters are
+ * there, but its handlers and transport are not, so refetch once it appears.
+ */
+watch(
+  () => props.liveMetrics,
+  (metrics) => {
+    const known = new Set((data.value?.queues ?? []).map((line) => keyOf(line)));
+
+    if ((metrics ?? []).some((entry) => !known.has(`${entry.strategy}::${entry.queue}`))) {
+      void reload();
+    }
+  },
 );
 
 watch(queues, (lines) => {
@@ -153,6 +210,10 @@ const meta = computed(() => {
     `${queues.value.length} queue${queues.value.length === 1 ? '' : 's'}`,
     `${report.handlers.length} handler${report.handlers.length === 1 ? '' : 's'}`,
   ];
+
+  if (props.dropped) {
+    parts.push(`${props.dropped} not shown`);
+  }
 
   return `${parts.join(' · ')}${report.started ? '' : ' · stopped'}`;
 });
@@ -254,7 +315,7 @@ onMounted(reload);
 
           <tbody>
             <tr v-if="events.length === 0" class="quiet">
-              <td colspan="7" class="row-note">No job has been processed yet.</td>
+              <td colspan="7" class="row-note">Nothing has run yet. Jobs show up here as they finish.</td>
             </tr>
 
             <tr

@@ -18,6 +18,8 @@ export type QueueView = DevtoolsTypes.QueueView;
 export type QueueLine = DevtoolsTypes.QueueLine;
 export type QueueJob = DevtoolsTypes.QueueJob;
 export type QueueFailure = DevtoolsTypes.QueueFailure;
+export type QueueBatch = DevtoolsTypes.QueueBatch;
+export type QueueMetrics = DevtoolsTypes.QueueMetrics;
 export type MetricsSample = DevtoolsTypes.MetricsSample;
 export type BootstrapProfile = DevtoolsTypes.BootstrapProfile;
 export type BootstrapNode = DevtoolsTypes.BootstrapNode;
@@ -106,6 +108,7 @@ export interface StreamHandlers {
   onRequest: (record: RequestRecord) => void;
   onLog: (entry: LogEntry) => void;
   onMetrics: (sample: MetricsSample) => void;
+  onQueue: (batch: QueueBatch) => void;
   onStatus: (connected: boolean) => void;
 }
 
@@ -128,6 +131,7 @@ export function openStream(handlers: StreamHandlers): () => void {
   source.addEventListener('request', (event) => consume<RequestRecord>(event, handlers.onRequest));
   source.addEventListener('log', (event) => consume<LogEntry>(event, handlers.onLog));
   source.addEventListener('metrics', (event) => consume<MetricsSample>(event, handlers.onMetrics));
+  source.addEventListener('queue', (event) => consume<QueueBatch>(event, handlers.onQueue));
 
   return () => source.close();
 }

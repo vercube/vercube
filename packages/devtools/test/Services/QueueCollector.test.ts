@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { DevtoolsEventBus } from '../../src/Services/DevtoolsEventBus';
 import { QueueCollector } from '../../src/Services/QueueCollector';
 import { createDevtoolsApp, devtoolsJson } from '../Utils/App';
 import type { DevtoolsTypes } from '../../src/Types/DevtoolsTypes';
@@ -18,6 +19,32 @@ class QueueManager {
   public static statsError: Error | null = null;
 
   public static broken: boolean = false;
+
+  public static listeners: ((event: DevtoolsTypes.QueueJob) => void)[] = [];
+
+  public subscribe(listener: (event: DevtoolsTypes.QueueJob) => void): () => void {
+    QueueManager.listeners.push(listener);
+
+    return () => {
+      QueueManager.listeners = QueueManager.listeners.filter((entry) => entry !== listener);
+    };
+  }
+
+  /** Pretends the queue module just finished a job. */
+  public static emit(event: Partial<DevtoolsTypes.QueueJob> & { job: string }): void {
+    for (const listener of QueueManager.listeners) {
+      listener({
+        at: 1_700_000_000_000,
+        strategy: 'default',
+        queue: 'emails',
+        id: 'job-1',
+        attempt: 1,
+        status: 'completed',
+        duration: 1,
+        ...event,
+      });
+    }
+  }
 
   public inspect(): DevtoolsTypes.QueueSnapshot {
     if (QueueManager.broken) {
@@ -121,6 +148,11 @@ async function createQueueApp(manager: typeof QueueManager | typeof LegacyQueueM
 }
 
 describe('QueueCollector', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    QueueManager.listeners = [];
+  });
+
   it('reports nothing when the queue module is not in use', async () => {
     const app = await createQueueApp(null);
     const view = await app.container.get(QueueCollector).collect();
@@ -276,6 +308,80 @@ describe('QueueCollector', () => {
       source: 'EmailConsumer.welcome',
     });
     expect(view.events[0].error?.stack).toContain('at handler');
+  });
+
+  describe('following jobs live', () => {
+    it('should push one batch per interval, newest job first', async () => {
+      vi.useFakeTimers();
+      QueueManager.configured = [];
+      QueueManager.statsError = null;
+      QueueManager.stats = {};
+      QueueManager.snapshot = snapshot();
+
+      const app = await createQueueApp(QueueManager);
+      const batches: DevtoolsTypes.QueueBatch[] = [];
+
+      app.container.get(DevtoolsEventBus).subscribe((event) => {
+        if (event.type === 'queue') {
+          batches.push(event.payload);
+        }
+      });
+
+      QueueManager.emit({ job: 'first' });
+      QueueManager.emit({ job: 'second', status: 'failed' });
+
+      expect(batches).toHaveLength(0);
+
+      await vi.advanceTimersByTimeAsync(300);
+
+      expect(batches).toHaveLength(1);
+      expect(batches[0].events.map((event) => event.job)).toEqual(['second', 'first']);
+      expect(batches[0].metrics[0]).toMatchObject({ queue: 'emails' });
+      expect(batches[0].dropped).toBe(0);
+    });
+
+    it('should cap a burst and say how much it left out', async () => {
+      vi.useFakeTimers();
+      QueueManager.statsError = null;
+      QueueManager.stats = {};
+      QueueManager.snapshot = snapshot();
+
+      const app = await createQueueApp(QueueManager);
+      const batches: DevtoolsTypes.QueueBatch[] = [];
+
+      app.container.get(DevtoolsEventBus).subscribe((event) => {
+        if (event.type === 'queue') {
+          batches.push(event.payload);
+        }
+      });
+
+      for (let index = 0; index < 260; index++) {
+        QueueManager.emit({ job: `job-${index}` });
+      }
+
+      await vi.advanceTimersByTimeAsync(300);
+
+      expect(batches[0].events).toHaveLength(200);
+      expect(batches[0].dropped).toBe(60);
+    });
+
+    it('should stay quiet when nothing happened', async () => {
+      vi.useFakeTimers();
+      QueueManager.snapshot = snapshot();
+
+      const app = await createQueueApp(QueueManager);
+      const batches: unknown[] = [];
+
+      app.container.get(DevtoolsEventBus).subscribe((event) => {
+        if (event.type === 'queue') {
+          batches.push(event.payload);
+        }
+      });
+
+      await vi.advanceTimersByTimeAsync(2000);
+
+      expect(batches).toEqual([]);
+    });
   });
 
   it('serves the same view over the api', async () => {

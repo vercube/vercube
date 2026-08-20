@@ -550,6 +550,12 @@ export namespace QueueTypes {
     source?: string;
   }
 
+  /**
+   * Called for every job the manager finishes, as it finishes it.
+   * Used to follow a queue live instead of polling it.
+   */
+  export type JobListener = (event: JobEvent) => void;
+
   /** State of a mounted strategy. */
   export type StrategyStatus = 'idle' | 'ready' | 'error' | 'closed';
 

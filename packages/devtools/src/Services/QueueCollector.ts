@@ -1,15 +1,27 @@
-import { Container, Init, Inject } from '@vercube/di';
+import { Container, Destroy, Init, Inject } from '@vercube/di';
 import { describeKey } from '../Utils/Introspect';
+import { DevtoolsEventBus } from './DevtoolsEventBus';
 import type { DevtoolsTypes } from '../Types/DevtoolsTypes';
 
 /** Maximum processed jobs listed. */
 const MAX_EVENTS = 200;
+
+/**
+ * How long jobs are collected before a batch is pushed. A queue can finish
+ * thousands of jobs a second, and one frame per job would drown the stream
+ * without telling anybody anything more.
+ */
+const BATCH_MS = 250;
+
+/** Maximum jobs carried by one batch, so a burst cannot produce a huge frame. */
+const MAX_BATCH = 200;
 
 /** Shape of the queue manager this collector reads, without importing it. */
 interface ManagerLike {
   inspect?: () => DevtoolsTypes.QueueSnapshot;
   stats?: (params: { queue: string; strategy?: string }) => Promise<Record<string, number | undefined>>;
   configure?: (defaults: { capturePayloads?: boolean }) => void;
+  subscribe?: (listener: (event: DevtoolsTypes.QueueJob) => void) => () => void;
 }
 
 /**
@@ -22,8 +34,23 @@ export class QueueCollector {
   @Inject(Container)
   private readonly gContainer!: Container;
 
+  @Inject(DevtoolsEventBus)
+  private readonly gEventBus!: DevtoolsEventBus;
+
   /** Whether the queue module was already asked to keep failure payloads */
   private fCapturing: boolean = false;
+
+  /** Removes the job listener again on shutdown */
+  private fUnsubscribe: (() => void) | null = null;
+
+  /** Jobs waiting to be pushed, oldest first */
+  private fPending: DevtoolsTypes.QueueJob[] = [];
+
+  /** Jobs dropped from the current batch because it is full */
+  private fDropped: number = 0;
+
+  /** Timer that flushes the current batch */
+  private fTimer: ReturnType<typeof setTimeout> | null = null;
 
   /**
    * Turns failure capturing on as soon as the container is ready, so the very
@@ -33,7 +60,86 @@ export class QueueCollector {
    */
   @Init()
   protected init(): void {
-    this.enableCapture(this.resolveLive<ManagerLike>('QueueManager'));
+    const manager = this.resolveLive<ManagerLike>('QueueManager');
+
+    this.enableCapture(manager);
+    this.follow(manager);
+  }
+
+  /**
+   * Stops following the queue module when the container is torn down.
+   * @returns nothing
+   */
+  @Destroy()
+  protected destroy(): void {
+    this.fUnsubscribe?.();
+    this.fUnsubscribe = null;
+
+    if (this.fTimer) {
+      clearTimeout(this.fTimer);
+      this.fTimer = null;
+    }
+  }
+
+  /**
+   * Follows every job the queue module processes and pushes them to the
+   * connected inspectors in batches.
+   * @param manager the live queue manager, when there is one
+   * @returns nothing
+   */
+  private follow(manager: ManagerLike | null): void {
+    if (this.fUnsubscribe || typeof manager?.subscribe !== 'function') {
+      return;
+    }
+
+    this.fUnsubscribe = manager.subscribe((event) => this.enqueue(event));
+  }
+
+  /**
+   * Adds a job to the current batch and makes sure it will be flushed.
+   * @param event the processed job
+   * @returns nothing
+   */
+  private enqueue(event: DevtoolsTypes.QueueJob): void {
+    if (this.fPending.length >= MAX_BATCH) {
+      this.fDropped++;
+    } else {
+      this.fPending.push(event);
+    }
+
+    if (this.fTimer) {
+      return;
+    }
+
+    this.fTimer = setTimeout(() => this.flush(), BATCH_MS);
+    this.fTimer.unref?.();
+  }
+
+  /**
+   * Pushes the collected jobs, together with the counters as they stand now, and
+   * starts a fresh batch.
+   * @returns nothing
+   */
+  private flush(): void {
+    this.fTimer = null;
+
+    if (this.fPending.length === 0 && this.fDropped === 0) {
+      return;
+    }
+
+    const events = this.fPending.reverse();
+    const dropped = this.fDropped;
+
+    this.fPending = [];
+    this.fDropped = 0;
+
+    const manager = this.resolveLive<ManagerLike>('QueueManager');
+    const snapshot = this.readSnapshot(manager);
+
+    this.gEventBus.publish({
+      type: 'queue',
+      payload: { events, metrics: snapshot?.metrics ?? [], dropped },
+    });
   }
 
   /**
