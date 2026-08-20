@@ -682,6 +682,9 @@ importers:
       '@vercube/logger':
         specifier: workspace:*
         version: link:../packages/logger
+      '@vercube/queue':
+        specifier: workspace:*
+        version: link:../packages/queue
       '@vercube/schema':
         specifier: workspace:*
         version: link:../packages/schema
