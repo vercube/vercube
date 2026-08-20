@@ -20,4 +20,5 @@ export * from './Types/QueueTypes';
 // Utils
 export * from './Utils/Errors';
 export * from './Utils/Job';
+export * from './Utils/Mount';
 export * from './Utils/Metadata';

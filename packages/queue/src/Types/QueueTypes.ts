@@ -118,11 +118,15 @@ export namespace QueueTypes {
 
     /** Strategy class, resolved through the container so it can use `@Inject`. */
     strategy: IOC.Newable<T>;
-  } & (T extends QueueStrategy<undefined>
-    ? { initOptions?: unknown }
-    : T extends QueueStrategy<infer U>
-      ? { initOptions: U }
-      : never);
+  } & (undefined extends InitOptionsOf<T> ? { initOptions?: InitOptionsOf<T> } : { initOptions: InitOptionsOf<T> });
+
+  /**
+   * Options a strategy is initialized with, read off the type-only marker
+   * `QueueStrategy` carries.
+   *
+   * @typeParam T - Strategy to read the options of.
+   */
+  export type InitOptionsOf<T> = T extends { __initOptions: infer U } ? U : never;
 
   /** A mounted strategy together with the options it is initialized with. */
   export interface MountedStrategy<T = unknown> {
@@ -586,8 +590,12 @@ export namespace QueueTypes {
   }
 
   /**
-   * A strategy mount without its generic init options, so several of them can
-   * be listed side by side in configuration.
+   * A strategy mount with its init options erased, so several mounts of
+   * different strategies can sit in one list.
+   *
+   * A plain array cannot check `initOptions` against its `strategy`, because
+   * there is nothing for TypeScript to infer the strategy from. Wrap each entry
+   * in {@link defineQueueStrategy} to get that check back.
    */
   export interface AnyMount {
     /**

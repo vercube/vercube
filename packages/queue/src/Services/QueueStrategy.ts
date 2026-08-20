@@ -33,6 +33,15 @@ import type { MaybePromise } from '@vercube/core';
  * ```
  */
 export abstract class QueueStrategy<InitOptions = undefined> {
+  /**
+   * Type-only marker carrying `InitOptions`, so `QueueTypes.Mount` can tell a
+   * strategy that needs options from one that does not. Declared, never assigned,
+   * and gone at runtime.
+   *
+   * @internal
+   */
+  declare public readonly __initOptions: InitOptions;
+
   /** Transport this strategy talks to, used in logs and in the devtools. */
   public abstract readonly transport: string;
 

@@ -1,5 +1,5 @@
 import { type App } from '@vercube/core';
-import { QueuePlugin } from '@vercube/queue';
+import { defineQueueStrategy, QueuePlugin } from '@vercube/queue';
 import { MemoryStrategy } from '@vercube/queue/strategies/MemoryStrategy';
 import { SchemaPlugin } from '@vercube/schema';
 import { WebsocketPlugin } from '@vercube/ws';
@@ -11,6 +11,6 @@ import { WebsocketPlugin } from '@vercube/ws';
 export async function setup(app: App): Promise<void> {
   // register plugins
   app.addPlugin(SchemaPlugin);
-  app.addPlugin(QueuePlugin, { strategies: [{ strategy: MemoryStrategy }] });
+  app.addPlugin(QueuePlugin, { strategies: [defineQueueStrategy({ strategy: MemoryStrategy })] });
   app.addPlugin(WebsocketPlugin);
 }
