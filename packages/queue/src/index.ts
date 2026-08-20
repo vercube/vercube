@@ -4,6 +4,9 @@ export * from './Decorators/Job';
 export * from './Decorators/OnJobCompleted';
 export * from './Decorators/OnJobFailed';
 
+// Plugins
+export * from './Plugins/QueuePlugin';
+
 // Errors
 export * from './Errors/QueueError';
 

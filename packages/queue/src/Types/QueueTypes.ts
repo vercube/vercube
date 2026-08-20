@@ -585,6 +585,24 @@ export namespace QueueTypes {
     events: JobEvent[];
   }
 
+  /**
+   * A strategy mount without its generic init options, so several of them can
+   * be listed side by side in configuration.
+   */
+  export interface AnyMount {
+    /**
+     * Name the strategy is mounted under.
+     * @default 'default'
+     */
+    name?: string;
+
+    /** Strategy class, resolved through the container. */
+    strategy: IOC.Newable<QueueStrategy<any>>;
+
+    /** Options passed to the strategy on first use. */
+    initOptions?: unknown;
+  }
+
   /** Manager-wide settings. */
   export interface Defaults {
     /**
@@ -612,5 +630,11 @@ export namespace QueueTypes {
      * @default 50
      */
     maxEvents?: number;
+  }
+
+  /** Options accepted by the queue plugin. */
+  export interface PluginOptions extends Defaults {
+    /** Strategies to mount when the application boots. */
+    strategies?: AnyMount[];
   }
 }
