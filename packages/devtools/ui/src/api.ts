@@ -17,6 +17,7 @@ export type StorageValue = DevtoolsTypes.StorageValue;
 export type QueueView = DevtoolsTypes.QueueView;
 export type QueueLine = DevtoolsTypes.QueueLine;
 export type QueueJob = DevtoolsTypes.QueueJob;
+export type QueueFailure = DevtoolsTypes.QueueFailure;
 export type MetricsSample = DevtoolsTypes.MetricsSample;
 export type BootstrapProfile = DevtoolsTypes.BootstrapProfile;
 export type BootstrapNode = DevtoolsTypes.BootstrapNode;

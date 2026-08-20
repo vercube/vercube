@@ -490,6 +490,24 @@ export namespace QueueTypes {
   /** Outcome of a single processing attempt. */
   export type JobStatus = 'completed' | 'failed' | 'retried' | 'unhandled';
 
+  /** What went wrong on a failed attempt. */
+  export interface JobFailure {
+    /** Error class name, for example `QueueError` or `TypeError`. */
+    name: string;
+
+    /** Message the error carried. */
+    message: string;
+
+    /** Stack trace, capped, when the error had one. */
+    stack?: string;
+
+    /** Queue operation that failed, for errors this module raised. */
+    operation?: string;
+
+    /** Whether running the job again could have helped. */
+    retryable?: boolean;
+  }
+
   /** A processed job, as kept in the manager's ring buffer. */
   export interface JobEvent {
     /** Epoch milliseconds the attempt finished at. */
@@ -516,8 +534,20 @@ export namespace QueueTypes {
     /** Wall clock duration of the handler, in milliseconds. */
     duration: number;
 
-    /** Error message, for failed attempts. */
-    error?: string;
+    /** What went wrong, for failed attempts. */
+    error?: JobFailure;
+
+    /**
+     * Payload preview of a failed attempt, kept only while `capturePayloads` is
+     * on. Credential-looking fields are withheld and the text is capped.
+     */
+    payload?: string;
+
+    /** Transport headers of a failed attempt, kept only while `capturePayloads` is on. */
+    headers?: Record<string, string>;
+
+    /** Handler that ran, in the `Class.method` form. */
+    source?: string;
   }
 
   /** State of a mounted strategy. */
@@ -638,6 +668,20 @@ export namespace QueueTypes {
      * @default 50
      */
     maxEvents?: number;
+
+    /**
+     * Keep the payload and headers of failed attempts, so a failure can be
+     * diagnosed from the outside. Off by default, because those are user data:
+     * `@vercube/devtools` turns it on for the session it inspects.
+     * @default false
+     */
+    capturePayloads?: boolean;
+
+    /**
+     * Largest payload preview and stack trace kept, in bytes.
+     * @default 4096
+     */
+    maxPayloadBytes?: number;
   }
 
   /** Options accepted by the queue plugin. */

@@ -1,4 +1,4 @@
-import { Container, Inject } from '@vercube/di';
+import { Container, Init, Inject } from '@vercube/di';
 import { describeKey } from '../Utils/Introspect';
 import type { DevtoolsTypes } from '../Types/DevtoolsTypes';
 
@@ -9,6 +9,7 @@ const MAX_EVENTS = 200;
 interface ManagerLike {
   inspect?: () => DevtoolsTypes.QueueSnapshot;
   stats?: (params: { queue: string; strategy?: string }) => Promise<Record<string, number | undefined>>;
+  configure?: (defaults: { capturePayloads?: boolean }) => void;
 }
 
 /**
@@ -21,12 +22,29 @@ export class QueueCollector {
   @Inject(Container)
   private readonly gContainer!: Container;
 
+  /** Whether the queue module was already asked to keep failure payloads */
+  private fCapturing: boolean = false;
+
+  /**
+   * Turns failure capturing on as soon as the container is ready, so the very
+   * first failed job is already diagnosable instead of the first one after
+   * somebody opened the panel.
+   * @returns nothing
+   */
+  @Init()
+  protected init(): void {
+    this.enableCapture(this.resolveLive<ManagerLike>('QueueManager'));
+  }
+
   /**
    * Reads the queue module.
    * @returns what could be seen of the queue layer
    */
   public async collect(): Promise<DevtoolsTypes.QueueView> {
     const manager = this.resolveLive<ManagerLike>('QueueManager');
+
+    this.enableCapture(manager);
+
     const snapshot = this.readSnapshot(manager);
 
     if (!manager || !snapshot) {
@@ -41,6 +59,27 @@ export class QueueCollector {
       queues: await this.readQueues(manager, snapshot),
       events: (snapshot.events ?? []).slice(0, MAX_EVENTS),
     };
+  }
+
+  /**
+   * Asks the queue module to keep the payload and headers of failed jobs, which
+   * it does not do on its own because those are user data. Devtools only run in
+   * development, or behind an explicit token, so the trade is theirs to make
+   * once they open the inspector.
+   * @param manager the live queue manager, when there is one
+   * @returns nothing
+   */
+  private enableCapture(manager: ManagerLike | null): void {
+    if (this.fCapturing || typeof manager?.configure !== 'function') {
+      return;
+    }
+
+    try {
+      manager.configure({ capturePayloads: true });
+      this.fCapturing = true;
+    } catch {
+      // a manager that refuses to be configured is still worth reading
+    }
   }
 
   /**

@@ -398,6 +398,20 @@ export namespace DevtoolsTypes {
     stats: QueueTransportStats | null;
   }
 
+  /** What went wrong on a failed attempt. */
+  export interface QueueFailure {
+    /** Error class name. */
+    name: string;
+    /** Message the error carried. */
+    message: string;
+    /** Stack trace, capped by the queue module. */
+    stack?: string;
+    /** Queue operation that failed, for errors the queue module raised. */
+    operation?: string;
+    /** Whether running the job again could have helped. */
+    retryable?: boolean;
+  }
+
   /** A processed job. */
   export interface QueueJob {
     /** Epoch milliseconds the attempt finished at. */
@@ -411,7 +425,14 @@ export namespace DevtoolsTypes {
     status: string;
     /** Handler duration in milliseconds. */
     duration: number;
-    error?: string;
+    /** What went wrong, for anything other than a completed job. */
+    error?: QueueFailure;
+    /** Payload preview of a failed attempt, with credentials withheld. */
+    payload?: string;
+    /** Transport headers of a failed attempt, with credentials withheld. */
+    headers?: Record<string, string>;
+    /** Handler that ran, in the `Class.method` form. */
+    source?: string;
   }
 
   /** What the queue manager exposes about itself. */

@@ -52,7 +52,14 @@ describe('QueueManager', () => {
 
   describe('configuration', () => {
     it('should expose its defaults', () => {
-      expect(manager.defaults).toEqual({ autoStart: false, concurrency: 1, onUnhandled: 'ignore', maxEvents: 50 });
+      expect(manager.defaults).toEqual({
+        autoStart: false,
+        concurrency: 1,
+        onUnhandled: 'ignore',
+        maxEvents: 50,
+        capturePayloads: false,
+        maxPayloadBytes: 4096,
+      });
     });
 
     it('should merge configuration and ignore undefined values', () => {
@@ -684,7 +691,10 @@ describe('QueueManager', () => {
         headers: { [ATTEMPT_HEADER]: '2', [ATTEMPTS_HEADER]: '3' },
       });
       expect(manager.inspect().metrics[0]).toMatchObject({ failed: 1, retried: 1 });
-      expect(manager.inspect().events[0]).toMatchObject({ status: 'retried', error: 'boom' });
+      expect(manager.inspect().events[0]).toMatchObject({
+        status: 'retried',
+        error: { name: 'Error', message: 'boom' },
+      });
     });
 
     it('should hand the backoff to a transport that can delay jobs', async () => {
@@ -820,6 +830,150 @@ describe('QueueManager', () => {
 
       await expect(strategy.deliver('emails', { job: 'welcome' })).rejects.toThrow('boom');
       expect(manager.inspect().metrics[0]).toMatchObject({ lastError: 'boom' });
+    });
+  });
+
+  describe('failure detail', () => {
+    it('should describe a plain error with its stack', async () => {
+      const strategy = await mountRecording();
+
+      manager.registerConsumer(registration({ handler: vi.fn().mockRejectedValue(new TypeError('nope')) }));
+      await manager.start();
+
+      await expect(strategy.deliver('emails', { job: 'welcome' })).rejects.toThrow('nope');
+
+      const event = manager.inspect().events[0];
+
+      expect(event.error).toMatchObject({ name: 'TypeError', message: 'nope' });
+      expect(event.error?.stack).toContain('TypeError: nope');
+      expect(event.source).toBe('TestConsumer.welcome');
+    });
+
+    it('should describe a queue error with its operation and retryability', async () => {
+      const strategy = await mountRecording();
+
+      manager.registerConsumer(registration({ handler: vi.fn(), options: { schema: idSchema } }));
+      await manager.start();
+
+      await expect(strategy.deliver('emails', { job: 'welcome', payload: { id: 'no' } })).rejects.toThrow();
+
+      expect(manager.inspect().events[0].error).toMatchObject({
+        name: 'QueueError',
+        operation: 'validate',
+        retryable: false,
+      });
+    });
+
+    it('should describe an unhandled job as a failure of its own', async () => {
+      const strategy = await mountRecording();
+
+      manager.registerConsumer(registration());
+      await manager.start();
+      await strategy.deliver('emails', { job: 'nobody-home' });
+
+      expect(manager.inspect().events[0]).toMatchObject({
+        status: 'unhandled',
+        error: { operation: 'process', retryable: false },
+      });
+    });
+
+    it('should keep no payload unless capturing is on', async () => {
+      const strategy = await mountRecording();
+
+      manager.registerConsumer(registration({ handler: vi.fn().mockRejectedValue(new Error('boom')) }));
+      await manager.start();
+
+      await expect(strategy.deliver('emails', { job: 'welcome', payload: { id: 1 } })).rejects.toThrow();
+
+      const event = manager.inspect().events[0];
+
+      expect(event.payload).toBeUndefined();
+      expect(event.headers).toBeUndefined();
+    });
+
+    it('should keep the payload and headers of a failure when capturing is on', async () => {
+      const strategy = await mountRecording();
+
+      manager.configure({ capturePayloads: true });
+      manager.registerConsumer(registration({ handler: vi.fn().mockRejectedValue(new Error('boom')) }));
+      await manager.start();
+
+      await expect(
+        strategy.deliver('emails', { job: 'welcome', payload: { id: 1 }, headers: { 'x-tenant': 'acme' } }),
+      ).rejects.toThrow();
+
+      const event = manager.inspect().events[0];
+
+      expect(JSON.parse(event.payload!)).toEqual({ id: 1 });
+      expect(event.headers).toEqual({ 'x-tenant': 'acme' });
+    });
+
+    it('should withhold credential-looking fields and headers', async () => {
+      const strategy = await mountRecording();
+
+      manager.configure({ capturePayloads: true });
+      manager.registerConsumer(registration({ handler: vi.fn().mockRejectedValue(new Error('boom')) }));
+      await manager.start();
+
+      await expect(
+        strategy.deliver('emails', {
+          job: 'welcome',
+          payload: { userId: 'u-1', accessToken: 'leak-me', nested: { password: 'leak-me' } },
+          headers: { authorization: 'Bearer leak-me', 'x-tenant': 'acme' },
+        }),
+      ).rejects.toThrow();
+
+      const event = manager.inspect().events[0];
+
+      expect(event.payload).not.toContain('leak-me');
+      expect(event.payload).toContain('u-1');
+      expect(event.headers).toEqual({ authorization: '<redacted>', 'x-tenant': 'acme' });
+    });
+
+    it('should cap the payload preview and the stack', async () => {
+      const strategy = await mountRecording();
+
+      manager.configure({ capturePayloads: true, maxPayloadBytes: 64 });
+      manager.registerConsumer(registration({ handler: vi.fn().mockRejectedValue(new Error('boom')) }));
+      await manager.start();
+
+      await expect(strategy.deliver('emails', { job: 'welcome', payload: { blob: 'x'.repeat(500) } })).rejects.toThrow();
+
+      const event = manager.inspect().events[0];
+
+      expect(event.payload).toContain('truncated');
+      expect(event.payload!.length).toBeLessThan(200);
+      expect(event.error!.stack!.length).toBeLessThanOrEqual(64);
+    });
+
+    it('should keep nothing for a job that completed', async () => {
+      const strategy = await mountRecording();
+
+      manager.configure({ capturePayloads: true });
+      manager.registerConsumer(registration());
+      await manager.start();
+
+      await strategy.deliver('emails', { job: 'welcome', payload: { id: 1 } });
+
+      const event = manager.inspect().events[0];
+
+      expect(event.status).toBe('completed');
+      expect(event.payload).toBeUndefined();
+      expect(event.headers).toBeUndefined();
+    });
+
+    it('should survive a payload that cannot be serialized', async () => {
+      const strategy = await mountRecording();
+      const circular: Record<string, unknown> = {};
+      circular.self = circular;
+
+      manager.configure({ capturePayloads: true });
+      manager.registerConsumer(registration({ handler: vi.fn().mockRejectedValue(new Error('boom')) }));
+      await manager.start();
+
+      await expect(strategy.deliver('emails', { job: 'welcome', payload: circular })).rejects.toThrow();
+
+      expect(manager.inspect().events[0].payload).toBe('<unserializable>');
     });
   });
 

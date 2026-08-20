@@ -12,6 +12,7 @@ import {
   resolveBackoff,
   WILDCARD_JOB,
 } from '../Utils/Job';
+import { previewPayload, redactHeaders } from '../Utils/Redact';
 import type { QueueTypes } from '../Types/QueueTypes';
 import type { QueueStrategy } from './QueueStrategy';
 
@@ -24,6 +25,8 @@ const DEFAULTS: Required<QueueTypes.Defaults> = {
   concurrency: 1,
   onUnhandled: 'ignore',
   maxEvents: 50,
+  capturePayloads: false,
+  maxPayloadBytes: 4096,
 };
 
 /**
@@ -468,15 +471,25 @@ export class QueueManager {
 
     if (!registration) {
       metrics.unhandled++;
-      this.record({
-        strategy,
-        queue,
-        job: incoming.job,
-        id: incoming.id,
-        attempt: incoming.attempt,
-        status: 'unhandled',
-        duration: 0,
-      });
+      this.record(
+        {
+          strategy,
+          queue,
+          job: incoming.job,
+          id: incoming.id,
+          attempt: incoming.attempt,
+          status: 'unhandled',
+          duration: 0,
+          error: {
+            name: 'QueueError',
+            message: `No handler is registered for job "${incoming.job}"`,
+            operation: 'process',
+            retryable: false,
+          },
+        },
+        incoming.payload,
+        incoming.headers,
+      );
       this.gLogger?.warn(`Vercube/QueueManager::No handler for job "${incoming.job}" on queue "${queue}"`);
 
       if (this.fDefaults.onUnhandled === 'fail') {
@@ -507,6 +520,7 @@ export class QueueManager {
         attempt: context.attempt,
         status: 'completed',
         duration: performance.now() - started,
+        source: registration.source,
       });
 
       await this.runHooks('completed', registration, context);
@@ -547,31 +561,41 @@ export class QueueManager {
 
     // transports retrying on their own only need to learn that the attempt failed
     if (mount?.strategy.capabilities.retries || !canRetry) {
-      this.record({
-        strategy: registration.strategy,
-        queue: registration.queue,
-        job: context.job,
-        id: context.id,
-        attempt: context.attempt,
-        status: 'failed',
-        duration,
-        error: error.message,
-      });
+      this.record(
+        {
+          strategy: registration.strategy,
+          queue: registration.queue,
+          job: context.job,
+          id: context.id,
+          attempt: context.attempt,
+          status: 'failed',
+          duration,
+          error: this.describeFailure(error),
+          source: registration.source,
+        },
+        context.payload,
+        context.headers,
+      );
 
       throw error;
     }
 
     metrics.retried++;
-    this.record({
-      strategy: registration.strategy,
-      queue: registration.queue,
-      job: context.job,
-      id: context.id,
-      attempt: context.attempt,
-      status: 'retried',
-      duration,
-      error: error.message,
-    });
+    this.record(
+      {
+        strategy: registration.strategy,
+        queue: registration.queue,
+        job: context.job,
+        id: context.id,
+        attempt: context.attempt,
+        status: 'retried',
+        duration,
+        error: this.describeFailure(error),
+        source: registration.source,
+      },
+      context.payload,
+      context.headers,
+    );
 
     this.scheduleRetry(registration, context, error);
   }
@@ -998,19 +1022,55 @@ export class QueueManager {
    * Appends a processed job to the inspection buffer, dropping the oldest entry
    * once the buffer is full.
    *
+   * The payload and headers of a failure are kept only while `capturePayloads`
+   * is on, and never for a job that completed: that is where the volume is, and
+   * a job that worked has nothing to diagnose.
+   *
    * @param {Omit<QueueTypes.JobEvent, 'at'>} event - The processed job
+   * @param {unknown} [payload] - Payload of the attempt, kept when capturing is on
+   * @param {Record<string, string>} [headers] - Headers of the attempt, kept when capturing is on
    * @returns {void}
    */
-  protected record(event: Omit<QueueTypes.JobEvent, 'at'>): void {
+  protected record(event: Omit<QueueTypes.JobEvent, 'at'>, payload?: unknown, headers?: Record<string, string>): void {
     if (this.fDefaults.maxEvents <= 0) {
       return;
     }
 
-    this.fEvents.unshift({ ...event, at: Date.now() });
+    const captured =
+      this.fDefaults.capturePayloads && event.status !== 'completed'
+        ? {
+            payload: previewPayload(payload, this.fDefaults.maxPayloadBytes),
+            headers: headers ? redactHeaders(headers) : undefined,
+          }
+        : {};
+
+    this.fEvents.unshift({ ...event, ...captured, at: Date.now() });
 
     if (this.fEvents.length > this.fDefaults.maxEvents) {
       this.fEvents.length = this.fDefaults.maxEvents;
     }
+  }
+
+  /**
+   * Describes an error for the inspection buffer: its name, message and a capped
+   * stack, plus what this module knows about it when it raised the error itself.
+   *
+   * @param {Error} error - Error the attempt failed with
+   * @returns {QueueTypes.JobFailure} The failure, ready to be inspected
+   */
+  protected describeFailure(error: Error): QueueTypes.JobFailure {
+    const failure: QueueTypes.JobFailure = {
+      name: error.name || 'Error',
+      message: error.message,
+      stack: error.stack?.slice(0, this.fDefaults.maxPayloadBytes),
+    };
+
+    if (error instanceof QueueError) {
+      failure.operation = error.operation;
+      failure.retryable = error.retryable;
+    }
+
+    return failure;
   }
 
   /**

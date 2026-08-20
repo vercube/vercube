@@ -9,9 +9,12 @@ import type { QueueJob, QueueLine, QueueView } from '../api';
 const { data, error, loading, reload } = useResource<QueueView>('/api/queues');
 
 const query = ref('');
-const selectedId = ref<string | null>(null);
 
-const DEFAULT_INSPECTOR_WIDTH = 400;
+/** Only one of the two is ever set: the inspector shows a queue or a single job. */
+const selectedQueue = ref<string | null>(null);
+const selectedJob = ref<QueueJob | null>(null);
+
+const DEFAULT_INSPECTOR_WIDTH = 420;
 
 const inspectorWidth = useInspectorWidth('queues-inspector', DEFAULT_INSPECTOR_WIDTH);
 
@@ -36,7 +39,8 @@ const events = computed(() => {
       !needle ||
       event.queue.toLowerCase().includes(needle) ||
       event.job.toLowerCase().includes(needle) ||
-      event.status.toLowerCase().includes(needle),
+      event.status.toLowerCase().includes(needle) ||
+      (event.error?.message ?? '').toLowerCase().includes(needle),
   );
 });
 
@@ -44,25 +48,42 @@ function keyOf(queue: { strategy: string; queue: string }): string {
   return `${queue.strategy}::${queue.queue}`;
 }
 
-function select(queue: QueueLine): void {
-  selectedId.value = selectedId.value === keyOf(queue) ? null : keyOf(queue);
+function jobKey(event: QueueJob, index: number): string {
+  return `${event.at}-${event.id}-${event.attempt}-${index}`;
 }
 
-const selected = computed(() => queues.value.find((queue) => keyOf(queue) === selectedId.value) ?? null);
+function selectQueue(queue: QueueLine): void {
+  selectedJob.value = null;
+  selectedQueue.value = selectedQueue.value === keyOf(queue) ? null : keyOf(queue);
+}
+
+function selectJob(event: QueueJob): void {
+  selectedQueue.value = null;
+  selectedJob.value = selectedJob.value === event ? null : event;
+}
+
+function closeInspector(): void {
+  selectedQueue.value = null;
+  selectedJob.value = null;
+}
+
+const queue = computed(() => queues.value.find((entry) => keyOf(entry) === selectedQueue.value) ?? null);
+
+const open = computed(() => Boolean(queue.value || selectedJob.value));
 
 const handlers = computed(() =>
   (data.value?.handlers ?? [])
-    .filter((handler) => selected.value && keyOf(handler) === keyOf(selected.value))
+    .filter((handler) => queue.value && keyOf(handler) === keyOf(queue.value))
     .sort((a, b) => a.job.localeCompare(b.job)),
 );
 
-const selectedEvents = computed(() =>
-  (data.value?.events ?? []).filter((event) => selected.value && keyOf(event) === keyOf(selected.value)).slice(0, 25),
+const queueEvents = computed(() =>
+  (data.value?.events ?? []).filter((event) => queue.value && keyOf(event) === keyOf(queue.value)).slice(0, 25),
 );
 
 watch(queues, (lines) => {
-  if (selectedId.value && !lines.some((queue) => keyOf(queue) === selectedId.value)) {
-    selectedId.value = null;
+  if (selectedQueue.value && !lines.some((entry) => keyOf(entry) === selectedQueue.value)) {
+    selectedQueue.value = null;
   }
 });
 
@@ -78,9 +99,7 @@ function statusTone(status: string): string {
     case 'ready': {
       return 'green';
     }
-    case 'error': {
-      return 'red';
-    }
+    case 'error':
     case 'closed': {
       return 'red';
     }
@@ -108,14 +127,18 @@ function jobTone(status: string): string {
 }
 
 /** The transport counter worth showing in the ledger, when there is one. */
-function waiting(queue: QueueLine): string {
-  const value = queue.stats?.waiting;
+function waiting(line: QueueLine): string {
+  const value = line.stats?.waiting;
 
   return typeof value === 'number' ? String(value) : '--';
 }
 
 function time(event: QueueJob): string {
   return new Date(event.at).toLocaleTimeString(undefined, { hour12: false });
+}
+
+function stamp(event: QueueJob): string {
+  return new Date(event.at).toLocaleString(undefined, { hour12: false });
 }
 
 const meta = computed(() => {
@@ -140,11 +163,11 @@ onMounted(reload);
 <template>
   <PageHeader title="Queues" :meta="meta" :loading="loading" @reload="reload">
     <template #tools>
-      <input v-model="query" class="field search" type="search" placeholder="Filter queues…" />
+      <input v-model="query" class="field search" type="search" placeholder="Filter queues and jobs…" />
     </template>
   </PageHeader>
 
-  <div class="body" :class="{ open: selected }" :style="{ '--inspector': `${inspectorWidth}px` }">
+  <div class="body" :class="{ open }" :style="{ '--inspector': `${inspectorWidth}px` }">
     <p v-if="error" class="error">{{ error }}</p>
 
     <div v-else-if="!loading && !data?.available" class="empty">
@@ -185,30 +208,30 @@ onMounted(reload);
             </tr>
 
             <tr
-              v-for="queue in queues"
-              :key="keyOf(queue)"
+              v-for="line in queues"
+              :key="keyOf(line)"
               class="row"
-              :class="{ open: selectedId === keyOf(queue) }"
+              :class="{ open: selectedQueue === keyOf(line) }"
               tabindex="0"
               role="button"
-              :aria-pressed="selectedId === keyOf(queue)"
-              @click="select(queue)"
-              @keydown.enter.prevent="select(queue)"
-              @keydown.space.prevent="select(queue)"
+              :aria-pressed="selectedQueue === keyOf(line)"
+              @click="selectQueue(line)"
+              @keydown.enter.prevent="selectQueue(line)"
+              @keydown.space.prevent="selectQueue(line)"
             >
               <td class="mono name">
-                {{ queue.queue }}
-                <span v-if="data && data.mounts.length > 1" class="tag">{{ queue.strategy }}</span>
+                {{ line.queue }}
+                <span v-if="data && data.mounts.length > 1" class="tag">{{ line.strategy }}</span>
               </td>
-              <td class="mono faint jobs">{{ queue.jobs.join(', ') || '--' }}</td>
-              <td class="num col-num">{{ queue.published }}</td>
-              <td class="num col-num">{{ queue.processed }}</td>
-              <td class="num col-num" :class="{ bad: queue.failed > 0 }">{{ queue.failed || '--' }}</td>
-              <td class="num col-num" :class="{ warn: queue.retried > 0 }">{{ queue.retried || '--' }}</td>
-              <td class="num col-num">{{ queue.active || '--' }}</td>
-              <td class="num col-num faint">{{ waiting(queue) }}</td>
+              <td class="mono faint jobs">{{ line.jobs.join(', ') || '--' }}</td>
+              <td class="num col-num">{{ line.published }}</td>
+              <td class="num col-num">{{ line.processed }}</td>
+              <td class="num col-num" :class="{ bad: line.failed > 0 }">{{ line.failed || '--' }}</td>
+              <td class="num col-num" :class="{ warn: line.retried > 0 }">{{ line.retried || '--' }}</td>
+              <td class="num col-num">{{ line.active || '--' }}</td>
+              <td class="num col-num faint">{{ waiting(line) }}</td>
               <td class="col-state">
-                <span class="tag" :class="queue.running ? 'green' : 'amber'">{{ queue.running ? 'consuming' : 'idle' }}</span>
+                <span class="tag" :class="line.running ? 'green' : 'amber'">{{ line.running ? 'consuming' : 'idle' }}</span>
               </td>
             </tr>
           </tbody>
@@ -225,25 +248,42 @@ onMounted(reload);
               <th class="col-attempt">Attempt</th>
               <th class="col-num">Took</th>
               <th class="col-status">Outcome</th>
+              <th class="col-toggle" aria-label="Details" />
             </tr>
           </thead>
 
           <tbody>
             <tr v-if="events.length === 0" class="quiet">
-              <td colspan="6" class="row-note">No job has been processed yet.</td>
+              <td colspan="7" class="row-note">No job has been processed yet.</td>
             </tr>
 
-            <tr v-for="(event, index) in events" :key="`${event.id}-${event.attempt}-${index}`">
+            <tr
+              v-for="(event, index) in events"
+              :key="jobKey(event, index)"
+              class="row"
+              :class="{ open: selectedJob === event }"
+              tabindex="0"
+              role="button"
+              :aria-pressed="selectedJob === event"
+              @click="selectJob(event)"
+              @keydown.enter.prevent="selectJob(event)"
+              @keydown.space.prevent="selectJob(event)"
+            >
               <td class="mono faint col-time">{{ time(event) }}</td>
               <td class="mono name">
                 {{ event.job }}
-                <span v-if="event.error" class="mono faint reason">{{ event.error }}</span>
+                <span v-if="event.error" class="mono faint reason">{{ event.error.message }}</span>
               </td>
               <td class="mono faint col-queue">{{ event.queue }}</td>
               <td class="num col-attempt faint">{{ event.attempt }}</td>
               <td class="num col-num faint">{{ formatMs(event.duration) }}</td>
               <td class="col-status">
                 <span class="tag" :class="jobTone(event.status)">{{ event.status }}</span>
+              </td>
+              <td class="col-toggle">
+                <svg viewBox="0 0 24 24" class="chevron" aria-hidden="true">
+                  <path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
               </td>
             </tr>
           </tbody>
@@ -252,7 +292,7 @@ onMounted(reload);
     </div>
 
     <SplitHandle
-      v-if="selected"
+      v-if="open"
       v-model="inspectorWidth"
       :initial="DEFAULT_INSPECTOR_WIDTH"
       :min="300"
@@ -260,71 +300,151 @@ onMounted(reload);
       label="Resize the queue panel"
     />
 
-    <aside v-if="selected" class="inspector scroll">
-      <header class="head">
-        <div class="title">
-          <span class="mono queue">{{ selected.queue }}</span>
-          <button class="close" type="button" title="Close the queue panel" @click="selectedId = null">
-            <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">
-              <path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-            </svg>
-          </button>
-        </div>
-        <p class="meta mono">
-          <span>{{ selected.strategy }}</span>
-          <span class="faint">{{ selected.running ? 'consuming' : 'idle' }}</span>
+    <aside v-if="open" class="inspector scroll">
+      <template v-if="queue">
+        <header class="head">
+          <div class="title">
+            <span class="mono subject">{{ queue.queue }}</span>
+            <button class="close" type="button" title="Close the queue panel" @click="closeInspector">
+              <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">
+                <path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+              </svg>
+            </button>
+          </div>
+          <p class="meta mono">
+            <span>{{ queue.strategy }}</span>
+            <span class="faint">{{ queue.running ? 'consuming' : 'idle' }}</span>
+          </p>
+        </header>
+
+        <section v-if="queue.lastError" class="block">
+          <h3 class="label">Last error</h3>
+          <p class="reason mono">{{ queue.lastError }}</p>
+        </section>
+
+        <section class="block">
+          <h3 class="label">Handlers</h3>
+          <ul v-if="handlers.length" class="stack">
+            <li v-for="handler in handlers" :key="handler.job">
+              <span class="mono">{{ handler.job }}</span>
+              <span class="mono faint">{{ handler.source }}</span>
+              <span class="tag">{{ handler.attempts }} attempt{{ handler.attempts === 1 ? '' : 's' }}</span>
+              <span v-if="handler.timeout" class="tag amber">{{ formatMs(handler.timeout) }}</span>
+              <span v-if="handler.validated" class="tag green">validated</span>
+            </li>
+          </ul>
+          <p v-else class="none">No handler is registered for this queue.</p>
+        </section>
+
+        <section class="block">
+          <h3 class="label">Transport counters</h3>
+          <ul v-if="queue.stats" class="stack">
+            <li v-for="(value, name) in queue.stats" :key="name">
+              <span class="mono">{{ name }}</span>
+              <span class="num">{{ value }}</span>
+            </li>
+          </ul>
+          <p v-else class="none">This transport keeps no counters.</p>
+        </section>
+
+        <section class="block">
+          <h3 class="label">Recent jobs</h3>
+          <ul v-if="queueEvents.length" class="stack">
+            <li v-for="(event, index) in queueEvents" :key="jobKey(event, index)" class="clickable" @click="selectJob(event)">
+              <span class="mono faint">{{ time(event) }}</span>
+              <span class="mono">{{ event.job }}</span>
+              <span class="tag" :class="jobTone(event.status)">{{ event.status }}</span>
+              <span class="num faint">{{ formatMs(event.duration) }}</span>
+            </li>
+          </ul>
+          <p v-else class="none">Nothing has run on this queue yet.</p>
+        </section>
+      </template>
+
+      <template v-else-if="selectedJob">
+        <header class="head">
+          <div class="title">
+            <span class="tag" :class="jobTone(selectedJob.status)">{{ selectedJob.status }}</span>
+            <span class="mono subject">{{ selectedJob.job }}</span>
+            <button class="close" type="button" title="Close the job panel" @click="closeInspector">
+              <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">
+                <path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+              </svg>
+            </button>
+          </div>
+          <p class="meta mono">
+            <span>{{ selectedJob.queue }}</span>
+            <span class="faint">attempt {{ selectedJob.attempt }}</span>
+            <span class="faint">{{ formatMs(selectedJob.duration) }}</span>
+          </p>
+        </header>
+
+        <section class="block">
+          <h3 class="label">Job</h3>
+          <ul class="stack">
+            <li>
+              <span class="mono faint">id</span>
+              <span class="mono value">{{ selectedJob.id }}</span>
+            </li>
+            <li>
+              <span class="mono faint">at</span>
+              <span class="mono value">{{ stamp(selectedJob) }}</span>
+            </li>
+            <li>
+              <span class="mono faint">strategy</span>
+              <span class="mono value">{{ selectedJob.strategy }}</span>
+            </li>
+            <li v-if="selectedJob.source">
+              <span class="mono faint">handler</span>
+              <span class="mono value">{{ selectedJob.source }}</span>
+            </li>
+          </ul>
+        </section>
+
+        <section v-if="selectedJob.error" class="block">
+          <h3 class="label">Error</h3>
+          <p class="failure mono">
+            <span class="err">{{ selectedJob.error.name }}</span>
+            {{ selectedJob.error.message }}
+          </p>
+          <div class="tags">
+            <span v-if="selectedJob.error.operation" class="tag">{{ selectedJob.error.operation }}</span>
+            <span v-if="selectedJob.error.retryable === false" class="tag red">not retryable</span>
+            <span v-else-if="selectedJob.error.retryable" class="tag amber">retryable</span>
+          </div>
+          <pre v-if="selectedJob.error.stack" class="code scroll">{{ selectedJob.error.stack }}</pre>
+          <p v-else class="none">This error carried no stack trace.</p>
+        </section>
+
+        <section v-if="selectedJob.payload" class="block">
+          <h3 class="label">Payload</h3>
+          <pre class="code scroll">{{ selectedJob.payload }}</pre>
+        </section>
+
+        <section v-if="selectedJob.headers" class="block">
+          <h3 class="label">Headers</h3>
+          <ul class="stack">
+            <li v-for="(value, name) in selectedJob.headers" :key="name">
+              <span class="mono faint">{{ name }}</span>
+              <span class="mono value">{{ value }}</span>
+            </li>
+          </ul>
+        </section>
+
+        <p v-if="selectedJob.status === 'completed'" class="none">
+          A job that completed keeps no payload: there is nothing to diagnose.
         </p>
-      </header>
-
-      <section v-if="selected.lastError" class="block">
-        <h3 class="label">Last error</h3>
-        <p class="reason mono">{{ selected.lastError }}</p>
-      </section>
-
-      <section class="block">
-        <h3 class="label">Handlers</h3>
-        <ul v-if="handlers.length" class="stack">
-          <li v-for="handler in handlers" :key="handler.job">
-            <span class="mono">{{ handler.job }}</span>
-            <span class="mono faint">{{ handler.source }}</span>
-            <span class="tag">{{ handler.attempts }} attempt{{ handler.attempts === 1 ? '' : 's' }}</span>
-            <span v-if="handler.timeout" class="tag amber">{{ formatMs(handler.timeout) }}</span>
-            <span v-if="handler.validated" class="tag green">validated</span>
-          </li>
-        </ul>
-        <p v-else class="none">No handler is registered for this queue.</p>
-      </section>
-
-      <section class="block">
-        <h3 class="label">Transport counters</h3>
-        <ul v-if="selected.stats" class="stack">
-          <li v-for="(value, name) in selected.stats" :key="name">
-            <span class="mono">{{ name }}</span>
-            <span class="num">{{ value }}</span>
-          </li>
-        </ul>
-        <p v-else class="none">This transport keeps no counters.</p>
-      </section>
-
-      <section class="block">
-        <h3 class="label">Recent jobs</h3>
-        <ul v-if="selectedEvents.length" class="stack">
-          <li v-for="(event, index) in selectedEvents" :key="`${event.id}-${event.attempt}-${index}`">
-            <span class="mono faint">{{ time(event) }}</span>
-            <span class="mono">{{ event.job }}</span>
-            <span class="tag" :class="jobTone(event.status)">{{ event.status }}</span>
-            <span class="num faint">{{ formatMs(event.duration) }}</span>
-          </li>
-        </ul>
-        <p v-else class="none">Nothing has run on this queue yet.</p>
-      </section>
+        <p v-else-if="!selectedJob.payload" class="none">
+          No payload was kept for this attempt. It failed before the inspector was opened.
+        </p>
+      </template>
     </aside>
   </div>
 </template>
 
 <style scoped>
 .search {
-  width: 190px;
+  width: 210px;
 }
 
 .body {
@@ -422,6 +542,10 @@ onMounted(reload);
   width: 16%;
 }
 
+.col-toggle {
+  width: 30px;
+}
+
 td.bad {
   color: var(--err);
 }
@@ -430,7 +554,20 @@ td.warn {
   color: var(--warn);
 }
 
-.row.open td {
+.chevron {
+  display: block;
+  width: 13px;
+  height: 13px;
+  color: var(--text-3);
+  transition: color 0.12s ease;
+}
+
+.row.open .chevron {
+  color: var(--brand);
+}
+
+.row.open td,
+.row.open:hover td {
   background: var(--brand-tint);
 }
 
@@ -441,7 +578,9 @@ td.warn {
 .reason {
   font-size: 11.5px;
   color: var(--text-3);
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .inspector {
@@ -464,7 +603,7 @@ td.warn {
   gap: 9px;
 }
 
-.queue {
+.subject {
   flex: 1;
   min-width: 0;
   font-size: 13px;
@@ -500,8 +639,52 @@ td.warn {
   gap: 7px;
 }
 
+.stack li.clickable {
+  cursor: pointer;
+}
+
+.stack li.clickable:hover {
+  color: var(--brand);
+}
+
 .stack li .num {
   margin-left: auto;
+}
+
+.stack li .value {
+  margin-left: auto;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.failure {
+  margin: 0;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.failure .err {
+  color: var(--err);
+}
+
+.code {
+  margin: 0;
+  max-height: 320px;
+  padding: 10px 12px;
+  border: 1px solid var(--edge);
+  border-radius: var(--radius-sm);
+  background: var(--raised);
+  color: var(--text-2);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.55;
+  white-space: pre;
 }
 
 .none {

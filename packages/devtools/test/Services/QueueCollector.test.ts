@@ -11,6 +11,8 @@ import type { App } from '@vercube/core';
 class QueueManager {
   public static snapshot: DevtoolsTypes.QueueSnapshot | null = null;
 
+  public static configured: { capturePayloads?: boolean }[] = [];
+
   public static stats: Record<string, Record<string, number>> | null = null;
 
   public static statsError: Error | null = null;
@@ -23,6 +25,10 @@ class QueueManager {
     }
 
     return QueueManager.snapshot!;
+  }
+
+  public configure(defaults: { capturePayloads?: boolean }): void {
+    QueueManager.configured.push(defaults);
   }
 
   public async stats({ queue }: { queue: string; strategy?: string }): Promise<Record<string, number>> {
@@ -219,6 +225,57 @@ describe('QueueCollector', () => {
     const view = await app.container.get(QueueCollector).collect();
 
     expect(view.queues[0]).toMatchObject({ jobs: [], running: false });
+  });
+
+  it('asks the queue module to keep failure payloads, once', async () => {
+    QueueManager.configured = [];
+    QueueManager.statsError = null;
+    QueueManager.stats = {};
+    QueueManager.snapshot = snapshot();
+
+    const app = await createQueueApp(QueueManager);
+    const collector = app.container.get(QueueCollector);
+
+    await collector.collect();
+    await collector.collect();
+
+    expect(QueueManager.configured).toEqual([{ capturePayloads: true }]);
+  });
+
+  it('reads a failure with its stack, payload and headers', async () => {
+    QueueManager.configured = [];
+    QueueManager.statsError = null;
+    QueueManager.stats = {};
+    QueueManager.snapshot = snapshot({
+      events: [
+        {
+          at: 1_700_000_000_000,
+          strategy: 'default',
+          queue: 'emails',
+          job: 'welcome',
+          id: 'job-2',
+          attempt: 2,
+          status: 'failed',
+          duration: 5,
+          error: { name: 'TypeError', message: 'nope', stack: 'TypeError: nope\n    at handler', retryable: true },
+          payload: '{ "userId": "u-1" }',
+          headers: { authorization: '<redacted>' },
+          source: 'EmailConsumer.welcome',
+        },
+      ],
+    });
+
+    const app = await createQueueApp(QueueManager);
+    const view = await app.container.get(QueueCollector).collect();
+
+    expect(view.events[0]).toMatchObject({
+      status: 'failed',
+      error: { name: 'TypeError', message: 'nope' },
+      payload: '{ "userId": "u-1" }',
+      headers: { authorization: '<redacted>' },
+      source: 'EmailConsumer.welcome',
+    });
+    expect(view.events[0].error?.stack).toContain('at handler');
   });
 
   it('serves the same view over the api', async () => {

@@ -46,7 +46,7 @@ describe('QueuePlugin', () => {
   it('should apply the manager settings it is given', async () => {
     await plugin.use(app, { autoStart: false, concurrency: 8, onUnhandled: 'fail', maxEvents: 10 });
 
-    expect(container.get(QueueManager).defaults).toEqual({
+    expect(container.get(QueueManager).defaults).toMatchObject({
       autoStart: false,
       concurrency: 8,
       onUnhandled: 'fail',
