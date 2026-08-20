@@ -29,7 +29,7 @@ class QueueManager {
       throw QueueManager.peekError;
     }
 
-    return QueueManager.messages.filter((message) => queue === 'emails');
+    return queue === 'emails' ? QueueManager.messages : [];
   }
 
   public static listeners: ((event: DevtoolsTypes.QueueJob) => void)[] = [];

@@ -155,13 +155,13 @@ async function loadMessages(): Promise<void> {
     messages.value = await api<QueueMessages>(
       `/api/queues/messages?queue=${encodeURIComponent(line.queue)}&strategy=${encodeURIComponent(line.strategy)}&limit=25`,
     );
-  } catch (failure) {
+  } catch (error) {
     messages.value = {
       queue: line.queue,
       strategy: line.strategy,
       peekable: true,
       messages: [],
-      error: failure instanceof Error ? failure.message : String(failure),
+      error: error instanceof Error ? error.message : String(error),
     };
   } finally {
     loadingMessages.value = false;
