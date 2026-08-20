@@ -47,13 +47,21 @@ export class QueuePlugin extends BasePlugin<QueueTypes.PluginOptions> {
   /**
    * Binds the queue manager and mounts every configured strategy.
    *
+   * Registering the plugin more than once, which happens as soon as it is listed
+   * both in the config and in `app.addPlugin()`, is harmless: the manager is
+   * bound once, settings are merged, and a name that is already mounted is left
+   * alone. Rebinding it would drop the settings and the strategies of whoever
+   * registered first.
+   *
    * @param {App} app - The application instance
    * @param {QueueTypes.PluginOptions} [options] - Strategies to mount and manager-wide settings
    * @returns {Promise<void>} Resolves once every strategy is mounted
    * @override
    */
   public override async use(app: App, options?: QueueTypes.PluginOptions): Promise<void> {
-    app.container.bind(QueueManager);
+    if (!app.container.getOptional(QueueManager)) {
+      app.container.bind(QueueManager);
+    }
 
     const manager = app.container.get(QueueManager);
     const { strategies, ...defaults } = options ?? {};
@@ -61,6 +69,10 @@ export class QueuePlugin extends BasePlugin<QueueTypes.PluginOptions> {
     manager.configure(defaults);
 
     for (const mount of strategies ?? []) {
+      if (manager.getStrategy(mount.name)) {
+        continue;
+      }
+
       await manager.mount(mount as QueueTypes.Mount<never>);
     }
   }

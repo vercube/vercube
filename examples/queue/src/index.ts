@@ -1,8 +1,8 @@
 import { useContainer } from '@/boot/Container';
-import { setup } from '@/boot/Setup';
 import { createApp, type App, type RequestHandler } from '@vercube/core';
 
-const app: App = await createApp({ setup });
+// plugins are registered in vercube.config.ts
+const app: App = await createApp();
 app.container.expand(useContainer);
 
 if (import.meta.main) {

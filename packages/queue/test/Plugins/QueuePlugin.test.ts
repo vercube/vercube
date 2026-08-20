@@ -54,6 +54,54 @@ describe('QueuePlugin', () => {
     });
   });
 
+  describe('registered twice', () => {
+    it('should keep the settings and strategies of the first registration', async () => {
+      // the plugin ends up registered twice as soon as it is listed both in the
+      // config and in app.addPlugin(), which used to reset the manager
+      await plugin.use(app, { maxEvents: 200, strategies: [{ strategy: MemoryStrategy }] });
+
+      const manager = container.get(QueueManager);
+      const mounted = manager.getStrategy();
+
+      await container.resolve(QueuePlugin).use(app, { strategies: [{ name: 'second', strategy: RecordingStrategy }] });
+
+      expect(container.get(QueueManager)).toBe(manager);
+      expect(manager.defaults.maxEvents).toBe(200);
+      expect(manager.getStrategy()).toBe(mounted);
+      expect(manager.getStrategy('second')).toBeInstanceOf(RecordingStrategy);
+    });
+
+    it('should keep registered handlers alive', async () => {
+      await plugin.use(app, { strategies: [{ strategy: MemoryStrategy }] });
+
+      const manager = container.get(QueueManager);
+
+      manager.registerConsumer({
+        strategy: 'default',
+        queue: 'emails',
+        job: 'welcome',
+        handler: async () => undefined,
+        options: {},
+        source: 'Test.welcome',
+      });
+
+      await container.resolve(QueuePlugin).use(app, { strategies: [{ strategy: MemoryStrategy }] });
+
+      expect(manager.inspect().consumers).toHaveLength(1);
+    });
+
+    it('should not mount a name that is already mounted', async () => {
+      await plugin.use(app, { strategies: [{ strategy: MemoryStrategy }] });
+
+      const manager = container.get(QueueManager);
+      const first = manager.getStrategy();
+
+      await container.resolve(QueuePlugin).use(app, { strategies: [{ strategy: MemoryStrategy }] });
+
+      expect(manager.getStrategy()).toBe(first);
+    });
+  });
+
   it('should keep the defaults when no options are given', async () => {
     await plugin.use(app);
 
