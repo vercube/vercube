@@ -38,6 +38,7 @@ minimumReleaseAge: 0
 
 allowBuilds:
   azure-functions-core-tools: false
+  msgpackr-extract: false
   esbuild: false
   serverless: true
   simple-git-hooks: true

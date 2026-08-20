@@ -1,0 +1,54 @@
+{
+  "name": "@vercube/queue",
+  "version": "1.2.1",
+  "description": "Queue module for Vercube framework",
+  "packageManager": "pnpm@11.22.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vercube/vercube.git",
+    "directory": "packages/queue"
+  },
+  "license": "MIT",
+  "sideEffects": false,
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "exports": {
+    ".": "./dist/index.mjs",
+    "./strategies/MemoryStrategy": "./dist/Strategies/MemoryStrategy.mjs",
+    "./strategies/BullMQStrategy": "./dist/Strategies/BullMQStrategy.mjs",
+    "./strategies/RabbitMQStrategy": "./dist/Strategies/RabbitMQStrategy.mjs",
+    "./strategies/KafkaStrategy": "./dist/Strategies/KafkaStrategy.mjs",
+    "./package.json": "./package.json"
+  },
+  "types": "./dist/index.d.mts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "keywords": [
+    "vercube",
+    "queue",
+    "jobs",
+    "workers",
+    "bullmq",
+    "rabbitmq",
+    "kafka"
+  ],
+  "scripts": {
+    "build": "tsdown --config tsdown.config.ts --config-loader=unrun"
+  },
+  "dependencies": {
+    "@vercube/core": "workspace:*",
+    "@vercube/di": "workspace:*",
+    "@vercube/logger": "workspace:*"
+  },
+  "optionalDependencies": {
+    "amqplib": "2.0.1",
+    "bullmq": "6.1.2",
+    "kafkajs": "2.2.4"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
