@@ -20,6 +20,18 @@ class QueueManager {
 
   public static broken: boolean = false;
 
+  public static messages: DevtoolsTypes.QueueMessage[] = [];
+
+  public static peekError: Error | null = null;
+
+  public async peek({ queue }: { queue: string; strategy?: string; limit?: number }): Promise<DevtoolsTypes.QueueMessage[]> {
+    if (QueueManager.peekError) {
+      throw QueueManager.peekError;
+    }
+
+    return QueueManager.messages.filter((message) => queue === 'emails');
+  }
+
   public static listeners: ((event: DevtoolsTypes.QueueJob) => void)[] = [];
 
   public subscribe(listener: (event: DevtoolsTypes.QueueJob) => void): () => void {
@@ -85,7 +97,7 @@ function snapshot(overrides: Partial<DevtoolsTypes.QueueSnapshot> = {}): Devtool
         transport: 'memory',
         driver: 'MemoryStrategy',
         status: 'ready',
-        capabilities: { retries: false, delay: true, priority: true, progress: true, stats: true },
+        capabilities: { retries: false, delay: true, priority: true, progress: true, stats: true, peek: true },
       },
     ],
     consumers: [
@@ -381,6 +393,81 @@ describe('QueueCollector', () => {
       await vi.advanceTimersByTimeAsync(2000);
 
       expect(batches).toEqual([]);
+    });
+  });
+
+  describe('reading what a queue holds', () => {
+    it('should report the messages the transport hands back', async () => {
+      QueueManager.peekError = null;
+      QueueManager.snapshot = snapshot();
+      QueueManager.messages = [
+        { id: '1', job: 'welcome', state: 'waiting', payload: '{ "userId": "u-1" }' },
+        { id: '2', job: 'bounce', state: 'failed', error: { name: 'Error', message: 'mailbox does not exist' } },
+      ];
+
+      const app = await createQueueApp(QueueManager);
+      const view = await app.container.get(QueueCollector).readMessages('emails', 'default', 25);
+
+      expect(view).toMatchObject({ queue: 'emails', strategy: 'default', peekable: true });
+      expect(view.messages.map((message) => message.state)).toEqual(['waiting', 'failed']);
+    });
+
+    it('should say when a transport cannot be read', async () => {
+      QueueManager.peekError = null;
+      QueueManager.messages = [];
+      QueueManager.snapshot = snapshot({
+        strategies: [
+          {
+            name: 'default',
+            transport: 'rabbitmq',
+            driver: 'RabbitMQStrategy',
+            status: 'ready',
+            capabilities: { retries: false, delay: false, priority: true, progress: false, stats: true, peek: false },
+          },
+        ],
+      });
+
+      const app = await createQueueApp(QueueManager);
+      const view = await app.container.get(QueueCollector).readMessages('emails', 'default', 25);
+
+      expect(view.peekable).toBe(false);
+      expect(view.error).toMatch(/without consuming/i);
+    });
+
+    it('should report a transport that fails to answer', async () => {
+      QueueManager.snapshot = snapshot();
+      QueueManager.peekError = new Error('redis down');
+
+      const app = await createQueueApp(QueueManager);
+      const view = await app.container.get(QueueCollector).readMessages('emails', 'default', 25);
+
+      expect(view).toMatchObject({ peekable: true, error: 'redis down' });
+    });
+
+    it('should mark peekable queues in the view', async () => {
+      QueueManager.peekError = null;
+      QueueManager.statsError = null;
+      QueueManager.stats = {};
+      QueueManager.snapshot = snapshot();
+
+      const app = await createQueueApp(QueueManager);
+      const view = await app.container.get(QueueCollector).collect();
+
+      expect(view.queues[0].peekable).toBe(true);
+    });
+
+    it('should serve the messages over the api', async () => {
+      QueueManager.peekError = null;
+      QueueManager.snapshot = snapshot();
+      QueueManager.messages = [{ id: '1', job: 'welcome', state: 'waiting' }];
+
+      const app = await createQueueApp(QueueManager);
+      const view = await devtoolsJson<DevtoolsTypes.QueueMessages>(
+        app,
+        '/_devtools/api/queues/messages?queue=emails&strategy=default&limit=5',
+      );
+
+      expect(view.messages).toHaveLength(1);
     });
   });
 

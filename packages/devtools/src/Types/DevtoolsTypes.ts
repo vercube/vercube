@@ -388,6 +388,40 @@ export namespace DevtoolsTypes {
     lastError?: string;
   }
 
+  /** A message sitting on a queue, read without consuming it. */
+  export interface QueueMessage {
+    /** Id of the message. */
+    id: string;
+    /** Name of the job. */
+    job: string;
+    /** Where it is sitting: waiting, active, delayed or failed. */
+    state: string;
+    /** Attempt it is on, when the transport tracks that. */
+    attempt?: number;
+    /** Payload preview, with credentials withheld. */
+    payload?: string;
+    /** Transport headers, with credentials withheld. */
+    headers?: Record<string, string>;
+    /** Epoch milliseconds it becomes available at, for a delayed message. */
+    availableAt?: number;
+    /** Why it failed, for a message kept in a failed set. */
+    error?: QueueFailure;
+  }
+
+  /** What a queue holds right now, as read on demand. */
+  export interface QueueMessages {
+    /** Queue that was read. */
+    queue: string;
+    /** Strategy it was read through. */
+    strategy: string;
+    /** Whether the transport can be read at all. */
+    peekable: boolean;
+    /** The messages found. */
+    messages: QueueMessage[];
+    /** Set when the read failed. */
+    error?: string;
+  }
+
   /** A queue, with everything known about it. */
   export interface QueueLine extends QueueMetrics {
     /** Job names handled on this queue. */
@@ -396,6 +430,9 @@ export namespace DevtoolsTypes {
     running: boolean;
     /** What the transport reports, when it reports anything. */
     stats: QueueTransportStats | null;
+
+    /** Whether the transport can show what the queue holds. */
+    peekable: boolean;
   }
 
   /** What went wrong on a failed attempt. */

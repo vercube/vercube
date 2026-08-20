@@ -98,6 +98,7 @@ export class KafkaStrategy extends QueueStrategy<KafkaStrategyOptions> {
       priority: false,
       progress: false,
       stats: true,
+      peek: false,
     };
   }
 

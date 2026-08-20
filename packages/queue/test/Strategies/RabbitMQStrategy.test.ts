@@ -158,7 +158,14 @@ describe('RabbitMQStrategy', () => {
 
   it('should leave attempts and delays to the manager', () => {
     expect(strategy.transport).toBe('rabbitmq');
-    expect(strategy.capabilities).toEqual({ retries: false, delay: false, priority: true, progress: false, stats: true });
+    expect(strategy.capabilities).toEqual({
+      retries: false,
+      delay: false,
+      priority: true,
+      progress: false,
+      stats: true,
+      peek: false,
+    });
   });
 
   describe('connecting', () => {

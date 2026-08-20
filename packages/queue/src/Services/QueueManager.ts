@@ -434,6 +434,48 @@ export class QueueManager {
   }
 
   /**
+   * Shows what a queue is holding, without consuming any of it.
+   *
+   * Only transports that can be read without side effects support this, which
+   * they report as the `peek` capability. Everything else returns nothing rather
+   * than perturbing the queue: taking delivery of a message to look at it would
+   * change delivery counts and compete with the running consumer.
+   *
+   * @param {object} params - Queue to look at and how much of it to read
+   * @param {string} params.queue - Queue to look at
+   * @param {string} [params.strategy] - Mount name, defaults to `default`
+   * @param {number} [params.limit] - How many messages to read, defaults to 20
+   * @param {QueueTypes.PeekState[]} [params.states] - States to read, defaults to waiting, delayed and failed
+   * @returns {Promise<QueueTypes.PeekedJob[]>} The messages found, with their payloads rendered
+   * @throws {QueueError} When the transport fails to answer
+   */
+  public async peek({
+    queue,
+    strategy,
+    limit = 20,
+    states = ['waiting', 'delayed', 'failed'],
+  }: {
+    queue: string;
+    strategy?: string;
+    limit?: number;
+    states?: QueueTypes.PeekState[];
+  }): Promise<QueueTypes.PeekedJob[]> {
+    const mount = this.fStrategies.get(strategy ?? DEFAULT_STRATEGY);
+
+    if (!mount?.strategy.peek) {
+      return [];
+    }
+
+    const messages = await mount.strategy.peek({ queue, limit: Math.max(1, limit), states });
+
+    return messages.map(({ payload, headers, ...message }) => ({
+      ...message,
+      payload: previewPayload(payload, this.fDefaults.maxPayloadBytes),
+      headers: redactHeaders(headers),
+    }));
+  }
+
+  /**
    * Describes what the module currently holds: mounted strategies, registered
    * handlers, per-queue counters and the last processed jobs. Used by the devtools.
    *

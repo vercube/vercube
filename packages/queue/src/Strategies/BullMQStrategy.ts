@@ -80,6 +80,7 @@ export class BullMQStrategy extends QueueStrategy<BullMQStrategyOptions> {
       priority: true,
       progress: true,
       stats: true,
+      peek: true,
     };
   }
 
@@ -236,6 +237,38 @@ export class BullMQStrategy extends QueueStrategy<BullMQStrategyOptions> {
   }
 
   /**
+   * Shows what a queue is holding, straight from Redis and without consuming
+   * anything. The failed set is the interesting one: BullMQ keeps the data and
+   * the stack trace of every job that ran out of attempts.
+   *
+   * @param {QueueTypes.PeekRequest} request - Queue to look at, how many messages and which states
+   * @returns {Promise<QueueTypes.PeekedMessage[]>} The messages found
+   * @throws {QueueError} When the queue cannot be read
+   */
+  public override async peek(request: QueueTypes.PeekRequest): Promise<QueueTypes.PeekedMessage[]> {
+    const queue = this.queueFor(request.queue);
+    const messages: QueueTypes.PeekedMessage[] = [];
+
+    try {
+      for (const state of request.states) {
+        if (messages.length >= request.limit) {
+          break;
+        }
+
+        const jobs = await queue.getJobs([state], 0, request.limit - messages.length - 1);
+
+        for (const job of jobs) {
+          messages.push(this.describe(job, state));
+        }
+      }
+    } catch (error) {
+      throw toQueueError(error, 'Failed to read the BullMQ queue', 'peek', { queue: request.queue });
+    }
+
+    return messages;
+  }
+
+  /**
    * Closes every worker and producer this strategy created.
    *
    * @returns {Promise<void>} Resolves once everything is closed
@@ -250,6 +283,29 @@ export class BullMQStrategy extends QueueStrategy<BullMQStrategyOptions> {
     this.fQueues.clear();
 
     await Promise.all(closing);
+  }
+
+  /**
+   * Describes a BullMQ job the way the module reads a peeked message.
+   *
+   * @param {Job} job - The job as Redis holds it
+   * @param {QueueTypes.PeekState} state - Set it was read from
+   * @returns {QueueTypes.PeekedMessage} The message, ready to be inspected
+   */
+  private describe(job: Job, state: QueueTypes.PeekState): QueueTypes.PeekedMessage {
+    const { payload, headers } = this.fromEnvelope(job.data);
+    const delay = job.opts?.delay ?? 0;
+
+    return {
+      id: String(job.id),
+      job: job.name,
+      state,
+      attempt: job.attemptsStarted || job.attemptsMade || undefined,
+      payload,
+      headers,
+      availableAt: state === 'delayed' && job.timestamp ? job.timestamp + delay : undefined,
+      error: job.failedReason ? { message: job.failedReason, stack: job.stacktrace?.join('\n') || undefined } : undefined,
+    };
   }
 
   /**

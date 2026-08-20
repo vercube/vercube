@@ -11,6 +11,8 @@ const state = vi.hoisted(() => ({
   workers: [] as any[],
   addError: null as Error | null,
   countsError: null as Error | null,
+  jobsError: null as Error | null,
+  jobs: {} as Record<string, unknown[]>,
 }));
 
 vi.mock('bullmq', () => {
@@ -37,6 +39,14 @@ vi.mock('bullmq', () => {
       }
 
       return { waiting: 1, active: 2, completed: 3, failed: 4, delayed: 5 };
+    });
+
+    public getJobs = vi.fn(async (states: string[], _start: number, end: number) => {
+      if (state.jobsError) {
+        throw state.jobsError;
+      }
+
+      return (state.jobs[states[0]] ?? []).slice(0, end + 1);
     });
 
     public close = vi.fn(async () => undefined);
@@ -99,6 +109,8 @@ describe('BullMQStrategy', () => {
     state.workers.length = 0;
     state.addError = null;
     state.countsError = null;
+    state.jobsError = null;
+    state.jobs = {};
 
     container = new Container();
     logger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() } as unknown as Logger;
@@ -112,7 +124,14 @@ describe('BullMQStrategy', () => {
 
   it('should report that the broker owns the whole job model', () => {
     expect(strategy.transport).toBe('bullmq');
-    expect(strategy.capabilities).toEqual({ retries: true, delay: true, priority: true, progress: true, stats: true });
+    expect(strategy.capabilities).toEqual({
+      retries: true,
+      delay: true,
+      priority: true,
+      progress: true,
+      stats: true,
+      peek: true,
+    });
   });
 
   it('should refuse to initialize without a connection', () => {
@@ -340,6 +359,62 @@ describe('BullMQStrategy', () => {
       state.countsError = new Error('redis down');
 
       await expect(strategy.stats('emails')).rejects.toMatchObject({ operation: 'stats' });
+    });
+
+    it('should show what a queue holds, failed jobs included', async () => {
+      state.jobs = {
+        waiting: [{ id: 1, name: 'welcome', data: { payload: { id: 1 }, headers: { 'x-job': 'welcome' } }, opts: {} }],
+        failed: [
+          {
+            id: 2,
+            name: 'bounce',
+            data: { payload: { id: 2 }, headers: {} },
+            opts: { attempts: 3 },
+            attemptsMade: 3,
+            failedReason: 'mailbox does not exist',
+            stacktrace: ['Error: mailbox does not exist', '    at handler'],
+          },
+        ],
+      };
+
+      const messages = await strategy.peek({ queue: 'emails', limit: 20, states: ['waiting', 'failed'] });
+
+      expect(messages).toHaveLength(2);
+      expect(messages[0]).toMatchObject({ id: '1', job: 'welcome', state: 'waiting', payload: { id: 1 } });
+      expect(messages[1]).toMatchObject({ id: '2', job: 'bounce', state: 'failed', attempt: 3 });
+      expect(messages[1].error).toMatchObject({ message: 'mailbox does not exist' });
+      expect(messages[1].error?.stack).toContain('at handler');
+    });
+
+    it('should tell a delayed job when it becomes available', async () => {
+      state.jobs = { delayed: [{ id: 3, name: 'welcome', data: {}, opts: { delay: 5000 }, timestamp: 1000 }] };
+
+      const [message] = await strategy.peek({ queue: 'emails', limit: 20, states: ['delayed'] });
+
+      expect(message).toMatchObject({ state: 'delayed', availableAt: 6000 });
+    });
+
+    it('should stop reading once the limit is reached', async () => {
+      state.jobs = {
+        waiting: [
+          { id: 1, name: 'a', data: {}, opts: {} },
+          { id: 2, name: 'b', data: {}, opts: {} },
+        ],
+        failed: [{ id: 3, name: 'c', data: {}, opts: {} }],
+      };
+
+      const messages = await strategy.peek({ queue: 'emails', limit: 2, states: ['waiting', 'failed'] });
+
+      expect(messages.map((message) => message.job)).toEqual(['a', 'b']);
+      expect(state.queues[0].getJobs).toHaveBeenCalledTimes(1);
+    });
+
+    it('should wrap a failure while reading the queue', async () => {
+      state.jobsError = new Error('redis down');
+
+      await expect(strategy.peek({ queue: 'emails', limit: 20, states: ['waiting'] })).rejects.toMatchObject({
+        operation: 'peek',
+      });
     });
 
     it('should close every worker and queue', async () => {

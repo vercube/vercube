@@ -69,6 +69,23 @@ export default class JobsController {
   }
 
   /**
+   * Publishes a welcome mail that only becomes available later, so it can be
+   * seen waiting in the devtools queue panel.
+   *
+   * @param {object} body - How long to hold the job, in milliseconds.
+   * @returns {Promise<QueueTypes.JobRef>} Reference to the published job.
+   */
+  @Post('/delayed')
+  public async delayed(@Body() body: { delay?: number }): Promise<QueueTypes.JobRef> {
+    return this.gQueue.add({
+      queue: 'emails',
+      job: 'welcome',
+      payload: { userId: 'later' },
+      options: { delay: body?.delay ?? 60_000 },
+    });
+  }
+
+  /**
    * Publishes a job nobody handles, to show what happens to it.
    *
    * @returns {Promise<QueueTypes.JobRef>} Reference to the published job.

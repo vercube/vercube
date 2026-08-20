@@ -157,7 +157,14 @@ describe('KafkaStrategy', () => {
 
   it('should only claim what a log can do', () => {
     expect(strategy.transport).toBe('kafka');
-    expect(strategy.capabilities).toEqual({ retries: false, delay: false, priority: false, progress: false, stats: true });
+    expect(strategy.capabilities).toEqual({
+      retries: false,
+      delay: false,
+      priority: false,
+      progress: false,
+      stats: true,
+      peek: false,
+    });
   });
 
   describe('connecting', () => {

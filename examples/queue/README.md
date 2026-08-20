@@ -35,6 +35,13 @@ Fail a job on validation, without ever entering the handler and without retrying
 $ curl -X POST localhost:3000/api/jobs/digest -H 'content-type: application/json' -d '{"userId":"u-42","period":"hourly"}'
 ```
 
+Hold a job so it can be seen waiting in the queue panel, then open a queue there and read its messages:
+
+```sh
+$ curl -X POST localhost:3000/api/jobs/delayed -H 'content-type: application/json' -d '{"delay":120000}'
+$ curl 'localhost:3000/_devtools/api/queues/messages?queue=emails'
+```
+
 Publish a batch in one round trip, and see what a job nobody handles does:
 
 ```sh

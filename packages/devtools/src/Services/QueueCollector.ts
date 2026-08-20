@@ -22,6 +22,7 @@ interface ManagerLike {
   stats?: (params: { queue: string; strategy?: string }) => Promise<Record<string, number | undefined>>;
   configure?: (defaults: { capturePayloads?: boolean }) => void;
   subscribe?: (listener: (event: DevtoolsTypes.QueueJob) => void) => () => void;
+  peek?: (params: { queue: string; strategy?: string; limit?: number }) => Promise<DevtoolsTypes.QueueMessage[]>;
 }
 
 /**
@@ -225,10 +226,54 @@ export class QueueCollector {
         jobs: handlers.map((consumer) => consumer.job).sort((a, b) => a.localeCompare(b)),
         running: handlers.some((consumer) => consumer.running),
         stats: await this.readStats(manager, metrics.strategy, metrics.queue),
+        peekable: (snapshot.strategies ?? []).some(
+          (mount) => mount.name === metrics.strategy && mount.capabilities?.peek === true,
+        ),
       });
     }
 
     return lines.sort((a, b) => a.strategy.localeCompare(b.strategy) || a.queue.localeCompare(b.queue));
+  }
+
+  /**
+   * Reads what a queue is holding, on demand. Kept out of `collect()` on purpose:
+   * this costs a broker round trip per queue, and only the queue somebody opened
+   * is worth paying it for.
+   * @param queue queue to read
+   * @param strategy mount to read it through
+   * @param limit how many messages to read
+   * @returns the messages found, or why they could not be read
+   */
+  public async readMessages(queue: string, strategy: string, limit: number): Promise<DevtoolsTypes.QueueMessages> {
+    const manager = this.resolveLive<ManagerLike>('QueueManager');
+    const snapshot = this.readSnapshot(manager);
+    const peekable = (snapshot?.strategies ?? []).some((mount) => mount.name === strategy && mount.capabilities?.peek === true);
+
+    if (!manager || typeof manager.peek !== 'function') {
+      return { queue, strategy, peekable: false, messages: [], error: 'The queue module cannot be read.' };
+    }
+
+    if (!peekable) {
+      return {
+        queue,
+        strategy,
+        peekable: false,
+        messages: [],
+        error: 'This transport cannot show a queue without consuming it.',
+      };
+    }
+
+    try {
+      return { queue, strategy, peekable: true, messages: await manager.peek({ queue, strategy, limit }) };
+    } catch (error) {
+      return {
+        queue,
+        strategy,
+        peekable: true,
+        messages: [],
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
   }
 
   /**

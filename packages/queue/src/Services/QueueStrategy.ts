@@ -56,6 +56,7 @@ export abstract class QueueStrategy<InitOptions = undefined> {
       priority: false,
       progress: false,
       stats: false,
+      peek: false,
     };
   }
 
@@ -122,4 +123,17 @@ export abstract class QueueStrategy<InitOptions = undefined> {
    * @returns The counters the transport can report.
    */
   public stats?(queue: string): Promise<QueueTypes.QueueStats>;
+
+  /**
+   * Shows what a queue is holding without consuming any of it.
+   *
+   * Only transports that can be read without side effects implement this: a
+   * broker where looking means taking delivery, such as RabbitMQ, leaves it out
+   * rather than perturbing the queue it is asked about.
+   *
+   * @param request - Queue to look at, how many messages to read and which states.
+   * @returns The messages found, in the order the transport returned them.
+   * @throws {QueueError} When the queue cannot be read.
+   */
+  public peek?(request: QueueTypes.PeekRequest): Promise<QueueTypes.PeekedMessage[]>;
 }

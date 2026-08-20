@@ -240,6 +240,23 @@ export class DevtoolsController {
   }
 
   /**
+   * Reads what a queue is holding, without consuming any of it.
+   * @param queue queue to read
+   * @param strategy mount to read it through
+   * @param limit how many messages to read
+   * @returns the messages found, or why they could not be read
+   */
+  @Get('/api/queues/messages')
+  @SetHeader('Cache-Control', 'no-store')
+  public queueMessages(
+    @QueryParam({ name: 'queue' }) queue: string,
+    @QueryParam({ name: 'strategy' }) strategy: string,
+    @QueryParam({ name: 'limit' }) limit: string,
+  ): Promise<DevtoolsTypes.QueueMessages> {
+    return this.gQueues.readMessages(queue, strategy || 'default', Number(limit) || 25);
+  }
+
+  /**
    * @returns the bootstrap call tree and its hotspots
    */
   @Get('/api/bootstrap')

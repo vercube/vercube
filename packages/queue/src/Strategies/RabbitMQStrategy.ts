@@ -131,6 +131,7 @@ export class RabbitMQStrategy extends QueueStrategy<RabbitMQStrategyOptions> {
       priority: true,
       progress: false,
       stats: true,
+      peek: false,
     };
   }
 

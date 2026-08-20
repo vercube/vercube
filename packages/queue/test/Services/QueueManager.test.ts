@@ -1222,6 +1222,55 @@ describe('QueueManager', () => {
     });
   });
 
+  describe('peeking at a queue', () => {
+    it('should render the payloads a transport hands back', async () => {
+      await manager.mount({ strategy: MemoryStrategy });
+      await manager.add({ queue: 'emails', job: 'welcome', payload: { userId: 'u-1', apiKey: 'leak-me' } });
+
+      const [message] = await manager.peek({ queue: 'emails' });
+
+      expect(message).toMatchObject({ job: 'welcome', state: 'waiting' });
+      expect(message.payload).toContain('u-1');
+      expect(message.payload).not.toContain('leak-me');
+    });
+
+    it('should withhold credential-looking headers', async () => {
+      await manager.mount({ strategy: MemoryStrategy });
+      await manager.add({
+        queue: 'emails',
+        job: 'welcome',
+        payload: {},
+        options: { headers: { authorization: 'Bearer leak-me' } },
+      });
+
+      const [message] = await manager.peek({ queue: 'emails' });
+
+      expect(message.headers.authorization).toBe('<redacted>');
+    });
+
+    it('should report nothing for a transport that cannot be peeked', async () => {
+      const strategy = await mountRecording();
+
+      expect(strategy.capabilities.peek).toBe(false);
+      expect(await manager.peek({ queue: 'emails' })).toEqual([]);
+    });
+
+    it('should report nothing for a strategy that is not mounted', async () => {
+      expect(await manager.peek({ queue: 'emails', strategy: 'nothing' })).toEqual([]);
+    });
+
+    it('should pass the limit and states through', async () => {
+      await manager.mount({ strategy: MemoryStrategy });
+
+      const strategy = manager.getStrategy() as MemoryStrategy;
+      const peek = vi.spyOn(strategy, 'peek');
+
+      await manager.peek({ queue: 'emails', limit: 5, states: ['failed'] });
+
+      expect(peek).toHaveBeenCalledWith({ queue: 'emails', limit: 5, states: ['failed'] });
+    });
+  });
+
   describe('container lifecycle', () => {
     it('should start consumers once the container is initialized', async () => {
       const bound = new Container();

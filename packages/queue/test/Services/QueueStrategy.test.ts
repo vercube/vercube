@@ -47,6 +47,7 @@ describe('QueueStrategy', () => {
       priority: false,
       progress: false,
       stats: false,
+      peek: false,
     });
   });
 

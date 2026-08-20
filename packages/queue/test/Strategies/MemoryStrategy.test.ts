@@ -30,7 +30,14 @@ describe('MemoryStrategy', () => {
 
   it('should report what it supports', () => {
     expect(strategy.transport).toBe('memory');
-    expect(strategy.capabilities).toEqual({ retries: false, delay: true, priority: true, progress: true, stats: true });
+    expect(strategy.capabilities).toEqual({
+      retries: false,
+      delay: true,
+      priority: true,
+      progress: true,
+      stats: true,
+      peek: true,
+    });
   });
 
   it('should hand published jobs to the consumer', async () => {
@@ -212,6 +219,48 @@ describe('MemoryStrategy', () => {
 
     expect(await strategy.stats('emails')).toMatchObject({ waiting: 0, delayed: 0 });
     expect(dispatch).not.toHaveBeenCalled();
+  });
+
+  describe('peeking', () => {
+    it('should show what is waiting, in the order it would run', async () => {
+      await strategy.publish(request({ payload: { id: 1 }, options: { priority: 5 } }));
+      await strategy.publish(request({ payload: { id: 2 }, options: { priority: 1 } }));
+
+      const messages = await strategy.peek({ queue: 'emails', limit: 20, states: ['waiting', 'delayed', 'failed'] });
+
+      expect(messages.map((message) => (message.payload as { id: number }).id)).toEqual([2, 1]);
+      expect(messages[0]).toMatchObject({ job: 'welcome', state: 'waiting', attempt: 1 });
+    });
+
+    it('should show a delayed job with the time it becomes available', async () => {
+      await strategy.publish(request({ options: { delay: 5000 } }));
+
+      const [message] = await strategy.peek({ queue: 'emails', limit: 20, states: ['waiting', 'delayed'] });
+
+      expect(message).toMatchObject({ state: 'delayed' });
+      expect(message.availableAt).toBeGreaterThan(Date.now());
+    });
+
+    it('should honour the states it is asked for', async () => {
+      await strategy.publish(request());
+      await strategy.publish(request({ options: { delay: 5000 } }));
+
+      expect(await strategy.peek({ queue: 'emails', limit: 20, states: ['delayed'] })).toHaveLength(1);
+      expect(await strategy.peek({ queue: 'emails', limit: 20, states: ['waiting'] })).toHaveLength(1);
+      expect(await strategy.peek({ queue: 'emails', limit: 20, states: ['failed'] })).toEqual([]);
+    });
+
+    it('should honour the limit', async () => {
+      await strategy.publish(request());
+      await strategy.publish(request());
+      await strategy.publish(request());
+
+      expect(await strategy.peek({ queue: 'emails', limit: 2, states: ['waiting'] })).toHaveLength(2);
+    });
+
+    it('should report nothing for a queue it never saw', async () => {
+      expect(await strategy.peek({ queue: 'nothing', limit: 20, states: ['waiting'] })).toEqual([]);
+    });
   });
 
   it('should resolve idle when nothing is pending', async () => {

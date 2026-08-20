@@ -17,7 +17,8 @@ interface MemoryJob {
 /** State the strategy keeps per queue. */
 interface MemoryQueue {
   waiting: MemoryJob[];
-  timers: Set<ReturnType<typeof setTimeout>>;
+  /** Jobs waiting for their delay, kept with their timer so they can be inspected. */
+  delayed: Map<ReturnType<typeof setTimeout>, { job: MemoryJob; at: number }>;
   active: number;
   completed: number;
   failed: number;
@@ -62,6 +63,7 @@ export class MemoryStrategy extends QueueStrategy {
       priority: true,
       progress: true,
       stats: true,
+      peek: true,
     };
   }
 
@@ -96,13 +98,13 @@ export class MemoryStrategy extends QueueStrategy {
 
     if (delay > 0) {
       const timer = setTimeout(() => {
-        queue.timers.delete(timer);
+        queue.delayed.delete(timer);
         queue.waiting.push(job);
         this.pump(request.queue);
       }, delay);
 
       timer.unref?.();
-      queue.timers.add(timer);
+      queue.delayed.set(timer, { job, at: Date.now() + delay });
     } else {
       queue.waiting.push(job);
       this.pump(request.queue);
@@ -148,8 +150,39 @@ export class MemoryStrategy extends QueueStrategy {
       active: queue?.active ?? 0,
       completed: queue?.completed ?? 0,
       failed: queue?.failed ?? 0,
-      delayed: queue?.timers.size ?? 0,
+      delayed: queue?.delayed.size ?? 0,
     };
+  }
+
+  /**
+   * Shows what a queue is holding: the jobs waiting to run and the ones still
+   * waiting for their delay.
+   *
+   * @param {QueueTypes.PeekRequest} request - Queue to look at, how many messages and which states
+   * @returns {Promise<QueueTypes.PeekedMessage[]>} The messages found, in the order they would run
+   */
+  public override async peek(request: QueueTypes.PeekRequest): Promise<QueueTypes.PeekedMessage[]> {
+    const queue = this.fQueues.get(request.queue);
+
+    if (!queue) {
+      return [];
+    }
+
+    const messages: QueueTypes.PeekedMessage[] = [];
+
+    if (request.states.includes('waiting')) {
+      for (const job of [...queue.waiting].sort((a, b) => a.priority - b.priority || a.sequence - b.sequence)) {
+        messages.push(this.describe(job, 'waiting'));
+      }
+    }
+
+    if (request.states.includes('delayed')) {
+      for (const { job, at } of queue.delayed.values()) {
+        messages.push({ ...this.describe(job, 'delayed'), availableAt: at });
+      }
+    }
+
+    return messages.slice(0, request.limit);
   }
 
   /**
@@ -159,11 +192,11 @@ export class MemoryStrategy extends QueueStrategy {
    */
   public async close(): Promise<void> {
     for (const queue of this.fQueues.values()) {
-      for (const timer of queue.timers) {
+      for (const timer of queue.delayed.keys()) {
         clearTimeout(timer);
       }
 
-      queue.timers.clear();
+      queue.delayed.clear();
       queue.waiting.length = 0;
       queue.consumer = undefined;
     }
@@ -247,6 +280,24 @@ export class MemoryStrategy extends QueueStrategy {
   }
 
   /**
+   * Describes a job the way the module reads a peeked message.
+   *
+   * @param {MemoryJob} job - Job sitting on the queue
+   * @param {QueueTypes.PeekState} state - Where it is sitting
+   * @returns {QueueTypes.PeekedMessage} The message, ready to be inspected
+   */
+  private describe(job: MemoryJob, state: QueueTypes.PeekState): QueueTypes.PeekedMessage {
+    return {
+      id: job.id,
+      job: job.job,
+      state,
+      attempt: job.attempt,
+      payload: job.payload,
+      headers: job.headers,
+    };
+  }
+
+  /**
    * Picks the job to run next: lowest priority value first, publish order otherwise.
    *
    * @param {MemoryQueue} queue - Queue to take from
@@ -281,7 +332,7 @@ export class MemoryStrategy extends QueueStrategy {
     let queue = this.fQueues.get(name);
 
     if (!queue) {
-      queue = { waiting: [], timers: new Set(), active: 0, completed: 0, failed: 0 };
+      queue = { waiting: [], delayed: new Map(), active: 0, completed: 0, failed: 0 };
       this.fQueues.set(name, queue);
     }
 
@@ -293,7 +344,7 @@ export class MemoryStrategy extends QueueStrategy {
    */
   private isIdle(): boolean {
     for (const queue of this.fQueues.values()) {
-      if (queue.active > 0 || queue.waiting.length > 0 || queue.timers.size > 0) {
+      if (queue.active > 0 || queue.waiting.length > 0 || queue.delayed.size > 0) {
         return false;
       }
     }

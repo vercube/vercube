@@ -15,6 +15,7 @@ export class RecordingStrategy extends QueueStrategy<{ label?: string } | undefi
     priority: false,
     progress: false,
     stats: false,
+    peek: false,
   };
 
   /** Every published job, in order. */

@@ -393,6 +393,64 @@ export namespace QueueTypes {
     source: string;
   }
 
+  /** State a peeked message is sitting in. */
+  export type PeekState = 'waiting' | 'active' | 'delayed' | 'failed';
+
+  /** Request to look at what a queue is holding, without consuming it. */
+  export interface PeekRequest {
+    /** Queue to look at. */
+    queue: string;
+
+    /**
+     * How many messages to read at most.
+     * @default 20
+     */
+    limit: number;
+
+    /**
+     * States to read. Transports that only keep a backlog ignore everything but
+     * `waiting` and `delayed`.
+     * @default ['waiting', 'delayed', 'failed']
+     */
+    states: PeekState[];
+  }
+
+  /** A message a strategy found on a queue, as the strategy read it. */
+  export interface PeekedMessage {
+    /** Id of the message. */
+    id: string;
+
+    /** Name of the job. */
+    job: string;
+
+    /** Where it is sitting. */
+    state: PeekState;
+
+    /** Attempt it is on, when the transport tracks that. */
+    attempt?: number;
+
+    /** Raw payload, rendered by the manager before it leaves the module. */
+    payload: unknown;
+
+    /** Transport headers. */
+    headers: Record<string, string>;
+
+    /** Epoch milliseconds it becomes available at, for a delayed message. */
+    availableAt?: number;
+
+    /** Why it failed, for a message the transport keeps in a failed set. */
+    error?: { name?: string; message: string; stack?: string };
+  }
+
+  /** A message on a queue, ready to be inspected. */
+  export interface PeekedJob extends Omit<PeekedMessage, 'payload'> {
+    /**
+     * Payload preview, with credential-looking fields withheld and the text
+     * capped at `maxPayloadBytes`.
+     */
+    payload?: string;
+  }
+
   /** What a queue a strategy talks to can actually do. */
   export interface Capabilities {
     /** The transport retries failed jobs on its own. */
@@ -409,6 +467,9 @@ export namespace QueueTypes {
 
     /** The strategy can report queue statistics. */
     stats: boolean;
+
+    /** The strategy can show what a queue holds without consuming it. */
+    peek: boolean;
   }
 
   /** Request handed to a strategy when a queue starts being consumed. */

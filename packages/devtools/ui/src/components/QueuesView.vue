@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
-import { formatMs, useResource } from '../api';
+import { api, formatMs, useResource } from '../api';
 import { useInspectorWidth } from '../inspector';
 import PageHeader from './PageHeader.vue';
 import SplitHandle from './SplitHandle.vue';
-import type { QueueJob, QueueLine, QueueMetrics, QueueView } from '../api';
+import type { QueueJob, QueueLine, QueueMessages, QueueMetrics, QueueView } from '../api';
 
 const props = defineProps<{
   /** Jobs pushed over the stream since the page was opened, newest first. */
@@ -138,6 +138,45 @@ watch(
   },
 );
 
+const messages = ref<QueueMessages | null>(null);
+const loadingMessages = ref(false);
+
+/** Reads what the open queue is holding. Costs a broker round trip, so it is explicit. */
+async function loadMessages(): Promise<void> {
+  const line = queue.value;
+
+  if (!line) {
+    return;
+  }
+
+  loadingMessages.value = true;
+
+  try {
+    messages.value = await api<QueueMessages>(
+      `/api/queues/messages?queue=${encodeURIComponent(line.queue)}&strategy=${encodeURIComponent(line.strategy)}&limit=25`,
+    );
+  } catch (failure) {
+    messages.value = {
+      queue: line.queue,
+      strategy: line.strategy,
+      peekable: true,
+      messages: [],
+      error: failure instanceof Error ? failure.message : String(failure),
+    };
+  } finally {
+    loadingMessages.value = false;
+  }
+}
+
+// a fresh queue means fresh contents, and a queue that cannot be peeked means none
+watch(selectedQueue, (name) => {
+  messages.value = null;
+
+  if (name && queue.value?.peekable) {
+    void loadMessages();
+  }
+});
+
 watch(queues, (lines) => {
   if (selectedQueue.value && !lines.some((entry) => keyOf(entry) === selectedQueue.value)) {
     selectedQueue.value = null;
@@ -192,6 +231,12 @@ function waiting(line: QueueLine): string {
 
 function time(event: QueueJob): string {
   return new Date(event.at).toLocaleTimeString(undefined, { hour12: false });
+}
+
+function due(at: number): string {
+  const seconds = Math.round((at - Date.now()) / 1000);
+
+  return seconds > 0 ? `in ${seconds}s` : 'due';
 }
 
 function stamp(event: QueueJob): string {
@@ -406,6 +451,28 @@ onMounted(reload);
             </li>
           </ul>
           <p v-else class="none">This transport keeps no counters.</p>
+        </section>
+
+        <section class="block">
+          <div class="heading">
+            <h3 class="label">Messages</h3>
+            <button v-if="queue.peekable" class="btn ghost" type="button" :disabled="loadingMessages" @click="loadMessages()">
+              {{ loadingMessages ? 'Reading…' : 'Refresh' }}
+            </button>
+          </div>
+
+          <p v-if="!queue.peekable" class="none">This transport cannot show a queue without consuming it, so nothing is read.</p>
+          <p v-else-if="messages?.error" class="reason mono">{{ messages.error }}</p>
+          <ul v-else-if="messages?.messages.length" class="stack">
+            <li v-for="message in messages.messages" :key="`${message.state}-${message.id}`">
+              <span class="tag" :class="message.state === 'failed' ? 'red' : 'teal'">{{ message.state }}</span>
+              <span class="mono">{{ message.job }}</span>
+              <span class="mono faint">{{ message.id }}</span>
+              <span v-if="message.availableAt" class="mono faint value">{{ due(message.availableAt) }}</span>
+            </li>
+          </ul>
+          <p v-else-if="loadingMessages" class="none">Reading the queue…</p>
+          <p v-else class="none">This queue is holding nothing.</p>
         </section>
 
         <section class="block">
@@ -682,6 +749,13 @@ td.warn {
 .block {
   display: grid;
   gap: 7px;
+}
+
+.heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .stack {
