@@ -276,6 +276,40 @@ export class QueueManager {
   }
 
   /**
+   * Removes a registered handler. The queue stops being consumed once its last
+   * handler is gone.
+   *
+   * @param {Pick<QueueTypes.Registration, 'strategy' | 'queue' | 'job'>} registration - Handler to remove
+   * @returns {void}
+   */
+  public unregisterConsumer(registration: Pick<QueueTypes.Registration, 'strategy' | 'queue' | 'job'>): void {
+    const removed = this.fRegistrations.delete(this.consumerKey(registration.strategy, registration.queue, registration.job));
+
+    if (!removed) {
+      return;
+    }
+
+    const remaining = [...this.fRegistrations.values()].some(
+      (entry) => entry.strategy === registration.strategy && entry.queue === registration.queue,
+    );
+
+    if (!remaining) {
+      void this.enqueue(() => this.stopQueue(registration.strategy, registration.queue));
+    }
+  }
+
+  /**
+   * Removes a registered lifecycle hook.
+   *
+   * @param {'completed' | 'failed'} event - Event the hook listens for
+   * @param {QueueTypes.HookRegistration} registration - The very registration that was registered
+   * @returns {void}
+   */
+  public unregisterHook(event: 'completed' | 'failed', registration: QueueTypes.HookRegistration): void {
+    this.fHooks[event] = this.fHooks[event].filter((entry) => entry !== registration);
+  }
+
+  /**
    * Connects every mounted strategy and starts consuming every queue that has
    * a handler. Safe to call more than once, queues already running are left alone.
    *
@@ -760,18 +794,34 @@ export class QueueManager {
     const running = [...this.fConsumers];
 
     for (const [key, handle] of running) {
-      if (key !== this.queueKey(strategy, handle.queue)) {
-        continue;
+      if (key === this.queueKey(strategy, handle.queue)) {
+        await this.stopQueue(strategy, handle.queue);
       }
-
-      try {
-        await handle.stop();
-      } catch (error) {
-        this.gLogger?.error(`Vercube/QueueManager::Failed to stop consumer of "${handle.queue}"`, error);
-      }
-
-      this.fConsumers.delete(key);
     }
+  }
+
+  /**
+   * Stops the consumer of a single queue, waiting for its in-flight jobs.
+   *
+   * @param {string} strategy - Mount name
+   * @param {string} queue - Queue whose consumer is stopped
+   * @returns {Promise<void>} Resolves once the consumer is stopped
+   */
+  protected async stopQueue(strategy: string, queue: string): Promise<void> {
+    const key = this.queueKey(strategy, queue);
+    const handle = this.fConsumers.get(key);
+
+    if (!handle) {
+      return;
+    }
+
+    try {
+      await handle.stop();
+    } catch (error) {
+      this.gLogger?.error(`Vercube/QueueManager::Failed to stop consumer of "${queue}"`, error);
+    }
+
+    this.fConsumers.delete(key);
   }
 
   /**

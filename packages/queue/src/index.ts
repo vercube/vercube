@@ -1,3 +1,9 @@
+// Decorators
+export * from './Decorators/Consumer';
+export * from './Decorators/Job';
+export * from './Decorators/OnJobCompleted';
+export * from './Decorators/OnJobFailed';
+
 // Errors
 export * from './Errors/QueueError';
 
@@ -10,3 +16,4 @@ export * from './Types/QueueTypes';
 
 // Utils
 export * from './Utils/Job';
+export * from './Utils/Metadata';
