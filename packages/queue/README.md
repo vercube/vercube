@@ -21,7 +21,7 @@
 ## ✨ Features
 
 - **One API, four transports** - BullMQ, RabbitMQ, Kafka and an in-memory strategy, mounted side by side
-- **Decorator driven consumers** - `@Consumer()` on the class, `@Job()` on the method, nothing else to wire
+- **Decorator driven consumers** - `@Consumer()` on the class, `@Job()` on the method, `@AnyJob()` for everything else
 - **Retries that work everywhere** - attempts, fixed or exponential backoff, and timeouts, even on transports without them
 - **Payload validation** - any Standard Schema validates a job before the handler runs
 - **Type-safe queues** - augment the registry and every `add()` is checked against it

@@ -116,7 +116,8 @@ export class JobDecorator extends BaseDecorator<JobDecoratorOptions> {
  * {@link QueueTypes.JobContext} as its second. Returning marks the job as done,
  * throwing marks the attempt as failed and hands it to the retry policy.
  *
- * Options given here override the defaults of the `@Consumer()` class.
+ * Options given here override the defaults of the `@Consumer()` class. To handle
+ * everything the queue carries beyond the named jobs, see `@AnyJob()`.
  *
  * @param {string} name - Name of the job, as used when adding it to the queue
  * @param {QueueTypes.HandlerOptions} [options] - Retries, timeout and payload schema of this handler

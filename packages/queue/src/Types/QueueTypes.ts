@@ -359,7 +359,7 @@ export namespace QueueTypes {
     /** Queue the handler consumes from. */
     queue: string;
 
-    /** Name of the job the handler processes. */
+    /** Name of the job the handler processes, or `*` for every unclaimed job of the queue. */
     job: string;
 
     /** The handler itself, already bound to its instance. */
@@ -383,7 +383,7 @@ export namespace QueueTypes {
     /** Queue the hook listens on. */
     queue: string;
 
-    /** Job the hook is limited to, or undefined for every job of the queue. */
+    /** Job the hook is limited to, or undefined (or `*`) for every job of the queue. */
     job?: string;
 
     /** The hook itself, already bound to its instance. */

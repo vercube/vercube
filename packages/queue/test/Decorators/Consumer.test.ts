@@ -2,6 +2,7 @@ import { ValidationProvider } from '@vercube/core';
 import { Container, initializeContainer } from '@vercube/di';
 import { Logger } from '@vercube/logger';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { AnyJob } from '../../src/Decorators/AnyJob';
 import { Consumer } from '../../src/Decorators/Consumer';
 import { Job } from '../../src/Decorators/Job';
 import { OnJobCompleted } from '../../src/Decorators/OnJobCompleted';
@@ -42,6 +43,19 @@ class EmailConsumer {
   @OnJobFailed({ job: 'bounce' })
   public async failed(error: Error, context: QueueTypes.JobContext): Promise<void> {
     calls.push({ handler: 'failed', payload: context.job, error });
+  }
+}
+
+@Consumer({ queue: 'events' })
+class EventConsumer {
+  @Job('placed')
+  public async placed(payload: unknown): Promise<void> {
+    calls.push({ handler: 'event.placed', payload });
+  }
+
+  @AnyJob({ attempts: 2 })
+  public async rest(payload: unknown, context: QueueTypes.JobContext): Promise<void> {
+    calls.push({ handler: `event.any:${context.job}`, payload, context });
   }
 }
 
@@ -253,6 +267,39 @@ describe('Queue decorators', () => {
       await (manager.getStrategy() as MemoryStrategy).idle();
 
       expect(calls.map((call) => call.handler)).toEqual(['email.digest', 'completed']);
+    });
+  });
+
+  describe('@AnyJob', () => {
+    beforeEach(async () => {
+      container.bind(EventConsumer);
+      initializeContainer(container);
+
+      await manager.mount({ strategy: MemoryStrategy });
+      await manager.start();
+    });
+
+    it('should register a handler for every unclaimed job', () => {
+      expect(manager.inspect().consumers).toEqual([
+        expect.objectContaining({ queue: 'events', job: 'placed', source: 'EventConsumer.placed' }),
+        expect.objectContaining({ queue: 'events', job: '*', source: 'EventConsumer.rest', attempts: 2 }),
+      ]);
+    });
+
+    it('should handle a job nothing else claims, keeping its real name', async () => {
+      await manager.add({ queue: 'events', job: 'OrderShipped', payload: { id: 9 } });
+      await (manager.getStrategy() as MemoryStrategy).idle();
+
+      expect(calls[0]).toMatchObject({ handler: 'event.any:OrderShipped', payload: { id: 9 } });
+      expect(calls[0].context).toMatchObject({ job: 'OrderShipped', attempts: 2 });
+      expect(manager.inspect().metrics[0]).toMatchObject({ processed: 1, unhandled: 0 });
+    });
+
+    it('should leave a named job to its own handler', async () => {
+      await manager.add({ queue: 'events', job: 'placed', payload: { id: 1 } });
+      await (manager.getStrategy() as MemoryStrategy).idle();
+
+      expect(calls.map((call) => call.handler)).toEqual(['event.placed']);
     });
   });
 

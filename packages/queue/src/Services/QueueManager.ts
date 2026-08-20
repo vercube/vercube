@@ -3,7 +3,15 @@ import { Container, Destroy, Init, Inject, InjectOptional } from '@vercube/di';
 import { Logger } from '@vercube/logger';
 import { QueueError } from '../Errors/QueueError';
 import { toQueueError } from '../Utils/Errors';
-import { ATTEMPT_HEADER, ATTEMPTS_HEADER, delay, JOB_HEADER, readNumericHeader, resolveBackoff } from '../Utils/Job';
+import {
+  ATTEMPT_HEADER,
+  ATTEMPTS_HEADER,
+  delay,
+  JOB_HEADER,
+  readNumericHeader,
+  resolveBackoff,
+  WILDCARD_JOB,
+} from '../Utils/Job';
 import type { QueueTypes } from '../Types/QueueTypes';
 import type { QueueStrategy } from './QueueStrategy';
 
@@ -234,8 +242,9 @@ export class QueueManager {
   }
 
   /**
-   * Registers a handler for a single job. The decorators call this, and so can
-   * application code building its consumers dynamically.
+   * Registers a handler for a single job, or for every job the queue has no
+   * other handler for when registered under `*`. The decorators call this, and so
+   * can application code building its consumers dynamically.
    *
    * When the manager is already running, the queue starts being consumed right away.
    *
@@ -440,6 +449,9 @@ export class QueueManager {
    * Processes a single job: routes it to its handler, validates the payload,
    * enforces the timeout, runs the lifecycle hooks and applies the retry policy.
    *
+   * The handler registered for the job name wins, and a handler registered under
+   * `*` picks up whatever is left.
+   *
    * Rejecting tells the strategy the job failed for good, so it can dead-letter it.
    *
    * @param {string} strategy - Mount name the job came from
@@ -450,7 +462,9 @@ export class QueueManager {
    */
   protected async process(strategy: string, queue: string, incoming: QueueTypes.IncomingJob): Promise<void> {
     const metrics = this.metricsFor(strategy, queue);
-    const registration = this.fRegistrations.get(this.consumerKey(strategy, queue, incoming.job));
+    const registration =
+      this.fRegistrations.get(this.consumerKey(strategy, queue, incoming.job)) ??
+      this.fRegistrations.get(this.consumerKey(strategy, queue, WILDCARD_JOB));
 
     if (!registration) {
       metrics.unhandled++;
@@ -480,7 +494,7 @@ export class QueueManager {
     metrics.active++;
 
     try {
-      context.payload = await this.validate(registration, incoming.payload);
+      context.payload = await this.validate(registration, incoming.payload, context.job);
 
       await this.runHandler(registration, context);
 
@@ -488,7 +502,7 @@ export class QueueManager {
       this.record({
         strategy,
         queue,
-        job: registration.job,
+        job: context.job,
         id: context.id,
         attempt: context.attempt,
         status: 'completed',
@@ -536,7 +550,7 @@ export class QueueManager {
       this.record({
         strategy: registration.strategy,
         queue: registration.queue,
-        job: registration.job,
+        job: context.job,
         id: context.id,
         attempt: context.attempt,
         status: 'failed',
@@ -551,7 +565,7 @@ export class QueueManager {
     this.record({
       strategy: registration.strategy,
       queue: registration.queue,
-      job: registration.job,
+      job: context.job,
       id: context.id,
       attempt: context.attempt,
       status: 'retried',
@@ -588,7 +602,7 @@ export class QueueManager {
       try {
         await mount?.strategy.publish({
           queue: registration.queue,
-          job: registration.job,
+          job: context.job,
           payload: context.payload,
           headers,
           options: native ? { delay: wait } : {},
@@ -647,10 +661,11 @@ export class QueueManager {
    *
    * @param {QueueTypes.Registration} registration - Handler the payload is meant for
    * @param {unknown} payload - Payload as received from the transport
+   * @param {string} job - Name of the job being processed, which a wildcard handler does not know upfront
    * @returns {Promise<unknown>} The validated payload, as returned by the schema
    * @throws {QueueError} When the payload does not match the schema, or no validation provider is bound
    */
-  protected async validate(registration: QueueTypes.Registration, payload: unknown): Promise<unknown> {
+  protected async validate(registration: QueueTypes.Registration, payload: unknown, job: string): Promise<unknown> {
     const schema = registration.options.schema;
 
     if (!schema) {
@@ -662,7 +677,7 @@ export class QueueManager {
         'A job declares a schema but no ValidationProvider is bound in the container',
         'validate',
         undefined,
-        { queue: registration.queue, job: registration.job },
+        { queue: registration.queue, job },
         false,
       );
     }
@@ -671,7 +686,7 @@ export class QueueManager {
 
     if (result.issues) {
       throw new QueueError(
-        `Payload of job "${registration.job}" failed validation`,
+        `Payload of job "${job}" failed validation`,
         'validate',
         undefined,
         { queue: registration.queue, issues: result.issues },
@@ -683,7 +698,8 @@ export class QueueManager {
   }
 
   /**
-   * Runs the hooks registered for a queue. A throwing hook is logged and never
+   * Runs the hooks registered for a queue. A hook filtered by job name runs for
+   * that job only, unless the filter is `*`. A throwing hook is logged and never
    * changes the outcome of the job.
    *
    * @param {'completed' | 'failed'} event - Event being reported
@@ -703,7 +719,7 @@ export class QueueManager {
         continue;
       }
 
-      if (hook.job && hook.job !== registration.job) {
+      if (hook.job && hook.job !== WILDCARD_JOB && hook.job !== context.job) {
         continue;
       }
 

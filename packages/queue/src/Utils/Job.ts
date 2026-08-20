@@ -1,6 +1,12 @@
 import { QueueError } from '../Errors/QueueError';
 import type { QueueTypes } from '../Types/QueueTypes';
 
+/**
+ * Job name a handler registers under to receive every job of its queue that no
+ * other handler claims.
+ */
+export const WILDCARD_JOB = '*';
+
 /** Header carrying the job name across transports that have no native notion of one. */
 export const JOB_HEADER = 'x-job';
 

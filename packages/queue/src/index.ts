@@ -1,4 +1,5 @@
 // Decorators
+export * from './Decorators/AnyJob';
 export * from './Decorators/Consumer';
 export * from './Decorators/Job';
 export * from './Decorators/OnJobCompleted';

@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { QueueError } from '../../src/Errors/QueueError';
 import { QueueManager } from '../../src/Services/QueueManager';
 import { MemoryStrategy } from '../../src/Strategies/MemoryStrategy';
-import { ATTEMPT_HEADER, ATTEMPTS_HEADER, JOB_HEADER } from '../../src/Utils/Job';
+import { ATTEMPT_HEADER, ATTEMPTS_HEADER, JOB_HEADER, WILDCARD_JOB } from '../../src/Utils/Job';
 import { idSchema, RecordingStrategy, registration } from '../Utils/Mock.mock';
 import type { QueueTypes } from '../../src/Types/QueueTypes';
 
@@ -501,6 +501,121 @@ describe('QueueManager', () => {
         name: 'QueueError',
         retryable: false,
       });
+    });
+  });
+
+  describe('the fallback handler', () => {
+    it('should pick up a job no named handler claims', async () => {
+      const strategy = await mountRecording();
+      const named = vi.fn();
+      const fallback = vi.fn();
+
+      manager.registerConsumer(registration({ handler: named }));
+      manager.registerConsumer(registration({ job: WILDCARD_JOB, handler: fallback, source: 'C.any' }));
+      await manager.start();
+
+      await strategy.deliver('emails', { job: 'never-declared', payload: { id: 1 } });
+
+      expect(named).not.toHaveBeenCalled();
+      expect(fallback).toHaveBeenCalledTimes(1);
+      expect(fallback.mock.calls[0][0]).toEqual({ id: 1 });
+    });
+
+    it('should let a named handler win over the fallback', async () => {
+      const strategy = await mountRecording();
+      const named = vi.fn();
+      const fallback = vi.fn();
+
+      manager.registerConsumer(registration({ handler: named }));
+      manager.registerConsumer(registration({ job: WILDCARD_JOB, handler: fallback, source: 'C.any' }));
+      await manager.start();
+
+      await strategy.deliver('emails', { job: 'welcome' });
+
+      expect(named).toHaveBeenCalledTimes(1);
+      expect(fallback).not.toHaveBeenCalled();
+    });
+
+    it('should report the real job name, not the wildcard', async () => {
+      const strategy = await mountRecording();
+      const handler = vi.fn();
+
+      manager.registerConsumer(registration({ job: WILDCARD_JOB, handler, source: 'C.any' }));
+      await manager.start();
+
+      await strategy.deliver('emails', { job: 'OrderPlaced', id: 'evt-1' });
+
+      expect((handler.mock.calls[0][1] as QueueTypes.JobContext).job).toBe('OrderPlaced');
+      expect(manager.inspect().events[0]).toMatchObject({ job: 'OrderPlaced', status: 'completed' });
+      expect(manager.inspect().metrics[0]).toMatchObject({ processed: 1, unhandled: 0 });
+    });
+
+    it('should retry under the real job name', async () => {
+      const strategy = await mountRecording();
+
+      manager.registerConsumer(
+        registration({ job: WILDCARD_JOB, handler: vi.fn().mockRejectedValue(new Error('boom')), options: { attempts: 2 } }),
+      );
+      await manager.start();
+
+      await strategy.deliver('emails', { job: 'OrderPlaced' });
+      await manager.drain();
+
+      expect(strategy.published[0]).toMatchObject({ job: 'OrderPlaced', headers: { [ATTEMPT_HEADER]: '2' } });
+    });
+
+    it('should apply its own options', async () => {
+      const strategy = await mountRecording();
+
+      manager.registerConsumer(registration({ job: WILDCARD_JOB, handler: vi.fn(), options: { schema: idSchema } }));
+      await manager.start();
+
+      await expect(strategy.deliver('emails', { job: 'anything', payload: { id: 'nope' } })).rejects.toMatchObject({
+        operation: 'validate',
+      });
+    });
+
+    it('should report a job as unhandled when there is no fallback', async () => {
+      const strategy = await mountRecording();
+
+      manager.registerConsumer(registration());
+      await manager.start();
+      await strategy.deliver('emails', { job: 'never-declared' });
+
+      expect(manager.inspect().metrics[0]).toMatchObject({ unhandled: 1 });
+    });
+
+    it('should not leak across queues or strategies', async () => {
+      const strategy = await mountRecording();
+      const fallback = vi.fn();
+
+      manager.registerConsumer(registration({ job: WILDCARD_JOB, handler: fallback, source: 'C.any' }));
+      manager.registerConsumer(registration({ queue: 'reports', job: 'nightly' }));
+      await manager.start();
+
+      await strategy.deliver('reports', { job: 'whatever' });
+
+      expect(fallback).not.toHaveBeenCalled();
+      expect(manager.inspect().metrics.find((entry) => entry.queue === 'reports')).toMatchObject({ unhandled: 1 });
+    });
+
+    it('should let a hook filtered by the wildcard watch every job', async () => {
+      const strategy = await mountRecording();
+      const hook = vi.fn();
+
+      manager.registerConsumer(registration({ job: WILDCARD_JOB, handler: vi.fn(), source: 'C.any' }));
+      manager.registerHook('completed', {
+        strategy: 'default',
+        queue: 'emails',
+        job: WILDCARD_JOB,
+        hook,
+        source: 'C.done',
+      });
+      await manager.start();
+
+      await strategy.deliver('emails', { job: 'anything' });
+
+      expect(hook).toHaveBeenCalledTimes(1);
     });
   });
 
