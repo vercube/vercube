@@ -38,14 +38,20 @@ export class JobHookDecorator extends BaseDecorator<JobHookDecoratorOptions> {
     const consumer = getConsumerOptions(this.prototype);
     const hook = this.instance[this.propertyName];
 
-    if (!this.gQueueManager || !consumer || typeof hook !== 'function') {
-      const reason = this.gQueueManager
-        ? consumer
-          ? `"${this.propertyName}" is not a method`
-          : `unable to find the queue of "${this.propertyName}"`
-        : 'QueueManager is not bound in the container';
+    if (!this.gQueueManager) {
+      this.warn('QueueManager is not bound in the container, no job hook will run');
 
-      this.warn(`Vercube/Queue::Job hook not registered - ${reason}`);
+      return;
+    }
+
+    if (!consumer) {
+      this.warn(`Unable to find the queue of "${this.propertyName}". Did you use @Consumer()?`);
+
+      return;
+    }
+
+    if (typeof hook !== 'function') {
+      this.warn(`"${this.propertyName}" is not a method, a job hook can only decorate methods`);
 
       return;
     }
@@ -82,12 +88,14 @@ export class JobHookDecorator extends BaseDecorator<JobHookDecoratorOptions> {
    * @returns {void}
    */
   private warn(message: string): void {
+    const text = `Vercube/Queue::Job hook - ${message}`;
+
     if (this.gLogger) {
-      this.gLogger.warn(message);
+      this.gLogger.warn(text);
 
       return;
     }
 
-    console.warn(message);
+    console.warn(text);
   }
 }
