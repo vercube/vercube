@@ -2,6 +2,7 @@ import { ValidationProvider } from '@vercube/core';
 import { Container, Destroy, Init, Inject, InjectOptional } from '@vercube/di';
 import { Logger } from '@vercube/logger';
 import { QueueError } from '../Errors/QueueError';
+import { toQueueError } from '../Utils/Errors';
 import { ATTEMPT_HEADER, ATTEMPTS_HEADER, delay, JOB_HEADER, readNumericHeader, resolveBackoff } from '../Utils/Job';
 import type { QueueTypes } from '../Types/QueueTypes';
 import type { QueueStrategy } from './QueueStrategy';
@@ -194,7 +195,7 @@ export class QueueManager {
 
       return ref;
     } catch (error) {
-      throw this.wrap(error, 'Failed to publish job', 'add', { strategy: mount.name, queue, job });
+      throw toQueueError(error, 'Failed to publish job', 'add', { strategy: mount.name, queue, job });
     }
   }
 
@@ -228,7 +229,7 @@ export class QueueManager {
 
       return refs;
     } catch (error) {
-      throw this.wrap(error, 'Failed to publish jobs', 'addMany', { strategy: mount.name, queue, job });
+      throw toQueueError(error, 'Failed to publish jobs', 'addMany', { strategy: mount.name, queue, job });
     }
   }
 
@@ -862,7 +863,7 @@ export class QueueManager {
         mount.error = error;
         this.gLogger?.error(`Vercube/QueueManager::Failed to initialize strategy "${mount.name}"`, error);
 
-        throw this.wrap(error, `Failed to initialize strategy "${mount.name}"`, 'initialize', { strategy: mount.name });
+        throw toQueueError(error, `Failed to initialize strategy "${mount.name}"`, 'initialize', { strategy: mount.name });
       },
     );
 
@@ -1023,23 +1024,6 @@ export class QueueManager {
     this.fTail = tail.catch(() => undefined);
 
     return tail;
-  }
-
-  /**
-   * Wraps a transport error into a {@link QueueError}, leaving queue errors alone.
-   *
-   * @param {unknown} error - Error to wrap
-   * @param {string} message - Message of the resulting error
-   * @param {string} operation - Operation that failed
-   * @param {Record<string, unknown>} metadata - Additional context
-   * @returns {Error} The error to throw
-   */
-  protected wrap(error: unknown, message: string, operation: string, metadata: Record<string, unknown>): Error {
-    if (error instanceof QueueError) {
-      return error;
-    }
-
-    return new QueueError(message, operation, error as Error, metadata);
   }
 
   /**
