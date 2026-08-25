@@ -7,8 +7,8 @@ settings:
 catalogs:
   default:
     '@oxc-project/runtime':
-      specifier: 0.146.0
-      version: 0.146.0
+      specifier: 0.147.0
+      version: 0.147.0
     '@standard-schema/spec':
       specifier: 1.1.0
       version: 1.1.0
@@ -70,7 +70,7 @@ importers:
         version: 21.2.2
       '@oxc-project/runtime':
         specifier: 'catalog:'
-        version: 0.146.0
+        version: 0.147.0
       '@types/node':
         specifier: 26.2.0
         version: 26.2.0
@@ -118,7 +118,7 @@ importers:
     dependencies:
       '@oxc-project/runtime':
         specifier: 'catalog:'
-        version: 0.146.0
+        version: 0.147.0
       '@vercube/cli':
         specifier: workspace:*
         version: link:../../packages/cli
@@ -169,7 +169,7 @@ importers:
     dependencies:
       '@oxc-project/runtime':
         specifier: 'catalog:'
-        version: 0.146.0
+        version: 0.147.0
       '@vercube/cli':
         specifier: workspace:*
         version: link:../../packages/cli
@@ -202,7 +202,7 @@ importers:
     dependencies:
       '@oxc-project/runtime':
         specifier: 'catalog:'
-        version: 0.146.0
+        version: 0.147.0
       '@vercube/cli':
         specifier: workspace:*
         version: link:../../packages/cli
@@ -274,7 +274,7 @@ importers:
     dependencies:
       '@oxc-project/runtime':
         specifier: 'catalog:'
-        version: 0.146.0
+        version: 0.147.0
       '@vercube/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -415,7 +415,7 @@ importers:
     dependencies:
       '@oxc-project/runtime':
         specifier: 'catalog:'
-        version: 0.146.0
+        version: 0.147.0
       '@vercube/core':
         specifier: workspace:*
         version: link:../core
@@ -1322,8 +1322,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@oxc-project/runtime@0.146.0':
-    resolution: {integrity: sha512-lbXHIpZ1MmK6zuw5txlMdIZ2waLVUIU5Gnm3sEuwJOiqDfQfbtjeHscatmeBoxbv8+If9LFM6PGh/3DcDWYIYw==}
+  '@oxc-project/runtime@0.147.0':
+    resolution: {integrity: sha512-vAYDOvumvPwsx0GSoHj+h1qCarq2f9RmfGk3deWBJTtRUDSqvvja5x+q5bUbs7a7CgVPiQDEIx+a5fBtVIQNdA==}
     engines: {node: ^20.19.0 || >=22.12.0}
 
   '@oxc-project/types@0.138.0':
@@ -5112,7 +5112,7 @@ snapshots:
   '@oxc-parser/binding-win32-x64-msvc@0.146.0':
     optional: true
 
-  '@oxc-project/runtime@0.146.0': {}
+  '@oxc-project/runtime@0.147.0': {}
 
   '@oxc-project/types@0.138.0': {}
 
