@@ -19,7 +19,7 @@ catalog:
   vite: 8.2.2
   rolldown: 1.2.5
   srvx: 0.12.7
-  zod: 4.4.3
+  zod: 4.5.1
 
 ignoredBuiltDependencies:
   - better-sqlite3

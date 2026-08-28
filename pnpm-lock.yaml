@@ -52,8 +52,8 @@ catalogs:
       specifier: 8.2.2
       version: 8.2.2
     zod:
-      specifier: 4.4.3
-      version: 4.4.3
+      specifier: 4.5.1
+      version: 4.5.1
 
 importers:
 
@@ -403,7 +403,7 @@ importers:
         version: 1.2.5
       zod:
         specifier: 'catalog:'
-        version: 4.4.3
+        version: 4.5.1
 
   packages/create-app:
     dependencies:
@@ -538,7 +538,7 @@ importers:
     dependencies:
       '@asteasolutions/zod-to-openapi':
         specifier: 9.1.0
-        version: 9.1.0(zod@4.4.3)
+        version: 9.1.0(zod@4.5.1)
       '@scalar/client-side-rendering':
         specifier: 0.3.7
         version: 0.3.7
@@ -556,7 +556,7 @@ importers:
         version: 6.1.7
       zod:
         specifier: 'catalog:'
-        version: 4.4.3
+        version: 4.5.1
 
   packages/serverless:
     dependencies:
@@ -641,7 +641,7 @@ importers:
     devDependencies:
       zod:
         specifier: 'catalog:'
-        version: 4.4.3
+        version: 4.5.1
 
   playground:
     dependencies:
@@ -683,7 +683,7 @@ importers:
         version: 2.8.1
       zod:
         specifier: 'catalog:'
-        version: 4.4.3
+        version: 4.5.1
     devDependencies:
       '@vercube/cli':
         specifier: workspace:*
@@ -4382,15 +4382,15 @@ packages:
   yuku-parser@0.7.2:
     resolution: {integrity: sha512-zm2l0cMvXb8QftlDB6pZraEXQgElK4PC+ndYSABJrsjn06fVSlnyP5GzMMkahEIMuj6mPBpbryjWoz6bf5Pmvw==}
 
-  zod@4.4.3:
-    resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
+  zod@4.5.1:
+    resolution: {integrity: sha512-P3GqeAEOEDqKvafVGLezbg+39YW/ze4xrD4qdS0adOY8eoI3zfjv1PQM4UwQzgT8mZKXEbqtVt8K+ZKGqkMFKg==}
 
 snapshots:
 
-  '@asteasolutions/zod-to-openapi@9.1.0(zod@4.4.3)':
+  '@asteasolutions/zod-to-openapi@9.1.0(zod@4.5.1)':
     dependencies:
       openapi3-ts: 4.6.0
-      zod: 4.4.3
+      zod: 4.5.1
 
   '@aws-sdk/checksums@3.1000.28':
     dependencies:
@@ -5535,7 +5535,7 @@ snapshots:
       '@scalar/helpers': 0.10.0
       nanoid: 5.1.16
       type-fest: 5.8.0
-      zod: 4.4.3
+      zod: 4.5.1
 
   '@scalar/validation@0.6.2': {}
 
@@ -7498,4 +7498,4 @@ snapshots:
       '@yuku-parser/binding-win32-arm64': 0.7.2
       '@yuku-parser/binding-win32-x64': 0.7.2
 
-  zod@4.4.3: {}
+  zod@4.5.1: {}
