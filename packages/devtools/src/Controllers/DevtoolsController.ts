@@ -11,6 +11,7 @@ import { GraphCollector } from '../Services/GraphCollector';
 import { LogCollector } from '../Services/LogCollector';
 import { OverviewCollector } from '../Services/OverviewCollector';
 import { ProcessSampler } from '../Services/ProcessSampler';
+import { QueueCollector } from '../Services/QueueCollector';
 import { RequestRecorder } from '../Services/RequestRecorder';
 import { RouteCollector } from '../Services/RouteCollector';
 import { StorageCollector } from '../Services/StorageCollector';
@@ -53,6 +54,9 @@ export class DevtoolsController {
 
   @Inject(StorageCollector)
   private readonly gStorage!: StorageCollector;
+
+  @Inject(QueueCollector)
+  private readonly gQueues!: QueueCollector;
 
   @Inject(ProcessSampler)
   private readonly gMetrics!: ProcessSampler;
@@ -224,6 +228,32 @@ export class DevtoolsController {
     @QueryParam({ name: 'key' }) key: string,
   ): Promise<DevtoolsTypes.StorageValue> {
     return this.gStorage.readValue(mount || 'default', key);
+  }
+
+  /**
+   * @returns mounted queue transports, their handlers and the last processed jobs
+   */
+  @Get('/api/queues')
+  @SetHeader('Cache-Control', 'no-store')
+  public queues(): Promise<DevtoolsTypes.QueueView> {
+    return this.gQueues.collect();
+  }
+
+  /**
+   * Reads what a queue is holding, without consuming any of it.
+   * @param queue queue to read
+   * @param strategy mount to read it through
+   * @param limit how many messages to read
+   * @returns the messages found, or why they could not be read
+   */
+  @Get('/api/queues/messages')
+  @SetHeader('Cache-Control', 'no-store')
+  public queueMessages(
+    @QueryParam({ name: 'queue' }) queue: string,
+    @QueryParam({ name: 'strategy' }) strategy: string,
+    @QueryParam({ name: 'limit' }) limit: string,
+  ): Promise<DevtoolsTypes.QueueMessages> {
+    return this.gQueues.readMessages(queue, strategy || 'default', Number(limit) || 25);
   }
 
   /**

@@ -11,6 +11,7 @@ import { GraphCollector } from '../Services/GraphCollector';
 import { LogCollector } from '../Services/LogCollector';
 import { OverviewCollector } from '../Services/OverviewCollector';
 import { ProcessSampler } from '../Services/ProcessSampler';
+import { QueueCollector } from '../Services/QueueCollector';
 import { RequestRecorder } from '../Services/RequestRecorder';
 import { RouteCollector } from '../Services/RouteCollector';
 import { StorageCollector } from '../Services/StorageCollector';
@@ -94,6 +95,7 @@ export class DevtoolsPlugin extends BasePlugin<DevtoolsTypes.Options> {
     app.container.bind(LogCollector);
     app.container.bind(ConfigCollector);
     app.container.bind(StorageCollector);
+    app.container.bind(QueueCollector);
     app.container.bind(ProcessSampler);
 
     // Rewrite the controller base path before decorators read it.

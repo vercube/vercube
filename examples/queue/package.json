@@ -1,0 +1,25 @@
+{
+  "name": "@examples/queue",
+  "version": "1.0.0",
+  "description": "Queue example for Vercube",
+  "packageManager": "pnpm@11.13.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vercube build",
+    "dev": "vercube dev"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@oxc-project/runtime": "catalog:",
+    "@vercube/core": "workspace:*",
+    "@vercube/devtools": "workspace:*",
+    "@vercube/di": "workspace:*",
+    "@vercube/logger": "workspace:*",
+    "@vercube/queue": "workspace:*",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@vercube/cli": "workspace:*"
+  }
+}
