@@ -1,5 +1,6 @@
-import { trace } from '@opentelemetry/api';
+import { metrics, trace } from '@opentelemetry/api';
 import { resourceFromAttributes } from '@opentelemetry/resources';
+import { MeterProvider } from '@opentelemetry/sdk-metrics';
 import {
   AlwaysOffSampler,
   AlwaysOnSampler,
@@ -8,7 +9,11 @@ import {
   ParentBasedSampler,
   TraceIdRatioBasedSampler,
 } from '@opentelemetry/sdk-trace-node';
+import { CompositeSpanProcessor } from './Sdk/Composite';
+import type { IMetricReader } from '@opentelemetry/sdk-metrics';
 import type { Sampler, SpanExporter, SpanProcessor } from '@opentelemetry/sdk-trace-node';
+
+export { CompositeSpanProcessor } from './Sdk/Composite';
 import type { TelemetryTypes } from '@vercube/core';
 
 /**
@@ -86,15 +91,49 @@ export interface NodeTelemetry {
  * @returns Handle to the registered provider
  */
 export async function startNodeTelemetry(options: NodeTelemetryOptions = {}): Promise<NodeTelemetry> {
-  const processors: SpanProcessor[] = [];
   const exporter = options.exporter ?? (await createOtlpExporter(options));
 
   if (exporter) {
-    processors.push(new BatchSpanProcessor(exporter));
+    addSpanProcessor(new BatchSpanProcessor(exporter));
   }
 
-  if (options.spanProcessors) {
-    processors.push(...options.spanProcessors);
+  for (const processor of options.spanProcessors ?? []) {
+    addSpanProcessor(processor);
+  }
+
+  return ensureTracerProvider(options);
+}
+
+/** The one processor every provider created here is built around. */
+const composite = new CompositeSpanProcessor();
+
+/** The provider created by {@link ensureTracerProvider}, if any. */
+let started: NodeTelemetry | undefined;
+
+/**
+ * Adds a span processor, whether or not a tracer provider exists yet.
+ *
+ * This is how a package can see spans without owning the SDK setup: devtools
+ * adds its recorder here, and it works the same whether the application called
+ * {@link startNodeTelemetry} first, later, or never.
+ *
+ * @param processor - The processor to add
+ * @returns A function that removes it again
+ */
+export function addSpanProcessor(processor: SpanProcessor): () => void {
+  return composite.add(processor);
+}
+
+/**
+ * Registers a tracer provider around the shared processor, unless one has
+ * already been created here.
+ *
+ * @param options - Resource and sampling settings, used only on first call
+ * @returns Handle to the registered provider
+ */
+export function ensureTracerProvider(options: NodeTelemetryOptions = {}): NodeTelemetry {
+  if (started) {
+    return started;
   }
 
   const provider = new NodeTracerProvider({
@@ -105,20 +144,23 @@ export async function startNodeTelemetry(options: NodeTelemetryOptions = {}): Pr
       ...options.resourceAttributes,
     }),
     sampler: toSampler(options.sampler),
-    spanProcessors: processors,
+    spanProcessors: [composite],
   });
 
   // `contextManager` and `propagator` are explicitly null so `register()` keeps
   // the ones TelemetryPlugin installed instead of replacing them.
   provider.register({ contextManager: null, propagator: null });
 
-  return {
+  started = {
     provider,
     shutdown: async () => {
+      started = undefined;
       await provider.shutdown();
       trace.disable();
     },
   };
+
+  return started;
 }
 
 /**
@@ -175,4 +217,55 @@ function toSampler(sampler: TelemetryTypes.Sampler = 'parent'): Sampler {
   }
 
   return new ParentBasedSampler({ root: new TraceIdRatioBasedSampler(sampler.ratio) });
+}
+
+/** Metric readers registered before the meter provider was built. */
+const metricReaders: IMetricReader[] = [];
+
+/** The meter provider created by {@link ensureMeterProvider}, if any. */
+let meterProvider: MeterProvider | undefined;
+
+/**
+ * Registers a metric reader.
+ *
+ * Must be called before {@link ensureMeterProvider}: unlike tracers, the
+ * OpenTelemetry metrics API has no proxy, so instruments created before a
+ * provider exists are permanently no-ops and a reader added afterwards would
+ * never see them.
+ *
+ * @param reader - The reader to register
+ */
+export function addMetricReader(reader: IMetricReader): void {
+  if (meterProvider) {
+    throw new Error('The meter provider has already been created; add metric readers before it is built.');
+  }
+
+  metricReaders.push(reader);
+}
+
+/**
+ * Registers a meter provider around the readers added so far, unless one has
+ * already been created here.
+ *
+ * @param options - Resource settings, used only on first call
+ * @returns The registered provider
+ */
+export function ensureMeterProvider(options: NodeTelemetryOptions = {}): MeterProvider {
+  if (meterProvider) {
+    return meterProvider;
+  }
+
+  meterProvider = new MeterProvider({
+    resource: resourceFromAttributes({
+      'service.name': options.serviceName ?? process.env.OTEL_SERVICE_NAME ?? 'vercube',
+      'service.version': options.serviceVersion,
+      'deployment.environment.name': options.environment ?? process.env.NODE_ENV,
+      ...options.resourceAttributes,
+    }),
+    readers: metricReaders,
+  });
+
+  metrics.setGlobalMeterProvider(meterProvider);
+
+  return meterProvider;
 }
