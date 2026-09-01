@@ -1,5 +1,12 @@
-import { trace } from '@opentelemetry/api';
+import { metrics, trace } from '@opentelemetry/api';
+import {
+  AggregationTemporality,
+  InMemoryMetricExporter,
+  MeterProvider,
+  PeriodicExportingMetricReader,
+} from '@opentelemetry/sdk-metrics';
 import { BasicTracerProvider, InMemorySpanExporter, SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base';
+import type { ResourceMetrics } from '@opentelemetry/sdk-metrics';
 import type { ReadableSpan } from '@opentelemetry/sdk-trace-base';
 
 /**
@@ -8,6 +15,9 @@ import type { ReadableSpan } from '@opentelemetry/sdk-trace-base';
 export interface TestTelemetry {
   /** The registered provider. */
   provider: BasicTracerProvider;
+
+  /** The registered meter provider. */
+  meterProvider: MeterProvider;
 
   /** The exporter holding the finished spans. */
   exporter: InMemorySpanExporter;
@@ -27,7 +37,14 @@ export interface TestTelemetry {
    */
   settle(): Promise<void>;
 
-  /** Unregisters the provider and releases its resources. */
+  /**
+   * Collects the registered instruments and returns what they reported.
+   *
+   * @returns The collected metrics, newest batch last
+   */
+  collect(): Promise<ResourceMetrics[]>;
+
+  /** Unregisters the providers and releases their resources. */
   shutdown(): Promise<void>;
 }
 
@@ -53,10 +70,21 @@ export function createTestTelemetry(): TestTelemetry {
   const exporter = new InMemorySpanExporter();
   const provider = new BasicTracerProvider({ spanProcessors: [new SimpleSpanProcessor(exporter)] });
 
+  const metricExporter = new InMemoryMetricExporter(AggregationTemporality.CUMULATIVE);
+  // A very long interval, because collection is driven explicitly by `collect()`
+  // rather than by a timer that would fire in the middle of an assertion.
+  const metricReader = new PeriodicExportingMetricReader({
+    exporter: metricExporter,
+    exportIntervalMillis: 2_147_483_647,
+  });
+  const meterProvider = new MeterProvider({ readers: [metricReader] });
+
   trace.setGlobalTracerProvider(provider);
+  metrics.setGlobalMeterProvider(meterProvider);
 
   return {
     provider,
+    meterProvider,
     exporter,
     spans: () => exporter.getFinishedSpans(),
     span: (name: string) => exporter.getFinishedSpans().find((span) => span.name === name),
@@ -67,9 +95,14 @@ export function createTestTelemetry(): TestTelemetry {
       await new Promise((resolve) => setImmediate(resolve));
       await provider.forceFlush();
     },
+    collect: async () => {
+      await metricReader.forceFlush();
+      return metricExporter.getMetrics();
+    },
     shutdown: async () => {
       trace.disable();
-      await provider.shutdown();
+      metrics.disable();
+      await Promise.all([provider.shutdown(), meterProvider.shutdown()]);
     },
   };
 }

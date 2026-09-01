@@ -7,6 +7,7 @@ import { Telemetry } from '../Common/Telemetry';
 import { VercubeContextManager } from '../Context/VercubeContextManager';
 import { CoreTelemetryHooks } from '../Hooks/CoreTelemetryHooks';
 import { installOtlpLogs, installTraceCorrelation } from '../Hooks/TraceCorrelation';
+import { installProcessMetrics } from '../Metrics/ProcessMetrics';
 import { OtelTelemetry } from '../Service/OtelTelemetry';
 import type { App, TelemetryTypes } from '@vercube/core';
 
@@ -73,6 +74,10 @@ export class TelemetryPlugin extends BasePlugin<TelemetryTypes.Options> {
     container.bindInstance(Telemetry, telemetry);
 
     container.get(TelemetryRegistry).install(new CoreTelemetryHooks(telemetry, resolved), resolved);
+
+    if (resolved.metrics !== false) {
+      installProcessMetrics(telemetry);
+    }
 
     // Every log line gets the ids of the span that was active when it was
     // written, which is what makes logs and traces line up in any backend.

@@ -7,6 +7,7 @@ export * from './Common/Telemetry';
 export * from './Context/VercubeContextManager';
 export * from './Hooks/CoreTelemetryHooks';
 export * from './Hooks/TraceCorrelation';
+export * from './Metrics/ProcessMetrics';
 export * from './Plugins/TelemetryPlugin';
 export * from './Service/OtelTelemetry';
 
