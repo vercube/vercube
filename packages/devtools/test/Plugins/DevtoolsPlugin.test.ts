@@ -9,13 +9,14 @@ import {
 } from '@vercube/core';
 import { afterEach, describe, expect, it } from 'vitest';
 import { DevtoolsPlugin } from '../../src/Plugins/DevtoolsPlugin';
-import { resetBootstrapProfiler } from '../../src/Services/BootstrapProfiler';
+import { resetDevtoolsTelemetry } from '../../src/Telemetry/DevtoolsTelemetry';
 import { createDevtoolsApp, devtoolsFetch, devtoolsJson } from '../Utils/App';
 import type { DevtoolsTypes } from '../../src/Types/DevtoolsTypes';
+import type { IntrospectionTypes } from '@vercube/core';
 
 describe('DevtoolsPlugin', () => {
-  afterEach(() => {
-    resetBootstrapProfiler();
+  afterEach(async () => {
+    await resetDevtoolsTelemetry();
   });
 
   it('should stay disabled outside of development mode', async () => {
@@ -75,7 +76,7 @@ describe('DevtoolsPlugin', () => {
     const app = await createDevtoolsApp({ path: '/__inspect' });
 
     expect((await devtoolsFetch(app, '/__inspect')).status).toBe(200);
-    expect((await devtoolsFetch(app, '/__inspect/api/routes')).status).toBe(200);
+    expect((await devtoolsFetch(app, '/__inspect/api/introspect/routes')).status).toBe(200);
     expect((await devtoolsFetch(app, '/_devtools')).status).toBe(404);
   });
 
@@ -88,14 +89,16 @@ describe('DevtoolsPlugin', () => {
   it('should reject unauthenticated calls when a token is configured', async () => {
     const app = await createDevtoolsApp({ token: 's3cret' });
 
-    expect((await devtoolsFetch(app, '/_devtools/api/routes')).status).toBe(401);
-    expect((await devtoolsFetch(app, '/_devtools/api/routes?token=nope')).status).toBe(401);
+    expect((await devtoolsFetch(app, '/_devtools/api/introspect/routes')).status).toBe(401);
+    expect((await devtoolsFetch(app, '/_devtools/api/introspect/routes?token=nope')).status).toBe(401);
 
     // The query parameter only bootstraps the UI page; on an API path it is ignored.
-    expect((await devtoolsFetch(app, '/_devtools/api/routes?token=s3cret')).status).toBe(401);
+    expect((await devtoolsFetch(app, '/_devtools/api/introspect/routes?token=s3cret')).status).toBe(401);
     expect((await devtoolsFetch(app, '/_devtools?token=s3cret')).status).toBe(200);
 
-    const withHeader = await devtoolsFetch(app, '/_devtools/api/routes', { headers: { 'x-devtools-token': 's3cret' } });
+    const withHeader = await devtoolsFetch(app, '/_devtools/api/introspect/routes', {
+      headers: { 'x-devtools-token': 's3cret' },
+    });
     expect(withHeader.status).toBe(200);
   });
 
@@ -107,17 +110,19 @@ describe('DevtoolsPlugin', () => {
 
   it('should register each endpoint as a real route rather than a catch-all', async () => {
     const app = await createDevtoolsApp();
-    const routes = await devtoolsJson<DevtoolsTypes.RouteInfo[]>(app, '/_devtools/api/routes');
-    const own = routes.filter((route) => route.internal);
+    const section = await devtoolsJson<{ data: IntrospectionTypes.RouteDescription[] }>(app, '/_devtools/api/introspect/routes');
+    const own = section.data.filter((route) => route.path.startsWith('/_devtools'));
 
+    expect(own.length).toBeGreaterThan(0);
     expect(own.every((route) => route.controller === 'DevtoolsController')).toBe(true);
     expect(own.some((route) => route.path.includes('**'))).toBe(false);
-    expect(own.map((route) => `${route.method} ${route.path}`)).toEqual(
+    expect(own.map((route) => route.id)).toEqual(
       expect.arrayContaining([
-        'GET / HEAD /_devtools/',
-        'GET / HEAD /_devtools/api/graph',
-        'GET / HEAD /_devtools/api/requests/:id',
-        'DELETE /_devtools/api/requests',
+        'GET /_devtools/',
+        'GET /_devtools/api/introspect',
+        'GET /_devtools/api/introspect/:id',
+        'GET /_devtools/api/signals/:kind',
+        'GET /_devtools/api/stream',
       ]),
     );
   });

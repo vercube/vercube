@@ -1,27 +1,29 @@
-import { BasePlugin, HttpServer, initializeMetadata } from '@vercube/core';
+import { BasePlugin, initializeMetadata, IntrospectionRegistry, skipGlobalMiddlewares } from '@vercube/core';
 import { Logger } from '@vercube/logger';
+import { TelemetryPlugin } from '@vercube/telemetry';
 import { defu } from 'defu';
 import { DEFAULT_DEVTOOLS_OPTIONS } from '../Constants/DevtoolsDefaults';
 import { DevtoolsController } from '../Controllers/DevtoolsController';
 import { AuditService } from '../Services/AuditService';
-import { installBootstrapProfiler } from '../Services/BootstrapProfiler';
-import { ConfigCollector } from '../Services/ConfigCollector';
-import { DevtoolsEventBus } from '../Services/DevtoolsEventBus';
-import { GraphCollector } from '../Services/GraphCollector';
-import { LogCollector } from '../Services/LogCollector';
+import { DevtoolsFrameBus } from '../Services/DevtoolsFrameBus';
 import { OverviewCollector } from '../Services/OverviewCollector';
-import { ProcessSampler } from '../Services/ProcessSampler';
-import { RequestRecorder } from '../Services/RequestRecorder';
-import { RouteCollector } from '../Services/RouteCollector';
-import { StorageCollector } from '../Services/StorageCollector';
+import { StorageIntrospection } from '../Services/StorageIntrospection';
 import { $DevtoolsAppConfig, $DevtoolsOptions } from '../Symbols/DevtoolsSymbols';
+import { DevtoolsTelemetry, ensureDevtoolsTelemetry, hasDevtoolsTelemetry } from '../Telemetry/DevtoolsTelemetry';
 import type { DevtoolsTypes } from '../Types/DevtoolsTypes';
 import type { App, ConfigTypes } from '@vercube/core';
 
 /**
- * Self-hosted developer tools for Vercube.
- * Mounts an inspector at `/_devtools`. Register in `vercube.config.ts` so the
- * bootstrap profiler installs before the container is built.
+ * Self-hosted developer tools for Vercube, mounted at `/_devtools`.
+ *
+ * Devtools does not collect anything of its own. It registers an OpenTelemetry
+ * span processor, a metric reader and a log drain, reads structural data from
+ * core's introspection registry, and renders what arrives. Instrumenting a
+ * package therefore makes it visible here without devtools knowing about it.
+ *
+ * Register it in `vercube.config.ts` rather than through `app.addPlugin()`:
+ * the config phase is the only one early enough to see the container being
+ * built, and to register a meter provider before any instrument is created.
  *
  * @example
  * ```ts
@@ -41,9 +43,14 @@ export class DevtoolsPlugin extends BasePlugin<DevtoolsTypes.Options> {
   public override name: string = 'DevtoolsPlugin';
 
   /**
-   * Config phase. Installs the bootstrap profiler before the container exists.
-   * @param config merged application config
-   * @param options plugin options
+   * Config phase: registers the metric reader and starts recording spans.
+   *
+   * The metric reader has to be in place before anything creates an instrument,
+   * because the OpenTelemetry metrics API has no proxy meter and instruments
+   * made before a provider exists stay no-ops forever.
+   *
+   * @param config - Merged application config
+   * @param options - Plugin options
    * @override
    */
   public override configure(config: ConfigTypes.Config, options?: DevtoolsTypes.Options): void {
@@ -51,16 +58,17 @@ export class DevtoolsPlugin extends BasePlugin<DevtoolsTypes.Options> {
       return;
     }
 
-    installBootstrapProfiler();
+    ensureDevtoolsTelemetry(this.resolveOptions(config, options)).installMetrics();
   }
 
   /**
-   * Runtime phase. Binds the devtools services and mounts their routes.
-   * @param app running application
-   * @param options plugin options
+   * Runtime phase: binds the devtools services and mounts their routes.
+   *
+   * @param app - Running application
+   * @param options - Plugin options
    * @override
    */
-  public override use(app: App, options?: DevtoolsTypes.Options): void {
+  public override async use(app: App, options?: DevtoolsTypes.Options): Promise<void> {
     const config = app.config;
 
     if (!this.isEnabled(config, options)) {
@@ -68,50 +76,68 @@ export class DevtoolsPlugin extends BasePlugin<DevtoolsTypes.Options> {
     }
 
     const resolved = this.resolveOptions(config, options);
+    const logger = app.container.getOptional(Logger);
 
-    // The inspector exposes traffic, logs and resolved config. Outside development
-    // it only mounts behind an explicit token.
+    // The inspector exposes traffic, logs and resolved config. Outside
+    // development it only mounts behind an explicit token.
     if (config.production === true && !resolved.token) {
-      app.container
-        .get(Logger)
-        .error(
-          '[DevtoolsPlugin] Not mounting: devtools in production require an access token. Set `token` in the plugin options.',
-        );
+      logger?.error(
+        '[DevtoolsPlugin] Not mounting: devtools in production require an access token. Set `token` in the plugin options.',
+      );
 
       return;
     }
 
-    installBootstrapProfiler();
+    // Devtools is useless without spans, so it turns telemetry on rather than
+    // asking the application to remember to.
+    await new TelemetryPlugin().use(app, {
+      enabled: true,
+      spans: { bodies: resolved.captureBodies ? { maxBytes: resolved.maxBodyBytes } : false },
+    });
+
+    // Registered through `app.addPlugin()` rather than the config, so the
+    // config phase never ran. Traces and logs still work; metrics only do when
+    // nothing has created an instrument yet.
+    const fresh = !hasDevtoolsTelemetry();
+    const telemetry = ensureDevtoolsTelemetry(resolved);
+
+    if (fresh && !telemetry.installMetrics()) {
+      logger?.warn(
+        '[DevtoolsPlugin]',
+        'Metrics are unavailable because a meter provider already exists. Register DevtoolsPlugin in vercube.config.ts to see them.',
+      );
+    }
+
+    telemetry.install(logger);
 
     app.container.bindInstance($DevtoolsOptions, resolved);
     app.container.bindInstance($DevtoolsAppConfig, config);
-    app.container.bind(DevtoolsEventBus);
-    app.container.bind(GraphCollector);
-    app.container.bind(RouteCollector);
-    app.container.bind(RequestRecorder);
+    app.container.bindInstance(DevtoolsFrameBus, telemetry.bus);
+    app.container.bindInstance(DevtoolsTelemetry, telemetry);
     app.container.bind(AuditService);
     app.container.bind(OverviewCollector);
-    app.container.bind(LogCollector);
-    app.container.bind(ConfigCollector);
-    app.container.bind(StorageCollector);
-    app.container.bind(ProcessSampler);
+    app.container.bind(StorageIntrospection);
 
-    // Rewrite the controller base path before decorators read it.
+    app.container.get(IntrospectionRegistry).register(app.container.get(StorageIntrospection));
+
+    // Both have to happen before the decorators read the metadata: the mount
+    // path is baked in at class-definition time, and the middleware chain is
+    // assembled once when the routes are registered.
     initializeMetadata(DevtoolsController.prototype).__controller.path = resolved.path;
+    skipGlobalMiddlewares(DevtoolsController.prototype);
     app.container.bind(DevtoolsController);
 
     app.container.get(OverviewCollector).setMode(config.dev ?? false, config.production ?? false);
-
-    app.container.get(RequestRecorder).attach(app.container.get(HttpServer));
-    app.container.get(LogCollector).attach(app.container.get(Logger));
   }
 
   /**
    * Decides whether devtools should run.
+   *
    * Defaults to development only; production requires an explicit opt-in.
-   * @param config application config
-   * @param options plugin options
-   * @returns true when devtools should be active
+   *
+   * @param config - Application config
+   * @param options - Plugin options
+   * @returns True when devtools should be active
    */
   private isEnabled(config: ConfigTypes.Config, options?: DevtoolsTypes.Options): boolean {
     if (typeof options?.enabled === 'boolean') {
@@ -123,9 +149,10 @@ export class DevtoolsPlugin extends BasePlugin<DevtoolsTypes.Options> {
 
   /**
    * Merges user options with the defaults.
-   * @param config application config
-   * @param options plugin options
-   * @returns fully resolved options
+   *
+   * @param config - Application config
+   * @param options - Plugin options
+   * @returns Fully resolved options
    */
   private resolveOptions(config: ConfigTypes.Config, options?: DevtoolsTypes.Options): DevtoolsTypes.ResolvedOptions {
     const merged = defu(options ?? {}, DEFAULT_DEVTOOLS_OPTIONS) as DevtoolsTypes.ResolvedOptions;

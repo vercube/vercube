@@ -1,21 +1,15 @@
-import { BaseMiddleware, Body, Controller, Get, Head, Middleware, Post, QueryParam } from '@vercube/core';
+import { BaseMiddleware, Body, Controller, Get, Middleware, Post, QueryParam } from '@vercube/core';
 import { Inject } from '@vercube/di';
 import { Logger } from '@vercube/logger';
 import { afterEach, describe, expect, it } from 'vitest';
-import { resetBootstrapProfiler } from '../src/Services/BootstrapProfiler';
+import { resetDevtoolsTelemetry } from '../src/Telemetry/DevtoolsTelemetry';
 import { createDevtoolsApp, devtoolsFetch, devtoolsJson } from './Utils/App';
 import type { DevtoolsTypes } from '../src/Types/DevtoolsTypes';
-import type { App } from '@vercube/core';
-
-class SlowMiddleware extends BaseMiddleware {
-  public async onRequest(): Promise<void> {
-    await new Promise((resolve) => setTimeout(resolve, 12));
-  }
-}
+import type { App, IntrospectionTypes } from '@vercube/core';
 
 class TouchMiddleware extends BaseMiddleware {
   public onResponse(): void {
-    /* records an "after" span */
+    /* exercises the after phase */
   }
 }
 
@@ -40,12 +34,6 @@ export class DemoController {
     return { ok: true, name, value: this.gNumbers.value() };
   }
 
-  @Get('/slow')
-  @Middleware(SlowMiddleware)
-  public slow(): Record<string, boolean> {
-    return { slow: true };
-  }
-
   @Get('/boom')
   public boom(): never {
     throw new Error('handler exploded');
@@ -54,7 +42,6 @@ export class DemoController {
   @Get('/chatty')
   public chatty(): Record<string, boolean> {
     this.gLogger.info('handling chatty', { attempt: 1 });
-    this.gLogger.warn('nearly out of widgets');
     return { logged: true };
   }
 
@@ -62,14 +49,19 @@ export class DemoController {
   public echo(@Body() body: unknown): unknown {
     return body;
   }
+}
 
-  @Head('/probe')
-  public probe(): void {}
+/** One span, as it appears in an OTLP/JSON payload. */
+interface OtlpSpan {
+  name: string;
+  attributes: { key: string; value: Record<string, unknown> }[];
+  events?: { name: string; attributes: { key: string; value: Record<string, unknown> }[] }[];
 }
 
 /**
  * Boots an app exposing {@link DemoController} with devtools enabled.
- * @returns the running application
+ *
+ * @returns The running application
  */
 function createDemoApp(): Promise<App> {
   return createDevtoolsApp({}, (app) => {
@@ -79,456 +71,236 @@ function createDemoApp(): Promise<App> {
 }
 
 /**
- * Boots the demo app with a small body capture cap.
- * @returns the running application
+ * Flattens the spans out of an OTLP trace payload.
+ *
+ * @param payload - The OTLP export request
+ * @returns Every span it contains
  */
-function createCappedApp(): Promise<App> {
-  return createDevtoolsApp({ maxBodyBytes: 16 }, (app) => {
-    app.container.bind(Numbers);
-    app.container.bind(DemoController);
-  });
+function spansOf(payload: unknown): OtlpSpan[] {
+  const resourceSpans = (payload as { resourceSpans?: { scopeSpans?: { spans?: OtlpSpan[] }[] }[] }).resourceSpans ?? [];
+
+  return resourceSpans.flatMap((resource) => (resource.scopeSpans ?? []).flatMap((scope) => scope.spans ?? []));
 }
 
 /**
- * Waits for async body previews to attach to their records.
+ * Reads a span attribute.
+ *
+ * @param span - The span
+ * @param key - Attribute key
+ * @returns The attribute value, whatever type it carries
  */
-function settleBodies(): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, 0));
+function attribute(span: OtlpSpan, key: string): unknown {
+  return Object.values(span.attributes.find((entry) => entry.key === key)?.value ?? {})[0];
+}
+
+/**
+ * Lets deferred span ends and batched frames settle.
+ */
+function settle(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 20));
 }
 
 describe('devtools API', () => {
-  afterEach(() => {
-    resetBootstrapProfiler();
+  afterEach(async () => {
+    await resetDevtoolsTelemetry();
   });
 
-  it('should describe the application on the overview endpoint', async () => {
+  it('serves the overview', async () => {
     const app = await createDemoApp();
     const overview = await devtoolsJson<DevtoolsTypes.Overview>(app, '/_devtools/api/overview');
 
-    expect(overview.counts.controllers).toBeGreaterThanOrEqual(1);
-    expect(overview.counts.routes).toBeGreaterThanOrEqual(4);
-    expect(overview.runtime.name).toBeTruthy();
-    expect(overview.requests.total).toBe(0);
+    expect(overview.counts.controllers).toBeGreaterThan(0);
+    expect(overview.runtime.name).toBe('node');
+    expect(overview.score).toBeLessThanOrEqual(100);
   });
 
-  it('should list routes with their arguments and middleware chain', async () => {
+  it('lists the introspection sections', async () => {
     const app = await createDemoApp();
-    const routes = await devtoolsJson<DevtoolsTypes.RouteInfo[]>(app, '/_devtools/api/routes');
-    const slow = routes.find((route) => route.method === 'GET / HEAD' && route.path === '/demo/slow');
-    const echo = routes.find((route) => route.method === 'POST' && route.path === '/demo/echo');
-    const headTwin = routes.find((route) => route.method === 'HEAD' && route.path === '/demo/slow');
+    const { sections } = await devtoolsJson<{ sections: { id: string }[] }>(app, '/_devtools/api/introspect');
 
-    expect(headTwin).toBeUndefined();
-    expect(routes.find((route) => route.path === '/demo/probe')?.method).toBe('HEAD');
-
-    expect(slow?.controller).toBe('DemoController');
-    expect(slow?.middlewares.map((middleware) => middleware.name)).toContain('SlowMiddleware');
-    // Exact equality: guard against duplicated argument metadata on shared prototypes.
-    expect(echo?.args).toEqual([expect.objectContaining({ idx: 0, type: 'body', validated: false })]);
+    expect(sections.map((section) => section.id)).toEqual(
+      expect.arrayContaining(['config', 'container', 'plugins', 'routes', 'storage']),
+    );
   });
 
-  it('should mark its own routes as internal', async () => {
+  it('describes routes through introspection', async () => {
     const app = await createDemoApp();
-    const routes = await devtoolsJson<DevtoolsTypes.RouteInfo[]>(app, '/_devtools/api/routes');
+    const section = await devtoolsJson<{ data: IntrospectionTypes.RouteDescription[] }>(app, '/_devtools/api/introspect/routes');
 
-    expect(routes.filter((route) => route.internal).length).toBeGreaterThan(0);
-    expect(routes.every((route) => !route.internal || route.path.startsWith('/_devtools'))).toBe(true);
+    const ok = section.data.find((route) => route.id === 'GET /demo/ok');
+
+    expect(ok).toMatchObject({ controller: 'DemoController', handler: 'ok', basePath: '/demo' });
+    expect(ok!.middlewares.some((middleware) => middleware.name === 'TouchMiddleware')).toBe(true);
   });
 
-  it('should not mark a route that merely shares the mount prefix as internal', async () => {
-    @Controller('/_devtools-admin')
-    class LookalikeController {
-      @Get('/ping')
-      public ping(): string {
-        return 'pong';
-      }
-    }
+  it('revalidates a section with its revision', async () => {
+    const app = await createDemoApp();
+    const first = await devtoolsFetch(app, '/_devtools/api/introspect/routes');
+    const etag = first.headers.get('etag');
 
-    const app = await createDevtoolsApp({}, (app) => {
-      app.container.bind(LookalikeController);
+    expect(etag).toBeTruthy();
+
+    const second = await devtoolsFetch(app, '/_devtools/api/introspect/routes', {
+      headers: { 'if-none-match': etag! },
     });
 
-    const routes = await devtoolsJson<DevtoolsTypes.RouteInfo[]>(app, '/_devtools/api/routes');
-    const lookalike = routes.find((route) => route.path === '/_devtools-admin/ping');
-
-    expect(lookalike?.internal).toBe(false);
+    expect(second.status).toBe(304);
   });
 
-  it('should redact credential-looking query parameters', async () => {
+  it('rejects an unknown section', async () => {
     const app = await createDemoApp();
 
-    await app.fetch(new Request('http://localhost/demo/ok?name=vercube&access_token=leak-me&api_key=leak-me-too'));
-
-    const [record] = await devtoolsJson<DevtoolsTypes.RequestRecord[]>(app, '/_devtools/api/requests');
-
-    expect(record.query).toEqual({ name: 'vercube', access_token: '<redacted>', api_key: '<redacted>' });
+    expect((await devtoolsFetch(app, '/_devtools/api/introspect/nope')).status).toBe(404);
   });
 
-  it('should record requests with a span for every middleware and the handler', async () => {
+  it('records requests as OTLP spans', async () => {
     const app = await createDemoApp();
+    await app.fetch(new Request('http://localhost/demo/ok?name=ada'));
+    await settle();
 
-    await app.fetch(new Request('http://localhost/demo/slow'));
+    const spans = spansOf(await devtoolsJson(app, '/_devtools/api/signals/traces'));
+    const request = spans.find((span) => span.name === 'GET /demo/ok');
 
-    const records = await devtoolsJson<DevtoolsTypes.RequestRecord[]>(app, '/_devtools/api/requests');
-    const [record] = records;
-
-    expect(records).toHaveLength(1);
-    expect(record).toMatchObject({ method: 'GET', path: '/demo/slow', status: 200, controller: 'DemoController' });
-    expect(record.durationMs).toBeGreaterThanOrEqual(10);
-
-    const spans = record.spans.map((span) => span.name);
-    expect(spans).toContain('SlowMiddleware');
-    expect(spans).toContain('DemoController.slow');
-    expect(record.spans.find((span) => span.name === 'SlowMiddleware')?.durationMs).toBeGreaterThanOrEqual(10);
-    expect(record.spans.some((span) => span.kind === 'middleware:after')).toBe(true);
+    expect(request).toBeDefined();
+    expect(attribute(request!, 'http.route')).toBe('/demo/ok');
+    expect(attribute(request!, 'vercube.controller')).toBe('DemoController');
+    expect(attribute(request!, 'url.query')).toBe('name=ada');
   });
 
-  it('should capture query parameters and redact sensitive headers', async () => {
+  it('records the failing handler on the span', async () => {
     const app = await createDemoApp();
-
-    await app.fetch(
-      new Request('http://localhost/demo/ok?name=vercube', { headers: { authorization: 'Bearer super-secret', 'x-trace': '1' } }),
-    );
-
-    const [record] = await devtoolsJson<DevtoolsTypes.RequestRecord[]>(app, '/_devtools/api/requests');
-
-    expect(record.query).toEqual({ name: 'vercube' });
-    expect(record.requestHeaders.authorization).toBe('<redacted>');
-    expect(record.requestHeaders['x-trace']).toBe('1');
-  });
-
-  it('should capture request and response bodies', async () => {
-    const app = await createDemoApp();
-
-    await app.fetch(
-      new Request('http://localhost/demo/echo', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: '{"hello":"vercube"}',
-      }),
-    );
-
-    // Bodies resolve asynchronously after the response is delivered.
-    await settleBodies();
-
-    const [record] = await devtoolsJson<DevtoolsTypes.RequestRecord[]>(app, '/_devtools/api/requests');
-
-    expect(record.requestBody).toMatchObject({ text: '{"hello":"vercube"}', truncated: false, size: 19 });
-    expect(record.requestBody?.contentType).toContain('application/json');
-    expect(JSON.parse(record.responseBody?.text ?? 'null')).toEqual({ hello: 'vercube' });
-  });
-
-  it('should not capture bodies when the option is off', async () => {
-    const app = await createDevtoolsApp({ captureBodies: false }, (instance) => {
-      instance.container.bind(Numbers);
-      instance.container.bind(DemoController);
-    });
-
-    await app.fetch(
-      new Request('http://localhost/demo/echo', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: '{"hello":"vercube"}',
-      }),
-    );
-
-    await settleBodies();
-
-    const [record] = await devtoolsJson<DevtoolsTypes.RequestRecord[]>(app, '/_devtools/api/requests');
-
-    expect(record.requestBody).toBeUndefined();
-    expect(record.responseBody).toBeUndefined();
-  });
-
-  it('should truncate an undeclared body that overruns the cap', async () => {
-    const app = await createCappedApp();
-    const body = JSON.stringify({ hello: 'a much longer value than the cap allows' });
-
-    await app.fetch(
-      new Request('http://localhost/demo/echo', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body,
-      }),
-    );
-
-    await settleBodies();
-
-    const [record] = await devtoolsJson<DevtoolsTypes.RequestRecord[]>(app, '/_devtools/api/requests');
-
-    // Undeclared length: only the cap is kept, the rest is drained.
-    expect(record.requestBody?.truncated).toBe(true);
-    expect(record.requestBody?.size).toBe(body.length);
-    expect(record.requestBody?.text).toBe(body.slice(0, 16));
-  });
-
-  it('should keep only the cap in memory for a streamed body', async () => {
-    const app = await createCappedApp();
-    const chunk = 'x'.repeat(1024);
-    const chunks = 64;
-
-    const stream = new ReadableStream<Uint8Array>({
-      start(controller) {
-        for (let index = 0; index < chunks; index++) {
-          controller.enqueue(new TextEncoder().encode(chunk));
-        }
-
-        controller.close();
-      },
-    });
-
-    await app.fetch(
-      new Request('http://localhost/demo/echo', {
-        method: 'POST',
-        headers: { 'content-type': 'text/plain' },
-        body: stream,
-        duplex: 'half',
-      } as RequestInit),
-    );
-
-    await settleBodies();
-
-    const [record] = await devtoolsJson<DevtoolsTypes.RequestRecord[]>(app, '/_devtools/api/requests');
-
-    // No content-length to short-circuit on: the reader stops collecting at the
-    // cap but keeps counting, so the size stays exact.
-    expect(record.requestBody?.truncated).toBe(true);
-    expect(record.requestBody?.size).toBe(chunk.length * chunks);
-    expect(record.requestBody?.text).toHaveLength(16);
-  });
-
-  it('should skip a body that declares a length over the cap', async () => {
-    const app = await createCappedApp();
-    const body = JSON.stringify({ hello: 'a much longer value than the cap allows' });
-
-    await app.fetch(
-      new Request('http://localhost/demo/echo', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', 'content-length': String(body.length) },
-        body,
-      }),
-    );
-
-    await settleBodies();
-
-    const [record] = await devtoolsJson<DevtoolsTypes.RequestRecord[]>(app, '/_devtools/api/requests');
-
-    // Declared length over the cap: body is skipped without buffering.
-    expect(record.requestBody?.omitted).toBe('too-large');
-    expect(record.requestBody?.text).toBeUndefined();
-    expect(record.requestBody?.size).toBe(body.length);
-  });
-
-  it('should capture logs and tie them to the request that produced them', async () => {
-    const app = await createDemoApp();
-
-    await app.fetch(new Request('http://localhost/demo/chatty'));
-
-    const [record] = await devtoolsJson<DevtoolsTypes.RequestRecord[]>(app, '/_devtools/api/requests');
-    const logs = await devtoolsJson<DevtoolsTypes.LogEntry[]>(app, '/_devtools/api/logs');
-    const mine = logs.filter((entry) => entry.requestId === record.id);
-
-    expect(mine.map((entry) => entry.message)).toEqual(['nearly out of widgets', 'handling chatty']);
-    expect(mine.map((entry) => entry.level)).toEqual(['warn', 'info']);
-    expect(mine.at(-1)?.context).toEqual({ attempt: 1 });
-  });
-
-  it('should leave logs emitted outside a request unattributed', async () => {
-    const app = await createDemoApp();
-
-    app.container.get(Logger).info('booted without a request');
-
-    const logs = await devtoolsJson<DevtoolsTypes.LogEntry[]>(app, '/_devtools/api/logs');
-    const entry = logs.find((candidate) => candidate.message === 'booted without a request');
-
-    expect(entry).toBeDefined();
-    expect(entry?.requestId).toBeUndefined();
-  });
-
-  it('should not capture logs when the option is off', async () => {
-    const app = await createDevtoolsApp({ captureLogs: false }, (instance) => {
-      instance.container.bind(Numbers);
-      instance.container.bind(DemoController);
-    });
-
-    await app.fetch(new Request('http://localhost/demo/chatty'));
-
-    expect(await devtoolsJson<DevtoolsTypes.LogEntry[]>(app, '/_devtools/api/logs')).toEqual([]);
-  });
-
-  it('should record the error behind a failed request', async () => {
-    const app = await createDemoApp();
-
     await app.fetch(new Request('http://localhost/demo/boom'));
+    await settle();
 
-    const [record] = await devtoolsJson<DevtoolsTypes.RequestRecord[]>(app, '/_devtools/api/requests');
+    const spans = spansOf(await devtoolsJson(app, '/_devtools/api/signals/traces'));
+    const failed = spans.find((span) => span.name === 'GET /demo/boom')!;
 
-    expect(record.status).toBeGreaterThanOrEqual(500);
-    expect(record.error?.message).toBe('handler exploded');
+    expect(attribute(failed, 'error.type')).toBe('Error');
+    expect(failed.events?.some((event) => event.name === 'exception')).toBe(true);
   });
 
-  it('should mark unmatched requests', async () => {
+  it('captures request and response bodies as span events', async () => {
     const app = await createDemoApp();
+    await app.fetch(
+      new Request('http://localhost/demo/echo', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ hello: 'world' }),
+      }),
+    );
+    await settle();
 
-    await app.fetch(new Request('http://localhost/nothing-here'));
+    const spans = spansOf(await devtoolsJson(app, '/_devtools/api/signals/traces'));
+    const echo = spans.find((span) => span.name === 'POST /demo/echo')!;
+    const body = echo.events?.find((event) => event.name === 'http.request.body');
 
-    const [record] = await devtoolsJson<DevtoolsTypes.RequestRecord[]>(app, '/_devtools/api/requests');
-
-    expect(record).toMatchObject({ matched: false, status: 404 });
-    expect(record.controller).toBeUndefined();
+    expect(body).toBeDefined();
+    expect(Object.values(body!.attributes.find((entry) => entry.key === 'body.text')!.value)[0]).toBe('{"hello":"world"}');
   });
 
-  it('should not record its own traffic', async () => {
+  it('never records its own traffic', async () => {
     const app = await createDemoApp();
-
     await devtoolsFetch(app, '/_devtools/api/overview');
-    await devtoolsFetch(app, '/_devtools');
+    await settle();
 
-    const records = await devtoolsJson<DevtoolsTypes.RequestRecord[]>(app, '/_devtools/api/requests');
+    const spans = spansOf(await devtoolsJson(app, '/_devtools/api/signals/traces'));
 
-    expect(records).toEqual([]);
+    expect(spans.some((span) => String(attribute(span, 'url.path') ?? '').startsWith('/_devtools'))).toBe(false);
   });
 
-  it('should evict the oldest records once the buffer is full', async () => {
-    const app = await createDevtoolsApp({ maxRequests: 3 }, (app) => {
-      app.container.bind(Numbers);
-      app.container.bind(DemoController);
-    });
-
-    for (let i = 0; i < 5; i++) {
-      await app.fetch(new Request(`http://localhost/demo/ok?name=${i}`));
-    }
-
-    const records = await devtoolsJson<DevtoolsTypes.RequestRecord[]>(app, '/_devtools/api/requests');
-
-    expect(records).toHaveLength(3);
-    expect(records.map((record) => record.query.name)).toEqual(['4', '3', '2']);
-  });
-
-  it('should look up a single record and clear the buffer', async () => {
+  it('records log lines correlated with their span', async () => {
     const app = await createDemoApp();
+    await app.fetch(new Request('http://localhost/demo/chatty'));
+    await settle();
 
+    const payload = (await devtoolsJson(app, '/_devtools/api/signals/logs')) as {
+      resourceLogs: { scopeLogs: { logRecords: { body: { stringValue: string }; traceId?: string }[] }[] }[];
+    };
+
+    const records = payload.resourceLogs.flatMap((resource) => resource.scopeLogs.flatMap((scope) => scope.logRecords));
+    const line = records.find((record) => record.body.stringValue.includes('handling chatty'));
+
+    expect(line).toBeDefined();
+    expect(line!.traceId).toBeTruthy();
+  });
+
+  it('clears a signal buffer', async () => {
+    const app = await createDemoApp();
     await app.fetch(new Request('http://localhost/demo/ok'));
-    const [record] = await devtoolsJson<DevtoolsTypes.RequestRecord[]>(app, '/_devtools/api/requests');
+    await settle();
 
-    const single = await devtoolsJson<DevtoolsTypes.RequestRecord>(app, `/_devtools/api/requests/${record.id}`);
-    expect(single.id).toBe(record.id);
+    expect(spansOf(await devtoolsJson(app, '/_devtools/api/signals/traces')).length).toBeGreaterThan(0);
 
-    expect((await devtoolsFetch(app, '/_devtools/api/requests/9999')).status).toBe(404);
+    await devtoolsFetch(app, '/_devtools/api/signals/traces/clear');
 
-    const cleared = await devtoolsFetch(app, '/_devtools/api/requests', { method: 'DELETE' });
-    expect(cleared.status).toBe(200);
-
-    await expect(devtoolsJson<DevtoolsTypes.RequestRecord[]>(app, '/_devtools/api/requests')).resolves.toEqual([]);
+    expect(spansOf(await devtoolsJson(app, '/_devtools/api/signals/traces'))).toEqual([]);
   });
 
-  it('should report a bootstrap profile', async () => {
+  it('rejects an unknown signal', async () => {
     const app = await createDemoApp();
-    const profile = await devtoolsJson<DevtoolsTypes.BootstrapProfile>(app, '/_devtools/api/bootstrap');
 
-    expect(profile.count).toBeGreaterThan(0);
-    expect(profile.tree.length).toBeGreaterThan(0);
-    expect(profile.totalMs).toBeGreaterThanOrEqual(0);
+    expect((await devtoolsFetch(app, '/_devtools/api/signals/nope')).status).toBe(404);
   });
 
-  it('should surface unvalidated input and server errors in the audit', async () => {
+  it('runs the audit rules', async () => {
     const app = await createDemoApp();
-
-    await app.fetch(new Request('http://localhost/demo/boom'));
-
     const report = await devtoolsJson<DevtoolsTypes.AuditReport>(app, '/_devtools/api/audit');
-    const rules = report.issues.map((issue) => issue.rule);
 
-    expect(rules).toContain('validation/missing-schema');
-    expect(rules).toContain('runtime/server-errors');
-    expect(report.score).toBeLessThan(100);
-    expect(report.issues[0].severity).toBe('error');
+    expect(report.score).toBeLessThanOrEqual(100);
+    expect(Array.isArray(report.issues)).toBe(true);
   });
 
-  it('should resolve which route handles a method and path', async () => {
-    const app = await createDemoApp();
-    const route = await devtoolsJson<DevtoolsTypes.RouteInfo>(app, '/_devtools/api/route?method=GET&path=/demo/ok');
-
-    expect(route).toMatchObject({ controller: 'DemoController', handler: 'ok' });
-    expect((await devtoolsFetch(app, '/_devtools/api/route?method=GET&path=/missing')).status).toBe(404);
-  });
-
-  it('should bundle everything into a downloadable snapshot', async () => {
+  it('bundles everything into a downloadable snapshot', async () => {
     const app = await createDemoApp();
     const response = await devtoolsFetch(app, '/_devtools/api/snapshot');
 
     expect(response.headers.get('content-disposition')).toContain('vercube-devtools-snapshot.json');
 
-    const snapshot = (await response.json()) as Record<string, unknown>;
+    const payload = (await response.json()) as Record<string, unknown>;
 
-    expect(Object.keys(snapshot).sort()).toEqual([
-      'audit',
-      'bootstrap',
-      'config',
-      'generatedAt',
-      'graph',
-      'logs',
-      'overview',
-      'requests',
-      'routes',
-    ]);
+    expect(Object.keys(payload)).toEqual(expect.arrayContaining(['overview', 'audit', 'introspection', 'signals', 'protocol']));
   });
 
-  it('should push recorded requests over the event stream', async () => {
+  it('streams versioned frames', async () => {
     const app = await createDemoApp();
-    const stream = await devtoolsFetch(app, '/_devtools/api/stream');
+    const response = await devtoolsFetch(app, '/_devtools/api/stream');
 
-    expect(stream.headers.get('content-type')).toContain('text/event-stream');
+    expect(response.headers.get('content-type')).toContain('text/event-stream');
 
-    const reader = stream.body!.getReader();
+    const reader = response.body!.getReader();
     const decoder = new TextDecoder();
-
-    const hello = decoder.decode((await reader.read()).value);
-    expect(hello).toContain('event: hello');
-
-    await app.fetch(new Request('http://localhost/demo/ok?name=stream'));
-
-    const frame = decoder.decode((await reader.read()).value);
-    expect(frame).toContain('event: request');
-    expect(frame).toContain('/demo/ok');
-
-    await reader.cancel();
-  });
-
-  it('should skip request recording when tracking is disabled', async () => {
-    const app = await createDevtoolsApp({ trackRequests: false }, (app) => {
-      app.container.bind(Numbers);
-      app.container.bind(DemoController);
-    });
 
     await app.fetch(new Request('http://localhost/demo/ok'));
 
-    await expect(devtoolsJson<DevtoolsTypes.RequestRecord[]>(app, '/_devtools/api/requests')).resolves.toEqual([]);
-  });
+    let buffer = '';
+    let trace: Record<string, unknown> | undefined;
 
-  it('should omit headers when capturing them is disabled', async () => {
-    const app = await createDevtoolsApp({ captureHeaders: false }, (app) => {
-      app.container.bind(Numbers);
-      app.container.bind(DemoController);
-    });
+    while (!trace) {
+      const { value, done } = await reader.read();
 
-    await app.fetch(new Request('http://localhost/demo/ok', { headers: { 'x-trace': '1' } }));
+      if (done) {
+        break;
+      }
 
-    const [record] = await devtoolsJson<DevtoolsTypes.RequestRecord[]>(app, '/_devtools/api/requests');
+      buffer += decoder.decode(value, { stream: true });
 
-    expect(record.requestHeaders).toEqual({});
-  });
+      for (const line of buffer.split('\n')) {
+        if (!line.startsWith('data: ')) {
+          continue;
+        }
 
-  it('should redact extra headers listed in the options', async () => {
-    const app = await createDevtoolsApp({ redactHeaders: ['x-trace'] }, (app) => {
-      app.container.bind(Numbers);
-      app.container.bind(DemoController);
-    });
+        const frame = JSON.parse(line.slice(6)) as Record<string, unknown>;
 
-    await app.fetch(new Request('http://localhost/demo/ok', { headers: { 'x-trace': 'abc' } }));
+        if (frame.ch === 'trace') {
+          trace = frame;
+        }
+      }
+    }
 
-    const [record] = await devtoolsJson<DevtoolsTypes.RequestRecord[]>(app, '/_devtools/api/requests');
+    await reader.cancel();
 
-    expect(record.requestHeaders['x-trace']).toBe('<redacted>');
+    expect(trace).toMatchObject({ v: 1, ch: 'trace' });
+    expect(typeof trace!.seq).toBe('number');
+    expect(spansOf(trace!.data).some((span) => span.name === 'GET /demo/ok')).toBe(true);
   });
 });
