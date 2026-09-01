@@ -23,6 +23,16 @@ export namespace LoggerTypes {
   export type Context = Record<string, unknown>;
 
   /**
+   * Supplies context computed at emit time.
+   *
+   * Unlike {@link Logger.set}, which stores a fixed object, a provider is
+   * called for every event. That is what lets ambient state - the active trace
+   * and span, for instance - reach log lines without every call site passing it
+   * along. Returning `undefined` contributes nothing.
+   */
+  export type ContextProvider = () => Context | undefined;
+
+  /**
    * Logger configuration.
    *
    * Mirrors evlog's {@link LoggerConfig} and adds `logLevel` as a framework-level

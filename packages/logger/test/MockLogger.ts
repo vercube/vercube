@@ -1,10 +1,29 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Logger } from '../src/Common/Logger';
 import type { LoggerTypes } from '../src/Types/LoggerTypes';
+import type { EvlogPlugin } from 'evlog';
 
 export class MockLogger extends Logger {
   public configure(options: LoggerTypes.Options): void {
     // Mock implementation
+  }
+
+  public addPlugin(plugin: EvlogPlugin): void {
+    // Mock implementation
+  }
+
+  public addDrain(name: string, drain: NonNullable<EvlogPlugin['drain']>): void {
+    // Mock implementation
+  }
+
+  public addEnricher(name: string, enrich: NonNullable<EvlogPlugin['enrich']>): void {
+    // Mock implementation
+  }
+
+  public addContextProvider(provider: LoggerTypes.ContextProvider): () => void {
+    return () => {
+      // Mock implementation
+    };
   }
 
   public debug(...args: LoggerTypes.Arg[]): void {

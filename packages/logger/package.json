@@ -24,6 +24,11 @@
       "import": "./dist/Toolkit.mjs",
       "default": "./dist/Toolkit.mjs"
     },
+    "./otlp": {
+      "types": "./dist/Otlp.d.mts",
+      "import": "./dist/Otlp.mjs",
+      "default": "./dist/Otlp.mjs"
+    },
     "./package.json": "./package.json"
   },
   "scripts": {
