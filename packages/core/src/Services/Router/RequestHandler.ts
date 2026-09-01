@@ -1,5 +1,6 @@
 import { Container, Inject } from '@vercube/di';
 import { FastResponse } from '../../Types/CommonTypes';
+import { skipsGlobalMiddlewares } from '../../Utils/Utils';
 import { ErrorHandlerProvider } from '../ErrorHandler/ErrorHandlerProvider';
 import { MetadataResolver } from '../Metadata/MetadataResolver';
 import { GlobalMiddlewareRegistry } from '../Middleware/GlobalMiddlewareRegistry';
@@ -106,8 +107,9 @@ export class RequestHandler {
     // get middlewares
     const middlewares = this.gMetadataResolver.resolveMiddlewares(prototype, propertyName);
 
-    // get global middlewares
-    const globalMiddlewares = this.gGlobalMiddlewareRegistry.middlewares;
+    // Infrastructure controllers - an inspector, a health check - opt out of
+    // application-wide middlewares entirely.
+    const globalMiddlewares = skipsGlobalMiddlewares(prototype) ? [] : this.gGlobalMiddlewareRegistry.middlewares;
 
     const combined = [...middlewares, ...globalMiddlewares];
     const seen = new Set<MetadataTypes.Middleware['middleware']>();
