@@ -1,0 +1,105 @@
+import { context, propagation } from '@opentelemetry/api';
+import { BasePlugin, RequestContext, resolveTelemetryOptions, TelemetryRegistry } from '@vercube/core';
+import { Logger } from '@vercube/logger';
+import { INSTRUMENTATION_SCOPE } from '../Common/Attributes';
+import { W3CTraceContextPropagator } from '../Common/Propagation';
+import { Telemetry } from '../Common/Telemetry';
+import { VercubeContextManager } from '../Context/VercubeContextManager';
+import { CoreTelemetryHooks } from '../Hooks/CoreTelemetryHooks';
+import { installOtlpLogs, installTraceCorrelation } from '../Hooks/TraceCorrelation';
+import { OtelTelemetry } from '../Service/OtelTelemetry';
+import type { App, TelemetryTypes } from '@vercube/core';
+
+/**
+ * Activates OpenTelemetry instrumentation for the application.
+ *
+ * Register it in `vercube.config.ts`:
+ *
+ * ```ts
+ * export default defineConfig({
+ *   telemetry: true,
+ *   plugins: [TelemetryPlugin],
+ * });
+ * ```
+ *
+ * The plugin only wires the OpenTelemetry **API**: it registers a context
+ * manager and a W3C propagator, binds the {@link Telemetry} token and installs
+ * the hooks core calls into. Producing actual spans additionally requires a
+ * `TracerProvider`, which either the application registers through the standard
+ * OpenTelemetry SDK, `@vercube/telemetry/sdk`, or `@vercube/devtools`.
+ *
+ * Options given at registration time win over the `telemetry` field of the
+ * application config.
+ */
+export class TelemetryPlugin extends BasePlugin<TelemetryTypes.Options> {
+  /** @inheritdoc */
+  public override name = 'TelemetryPlugin';
+
+  /**
+   * Installs telemetry into the running application.
+   *
+   * @param app - The application
+   * @param options - Options overriding the `telemetry` config field
+   */
+  public override use(app: App, options?: TelemetryTypes.Options): void | Promise<void> {
+    const resolved = resolveTelemetryOptions({
+      ...app.config,
+      telemetry: { ...normalize(app.config.telemetry), ...options },
+    });
+
+    if (!resolved.enabled) {
+      return;
+    }
+
+    const container = app.container;
+    const logger = container.getOptional(Logger);
+
+    // Bound automatically whenever telemetry is enabled, but an application can
+    // build its container by hand - fail loudly rather than silently losing
+    // every parent/child relationship.
+    let requestContext = container.getOptional(RequestContext);
+
+    if (!requestContext) {
+      container.bind(RequestContext);
+      requestContext = container.get(RequestContext);
+    }
+
+    // Process-wide registration. Two Vercube apps in one process share the
+    // context manager and the propagator; the first one to start wins.
+    context.setGlobalContextManager(new VercubeContextManager(requestContext).enable());
+    propagation.setGlobalPropagator(new W3CTraceContextPropagator());
+
+    const telemetry = new OtelTelemetry(INSTRUMENTATION_SCOPE);
+    container.bindInstance(Telemetry, telemetry);
+
+    container.get(TelemetryRegistry).install(new CoreTelemetryHooks(telemetry, resolved), resolved);
+
+    // Every log line gets the ids of the span that was active when it was
+    // written, which is what makes logs and traces line up in any backend.
+    if (logger) {
+      installTraceCorrelation(logger);
+    }
+
+    logger?.debug('TelemetryPlugin', 'OpenTelemetry instrumentation installed');
+
+    if (logger && resolved.logs) {
+      return installOtlpLogs(logger, { endpoint: resolved.endpoint }).then((flush) => {
+        telemetry.onFlush(flush);
+      });
+    }
+  }
+}
+
+/**
+ * Turns the shorthand `telemetry: boolean` form into an options object.
+ *
+ * @param value - The raw config value
+ * @returns The equivalent options object
+ */
+function normalize(value: boolean | TelemetryTypes.Options | undefined): TelemetryTypes.Options {
+  if (value === undefined) {
+    return {};
+  }
+
+  return typeof value === 'boolean' ? { enabled: value } : value;
+}
