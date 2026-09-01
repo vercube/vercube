@@ -46,6 +46,51 @@ export class StorageManager {
   }
 
   /**
+   * Names of every mounted storage.
+   *
+   * The rest of the API can only reach a mount whose name you already know, so
+   * without this an inspector has no way to find out what is mounted.
+   * @returns {string[]} Mount names, in mount order
+   */
+  public get mounts(): string[] {
+    return [...this.fStorages.keys()];
+  }
+
+  /**
+   * Describes what the storage layer currently holds.
+   *
+   * Drivers that cannot enumerate or count report `null` rather than an empty
+   * list, so "nothing stored" stays distinguishable from "cannot tell".
+   * @param {StorageTypes.DescribeOptions} [options] - Listing limits
+   * @returns {Promise<StorageTypes.Description>} One entry per mount
+   */
+  public async describe(options: StorageTypes.DescribeOptions = {}): Promise<StorageTypes.Description> {
+    const maxKeys = options.maxKeys ?? 250;
+
+    const mounts = await Promise.all(
+      [...this.fStorages.entries()].map(async ([name, mount]) => {
+        const driver = mount.storage as unknown as {
+          getKeys?: () => string[] | Promise<string[]>;
+          size?: () => number | Promise<number>;
+        };
+
+        const keys = typeof driver.getKeys === 'function' ? await safely(() => driver.getKeys!()) : null;
+        const size = typeof driver.size === 'function' ? await safely(() => driver.size!()) : (keys?.length ?? null);
+
+        return {
+          name,
+          driver: (mount.storage as object)?.constructor?.name ?? 'Storage',
+          size: size ?? null,
+          keys: keys ? keys.slice(0, maxKeys) : null,
+          truncated: keys ? keys.length > maxKeys : false,
+        };
+      }),
+    );
+
+    return { mounts };
+  }
+
+  /**
    * Retrieves an item from the specified storage
    * @template T - Type of the stored value
    * @param {StorageTypes.GetItem} params - Parameters for retrieving an item
@@ -156,5 +201,22 @@ export class StorageManager {
         this.gLogger?.error('Vercube/StorageManager::init', error);
       }
     }
+  }
+}
+
+/**
+ * Runs a driver call, turning a failure into `null`.
+ *
+ * A driver backed by a remote service can fail at any time, and describing the
+ * storage layer must never be the thing that breaks a request.
+ *
+ * @param {Function} fn - The call to attempt
+ * @returns {Promise<T | null>} The result, or null when it threw
+ */
+async function safely<T>(fn: () => T | Promise<T>): Promise<T | null> {
+  try {
+    return await fn();
+  } catch {
+    return null;
   }
 }
