@@ -2,7 +2,7 @@ import type { IOC } from '../Types/IOCTypes';
 import type { Container } from './Container';
 
 /**
- * Global property name for the IOC devtools hook.
+ * Global property name for the IOC observer registry.
  */
 export const IOC_DEVTOOLS_HOOK_KEY = '__VERCUBE_DEVTOOLS_HOOK__';
 
@@ -34,25 +34,97 @@ export interface IOCDevtoolsHook {
   onResolved?: (record: IOCResolveRecord) => void;
 }
 
+/**
+ * Fan-out over every installed observer.
+ *
+ * The container has to be observable *before* `createApp` builds it, so the
+ * registry lives on `globalThis` rather than in the container. It is a list
+ * rather than a single slot because more than one package wants to watch:
+ * telemetry turns construction into spans while devtools profiles bootstrap,
+ * and whichever installed second used to silently evict the first.
+ */
+interface IOCObserverRegistry extends IOCDevtoolsHook {
+  /** Installed observers, in installation order. */
+  observers: IOCDevtoolsHook[];
+}
+
 /* oxlint-disable-next-line no-shadow-restricted-names */
 declare const globalThis: {
-  [IOC_DEVTOOLS_HOOK_KEY]?: IOCDevtoolsHook;
+  [IOC_DEVTOOLS_HOOK_KEY]?: IOCObserverRegistry;
 };
 
-let devtoolsHook: IOCDevtoolsHook | undefined = globalThis[IOC_DEVTOOLS_HOOK_KEY];
-
 /**
- * Installs or replaces the devtools hook.
- * @param hook hook implementation, or `undefined` to uninstall
+ * Returns the global registry, creating it on first use.
+ *
+ * @returns The registry
  */
-export function setIOCDevtoolsHook(hook: IOCDevtoolsHook | undefined): void {
-  devtoolsHook = hook;
-  globalThis[IOC_DEVTOOLS_HOOK_KEY] = hook;
+function registry(): IOCObserverRegistry {
+  let current = globalThis[IOC_DEVTOOLS_HOOK_KEY];
+
+  if (!current) {
+    const observers: IOCDevtoolsHook[] = [];
+
+    current = {
+      observers,
+      onContainerCreated(container: Container): void {
+        for (const observer of observers) {
+          observer.onContainerCreated?.(container);
+        }
+      },
+      onResolved(record: IOCResolveRecord): void {
+        for (const observer of observers) {
+          observer.onResolved?.(record);
+        }
+      },
+    };
+
+    globalThis[IOC_DEVTOOLS_HOOK_KEY] = current;
+  }
+
+  return current;
 }
 
 /**
- * Returns the currently installed devtools hook, if any.
+ * Installs an observer.
+ *
+ * @param hook - The observer to install
+ * @returns A function that removes it again
+ */
+export function addIOCDevtoolsHook(hook: IOCDevtoolsHook): () => void {
+  const observers = registry().observers;
+  observers.push(hook);
+
+  return () => {
+    const index = observers.indexOf(hook);
+
+    if (index !== -1) {
+      observers.splice(index, 1);
+    }
+  };
+}
+
+/**
+ * Replaces every installed observer with `hook`, or removes them all.
+ *
+ * @param hook - The observer to install, or `undefined` to uninstall everything
+ * @deprecated Use {@link addIOCDevtoolsHook}, which does not evict other observers.
+ */
+export function setIOCDevtoolsHook(hook: IOCDevtoolsHook | undefined): void {
+  const current = registry();
+  current.observers.length = 0;
+
+  if (hook) {
+    current.observers.push(hook);
+  }
+}
+
+/**
+ * Returns the fan-out hook the container calls into.
+ *
+ * @returns The registry, or undefined when no observer is installed
  */
 export function getIOCDevtoolsHook(): IOCDevtoolsHook | undefined {
-  return devtoolsHook;
+  const current = globalThis[IOC_DEVTOOLS_HOOK_KEY];
+
+  return current && current.observers.length > 0 ? current : undefined;
 }
