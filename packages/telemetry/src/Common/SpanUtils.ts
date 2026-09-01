@@ -17,7 +17,8 @@ const SERVER_ERROR_STATUS = 500;
  * @param options - Span options (kind, attributes, links)
  * @param parent - Context the span is a child of
  * @param fn - The work to trace
- * @param onSettle - Called with the outcome just before the span ends
+ * @param onSettle - Called with the outcome just before the span ends. Returning a
+ *   promise keeps the span open until it settles, without extending its duration.
  * @returns Whatever `fn` returned
  */
 export function runInSpan<T>(
@@ -26,7 +27,7 @@ export function runInSpan<T>(
   options: SpanOptions,
   parent: Context,
   fn: (span: Span) => T,
-  onSettle?: (span: Span, value: unknown, error: unknown) => void,
+  onSettle?: (span: Span, value: unknown, error: unknown) => void | Promise<void>,
 ): T {
   const span = tracer.startSpan(name, options, parent);
 
@@ -37,7 +38,22 @@ export function runInSpan<T>(
       failSpan(span, error);
     }
 
-    onSettle?.(span, value, error);
+    const pending = onSettle?.(span, value, error);
+
+    // A settle callback that needs to read something asynchronously - body
+    // capture does - keeps the span open, but the end time is taken now so the
+    // recorded duration still measures the request rather than the capture.
+    if (pending !== undefined) {
+      const endTime = Date.now();
+
+      void pending.then(
+        () => span.end(endTime),
+        () => span.end(endTime),
+      );
+
+      return;
+    }
+
     span.end();
   };
 

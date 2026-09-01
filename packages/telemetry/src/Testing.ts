@@ -21,6 +21,12 @@ export interface TestTelemetry {
   /** Clears the collected spans. */
   reset(): void;
 
+  /**
+   * Waits for spans whose end was deferred - body capture defers it - to be
+   * exported, then flushes the provider.
+   */
+  settle(): Promise<void>;
+
   /** Unregisters the provider and releases its resources. */
   shutdown(): Promise<void>;
 }
@@ -55,6 +61,12 @@ export function createTestTelemetry(): TestTelemetry {
     spans: () => exporter.getFinishedSpans(),
     span: (name: string) => exporter.getFinishedSpans().find((span) => span.name === name),
     reset: () => exporter.reset(),
+    settle: async () => {
+      // Body capture reads a cloned stream before ending the span, so the span
+      // is not exported yet when the response has already been returned.
+      await new Promise((resolve) => setImmediate(resolve));
+      await provider.forceFlush();
+    },
     shutdown: async () => {
       trace.disable();
       await provider.shutdown();

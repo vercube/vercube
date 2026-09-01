@@ -107,6 +107,18 @@ export namespace TelemetryTypes {
      * @default true in development, false in production
      */
     di?: boolean;
+
+    /**
+     * Attach request and response bodies to the server span as span events.
+     *
+     * Off by default, and meant for development: it clones every message,
+     * buffers up to `maxBytes` of it, and holds the span open until the read
+     * finishes. Bodies routinely contain personal data, so nothing is captured
+     * unless you ask for it.
+     *
+     * @default false
+     */
+    bodies?: boolean | { maxBytes?: number };
   }
 
   /**

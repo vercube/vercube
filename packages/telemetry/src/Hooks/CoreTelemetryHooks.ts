@@ -14,9 +14,18 @@ import {
   VERCUBE_CONTROLLER,
   VERCUBE_HANDLER,
 } from '../Common/Attributes';
+import {
+  addBodyEvent,
+  captureRequestBody,
+  captureResponseBody,
+  DEFAULT_MAX_BODY_BYTES,
+  REQUEST_BODY_EVENT,
+  RESPONSE_BODY_EVENT,
+} from '../Common/BodyCapture';
 import { errorType, failSpan, runInSpan } from '../Common/SpanUtils';
+import type { BodyPreview } from '../Common/BodyCapture';
 import type { Telemetry } from '../Common/Telemetry';
-import type { Attributes, Histogram } from '@opentelemetry/api';
+import type { Attributes, Histogram, Span } from '@opentelemetry/api';
 import type { TelemetryTypes } from '@vercube/core';
 
 /**
@@ -44,6 +53,9 @@ export class CoreTelemetryHooks implements TelemetryTypes.Hooks {
   /** Whether to record the request duration histogram. */
   private readonly fMetrics: boolean;
 
+  /** Cap on captured body bytes, or 0 when body capture is off. */
+  private readonly fBodyBytes: number;
+
   /** Lazily created duration histogram. */
   private fDuration: Histogram | undefined;
 
@@ -55,6 +67,7 @@ export class CoreTelemetryHooks implements TelemetryTypes.Hooks {
     this.fTelemetry = telemetry;
     this.fPropagation = options.propagation !== false;
     this.fMetrics = options.metrics !== false;
+    this.fBodyBytes = resolveBodyBytes(options.spans?.bodies);
   }
 
   /** @inheritdoc */
@@ -66,14 +79,54 @@ export class CoreTelemetryHooks implements TelemetryTypes.Hooks {
     const attributes = toAttributes(spanContext);
     const startedAt = this.fMetrics ? performance.now() : 0;
 
+    // The clone has to be taken before the handler consumes the stream.
+    const requestBody = this.fBodyBytes > 0 ? captureRequestBody(spanContext.request, this.fBodyBytes) : undefined;
+
     return runInSpan(
       this.fTelemetry.tracer,
       spanContext.name,
       { kind: SpanKind.SERVER, attributes },
       parent,
       fn,
-      this.fMetrics ? (_span, value, error) => this.recordDuration(attributes, startedAt, value, error) : undefined,
+      this.fMetrics || this.fBodyBytes > 0
+        ? (span, value, error) => {
+            if (this.fMetrics) {
+              this.recordDuration(attributes, startedAt, value, error);
+            }
+
+            return this.fBodyBytes > 0 ? this.attachBodies(span, requestBody, value) : undefined;
+          }
+        : undefined,
     );
+  }
+
+  /**
+   * Attaches the captured request and response bodies to the span.
+   *
+   * The response clone is taken here rather than later: once the runtime starts
+   * writing the response there is nothing left to tee.
+   *
+   * @param span - The server span
+   * @param requestBody - The pending request body capture, if any
+   * @param value - The value the request produced
+   * @returns A promise that settles once both bodies have been read
+   */
+  private attachBodies(span: Span, requestBody: Promise<BodyPreview> | undefined, value: unknown): Promise<void> | undefined {
+    const responseBody = value instanceof Response ? captureResponseBody(value, this.fBodyBytes) : undefined;
+
+    if (!requestBody && !responseBody) {
+      return undefined;
+    }
+
+    return Promise.all([requestBody, responseBody]).then(([request, response]) => {
+      if (request) {
+        addBodyEvent(span, REQUEST_BODY_EVENT, request);
+      }
+
+      if (response) {
+        addBodyEvent(span, RESPONSE_BODY_EVENT, response);
+      }
+    });
   }
 
   /** @inheritdoc */
@@ -179,4 +232,18 @@ function toAttributes(spanContext: TelemetryTypes.ServerSpanContext): Attributes
   }
 
   return attributes;
+}
+
+/**
+ * Resolves the body capture cap from the option.
+ *
+ * @param bodies - The `spans.bodies` option
+ * @returns The cap in bytes, or 0 when capture is off
+ */
+function resolveBodyBytes(bodies: boolean | { maxBytes?: number } | undefined): number {
+  if (!bodies) {
+    return 0;
+  }
+
+  return bodies === true ? DEFAULT_MAX_BODY_BYTES : (bodies.maxBytes ?? DEFAULT_MAX_BODY_BYTES);
 }

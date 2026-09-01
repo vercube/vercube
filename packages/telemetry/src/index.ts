@@ -1,5 +1,6 @@
 // Public API
 export * from './Common/Attributes';
+export * from './Common/BodyCapture';
 export * from './Common/Propagation';
 export * from './Common/SpanUtils';
 export * from './Common/Telemetry';
