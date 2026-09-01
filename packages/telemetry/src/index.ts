@@ -1,4 +1,5 @@
 // Public API
+export * from './Bootstrap/BootstrapSpans';
 export * from './Common/Attributes';
 export * from './Common/BodyCapture';
 export * from './Common/Propagation';

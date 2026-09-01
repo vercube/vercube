@@ -1,5 +1,6 @@
 import { context, SpanKind, trace } from '@opentelemetry/api';
 import { getRequestPathname, getRequestSearch } from '@vercube/core';
+import { bootstrapRecorder } from '../Bootstrap/BootstrapSpans';
 import {
   ERROR_TYPE,
   HTTP_REQUEST_METHOD,
@@ -56,6 +57,9 @@ export class CoreTelemetryHooks implements TelemetryTypes.Hooks {
   /** Cap on captured body bytes, or 0 when body capture is off. */
   private readonly fBodyBytes: number;
 
+  /** Whether buffered bootstrap constructions still have to be replayed. */
+  private fBootstrapPending: boolean;
+
   /** Lazily created duration histogram. */
   private fDuration: Histogram | undefined;
 
@@ -68,6 +72,7 @@ export class CoreTelemetryHooks implements TelemetryTypes.Hooks {
     this.fPropagation = options.propagation !== false;
     this.fMetrics = options.metrics !== false;
     this.fBodyBytes = resolveBodyBytes(options.spans?.bodies);
+    this.fBootstrapPending = options.spans?.di !== false;
   }
 
   /** @inheritdoc */
@@ -75,6 +80,13 @@ export class CoreTelemetryHooks implements TelemetryTypes.Hooks {
     spanContext: TelemetryTypes.ServerSpanContext,
     fn: () => Response | Promise<Response>,
   ): Response | Promise<Response> {
+    if (this.fBootstrapPending) {
+      // Bootstrap is over as soon as the first request arrives; replaying it
+      // here is also the first moment a tracer provider is guaranteed to exist.
+      this.fBootstrapPending = false;
+      bootstrapRecorder.emit(this.fTelemetry.tracer);
+    }
+
     const parent = this.fPropagation ? this.fTelemetry.extract(spanContext.request.headers) : context.active();
     const attributes = toAttributes(spanContext);
     const startedAt = this.fMetrics ? performance.now() : 0;

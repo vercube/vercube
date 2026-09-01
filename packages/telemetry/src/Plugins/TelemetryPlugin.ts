@@ -1,6 +1,7 @@
 import { context, propagation } from '@opentelemetry/api';
 import { BasePlugin, RequestContext, resolveTelemetryOptions, TelemetryRegistry } from '@vercube/core';
 import { Logger } from '@vercube/logger';
+import { bootstrapRecorder } from '../Bootstrap/BootstrapSpans';
 import { INSTRUMENTATION_SCOPE } from '../Common/Attributes';
 import { W3CTraceContextPropagator } from '../Common/Propagation';
 import { Telemetry } from '../Common/Telemetry';
@@ -9,7 +10,7 @@ import { CoreTelemetryHooks } from '../Hooks/CoreTelemetryHooks';
 import { installOtlpLogs, installTraceCorrelation } from '../Hooks/TraceCorrelation';
 import { installProcessMetrics } from '../Metrics/ProcessMetrics';
 import { OtelTelemetry } from '../Service/OtelTelemetry';
-import type { App, TelemetryTypes } from '@vercube/core';
+import type { App, ConfigTypes, TelemetryTypes } from '@vercube/core';
 
 /**
  * Activates OpenTelemetry instrumentation for the application.
@@ -35,6 +36,26 @@ import type { App, TelemetryTypes } from '@vercube/core';
 export class TelemetryPlugin extends BasePlugin<TelemetryTypes.Options> {
   /** @inheritdoc */
   public override name = 'TelemetryPlugin';
+
+  /**
+   * Starts watching container construction.
+   *
+   * This runs while the config is still being loaded, which is the only phase
+   * early enough: by the time `use()` runs the container has already built a
+   * good part of the application. Registering the plugin through
+   * `defineConfig({ plugins })` rather than `app.addPlugin()` is therefore what
+   * makes bootstrap spans complete.
+   *
+   * @param config - The merged configuration
+   * @param options - Options overriding the `telemetry` config field
+   */
+  public override configure(config: ConfigTypes.Config, options?: TelemetryTypes.Options): void {
+    const resolved = resolveTelemetryOptions({ ...config, telemetry: { ...normalize(config.telemetry), ...options } });
+
+    if (resolved.enabled && resolved.spans?.di !== false) {
+      bootstrapRecorder.install();
+    }
+  }
 
   /**
    * Installs telemetry into the running application.
@@ -74,6 +95,13 @@ export class TelemetryPlugin extends BasePlugin<TelemetryTypes.Options> {
     container.bindInstance(Telemetry, telemetry);
 
     container.get(TelemetryRegistry).install(new CoreTelemetryHooks(telemetry, resolved), resolved);
+
+    // Bootstrap keeps running until the container has built everything the
+    // first request needs, so the buffered constructions are replayed from the
+    // first request rather than from here.
+    if (resolved.spans?.di !== false) {
+      bootstrapRecorder.install();
+    }
 
     if (resolved.metrics !== false) {
       installProcessMetrics(telemetry);
