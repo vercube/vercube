@@ -69,6 +69,12 @@ export * from './Services/Config/RuntimeConfig';
 export * from './Services/Validation/ValidationProvider';
 export * from './Services/Validation/StandardSchemaValidationProvider';
 export * from './Services/Router/RequestContext';
+export * from './Services/Introspection/IntrospectionRegistry';
+export * from './Services/Introspection/Providers/ConfigProvider';
+export * from './Services/Introspection/Providers/ContainerProvider';
+export * from './Services/Introspection/Providers/DiscoveryProvider';
+export * from './Services/Introspection/Providers/PluginsProvider';
+export * from './Services/Introspection/Providers/RoutesProvider';
 export * from './Services/Telemetry/TelemetryRegistry';
 export * from './Services/Telemetry/TelemetryOptions';
 
@@ -89,6 +95,7 @@ export * from './Types/HttpTypes';
 export * from './Types/MetadataTypes';
 export * from './Types/ConfigTypes';
 export * from './Types/RouterTypes';
+export * from './Types/IntrospectionTypes';
 export * from './Types/TelemetryTypes';
 export * from './Types/ValidationTypes';
 export * from './Types/HttpCodes';
@@ -96,4 +103,5 @@ export * from './Types/HttpCodes';
 // Utils
 export * from './Utils/Utils';
 export * from './Utils/Security';
+export * from './Utils/Flatten';
 export * from './Utils/Url';

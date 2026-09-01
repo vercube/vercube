@@ -12,6 +12,21 @@ export class RuntimeConfig<T = Record<string, unknown>> {
   private fRuntimeConfig: ConfigTypes.CreateRuntimeConfig<T> | undefined;
 
   /**
+   * Bumped on every assignment, so introspection can cache a rendered view of
+   * the configuration and know when it went stale.
+   * @private
+   */
+  private fRevision: number = 1;
+
+  /**
+   * Revision of the runtime configuration.
+   * @returns {number} The current revision.
+   */
+  public get revision(): number {
+    return this.fRevision;
+  }
+
+  /**
    * Gets the current runtime configuration.
    * @returns {ConfigTypes.CreateRuntimeConfig<T> | undefined} The current runtime configuration object.
    */
@@ -25,5 +40,6 @@ export class RuntimeConfig<T = Record<string, unknown>> {
    */
   public set runtimeConfig(value: ConfigTypes.CreateRuntimeConfig<T> | undefined) {
     this.fRuntimeConfig = value;
+    this.fRevision++;
   }
 }
