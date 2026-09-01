@@ -69,6 +69,8 @@ export * from './Services/Config/RuntimeConfig';
 export * from './Services/Validation/ValidationProvider';
 export * from './Services/Validation/StandardSchemaValidationProvider';
 export * from './Services/Router/RequestContext';
+export * from './Services/Telemetry/TelemetryRegistry';
+export * from './Services/Telemetry/TelemetryOptions';
 
 // Errors
 export * from './Errors/HttpError';
@@ -87,9 +89,11 @@ export * from './Types/HttpTypes';
 export * from './Types/MetadataTypes';
 export * from './Types/ConfigTypes';
 export * from './Types/RouterTypes';
+export * from './Types/TelemetryTypes';
 export * from './Types/ValidationTypes';
 export * from './Types/HttpCodes';
 
 // Utils
 export * from './Utils/Utils';
 export * from './Utils/Security';
+export * from './Utils/Url';

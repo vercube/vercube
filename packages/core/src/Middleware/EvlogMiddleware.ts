@@ -2,6 +2,7 @@ import { InjectOptional } from '@vercube/di';
 import { createMiddlewareLogger, extractSafeHeaders } from '@vercube/logger/toolkit';
 import { BaseMiddleware } from '../Services/Middleware/BaseMiddleware';
 import { RequestContext } from '../Services/Router/RequestContext';
+import { TelemetryRegistry } from '../Services/Telemetry/TelemetryRegistry';
 import { getRequestPathname } from '../Utils/Url';
 import type { MiddlewareOptions } from '../Types/CommonTypes';
 import type { RequestLogger } from '@vercube/logger';
@@ -37,6 +38,13 @@ export class EvlogMiddleware extends BaseMiddleware<BaseEvlogOptions> {
   private gRequestContext!: RequestContext | null;
 
   /**
+   * Telemetry registry, used to reuse the trace id as the request id so a wide
+   * event, its spans and any downstream service all carry one identifier.
+   */
+  @InjectOptional(TelemetryRegistry)
+  private gTelemetry!: TelemetryRegistry | null;
+
+  /**
    * Creates a request-scoped evlog logger and stores it in the request context.
    *
    * @param request - The incoming HTTP request
@@ -53,7 +61,7 @@ export class EvlogMiddleware extends BaseMiddleware<BaseEvlogOptions> {
     const { logger, finish, skipped } = createMiddlewareLogger({
       method: request.method,
       path: getRequestPathname(request),
-      requestId: request.headers.get('x-request-id') ?? crypto.randomUUID(),
+      requestId: this.resolveRequestId(request),
       headers: extractSafeHeaders(request.headers),
       ...options,
     });
@@ -82,6 +90,21 @@ export class EvlogMiddleware extends BaseMiddleware<BaseEvlogOptions> {
     if (finish) {
       await finish({ status: response.status }).catch(() => {});
     }
+  }
+
+  /**
+   * Picks the identifier the wide event is keyed by.
+   *
+   * With telemetry on, the trace id wins: it is shared by every service taking
+   * part in the request and by every span within it, which is exactly what a
+   * request id is supposed to be. Otherwise the incoming `x-request-id` is
+   * honoured, and a fresh id is minted as a last resort.
+   *
+   * @param request - The incoming HTTP request
+   * @returns The request identifier
+   */
+  private resolveRequestId(request: Request): string {
+    return this.gTelemetry?.hooks?.traceId() ?? request.headers.get('x-request-id') ?? crypto.randomUUID();
   }
 }
 

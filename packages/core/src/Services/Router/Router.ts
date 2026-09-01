@@ -63,6 +63,14 @@ export class Router {
     }
 
     const method = route.method.toUpperCase();
+
+    // Resolved once at registration time so nothing on the request path has to
+    // build a span name or look the route template back up. `@Get` registers
+    // GET and HEAD through two separate `prepareHandler` calls, so this never
+    // overwrites another method's values.
+    route.handler.path = route.path;
+    route.handler.spanName = `${method} ${route.path}`;
+
     addRoute(this.fRouterContext, method, route.path, route.handler);
     this.fRoutes.push(route);
 
