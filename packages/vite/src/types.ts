@@ -1,4 +1,4 @@
-import type { RouteInfo, ServiceInfo } from '@vercube/scan';
+import type { MiddlewareInfo, RouteInfo, ServiceInfo } from '@vercube/scan';
 import type { RunnerManager } from 'env-runner';
 
 /**
@@ -74,6 +74,8 @@ export interface VercubePluginContext {
   routes: RouteInfo[];
   /** Discovered injectable services (deduplicated against controllers). */
   services: ServiceInfo[];
+  /** Discovered middleware classes. Not bound automatically; recorded only for the discovery manifest. */
+  middlewares?: MiddlewareInfo[];
   /** The env-runner manager driving the dev worker. */
   _envRunner?: RunnerManager;
   /** Guards concurrent env-runner initialization. */

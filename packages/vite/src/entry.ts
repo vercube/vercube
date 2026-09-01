@@ -1,5 +1,5 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { dirname } from 'pathe';
+import { dirname, join } from 'pathe';
 import type { VercubePluginContext } from './types';
 
 /**
@@ -107,4 +107,34 @@ export function generateServerEntry(ctx: VercubePluginContext): string {
 export function writeServerEntry(ctx: VercubePluginContext): void {
   mkdirSync(dirname(ctx.serverEntry), { recursive: true });
   writeFileSync(ctx.serverEntry, generateServerEntry(ctx), 'utf8');
+  writeDiscoveryManifest(ctx);
+}
+
+/**
+ * Writes what the scanner found as JSON, next to the generated server entry.
+ *
+ * The server entry is executable code keyed only by class name: it discards the
+ * file each class came from, the routes read out of the source and the HTTP
+ * methods. That information exists at build time and is exactly what a runtime
+ * inspector cannot recover, so it is persisted here and picked up by core's
+ * `discovery` introspection section.
+ *
+ * @param ctx - The plugin context holding the discovery result.
+ */
+export function writeDiscoveryManifest(ctx: VercubePluginContext): void {
+  const manifest = {
+    root: ctx.root,
+    generatedAt: new Date().toISOString(),
+    controllers: ctx.controllers.map((entry) => ({ name: entry.importClassName, path: entry.path })),
+    services: ctx.services.map((entry) => ({ name: entry.importClassName, path: entry.path })),
+    middlewares: (ctx.middlewares ?? []).map((entry) => ({ name: entry.importClassName, path: entry.path })),
+    routes: ctx.routes.map((route) => ({
+      method: route.method,
+      path: route.route,
+      controller: route.importClassName,
+      file: route.path,
+    })),
+  };
+
+  writeFileSync(join(dirname(ctx.serverEntry), 'discovery.json'), `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
 }
