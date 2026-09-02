@@ -1,7 +1,7 @@
-import { BaseMiddleware, Body, Controller, Get, Middleware, Post, QueryParam } from '@vercube/core';
+import { BaseMiddleware, Body, Controller, ContainerProvider, Get, Middleware, Post, QueryParam } from '@vercube/core';
 import { Inject } from '@vercube/di';
 import { Logger } from '@vercube/logger';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { resetDevtoolsTelemetry } from '../src/Telemetry/DevtoolsTelemetry';
 import { createDevtoolsApp, devtoolsFetch, devtoolsJson } from './Utils/App';
 import type { DevtoolsTypes } from '../src/Types/DevtoolsTypes';
@@ -256,6 +256,19 @@ describe('devtools API', () => {
     );
 
     expect(names).toEqual(expect.arrayContaining(['http.server.request.duration', 'v8js.memory.heap.used']));
+  });
+
+  it('builds the container graph once per overview request', async () => {
+    const app = await createDemoApp();
+    const provider = app.container.get(ContainerProvider);
+    const describe = vi.spyOn(provider, 'describe');
+
+    await devtoolsJson(app, '/_devtools/api/overview');
+
+    // The overview aggregates counts, the audit and the health score, and all
+    // three used to rebuild the dependency graph independently. The
+    // introspection cache is what collapses them into one build.
+    expect(describe).toHaveBeenCalledTimes(1);
   });
 
   it('runs the audit rules', async () => {

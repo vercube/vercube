@@ -621,6 +621,10 @@ importers:
       '@vercube/logger':
         specifier: workspace:*
         version: link:../logger
+    devDependencies:
+      '@vercube/telemetry':
+        specifier: workspace:*
+        version: link:../telemetry
     optionalDependencies:
       '@aws-sdk/client-s3':
         specifier: 3.1114.0
