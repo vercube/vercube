@@ -117,7 +117,30 @@ export function completeSpan(span: Span, value: unknown): void {
 export function failSpan(span: Span, error: unknown): void {
   span.recordException(error as Exception);
   span.setAttribute(ERROR_TYPE, errorType(error));
+
+  // A 404 or a 401 describes the request, not a fault of the server, and the
+  // HTTP semantic conventions say a server span must only be ERROR for 5xx.
+  // Marking them failed turns every probe for a missing page into an incident.
+  if (httpStatusOf(error) < SERVER_ERROR_STATUS) {
+    return;
+  }
+
   span.setStatus({ code: SpanStatusCode.ERROR, message: errorMessage(error) });
+}
+
+/**
+ * Reads the HTTP status a thrown value carries, if any.
+ *
+ * Duck-typed rather than imported: the framework's `HttpError` lives in core,
+ * and an application is free to throw its own error type with a `status`.
+ *
+ * @param error - The thrown value
+ * @returns The status, or 500 when the value carries none
+ */
+function httpStatusOf(error: unknown): number {
+  const status = (error as { status?: unknown; statusCode?: unknown })?.status ?? (error as { statusCode?: unknown })?.statusCode;
+
+  return typeof status === 'number' ? status : SERVER_ERROR_STATUS;
 }
 
 /**
@@ -127,11 +150,17 @@ export function failSpan(span: Span, error: unknown): void {
  * @returns The error type name
  */
 export function errorType(error: unknown): string {
-  if (error instanceof Error) {
-    return error.constructor?.name || error.name || 'Error';
+  if (!(error instanceof Error)) {
+    return typeof error;
   }
 
-  return typeof error;
+  // `name` wins over the constructor: it is what the error deliberately calls
+  // itself, and a bundler is free to rename the class behind it.
+  if (error.name && error.name !== 'Error') {
+    return error.name;
+  }
+
+  return error.constructor?.name || 'Error';
 }
 
 /**
