@@ -138,6 +138,17 @@ describe('@vercube/telemetry end to end', () => {
     expect(span!.attributes['url.path']).toBe('/missing');
   });
 
+  it('does not mark a 4xx as a failed span', async () => {
+    await app.fetch(new Request('http://localhost/missing'));
+
+    const span = telemetry.span('GET')!;
+
+    // The exception is still recorded; what a 404 must not do is report the
+    // server as broken.
+    expect(span.attributes['error.type']).toBe('NotFoundError');
+    expect(span.status.code).not.toBe(SpanStatusCode.ERROR);
+  });
+
   it('nests application spans under the server span', async () => {
     await app.fetch(new Request('http://localhost/work/nested'));
 
@@ -156,6 +167,21 @@ describe('@vercube/telemetry end to end', () => {
     const server = telemetry.span('GET /work/outgoing');
 
     expect(headers.traceparent).toBe(`00-${server!.spanContext().traceId}-${server!.spanContext().spanId}-01`);
+  });
+
+  it('produces nothing for an excluded path', async () => {
+    const excluded = await createApp({
+      cfg: { telemetry: { exclude: ['/internal'] }, requestLogging: false },
+      setup: (instance) => {
+        instance.container.bind(UsersController);
+        instance.addPlugin(TelemetryPlugin);
+      },
+    });
+
+    telemetry.reset();
+    await excluded.fetch(new Request('http://localhost/internal/health'));
+
+    expect(telemetry.spans()).toEqual([]);
   });
 
   it('has no active span once the request is done', async () => {

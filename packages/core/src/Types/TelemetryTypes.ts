@@ -172,6 +172,20 @@ export namespace TelemetryTypes {
     metrics?: boolean;
 
     /**
+     * Path prefixes that produce no telemetry at all.
+     *
+     * Infrastructure endpoints - a health check, a metrics scrape, the devtools
+     * inspector - are traffic about the application rather than traffic through
+     * it. Left in, they dominate the request histogram and fill the trace list
+     * with the observer observing itself.
+     *
+     * A prefix matches the path itself and anything beneath it, on segment
+     * boundaries: `/health` matches `/health` and `/health/live`, not
+     * `/healthcheck`.
+     */
+    exclude?: string[];
+
+    /**
      * Ship log events to the OTLP endpoint alongside traces.
      *
      * Off by default: exporting logs is a separate cost and a separate

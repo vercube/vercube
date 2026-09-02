@@ -60,6 +60,9 @@ export class CoreTelemetryHooks implements TelemetryTypes.Hooks {
   /** Whether buffered bootstrap constructions still have to be replayed. */
   private fBootstrapPending: boolean;
 
+  /** Path prefixes that produce no telemetry. */
+  private readonly fExclude: string[];
+
   /** Lazily created duration histogram. */
   private fDuration: Histogram | undefined;
 
@@ -73,6 +76,7 @@ export class CoreTelemetryHooks implements TelemetryTypes.Hooks {
     this.fMetrics = options.metrics !== false;
     this.fBodyBytes = resolveBodyBytes(options.spans?.bodies);
     this.fBootstrapPending = options.spans?.di !== false;
+    this.fExclude = options.exclude ?? [];
   }
 
   /** @inheritdoc */
@@ -80,6 +84,10 @@ export class CoreTelemetryHooks implements TelemetryTypes.Hooks {
     spanContext: TelemetryTypes.ServerSpanContext,
     fn: () => Response | Promise<Response>,
   ): Response | Promise<Response> {
+    if (this.fExclude.length > 0 && this.isExcluded(getRequestPathname(spanContext.request))) {
+      return fn();
+    }
+
     if (this.fBootstrapPending) {
       // Bootstrap is over as soon as the first request arrives; replaying it
       // here is also the first moment a tracer provider is guaranteed to exist.
@@ -148,6 +156,16 @@ export class CoreTelemetryHooks implements TelemetryTypes.Hooks {
     if (span) {
       failSpan(span, error);
     }
+  }
+
+  /**
+   * Whether a path is excluded from telemetry.
+   *
+   * @param path - Request pathname
+   * @returns True when nothing should be recorded
+   */
+  private isExcluded(path: string): boolean {
+    return this.fExclude.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
   }
 
   /** @inheritdoc */
