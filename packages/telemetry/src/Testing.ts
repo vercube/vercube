@@ -1,4 +1,4 @@
-import { metrics, trace } from '@opentelemetry/api';
+import { context, metrics, trace } from '@opentelemetry/api';
 import {
   AggregationTemporality,
   InMemoryMetricExporter,
@@ -6,6 +6,8 @@ import {
   PeriodicExportingMetricReader,
 } from '@opentelemetry/sdk-metrics';
 import { BasicTracerProvider, InMemorySpanExporter, SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base';
+import { RequestContext } from '@vercube/core';
+import { VercubeContextManager } from './Context/VercubeContextManager';
 import type { ResourceMetrics } from '@opentelemetry/sdk-metrics';
 import type { ReadableSpan } from '@opentelemetry/sdk-trace-base';
 
@@ -82,6 +84,12 @@ export function createTestTelemetry(): TestTelemetry {
   trace.setGlobalTracerProvider(provider);
   metrics.setGlobalMeterProvider(meterProvider);
 
+  // Without a context manager `context.active()` is always the root context, so
+  // nothing nests and `trace.getActiveSpan()` is always undefined - which would
+  // make a test pass or fail for reasons that have nothing to do with the code
+  // under test.
+  context.setGlobalContextManager(new VercubeContextManager(new RequestContext()).enable());
+
   return {
     provider,
     meterProvider,
@@ -102,6 +110,7 @@ export function createTestTelemetry(): TestTelemetry {
     shutdown: async () => {
       trace.disable();
       metrics.disable();
+      context.disable();
       await Promise.all([provider.shutdown(), meterProvider.shutdown()]);
     },
   };

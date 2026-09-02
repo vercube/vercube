@@ -1,3 +1,4 @@
+import { flushTelemetry } from '../../Utils/flush';
 import { convertEventToRequest } from './Utils/Request';
 import { convertResponseToAzureFunctionsResponse } from './Utils/Response';
 import type { ServerlessHandler } from '../../Types/ServerlessTypes';
@@ -31,6 +32,8 @@ export function toServerlessHandler(app: App): ServerlessHandler<HttpRequest, an
   return async (event: HttpRequest) => {
     const request = convertEventToRequest(event);
     const response = await app.fetch(request);
+
+    await flushTelemetry(app);
 
     return convertResponseToAzureFunctionsResponse(response);
   };

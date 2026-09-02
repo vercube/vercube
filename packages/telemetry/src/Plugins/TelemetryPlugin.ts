@@ -1,4 +1,4 @@
-import { context, propagation } from '@opentelemetry/api';
+import { context, propagation, trace } from '@opentelemetry/api';
 import { BasePlugin, RequestContext, resolveTelemetryOptions, TelemetryRegistry } from '@vercube/core';
 import { Logger } from '@vercube/logger';
 import { bootstrapRecorder } from '../Bootstrap/BootstrapSpans';
@@ -106,6 +106,12 @@ export class TelemetryPlugin extends BasePlugin<TelemetryTypes.Options> {
     if (resolved.metrics !== false) {
       installProcessMetrics(telemetry);
     }
+
+    // Whatever provider the application ended up with, flushing it is what
+    // `Telemetry.flush()` has to reach.
+    telemetry.onFlush(async () => {
+      await (trace.getTracerProvider() as { forceFlush?: () => Promise<void> }).forceFlush?.();
+    });
 
     // Every log line gets the ids of the span that was active when it was
     // written, which is what makes logs and traces line up in any backend.

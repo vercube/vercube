@@ -294,6 +294,9 @@ importers:
 
   packages/auth:
     dependencies:
+      '@opentelemetry/api':
+        specifier: 1.9.1
+        version: 1.9.1
       '@vercube/core':
         specifier: workspace:*
         version: link:../core
@@ -306,6 +309,9 @@ importers:
 
   packages/cache:
     dependencies:
+      '@opentelemetry/api':
+        specifier: 1.9.1
+        version: 1.9.1
       '@vercube/di':
         specifier: workspace:*
         version: link:../di
@@ -325,6 +331,9 @@ importers:
       '@vercube/core':
         specifier: workspace:*
         version: link:../core
+      '@vercube/telemetry':
+        specifier: workspace:*
+        version: link:../telemetry
 
   packages/cli:
     dependencies:
@@ -603,6 +612,9 @@ importers:
 
   packages/storage:
     dependencies:
+      '@opentelemetry/api':
+        specifier: 1.9.1
+        version: 1.9.1
       '@vercube/di':
         specifier: workspace:*
         version: link:../di
@@ -678,6 +690,9 @@ importers:
 
   packages/ws:
     dependencies:
+      '@opentelemetry/api':
+        specifier: 1.9.1
+        version: 1.9.1
       '@vercube/core':
         specifier: workspace:*
         version: link:../core

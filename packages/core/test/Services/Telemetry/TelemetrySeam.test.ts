@@ -53,6 +53,9 @@ function createRecorder(): {
       traceId() {
         return undefined;
       },
+      flush() {
+        return Promise.resolve();
+      },
     },
   };
 }

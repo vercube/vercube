@@ -169,6 +169,11 @@ export class CoreTelemetryHooks implements TelemetryTypes.Hooks {
   }
 
   /** @inheritdoc */
+  public flush(): Promise<void> {
+    return this.fTelemetry.flush();
+  }
+
+  /** @inheritdoc */
   public traceId(): string | undefined {
     return trace.getActiveSpan()?.spanContext().traceId;
   }

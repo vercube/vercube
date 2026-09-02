@@ -68,6 +68,17 @@ export namespace TelemetryTypes {
      * @returns The active trace id, or undefined outside a span
      */
     traceId(): string | undefined;
+
+    /**
+     * Pushes out everything buffered by batching exporters and drains.
+     *
+     * A serverless platform can freeze the process the moment a response is
+     * returned, so an adapter has to be able to flush without knowing which
+     * exporters are configured.
+     *
+     * @returns Resolves once the buffers are empty
+     */
+    flush(): Promise<void>;
   }
 
   /**
