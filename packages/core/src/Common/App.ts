@@ -177,7 +177,22 @@ export class App {
         )
       : await registry.describeAll();
 
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    const json = `${JSON.stringify(result, null, 2)}\n`;
+    const target = process.env.VERCUBE_INSPECT_OUT;
+
+    // Written to a file when the CLI asks for one: the application is free to
+    // log to stdout while it boots, and mixing that into the payload would make
+    // `vercube inspect | jq` fail for reasons that have nothing to do with the
+    // application. Without the variable it still prints, so running the entry
+    // by hand works.
+    if (target) {
+      const { writeFileSync } = await import('node:fs');
+      writeFileSync(target, json, 'utf8');
+
+      return;
+    }
+
+    process.stdout.write(json);
   }
 
   /**
