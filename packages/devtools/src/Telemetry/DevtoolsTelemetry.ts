@@ -1,5 +1,11 @@
 import { HTTP_ROUTE, URL_PATH } from '@vercube/telemetry';
-import { addSpanProcessor, ensureMeterProvider, ensureTracerProvider, addMetricReader } from '@vercube/telemetry/sdk';
+import {
+  addMetricReader,
+  addSpanProcessor,
+  ensureMeterProvider,
+  ensureTracerProvider,
+  resetTelemetryProviders,
+} from '@vercube/telemetry/sdk';
 import { DevtoolsFrameBus } from '../Services/DevtoolsFrameBus';
 import { isUnderMount } from '../Utils/Mount';
 import { DevtoolsLogDrain, DEVTOOLS_LOG_PLUGIN } from './DevtoolsLogDrain';
@@ -33,6 +39,9 @@ export class DevtoolsTelemetry {
   /** Undo callbacks, run on {@link DevtoolsTelemetry.shutdown}. */
   private readonly fDetach: (() => void)[] = [];
 
+  /** Whether the metric reader has already been registered. */
+  private fMetricsInstalled = false;
+
   /**
    * @param options - Resolved devtools options
    */
@@ -56,19 +65,14 @@ export class DevtoolsTelemetry {
    * API has no proxy meter, so instruments made before a provider exists are
    * permanently no-ops. That is why this runs in the plugin's config phase.
    */
-  public installMetrics(): boolean {
-    try {
-      addMetricReader(this.metrics.reader);
-    } catch {
-      // A meter provider already exists, which means something created
-      // instruments before devtools was reachable. Traces and logs still work;
-      // only the metric panels stay empty.
-      return false;
+  public installMetrics(): void {
+    if (this.fMetricsInstalled) {
+      return;
     }
 
+    this.fMetricsInstalled = true;
+    this.fDetach.push(addMetricReader(this.metrics.reader));
     ensureMeterProvider();
-
-    return true;
   }
 
   /**
@@ -152,4 +156,6 @@ export function hasDevtoolsTelemetry(): boolean {
 export async function resetDevtoolsTelemetry(): Promise<void> {
   await current?.shutdown();
   current = null;
+
+  await resetTelemetryProviders();
 }

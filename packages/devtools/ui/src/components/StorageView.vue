@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
-import { api, formatBytes, useResource } from '../api';
+import { api, formatBytes, useIntrospection } from '../api';
 import { useInspectorWidth } from '../inspector';
 import PageHeader from './PageHeader.vue';
 import SplitHandle from './SplitHandle.vue';
 import type { StorageValue, StorageView } from '../api';
 
-const { data, error, loading, reload } = useResource<StorageView>('/api/storage');
+const { data, error, loading, reload } = useIntrospection<StorageView>('storage');
 
 const query = ref('');
 // Kept as a pair: storage keys may contain any character, including separators.
@@ -21,7 +21,9 @@ const mounts = computed(() => {
 
   return (data.value?.mounts ?? []).map((mount) => ({
     ...mount,
-    matches: mount.keys.filter((key) => !needle || key.toLowerCase().includes(needle)).sort((a, b) => a.localeCompare(b)),
+    // A driver that cannot enumerate reports null rather than an empty list,
+    // so "cannot tell" stays distinguishable from "nothing stored".
+    matches: (mount.keys ?? []).filter((key) => !needle || key.toLowerCase().includes(needle)).sort((a, b) => a.localeCompare(b)),
   }));
 });
 

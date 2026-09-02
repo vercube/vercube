@@ -242,6 +242,22 @@ describe('devtools API', () => {
     expect((await devtoolsFetch(app, '/_devtools/api/signals/nope')).status).toBe(404);
   });
 
+  it('collects metrics on demand', async () => {
+    const app = await createDemoApp();
+    await app.fetch(new Request('http://localhost/demo/ok'));
+    await settle();
+
+    const payload = (await devtoolsJson(app, '/_devtools/api/signals/metrics')) as {
+      resourceMetrics: { scopeMetrics: { metrics: { name: string }[] }[] }[];
+    };
+
+    const names = payload.resourceMetrics.flatMap((resource) =>
+      resource.scopeMetrics.flatMap((scope) => scope.metrics.map((metric) => metric.name)),
+    );
+
+    expect(names).toEqual(expect.arrayContaining(['http.server.request.duration', 'v8js.memory.heap.used']));
+  });
+
   it('runs the audit rules', async () => {
     const app = await createDemoApp();
     const report = await devtoolsJson<DevtoolsTypes.AuditReport>(app, '/_devtools/api/audit');
@@ -274,6 +290,7 @@ describe('devtools API', () => {
 
     let buffer = '';
     let trace: Record<string, unknown> | undefined;
+    const seen: Record<string, unknown>[] = [];
 
     while (!trace) {
       const { value, done } = await reader.read();
@@ -290,6 +307,7 @@ describe('devtools API', () => {
         }
 
         const frame = JSON.parse(line.slice(6)) as Record<string, unknown>;
+        seen.push(frame);
 
         if (frame.ch === 'trace') {
           trace = frame;
@@ -299,6 +317,9 @@ describe('devtools API', () => {
 
     await reader.cancel();
 
+    // The greeting is addressed to the connection that just opened, so it has
+    // to be the very first thing it receives.
+    expect(seen[0]).toMatchObject({ ch: 'control', data: { type: 'hello' } });
     expect(trace).toMatchObject({ v: 1, ch: 'trace' });
     expect(typeof trace!.seq).toBe('number');
     expect(spansOf(trace!.data).some((span) => span.name === 'GET /demo/ok')).toBe(true);

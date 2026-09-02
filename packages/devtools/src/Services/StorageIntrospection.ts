@@ -1,10 +1,23 @@
+import { flattenConfig, isSecretKey } from '@vercube/core';
 import { Container, describeKey, Inject } from '@vercube/di';
+import { previewValue } from '../Utils/Preview';
+import type { DevtoolsTypes } from '../Types/DevtoolsTypes';
 import type { IntrospectionTypes } from '@vercube/core';
 
 /** Public surface of `@vercube/storage`'s manager that this reads. */
 interface StorageManagerLike {
   mounts: string[];
-  describe(options?: { maxKeys?: number }): Promise<unknown>;
+  describe(options?: { maxKeys?: number }): Promise<{ mounts: StorageMountDescription[] }>;
+  getItem<T>(params: { storage: string; key: string }): Promise<T | null>;
+}
+
+/** One mounted storage, as `@vercube/storage` describes it. */
+export interface StorageMountDescription {
+  name: string;
+  driver: string;
+  size: number | null;
+  keys: string[] | null;
+  truncated: boolean;
 }
 
 /** Public surface of `@vercube/cache`'s manager that this reads. */
@@ -17,10 +30,13 @@ export interface StorageDescription {
   /** Whether a storage manager is active in this application. */
   available: boolean;
   /** Mounted storages and what they hold. */
-  storage: unknown;
+  mounts: StorageMountDescription[];
   cache: {
     available: boolean;
-    defaults: Record<string, unknown>;
+    /** Flattened cache defaults. */
+    defaults: IntrospectionTypes.ConfigEntry[];
+    /** Mount the cache writes through, when it names one. */
+    mount: string | null;
   };
 }
 
@@ -56,14 +72,53 @@ export class StorageIntrospection implements IntrospectionTypes.Provider<Storage
     const storage = this.resolveLive<StorageManagerLike>('StorageManager');
     const cache = this.resolveLive<CacheManagerLike>('CacheManager');
 
+    const described = storage ? await storage.describe() : { mounts: [] };
+    const defaults = cache?.defaults ?? {};
+
     return {
       available: storage !== null,
-      storage: storage ? await storage.describe() : { mounts: [] },
+      mounts: described.mounts,
       cache: {
         available: cache !== null,
-        defaults: cache?.defaults ?? {},
+        defaults: flattenConfig(defaults),
+        mount: typeof defaults.storage === 'string' ? defaults.storage : null,
       },
     };
+  }
+
+  /**
+   * Reads a single value out of a mounted storage.
+   *
+   * Values stored under a credential-looking key are never returned: a storage
+   * browser is an easy place to leak a session token into a screenshot.
+   *
+   * @param mount - Mount name
+   * @param key - Key to read
+   * @returns A preview of the value, or a description of why there is none
+   */
+  public async readValue(mount: string, key: string): Promise<DevtoolsTypes.StorageValue> {
+    const storage = this.resolveLive<StorageManagerLike>('StorageManager');
+
+    if (!storage || !storage.mounts.includes(mount)) {
+      return { mount, key, type: 'undefined', size: 0, truncated: false, error: `No "${mount}" mount is active.` };
+    }
+
+    if (isSecretKey(key)) {
+      return { mount, key, type: 'redacted', size: 0, truncated: false, text: '<redacted>' };
+    }
+
+    try {
+      return { mount, key, ...previewValue(await storage.getItem({ storage: mount, key })) };
+    } catch (error) {
+      return {
+        mount,
+        key,
+        type: 'undefined',
+        size: 0,
+        truncated: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
   }
 
   /**

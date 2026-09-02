@@ -111,10 +111,24 @@ export class DevtoolsMetricPipeline {
   }
 
   /**
-   * Takes one collection and publishes it, stopping when nobody is listening.
+   * Takes one collection immediately, regardless of who is listening.
+   *
+   * The timer only runs while a UI is connected, so a plain snapshot request
+   * would otherwise come back empty on a freshly opened panel.
+   *
+   * @returns Resolves once the collection has been recorded
    */
-  private async collect(): Promise<void> {
-    if (this.fBus.size === 0) {
+  public async collectNow(): Promise<void> {
+    await this.collect(true);
+  }
+
+  /**
+   * Takes one collection and publishes it, stopping when nobody is listening.
+   *
+   * @param force - Collect even without subscribers
+   */
+  private async collect(force = false): Promise<void> {
+    if (!force && this.fBus.size === 0) {
       this.stop();
       return;
     }

@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-import { useResource } from '../api';
+import { useIntrospection } from '../api';
 import PageHeader from './PageHeader.vue';
 import type { ConfigEntry, ConfigView } from '../api';
 
-const { data, error, loading, reload } = useResource<ConfigView>('/api/config');
+const { data, error, loading, reload } = useIntrospection<ConfigView>('config');
 
 const query = ref('');
 

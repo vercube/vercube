@@ -1,4 +1,14 @@
-import { Controller, Get, Header, IntrospectionRegistry, Middleware, NotFoundError, Param, SetHeader } from '@vercube/core';
+import {
+  Controller,
+  Get,
+  Header,
+  IntrospectionRegistry,
+  Middleware,
+  NotFoundError,
+  Param,
+  QueryParam,
+  SetHeader,
+} from '@vercube/core';
 import { Inject } from '@vercube/di';
 import { DEFAULT_DEVTOOLS_OPTIONS } from '../Constants/DevtoolsDefaults';
 import { DEVTOOLS_UI_HTML } from '../Generated/UI';
@@ -7,6 +17,7 @@ import { DevtoolsProtocol } from '../Protocol/Frames';
 import { AuditService } from '../Services/AuditService';
 import { DevtoolsFrameBus } from '../Services/DevtoolsFrameBus';
 import { OverviewCollector } from '../Services/OverviewCollector';
+import { StorageIntrospection } from '../Services/StorageIntrospection';
 import { $DevtoolsOptions } from '../Symbols/DevtoolsSymbols';
 import { DevtoolsTelemetry } from '../Telemetry/DevtoolsTelemetry';
 import type { DevtoolsTypes } from '../Types/DevtoolsTypes';
@@ -43,6 +54,9 @@ export class DevtoolsController {
 
   @Inject(AuditService)
   private readonly gAudit!: AuditService;
+
+  @Inject(StorageIntrospection)
+  private readonly gStorage!: StorageIntrospection;
 
   @Inject(DevtoolsFrameBus)
   private readonly gBus!: DevtoolsFrameBus;
@@ -106,11 +120,15 @@ export class DevtoolsController {
    */
   @Get('/api/signals/:kind')
   @SetHeader('Cache-Control', 'no-store')
-  public signals(@Param('kind') kind: string): unknown {
+  public async signals(@Param('kind') kind: string): Promise<unknown> {
     this.assertSignal(kind);
 
     if (kind === 'metrics') {
+      // Collection is normally driven by an open stream, so a bare snapshot has
+      // to take a reading of its own or it comes back empty.
+      await this.gTelemetry.metrics.collectNow();
       this.gTelemetry.metrics.ensureRunning();
+
       return this.gTelemetry.metrics.snapshot();
     }
 
@@ -137,6 +155,26 @@ export class DevtoolsController {
     }
 
     return { ok: true };
+  }
+
+  /**
+   * Reads a single value out of a mounted storage.
+   *
+   * Kept out of the storage introspection section on purpose: listing what is
+   * stored is cheap, reading arbitrary values is not, and doing it on demand
+   * keeps a large value from being pulled in every time a panel refreshes.
+   *
+   * @param mount - Mount name
+   * @param key - Key to read
+   * @returns A preview of the value
+   */
+  @Get('/api/storage/value')
+  @SetHeader('Cache-Control', 'no-store')
+  public storageValue(
+    @QueryParam({ name: 'mount' }) mount: string,
+    @QueryParam({ name: 'key' }) key: string,
+  ): Promise<DevtoolsTypes.StorageValue> {
+    return this.gStorage.readValue(mount, key);
   }
 
   /**
@@ -209,14 +247,22 @@ export class DevtoolsController {
           controller.enqueue(encoder.encode(`event: frame\ndata: ${JSON.stringify(frame)}\n\n`));
         };
 
-        this.gBus.publish<DevtoolsProtocol.ControlPayload>('control', {
-          type: 'hello',
-          path: this.gOptions.path,
-          version: DevtoolsProtocol.VERSION,
-          sections: this.gIntrospection.list().map((section) => section.id),
-        });
-
         unsubscribe = this.gBus.subscribe(send);
+
+        // Sent straight to this connection rather than published: a greeting is
+        // addressed to the client that just arrived, not to everyone watching.
+        send({
+          v: DevtoolsProtocol.VERSION,
+          seq: 0,
+          at: Date.now(),
+          ch: 'control',
+          data: {
+            type: 'hello',
+            path: this.gOptions.path,
+            version: DevtoolsProtocol.VERSION,
+            sections: this.gIntrospection.list().map((section) => section.id),
+          } satisfies DevtoolsProtocol.ControlPayload,
+        });
 
         // Structural sections are never pushed in full: a change only announces
         // itself, and the UI re-fetches the section it actually has open.

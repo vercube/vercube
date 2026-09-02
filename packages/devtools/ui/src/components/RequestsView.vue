@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
-import { api, formatBytes, formatMs, statusClass, statusTone, useResource } from '../api';
+import { clearSignals, formatBytes, formatMs, loadLogs, loadRequests, statusClass, statusTone, useLoader } from '../api';
 import { useInspectorWidth } from '../inspector';
 import PageHeader from './PageHeader.vue';
 import SplitHandle from './SplitHandle.vue';
@@ -11,8 +11,8 @@ const props = defineProps<{
   liveLogs: LogEntry[];
 }>();
 
-const { data, error, loading, reload } = useResource<RequestRecord[]>('/api/requests');
-const logs = useResource<LogEntry[]>('/api/logs');
+const { data, error, loading, reload } = useLoader<RequestRecord[]>(loadRequests);
+const logs = useLoader<LogEntry[]>(loadLogs);
 
 const query = ref('');
 const onlyErrors = ref(false);
@@ -84,7 +84,7 @@ function formatTime(epoch: number): string {
 }
 
 async function clear(): Promise<void> {
-  await api('/api/requests', { method: 'DELETE' });
+  await clearSignals('traces');
   selectedId.value = null;
   await reload();
 }

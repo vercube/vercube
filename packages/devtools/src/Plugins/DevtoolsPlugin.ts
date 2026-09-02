@@ -9,7 +9,7 @@ import { DevtoolsFrameBus } from '../Services/DevtoolsFrameBus';
 import { OverviewCollector } from '../Services/OverviewCollector';
 import { StorageIntrospection } from '../Services/StorageIntrospection';
 import { $DevtoolsAppConfig, $DevtoolsOptions } from '../Symbols/DevtoolsSymbols';
-import { DevtoolsTelemetry, ensureDevtoolsTelemetry, hasDevtoolsTelemetry } from '../Telemetry/DevtoolsTelemetry';
+import { DevtoolsTelemetry, ensureDevtoolsTelemetry } from '../Telemetry/DevtoolsTelemetry';
 import type { DevtoolsTypes } from '../Types/DevtoolsTypes';
 import type { App, ConfigTypes } from '@vercube/core';
 
@@ -88,27 +88,25 @@ export class DevtoolsPlugin extends BasePlugin<DevtoolsTypes.Options> {
       return;
     }
 
-    // Devtools is useless without spans, so it turns telemetry on rather than
-    // asking the application to remember to.
-    await new TelemetryPlugin().use(app, {
-      enabled: true,
-      spans: { bodies: resolved.captureBodies ? { maxBytes: resolved.maxBodyBytes } : false },
-    });
-
-    // Registered through `app.addPlugin()` rather than the config, so the
-    // config phase never ran. Traces and logs still work; metrics only do when
-    // nothing has created an instrument yet.
-    const fresh = !hasDevtoolsTelemetry();
+    // The pipeline is created in the config phase when devtools is registered
+    // through `vercube.config.ts`; `addPlugin` skips that phase, so it is
+    // created here instead.
     const telemetry = ensureDevtoolsTelemetry(resolved);
 
-    if (fresh && !telemetry.installMetrics()) {
-      logger?.warn(
-        '[DevtoolsPlugin]',
-        'Metrics are unavailable because a meter provider already exists. Register DevtoolsPlugin in vercube.config.ts to see them.',
-      );
-    }
-
+    // Idempotent: the config phase normally did this already, but registering
+    // devtools through `addPlugin` skips that phase entirely.
+    telemetry.installMetrics();
     telemetry.install(logger);
+
+    // Strictly after the meter provider exists: telemetry creates its
+    // instruments here, and an instrument made before a provider is registered
+    // stays a no-op for the life of the process.
+    await new TelemetryPlugin().use(app, {
+      enabled: true,
+      // The inspector must not appear in the data it is inspecting.
+      exclude: [resolved.path],
+      spans: { bodies: resolved.captureBodies ? { maxBytes: resolved.maxBodyBytes } : false },
+    });
 
     app.container.bindInstance($DevtoolsOptions, resolved);
     app.container.bindInstance($DevtoolsAppConfig, config);
