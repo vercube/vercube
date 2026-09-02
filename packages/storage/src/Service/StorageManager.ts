@@ -1,5 +1,6 @@
 import { Container, Init, Inject, InjectOptional } from '@vercube/di';
 import { Logger } from '@vercube/logger';
+import { traceOperation } from '../Common/Instrument';
 import { Storage } from './Storage';
 import type { StorageTypes } from '../Types/StorageTypes';
 
@@ -99,8 +100,10 @@ export class StorageManager {
    * @returns {Promise<T | null>} A promise that resolves with the stored value or null if not found
    */
   public async getItem<T = unknown>({ storage, key }: StorageTypes.GetItem): Promise<T | null> {
-    const storageInstance = this.getStorage(storage);
-    return storageInstance?.getItem<T>(key) ?? null;
+    return this.trace('getItem', storage, key, async () => {
+      const storageInstance = this.getStorage(storage);
+      return (await storageInstance?.getItem<T>(key)) ?? null;
+    });
   }
 
   /**
@@ -112,8 +115,10 @@ export class StorageManager {
    * @returns {Promise<T[]>} A promise that resolves with the stored values or empty array if not found
    */
   public async getItems<T = unknown>({ storage, keys }: StorageTypes.GetItems): Promise<T[]> {
-    const storageInstance = this.getStorage(storage);
-    return storageInstance?.getItems<T>(keys) ?? [];
+    return this.trace('getItems', storage, undefined, async () => {
+      const storageInstance = this.getStorage(storage);
+      return (await storageInstance?.getItems<T>(keys)) ?? [];
+    });
   }
 
   /**
@@ -126,8 +131,10 @@ export class StorageManager {
    * @returns {Promise<void>} A promise that resolves when the value is stored
    */
   public async setItem<T = unknown, U = unknown>({ storage, key, value, options }: StorageTypes.SetItem<T, U>): Promise<void> {
-    const storageInstance = this.getStorage(storage);
-    storageInstance?.setItem<T, U>(key, value, options);
+    await this.trace('setItem', storage, key, async () => {
+      const storageInstance = this.getStorage(storage);
+      await storageInstance?.setItem<T, U>(key, value, options);
+    });
   }
 
   /**
@@ -138,8 +145,10 @@ export class StorageManager {
    * @returns {Promise<void>} A promise that resolves when the item is deleted
    */
   public async deleteItem({ storage, key }: StorageTypes.DeleteItem): Promise<void> {
-    const storageInstance = this.getStorage(storage);
-    storageInstance?.deleteItem(key);
+    await this.trace('deleteItem', storage, key, async () => {
+      const storageInstance = this.getStorage(storage);
+      await storageInstance?.deleteItem(key);
+    });
   }
 
   /**
@@ -201,6 +210,32 @@ export class StorageManager {
         this.gLogger?.error('Vercube/StorageManager::init', error);
       }
     }
+  }
+  /**
+   * Wraps a storage operation in a span.
+   *
+   * Mount and driver are recorded, the key is not: keys routinely contain user
+   * and tenant identifiers, and a span attribute is the wrong place for them.
+   * @param {string} operation - Operation name
+   * @param {string} [mount] - Mount the operation targets
+   * @param {string} [key] - Key involved, used only to count it
+   * @param {Function} fn - The work to trace
+   * @returns {Promise<T>} Whatever `fn` returned
+   * @private
+   */
+  private trace<T>(operation: string, mount: string | undefined, key: string | undefined, fn: () => Promise<T>): Promise<T> {
+    const name = mount ?? 'default';
+
+    return traceOperation(
+      `storage.${operation}`,
+      {
+        'vercube.storage.operation': operation,
+        'vercube.storage.mount': name,
+        'vercube.storage.driver': (this.fStorages.get(name)?.storage as object)?.constructor?.name,
+        'vercube.storage.keyed': key !== undefined,
+      },
+      fn,
+    );
   }
 }
 
