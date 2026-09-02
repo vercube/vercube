@@ -228,19 +228,29 @@ let meterProvider: MeterProvider | undefined;
 /**
  * Registers a metric reader.
  *
- * Must be called before {@link ensureMeterProvider}: unlike tracers, the
- * OpenTelemetry metrics API has no proxy, so instruments created before a
- * provider exists are permanently no-ops and a reader added afterwards would
- * never see them.
+ * Must be called before {@link ensureMeterProvider}. `MeterProvider` takes its
+ * readers at construction, a reader cannot be bound to a second provider, and
+ * the metrics API has no proxy meter - so the provider is built once, and
+ * instruments have to be created after it exists.
+ *
+ * Registering the same reader twice is a no-op, which matters because a plugin
+ * config phase can run more than once per process.
  *
  * @param reader - The reader to register
+ * @returns A function that unregisters it again
  */
-export function addMetricReader(reader: IMetricReader): void {
-  if (meterProvider) {
-    throw new Error('The meter provider has already been created; add metric readers before it is built.');
+export function addMetricReader(reader: IMetricReader): () => void {
+  if (!metricReaders.includes(reader)) {
+    metricReaders.push(reader);
   }
 
-  metricReaders.push(reader);
+  return () => {
+    const index = metricReaders.indexOf(reader);
+
+    if (index !== -1) {
+      metricReaders.splice(index, 1);
+    }
+  };
 }
 
 /**
@@ -268,4 +278,25 @@ export function ensureMeterProvider(options: NodeTelemetryOptions = {}): MeterPr
   metrics.setGlobalMeterProvider(meterProvider);
 
   return meterProvider;
+}
+
+/**
+ * Drops every registered provider and reader.
+ *
+ * Meant for tests and for tearing an application down; a process that builds a
+ * second application afterwards starts from a clean slate.
+ *
+ * @returns Resolves once the providers have shut down
+ */
+export async function resetTelemetryProviders(): Promise<void> {
+  const provider = meterProvider;
+
+  meterProvider = undefined;
+  metricReaders.length = 0;
+  started = undefined;
+
+  metrics.disable();
+  trace.disable();
+
+  await provider?.shutdown().catch(() => {});
 }
