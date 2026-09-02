@@ -78,13 +78,18 @@ export class DevtoolsTelemetry {
   /**
    * Registers the span processor and the log drain.
    *
-   * @param logger - The application logger
+   * @param logger - The application logger, or null to leave logs uncaptured
+   * @param trackRequests - Whether to record spans at all
    */
-  public install(logger: Logger | null): void {
-    this.fDetach.push(addSpanProcessor(this.spans));
+  public install(logger: Logger | null, trackRequests = true): void {
+    if (trackRequests) {
+      this.fDetach.push(addSpanProcessor(this.spans));
+    }
 
     // Creates a tracer provider only when the application has not already
-    // started one; either way the processor above is attached to it.
+    // started one; either way the processor above is attached to it. Still
+    // needed with request tracking off, because trace context propagation and
+    // log correlation depend on spans existing.
     ensureTracerProvider();
 
     logger?.addDrain(DEVTOOLS_LOG_PLUGIN, this.logs.drain);

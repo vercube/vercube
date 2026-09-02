@@ -2,6 +2,7 @@
 export * from './Bootstrap/BootstrapSpans';
 export * from './Common/Attributes';
 export * from './Common/BodyCapture';
+export * from './Common/HeaderCapture';
 export * from './Common/Propagation';
 export * from './Common/SpanUtils';
 export * from './Common/Telemetry';

@@ -96,7 +96,7 @@ export class DevtoolsPlugin extends BasePlugin<DevtoolsTypes.Options> {
     // Idempotent: the config phase normally did this already, but registering
     // devtools through `addPlugin` skips that phase entirely.
     telemetry.installMetrics();
-    telemetry.install(logger);
+    telemetry.install(resolved.captureLogs ? logger : null, resolved.trackRequests);
 
     // Strictly after the meter provider exists: telemetry creates its
     // instruments here, and an instrument made before a provider is registered
@@ -105,7 +105,10 @@ export class DevtoolsPlugin extends BasePlugin<DevtoolsTypes.Options> {
       enabled: true,
       // The inspector must not appear in the data it is inspecting.
       exclude: [resolved.path],
-      spans: { bodies: resolved.captureBodies ? { maxBytes: resolved.maxBodyBytes } : false },
+      spans: {
+        bodies: resolved.captureBodies ? { maxBytes: resolved.maxBodyBytes } : false,
+        headers: resolved.captureHeaders ? { redact: resolved.redactHeaders } : false,
+      },
     });
 
     app.container.bindInstance($DevtoolsOptions, resolved);

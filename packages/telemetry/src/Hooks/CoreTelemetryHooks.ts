@@ -23,6 +23,7 @@ import {
   REQUEST_BODY_EVENT,
   RESPONSE_BODY_EVENT,
 } from '../Common/BodyCapture';
+import { addHeadersEvent, REQUEST_HEADERS_EVENT, RESPONSE_HEADERS_EVENT } from '../Common/HeaderCapture';
 import { errorType, failSpan, runInSpan } from '../Common/SpanUtils';
 import type { BodyPreview } from '../Common/BodyCapture';
 import type { Telemetry } from '../Common/Telemetry';
@@ -63,6 +64,9 @@ export class CoreTelemetryHooks implements TelemetryTypes.Hooks {
   /** Path prefixes that produce no telemetry. */
   private readonly fExclude: string[];
 
+  /** Extra header names to withhold, or null when headers are not captured. */
+  private readonly fRedactHeaders: ReadonlySet<string> | null;
+
   /** Lazily created duration histogram. */
   private fDuration: Histogram | undefined;
 
@@ -77,6 +81,7 @@ export class CoreTelemetryHooks implements TelemetryTypes.Hooks {
     this.fBodyBytes = resolveBodyBytes(options.spans?.bodies);
     this.fBootstrapPending = options.spans?.di !== false;
     this.fExclude = options.exclude ?? [];
+    this.fRedactHeaders = resolveHeaderRedaction(options.spans?.headers);
   }
 
   /** @inheritdoc */
@@ -102,16 +107,28 @@ export class CoreTelemetryHooks implements TelemetryTypes.Hooks {
     // The clone has to be taken before the handler consumes the stream.
     const requestBody = this.fBodyBytes > 0 ? captureRequestBody(spanContext.request, this.fBodyBytes) : undefined;
 
+    const redact = this.fRedactHeaders;
+
     return runInSpan(
       this.fTelemetry.tracer,
       spanContext.name,
       { kind: SpanKind.SERVER, attributes },
       parent,
-      fn,
-      this.fMetrics || this.fBodyBytes > 0
+      (span) => {
+        if (redact) {
+          addHeadersEvent(span, REQUEST_HEADERS_EVENT, spanContext.request.headers, redact);
+        }
+
+        return fn();
+      },
+      this.fMetrics || this.fBodyBytes > 0 || redact !== null
         ? (span, value, error) => {
             if (this.fMetrics) {
               this.recordDuration(attributes, startedAt, value, error);
+            }
+
+            if (redact && value instanceof Response) {
+              addHeadersEvent(span, RESPONSE_HEADERS_EVENT, value.headers, redact);
             }
 
             return this.fBodyBytes > 0 ? this.attachBodies(span, requestBody, value) : undefined;
@@ -281,4 +298,18 @@ function resolveBodyBytes(bodies: boolean | { maxBytes?: number } | undefined): 
   }
 
   return bodies === true ? DEFAULT_MAX_BODY_BYTES : (bodies.maxBytes ?? DEFAULT_MAX_BODY_BYTES);
+}
+
+/**
+ * Resolves the header capture setting.
+ *
+ * @param headers - The `spans.headers` option
+ * @returns Extra names to withhold, or null when headers are not captured
+ */
+function resolveHeaderRedaction(headers: boolean | { redact?: string[] } | undefined): ReadonlySet<string> | null {
+  if (!headers) {
+    return null;
+  }
+
+  return new Set((headers === true ? [] : (headers.redact ?? [])).map((name) => name.toLowerCase()));
 }

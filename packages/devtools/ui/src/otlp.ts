@@ -190,11 +190,28 @@ function toRequestRecord(traceId: string, root: OtlpSpan, group: OtlpSpan[]): De
         durationMs: round((Number(span.endTimeUnixNano) - Number(span.startTimeUnixNano)) / NS_PER_MS),
       }))
       .sort((a, b) => a.offsetMs - b.offsetMs),
-    requestHeaders: {},
-    responseHeaders: {},
+    requestHeaders: toHeaders(root, 'http.request.headers'),
+    responseHeaders: toHeaders(root, 'http.response.headers'),
     requestBody: toPayload(root, 'http.request.body'),
     responseBody: toPayload(root, 'http.response.body'),
   };
+}
+
+/**
+ * Reads captured headers off a span event.
+ *
+ * @param span - The span
+ * @param name - Event name
+ * @returns The headers, or an empty object when none were captured
+ */
+function toHeaders(span: OtlpSpan, name: string): Record<string, string> {
+  const event = span.events?.find((candidate) => candidate.name === name);
+
+  if (!event) {
+    return {};
+  }
+
+  return Object.fromEntries(Object.entries(toRecord(event.attributes)).map(([key, value]) => [key, String(value)]));
 }
 
 /**

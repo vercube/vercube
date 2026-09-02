@@ -130,6 +130,17 @@ export namespace TelemetryTypes {
      * @default false
      */
     bodies?: boolean | { maxBytes?: number };
+
+    /**
+     * Attach request and response headers to the server span as span events.
+     *
+     * Credential-bearing headers are always withheld, and `redact` adds more
+     * names to that list. Off by default, and meant for development: headers
+     * carry session state and client fingerprints.
+     *
+     * @default false
+     */
+    headers?: boolean | { redact?: string[] };
   }
 
   /**

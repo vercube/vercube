@@ -198,6 +198,27 @@ describe('devtools API', () => {
     expect(Object.values(body!.attributes.find((entry) => entry.key === 'body.text')!.value)[0]).toBe('{"hello":"world"}');
   });
 
+  it('captures headers and withholds credentials', async () => {
+    const app = await createDemoApp();
+    await app.fetch(
+      new Request('http://localhost/demo/ok', {
+        headers: { authorization: 'Bearer super-secret', 'x-tenant': 'acme' },
+      }),
+    );
+    await settle();
+
+    const spans = spansOf(await devtoolsJson(app, '/_devtools/api/signals/traces'));
+    const events = spans.find((span) => span.name === 'GET /demo/ok')!.events ?? [];
+    const headers = events.find((event) => event.name === 'http.request.headers');
+
+    expect(headers).toBeDefined();
+
+    const byKey = Object.fromEntries(headers!.attributes.map((entry) => [entry.key, Object.values(entry.value)[0]]));
+
+    expect(byKey['x-tenant']).toBe('acme');
+    expect(byKey.authorization).toBe('<redacted>');
+  });
+
   it('never records its own traffic', async () => {
     const app = await createDemoApp();
     await devtoolsFetch(app, '/_devtools/api/overview');
