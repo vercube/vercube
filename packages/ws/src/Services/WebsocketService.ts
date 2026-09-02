@@ -1,3 +1,4 @@
+import { context, metrics, SpanKind, trace, ValueType } from '@opentelemetry/api';
 import { BadRequestError, HttpServer, ValidationProvider, safeJsonParse, sanitizeObject } from '@vercube/core';
 import { Inject, InjectOptional } from '@vercube/di';
 import { Logger } from '@vercube/logger';
@@ -5,6 +6,7 @@ import { defineHooks } from 'crossws';
 import { plugin } from 'crossws/server';
 import { WebsocketTypes } from '../Types/WebsocketTypes';
 import type { WSError, WSMessage, WSPeer } from '../Types/WebsocketTypes';
+import type { Span, UpDownCounter } from '@opentelemetry/api';
 import type { NodeAdapter } from 'crossws/adapters/node';
 import type { IncomingMessage } from 'node:http';
 import type { Duplex } from 'node:stream';
@@ -26,6 +28,33 @@ type WsUpgradeGlobal = { __vercube_ws_upgrade__?: (req: IncomingMessage, socket:
  * - Registering namespaces and accepting websocket connections for them
  * - Registering event handlers and handling them
  */
+/** Instrumentation scope reported for websocket signals. */
+const SCOPE = '@vercube/ws';
+
+/** Lazily created gauge of currently connected peers. */
+let connections: UpDownCounter | undefined;
+
+/**
+ * Records a change in the number of connected peers.
+ *
+ * An up/down counter rather than a gauge: connects and disconnects are events
+ * the service already sees, and counting them is exact, where sampling a peer
+ * list on a timer would miss everything that happened between two samples.
+ *
+ * @param {number} delta - `1` on connect, `-1` on disconnect
+ * @param {string} namespace - The namespace the peer belongs to
+ * @returns {void}
+ */
+function countConnection(delta: number, namespace: string): void {
+  connections ??= metrics.getMeter(SCOPE).createUpDownCounter('vercube.ws.connections', {
+    description: 'Currently connected websocket peers.',
+    unit: '{connection}',
+    valueType: ValueType.INT,
+  });
+
+  connections.add(delta, { 'vercube.ws.namespace': namespace });
+}
+
 export class WebsocketService {
   /**
    * Http Server for injecting the server plugin
@@ -212,6 +241,7 @@ export class WebsocketService {
         const namespace = peer.namespace?.toLowerCase();
         if (namespace && this.fNamespaces[namespace]) {
           this.fNamespaces[namespace].push(peer);
+          countConnection(1, namespace);
         }
       },
       message: async (peer: WSPeer, message: WSMessage) => {
@@ -222,6 +252,7 @@ export class WebsocketService {
         if (namespace && this.fNamespaces[namespace]) {
           const peers = this.fNamespaces[namespace];
           this.fNamespaces[namespace] = peers.filter((p) => p.id !== peer.id);
+          countConnection(-1, namespace);
         }
       },
       error: async (peer: WSPeer, error: WSError) => {
@@ -253,11 +284,38 @@ export class WebsocketService {
    * @returns {Promise<void>}
    */
   private async handleMessage(peer: WSPeer, rawMessage: WSMessage): Promise<void> {
+    // A websocket message is work the server does on its own behalf, so it gets
+    // a CONSUMER span of its own rather than hanging off whatever request
+    // happened to open the socket.
+    const span = trace
+      .getTracer(SCOPE)
+      .startSpan('ws.message', { kind: SpanKind.CONSUMER, attributes: { 'vercube.ws.namespace': peer.namespace ?? '' } });
+
+    try {
+      await context.with(trace.setSpan(context.active(), span), () => this.internalHandleMessage(peer, rawMessage, span));
+    } finally {
+      span.end();
+    }
+  }
+
+  /**
+   * Dispatches one websocket message to its handler.
+   *
+   * @param {WSPeer} peer - The peer the message came from
+   * @param {WSMessage} rawMessage - The raw message
+   * @param {Span} span - The span covering this message
+   * @returns {Promise<void>} Resolves once the handler has run
+   * @private
+   */
+  private async internalHandleMessage(peer: WSPeer, rawMessage: WSMessage, span: Span): Promise<void> {
     try {
       const msg = safeJsonParse(rawMessage.text()) as any;
       const namespace = peer.namespace?.toLowerCase();
       const event = msg.event;
       const data = msg.data;
+
+      span.updateName(`ws.message ${String(event)}`);
+      span.setAttribute('vercube.ws.event', String(event));
 
       const handler = this.fHandlers[WebsocketTypes.HandlerAction.MESSAGE]?.[namespace]?.[event];
 
