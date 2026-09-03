@@ -6,7 +6,7 @@ packages:
 catalog:
   '@oxc-project/runtime': 0.148.0
   '@standard-schema/spec': 1.1.0
-  c12: 4.0.0-beta.5
+  c12: 4.0.0-rc.1
   consola: 3.4.2
   jiti: 2.7.0
   nitro: 3.0.260610-beta
