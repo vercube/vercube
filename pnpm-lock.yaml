@@ -43,8 +43,8 @@ catalogs:
       specifier: 1.2.6
       version: 1.2.6
     srvx:
-      specifier: 0.12.7
-      version: 0.12.7
+      specifier: 1.0.0
+      version: 1.0.0
     ufo:
       specifier: 1.6.4
       version: 1.6.4
@@ -363,7 +363,7 @@ importers:
         version: 2.0.3
       srvx:
         specifier: 'catalog:'
-        version: 0.12.7
+        version: 1.0.0
       std-env:
         specifier: 4.2.0
         version: 4.2.0
@@ -396,7 +396,7 @@ importers:
         version: 0.9.2
       srvx:
         specifier: 'catalog:'
-        version: 0.12.7
+        version: 1.0.0
     devDependencies:
       rolldown:
         specifier: 'catalog:'
@@ -568,7 +568,7 @@ importers:
         version: link:../di
       srvx:
         specifier: 'catalog:'
-        version: 0.12.7
+        version: 1.0.0
       ufo:
         specifier: 'catalog:'
         version: 1.6.4
@@ -615,7 +615,7 @@ importers:
         version: 0.9.2
       srvx:
         specifier: 'catalog:'
-        version: 0.12.7
+        version: 1.0.0
     devDependencies:
       vite:
         specifier: ^8.2.1
@@ -634,10 +634,10 @@ importers:
         version: link:../logger
       crossws:
         specifier: 0.4.12
-        version: 0.4.12(srvx@0.12.7)
+        version: 0.4.12(srvx@1.0.0)
       srvx:
         specifier: 'catalog:'
-        version: 0.12.7
+        version: 1.0.0
     devDependencies:
       zod:
         specifier: 'catalog:'
@@ -3981,6 +3981,11 @@ packages:
     engines: {node: '>=20.16.0'}
     hasBin: true
 
+  srvx@1.0.0:
+    resolution: {integrity: sha512-3R9/OeAJXrfcdfL7P/bQr7sVoeLRRFVNrDb6sdfNrQhvOJlBsVp1p/dMvtXP4PNTsHDht48eWX0ddo5X0W8qrg==}
+    engines: {node: '>=20.16.0'}
+    hasBin: true
+
   stack-trace@1.0.0-pre2:
     resolution: {integrity: sha512-2ztBJRek8IVofG9DBJqdy2N5kulaacX30Nz7xmkYF6ale9WBVmIy6mFBchvGX7Vx/MyjBhx+Rcxqrj+dbOnQ6A==}
     engines: {node: '>=16'}
@@ -6395,6 +6400,10 @@ snapshots:
     optionalDependencies:
       srvx: 0.12.7
 
+  crossws@0.4.12(srvx@1.0.0):
+    optionalDependencies:
+      srvx: 1.0.0
+
   csstype@3.2.3: {}
 
   data-uri-to-buffer@4.0.1: {}
@@ -7463,6 +7472,8 @@ snapshots:
   srvx@0.11.22: {}
 
   srvx@0.12.7: {}
+
+  srvx@1.0.0: {}
 
   stack-trace@1.0.0-pre2: {}
 
