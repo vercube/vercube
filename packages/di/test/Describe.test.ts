@@ -48,6 +48,15 @@ describe('describeKey', () => {
     expect(describeKey(Identity('Config'))).toBe('Config');
   });
 
+  it('names an instance by its constructor', () => {
+    expect(describeKey(new Repository() as never)).toBe('Repository');
+  });
+
+  it('falls back for anything it cannot name', () => {
+    expect(describeKey(undefined as never)).toBe('Unknown');
+    expect(describeKey(Object.create(null) as never)).toBe('Object');
+  });
+
   it('falls back for an anonymous class', () => {
     expect(describeKey((() => class {})() as never)).toBe('Anonymous');
   });

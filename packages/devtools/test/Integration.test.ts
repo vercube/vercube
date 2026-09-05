@@ -257,6 +257,27 @@ describe('devtools API', () => {
     expect(spansOf(await devtoolsJson(app, '/_devtools/api/signals/traces'))).toEqual([]);
   });
 
+  it('clears the log and metric buffers too', async () => {
+    const app = await createDemoApp();
+    await app.fetch(new Request('http://localhost/demo/chatty'));
+    await settle();
+
+    expect((await devtoolsFetch(app, '/_devtools/api/signals/logs/clear')).status).toBe(200);
+    expect((await devtoolsFetch(app, '/_devtools/api/signals/metrics/clear')).status).toBe(200);
+
+    const payload = (await devtoolsJson(app, '/_devtools/api/signals/logs')) as { resourceLogs: unknown[] };
+
+    expect(payload.resourceLogs).toEqual([]);
+  });
+
+  it('explains an unknown storage mount rather than failing', async () => {
+    const app = await createDemoApp();
+
+    await expect(devtoolsJson(app, '/_devtools/api/storage/value?mount=nope&key=user')).resolves.toMatchObject({
+      error: expect.stringContaining('nope'),
+    });
+  });
+
   it('rejects an unknown signal', async () => {
     const app = await createDemoApp();
 

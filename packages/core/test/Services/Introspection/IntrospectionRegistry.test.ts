@@ -141,6 +141,49 @@ describe('IntrospectionRegistry', () => {
     await expect(registry.describe('routes')).resolves.toBeUndefined();
   });
 
+  it('ignores a touch for a section nothing registered', () => {
+    const listener = vi.fn();
+    registry.onInvalidate(listener);
+
+    registry.touch('nope');
+
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it('rebuilds after the cache is cleared for one section', async () => {
+    const { provider, calls } = createProvider('routes');
+    registry.register(provider);
+
+    await registry.describe('routes');
+    registry.clearCache('routes');
+    await registry.describe('routes');
+
+    expect(calls()).toBe(2);
+  });
+
+  it('rebuilds after the whole cache is cleared', async () => {
+    const { provider, calls } = createProvider('routes');
+    registry.register(provider);
+
+    await registry.describe('routes');
+    registry.clearCache();
+    await registry.describe('routes');
+
+    expect(calls()).toBe(2);
+  });
+
+  it('does not unregister a provider that was already replaced', async () => {
+    const first = createProvider('routes');
+    const remove = registry.register(first.provider);
+
+    registry.register({ id: 'routes', title: 'Second', revision: () => 1, describe: () => 'second' });
+    remove();
+
+    // The disposer belongs to the first registration, so it must not take the
+    // replacement down with it.
+    await expect(registry.describe('routes')).resolves.toMatchObject({ title: 'Second' });
+  });
+
   it('replaces a provider registered under the same id', async () => {
     registry.register(createProvider('routes').provider);
     registry.register({ id: 'routes', title: 'Other', revision: () => 1, describe: () => 'other' });
