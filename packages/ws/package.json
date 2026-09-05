@@ -2,7 +2,7 @@
   "name": "@vercube/ws",
   "version": "1.2.1",
   "description": "Websocket module for Vercube framework",
-  "packageManager": "pnpm@11.22.0",
+  "packageManager": "pnpm@12.3.4",
   "repository": {
     "type": "git",
     "url": "https://github.com/vercube/vercube.git",
@@ -33,7 +33,7 @@
     "@vercube/core": "workspace:*",
     "@vercube/di": "workspace:*",
     "@vercube/logger": "workspace:*",
-    "crossws": "0.4.11",
+    "crossws": "0.4.12",
     "srvx": "catalog:"
   },
   "publishConfig": {

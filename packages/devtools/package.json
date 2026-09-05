@@ -2,7 +2,7 @@
   "name": "@vercube/devtools",
   "version": "1.2.1",
   "description": "Zero-config, self-hosted developer tools for Vercube - DI graph, route explorer, request waterfalls, bootstrap profiler and audits",
-  "packageManager": "pnpm@11.22.0",
+  "packageManager": "pnpm@12.3.4",
   "repository": {
     "type": "git",
     "url": "https://github.com/vercube/vercube.git",
@@ -50,7 +50,7 @@
   "devDependencies": {
     "@vitejs/plugin-vue": "6.0.8",
     "vite": "catalog:",
-    "vue": "3.5.41"
+    "vue": "3.5.42"
   },
   "publishConfig": {
     "access": "public"

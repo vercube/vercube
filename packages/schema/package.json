@@ -2,7 +2,7 @@
   "name": "@vercube/schema",
   "version": "1.2.1",
   "description": "Schema (swagger) module for Vercube framework",
-  "packageManager": "pnpm@11.22.0",
+  "packageManager": "pnpm@12.3.4",
   "repository": {
     "type": "git",
     "url": "https://github.com/vercube/vercube.git",
@@ -32,7 +32,7 @@
   },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "9.1.0",
-    "@scalar/client-side-rendering": "0.3.7",
+    "@scalar/client-side-rendering": "0.3.10",
     "@standard-schema/spec": "catalog:",
     "@vercube/core": "workspace:*",
     "@vercube/di": "workspace:*",
