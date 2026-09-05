@@ -75,6 +75,17 @@ export class TelemetryPlugin extends BasePlugin<TelemetryTypes.Options> {
 
     const container = app.container;
     const logger = container.getOptional(Logger);
+    const registry = container.get(TelemetryRegistry);
+
+    // Registering this plugin next to one that installs telemetry for you -
+    // devtools does - is a documented pairing, so a second registration has to
+    // be a no-op rather than a crash. The first one wins; both read the same
+    // merged configuration, so there is nothing to reconcile.
+    if (registry.enabled) {
+      logger?.debug('TelemetryPlugin', 'Telemetry is already installed, skipping');
+
+      return;
+    }
 
     // Bound automatically whenever telemetry is enabled, but an application can
     // build its container by hand - fail loudly rather than silently losing
@@ -94,7 +105,7 @@ export class TelemetryPlugin extends BasePlugin<TelemetryTypes.Options> {
     const telemetry = new OtelTelemetry(INSTRUMENTATION_SCOPE);
     container.bindInstance(Telemetry, telemetry);
 
-    container.get(TelemetryRegistry).install(new CoreTelemetryHooks(telemetry, resolved), resolved);
+    registry.install(new CoreTelemetryHooks(telemetry, resolved), resolved);
 
     // Bootstrap keeps running until the container has built everything the
     // first request needs, so the buffered constructions are replayed from the
