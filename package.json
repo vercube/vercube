@@ -38,7 +38,7 @@
     "@vitest/coverage-v8": "4.1.11",
     "@vitest/ui": "4.1.11",
     "bumpp": "12.3.0",
-    "lint-staged": "17.4.1",
+    "lint-staged": "17.5.0",
     "oxfmt": "0.66.0",
     "oxlint": "1.81.0",
     "simple-git-hooks": "2.14.0",
