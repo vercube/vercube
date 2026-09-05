@@ -15,6 +15,7 @@ import {
   Status,
 } from '@vercube/core';
 import { Inject } from '@vercube/di';
+import { Logger } from '@vercube/logger';
 import { Schema, z } from '@vercube/schema';
 import { StorageManager } from '@vercube/storage';
 import { Emit, Message, Namespace } from '@vercube/ws';
@@ -56,10 +57,13 @@ export default class PlaygroundController {
   @Inject(RuntimeConfig)
   private gRuntimeConfig!: RuntimeConfig<AppTypes.Config>;
 
+  @Inject(Logger)
+  private gLogger!: Logger;
+
   @Message({ event: 'message' })
   @Emit('message')
   public async onMessage(incomingMessage: unknown, peer: { id: string; ip: string }): Promise<Record<string, string>> {
-    console.log(incomingMessage, peer);
+    this.gLogger.info('PlaygroundController::onMessage', `Incoming message: ${incomingMessage}, Peer: ${peer}`);
     return { foo: 'bar' };
   }
 
@@ -76,6 +80,7 @@ export default class PlaygroundController {
   @Get('/')
   @SetHeader('X-Test-Response-Header', '1')
   public async index(): Promise<{ message: string }> {
+    this.gLogger.info('PlaygroundController::index', 'Hello, world!');
     return { message: 'Hello, world!' };
   }
 
@@ -87,6 +92,7 @@ export default class PlaygroundController {
   @Middleware(SecondMiddleware)
   @Get('/authenticate')
   public async authenticate(): Promise<{ message: string }> {
+    this.gLogger.info('PlaygroundController::authenticate', 'Hello, world!');
     return { message: 'Hello, world!' };
   }
 
@@ -97,6 +103,7 @@ export default class PlaygroundController {
   @Get('/basic-authentication')
   @Auth({ provider: BasicAuthenticationProvider })
   public async basicAuthentication(): Promise<{ message: string }> {
+    this.gLogger.info('PlaygroundController::basicAuthentication', 'Hello, world!');
     return { message: 'Hello, world!' };
   }
 
@@ -107,6 +114,7 @@ export default class PlaygroundController {
   @Get('/authorize')
   @Auth({ roles: ['admin'] })
   public async authorize(): Promise<{ message: string }> {
+    this.gLogger.info('PlaygroundController::authorize', 'Hello, world!');
     return { message: 'Hello, world!' };
   }
 
@@ -117,6 +125,7 @@ export default class PlaygroundController {
   @Get('/:id')
   @Status(HTTPStatus.CONFLICT)
   public async get(@Param('id') id: string): Promise<{ message: string }> {
+    this.gLogger.info('PlaygroundController::get', `Hello, ${id}!`);
     return { message: `Hello, ${id}!` };
   }
 
@@ -128,6 +137,7 @@ export default class PlaygroundController {
   public async storageGet(): Promise<{ message: string | null }> {
     const value = await this.gStorageManager.getItem<string>({ key: 'key' });
 
+    this.gLogger.info('PlaygroundController::storageGet', `Storage value: ${value}`);
     return { message: value };
   }
 
@@ -138,6 +148,7 @@ export default class PlaygroundController {
   @Post('/storage')
   public async storageSet(): Promise<{ message: string }> {
     await this.gStorageManager.setItem({ key: 'key', value: 'value' });
+    this.gLogger.info('PlaygroundController::storageSet', 'Storage value successfully set.');
     return { message: 'Storage value successfully set.' };
   }
 
@@ -165,6 +176,7 @@ export default class PlaygroundController {
     console.log('Body =>', body);
     console.log('Query =>', query);
 
+    this.gLogger.info('PlaygroundController::post', `Body: ${JSON.stringify(body)}, Query: ${query}`);
     return { message: JSON.stringify(body) };
   }
 
@@ -175,6 +187,7 @@ export default class PlaygroundController {
   @Get('/redirect')
   @Redirect('/api/playground/redirected')
   public async redirect(): Promise<{ message: string }> {
+    this.gLogger.info('PlaygroundController::redirect', 'Hello, i perform redirection!');
     return { message: 'Hello, i perform redirection!' };
   }
 
@@ -185,6 +198,7 @@ export default class PlaygroundController {
   @Get('/redirected')
   @Status(HTTPStatus.OK)
   public async redirected(): Promise<{ message: string }> {
+    this.gLogger.info('PlaygroundController::redirected', 'Hello, im redirected!');
     return { message: 'Hello, im redirected!' };
   }
 
@@ -195,6 +209,7 @@ export default class PlaygroundController {
   @Get('/error')
   @Middleware(SecondMiddleware)
   public async error(): Promise<{ message: string }> {
+    this.gLogger.info('PlaygroundController::error', 'Hello, world!');
     return { message: 'Hello, world!' };
   }
 
@@ -204,6 +219,7 @@ export default class PlaygroundController {
    */
   @Get('/error-throw')
   public async errorThrow(): Promise<{ message: string }> {
+    this.gLogger.info('PlaygroundController::errorThrow', 'Test error');
     throw new Error('Test error');
   }
 
