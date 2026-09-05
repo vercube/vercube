@@ -1,4 +1,11 @@
-import { BasePlugin, initializeMetadata, IntrospectionRegistry, skipGlobalMiddlewares, TelemetryRegistry } from '@vercube/core';
+import {
+  BasePlugin,
+  contributeTelemetryOptions,
+  initializeMetadata,
+  IntrospectionRegistry,
+  skipGlobalMiddlewares,
+  TelemetryRegistry,
+} from '@vercube/core';
 import { Logger } from '@vercube/logger';
 import { TelemetryPlugin } from '@vercube/telemetry';
 import { defu } from 'defu';
@@ -11,7 +18,7 @@ import { StorageIntrospection } from '../Services/StorageIntrospection';
 import { $DevtoolsAppConfig, $DevtoolsOptions } from '../Symbols/DevtoolsSymbols';
 import { DevtoolsTelemetry, ensureDevtoolsTelemetry } from '../Telemetry/DevtoolsTelemetry';
 import type { DevtoolsTypes } from '../Types/DevtoolsTypes';
-import type { App, ConfigTypes, DeepPartial, TelemetryTypes } from '@vercube/core';
+import type { App, ConfigTypes } from '@vercube/core';
 
 /**
  * Self-hosted developer tools for Vercube, mounted at `/_devtools`.
@@ -35,6 +42,16 @@ import type { App, ConfigTypes, DeepPartial, TelemetryTypes } from '@vercube/cor
  * });
  * ```
  */
+/** Whether devtools has already contributed its telemetry settings. */
+let contributed = false;
+
+/**
+ * Forgets the contribution guard. Used between tests.
+ */
+export function resetDevtoolsContribution(): void {
+  contributed = false;
+}
+
 export class DevtoolsPlugin extends BasePlugin<DevtoolsTypes.Options> {
   /**
    * The name of the plugin.
@@ -53,19 +70,15 @@ export class DevtoolsPlugin extends BasePlugin<DevtoolsTypes.Options> {
    * @param options - Plugin options
    * @override
    */
-  public override configure(config: ConfigTypes.Config, options?: DevtoolsTypes.Options): DeepPartial<ConfigTypes.Config> | void {
+  public override configure(config: ConfigTypes.Config, options?: DevtoolsTypes.Options): void {
     if (!this.isEnabled(config, options)) {
       return;
     }
 
-    ensureDevtoolsTelemetry(this.resolveOptions(config, options)).installMetrics();
+    const resolved = this.resolveOptions(config, options);
 
-    // Contributed to the configuration rather than passed to TelemetryPlugin
-    // directly, so it survives whichever plugin ends up installing telemetry.
-    // `defu` gives the existing config priority and concatenates arrays, so a
-    // user's own `exclude` and span choices are kept and devtools' mount is
-    // added to them.
-    return { telemetry: this.telemetryOptions(config, options) };
+    ensureDevtoolsTelemetry(resolved).installMetrics();
+    this.contribute(resolved);
   }
 
   /**
@@ -109,8 +122,13 @@ export class DevtoolsPlugin extends BasePlugin<DevtoolsTypes.Options> {
     // instruments here, and an instrument made before a provider is registered
     // stays a no-op for the life of the process. Skipped when the application
     // registered TelemetryPlugin itself and it already ran.
+    this.contribute(resolved);
+
     if (!app.container.get(TelemetryRegistry).enabled) {
-      await new TelemetryPlugin().use(app, this.telemetryOptions(config, options));
+      // Devtools is useless without spans, so enabling it enables telemetry
+      // even where the application left it off. Everything else comes from the
+      // contribution above.
+      await new TelemetryPlugin().use(app, { enabled: true });
     }
 
     app.container.bindInstance($DevtoolsOptions, resolved);
@@ -134,33 +152,28 @@ export class DevtoolsPlugin extends BasePlugin<DevtoolsTypes.Options> {
   }
 
   /**
-   * Builds the telemetry settings devtools needs, merged onto the ones the
-   * application configured.
+   * Registers the telemetry settings devtools needs, once per process.
    *
-   * The application wins every conflict, and `exclude` lists are concatenated,
-   * so configuring `telemetry.exclude: ['/health']` next to devtools keeps both
-   * the health check and the inspector out of the data.
+   * Contributed rather than passed to `TelemetryPlugin` directly, because the
+   * application may register that plugin itself and have it install first.
    *
-   * @param config - Application config
-   * @param options - Plugin options
-   * @returns Telemetry options to install with
+   * @param resolved - Fully resolved devtools options
    */
-  private telemetryOptions(config: ConfigTypes.Config, options?: DevtoolsTypes.Options): TelemetryTypes.Options {
-    const resolved = this.resolveOptions(config, options);
-    const configured = typeof config.telemetry === 'object' ? config.telemetry : {};
+  private contribute(resolved: DevtoolsTypes.ResolvedOptions): void {
+    if (contributed) {
+      return;
+    }
 
-    const merged = defu(configured, {
+    contributed = true;
+
+    contributeTelemetryOptions({
       // The inspector must not appear in the data it is inspecting.
       exclude: [resolved.path],
       spans: {
         bodies: resolved.captureBodies ? { maxBytes: resolved.maxBodyBytes } : false,
         headers: resolved.captureHeaders ? { redact: resolved.redactHeaders } : false,
       },
-    }) as TelemetryTypes.Options;
-
-    // Devtools is useless without spans, so enabling it enables telemetry even
-    // where the application left it off.
-    return { ...merged, enabled: true };
+    });
   }
 
   /**

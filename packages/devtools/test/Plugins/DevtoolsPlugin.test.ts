@@ -5,12 +5,13 @@ import {
   createApp,
   Get,
   GlobalMiddlewareRegistry,
+  clearTelemetryContributions,
   TelemetryRegistry,
   vercubePluginFromClass,
 } from '@vercube/core';
 import { TelemetryPlugin } from '@vercube/telemetry';
 import { afterEach, describe, expect, it } from 'vitest';
-import { DevtoolsPlugin } from '../../src/Plugins/DevtoolsPlugin';
+import { DevtoolsPlugin, resetDevtoolsContribution } from '../../src/Plugins/DevtoolsPlugin';
 import { resetDevtoolsTelemetry } from '../../src/Telemetry/DevtoolsTelemetry';
 import { createDevtoolsApp, devtoolsFetch, devtoolsJson } from '../Utils/App';
 import type { DevtoolsTypes } from '../../src/Types/DevtoolsTypes';
@@ -19,6 +20,8 @@ import type { IntrospectionTypes } from '@vercube/core';
 describe('DevtoolsPlugin', () => {
   afterEach(async () => {
     await resetDevtoolsTelemetry();
+    resetDevtoolsContribution();
+    clearTelemetryContributions();
   });
 
   it('should stay disabled outside of development mode', async () => {
@@ -308,6 +311,23 @@ describe('DevtoolsPlugin', () => {
     // span choices the application made alone.
     expect(options.exclude).toEqual(expect.arrayContaining(['/health', '/_devtools']));
     expect(options.spans?.middleware).toBe(true);
+  });
+
+  it('should reach telemetry options through the boolean shorthand', async () => {
+    // `telemetry: true` is what the docs show, and `defu` will not merge an
+    // object patch into a boolean, so this is the case a config patch misses.
+    const app = await createApp({
+      cfg: {
+        requestLogging: false,
+        telemetry: true,
+        plugins: [vercubePluginFromClass(TelemetryPlugin), vercubePluginFromClass(DevtoolsPlugin, { enabled: true })],
+      },
+    });
+
+    const options = app.container.get(TelemetryRegistry).options!;
+
+    expect(options.exclude).toContain('/_devtools');
+    expect(options.spans?.headers).not.toBe(false);
   });
 
   it('should refuse to mount in production without a token', async () => {
