@@ -2,7 +2,7 @@
   "name": "@vercube/vite",
   "version": "1.2.1",
   "description": "Vite plugin integrating Vercube with the Vite Environment API",
-  "packageManager": "pnpm@11.25.0",
+  "packageManager": "pnpm@12.3.4",
   "repository": {
     "type": "git",
     "url": "https://github.com/vercube/vercube.git",
