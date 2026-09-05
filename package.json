@@ -19,7 +19,7 @@
     "test:lint": "oxlint . && oxfmt --check",
     "lint:fix": "oxlint --fix . && oxfmt --no-error-on-unmatched-pattern",
     "pre-commit": "lint-staged",
-    "postinstall": "simple-git-hooks",
+    "postinstall": "simple-git-hooks && pnpm --filter @vercube/devtools build:ui",
     "playground": "cd playground && pnpm dev",
     "release": "bumpp"
   },
