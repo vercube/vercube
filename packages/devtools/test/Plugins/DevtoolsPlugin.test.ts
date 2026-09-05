@@ -5,8 +5,10 @@ import {
   createApp,
   Get,
   GlobalMiddlewareRegistry,
+  TelemetryRegistry,
   vercubePluginFromClass,
 } from '@vercube/core';
+import { TelemetryPlugin } from '@vercube/telemetry';
 import { afterEach, describe, expect, it } from 'vitest';
 import { DevtoolsPlugin } from '../../src/Plugins/DevtoolsPlugin';
 import { resetDevtoolsTelemetry } from '../../src/Telemetry/DevtoolsTelemetry';
@@ -276,6 +278,36 @@ describe('DevtoolsPlugin', () => {
     expect(names).toContain('DevtoolsPlugin');
     expect(names).toContain('OtherPlugin');
     expect(overview.counts.plugins).toBe(names.length);
+  });
+
+  it('should boot alongside an application-registered TelemetryPlugin', async () => {
+    // Both plugins install telemetry, and the registry only accepts one.
+    const app = await createApp({
+      cfg: {
+        requestLogging: false,
+        telemetry: true,
+        plugins: [vercubePluginFromClass(TelemetryPlugin), vercubePluginFromClass(DevtoolsPlugin, { enabled: true })],
+      },
+    });
+
+    expect((await devtoolsFetch(app, '/_devtools/api/overview')).status).toBe(200);
+  });
+
+  it('should keep the application own telemetry exclusions', async () => {
+    const app = await createApp({
+      cfg: {
+        requestLogging: false,
+        telemetry: { exclude: ['/health'], spans: { middleware: true } },
+        plugins: [vercubePluginFromClass(DevtoolsPlugin, { enabled: true })],
+      },
+    });
+
+    const options = app.container.get(TelemetryRegistry).options!;
+
+    // Devtools adds its mount to the list rather than replacing it, and leaves
+    // span choices the application made alone.
+    expect(options.exclude).toEqual(expect.arrayContaining(['/health', '/_devtools']));
+    expect(options.spans?.middleware).toBe(true);
   });
 
   it('should refuse to mount in production without a token', async () => {
