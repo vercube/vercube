@@ -70,8 +70,21 @@ export function traceLookup<T>(name: string, fn: () => Promise<T>): Promise<T> {
     parent,
   );
 
-  return context.with(trace.setSpan(parent, span), () =>
-    fn().then(
+  return context.with(trace.setSpan(parent, span), () => {
+    let pending: Promise<T>;
+
+    // `fn` is not necessarily an async function, so a synchronous throw would
+    // escape before `then` is attached and leave the span open forever.
+    try {
+      pending = fn();
+    } catch (error) {
+      fail(span, error);
+      span.end();
+
+      throw error;
+    }
+
+    return pending.then(
       (value) => {
         span.end();
         return value;
@@ -81,8 +94,8 @@ export function traceLookup<T>(name: string, fn: () => Promise<T>): Promise<T> {
         span.end();
         throw error;
       },
-    ),
-  );
+    );
+  });
 }
 
 /**

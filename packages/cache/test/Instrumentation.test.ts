@@ -3,6 +3,7 @@ import { StorageManager } from '@vercube/storage';
 import { MemoryStorage } from '@vercube/storage/drivers/MemoryStorage';
 import { createTestTelemetry } from '@vercube/telemetry/testing';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { traceLookup } from '../src/Common/Instrument';
 import { CacheManager } from '../src/Services/CacheManager';
 import type { TestTelemetry } from '@vercube/telemetry/testing';
 
@@ -68,6 +69,23 @@ describe('cache instrumentation', () => {
     // involved had to know the other existed.
     expect(read).toBeDefined();
     expect(read!.parentSpanContext?.spanId).toBe(lookup.spanContext().spanId);
+  });
+
+  it('ends the span when the traced call throws synchronously', () => {
+    // Not reachable through `cached()`, because the caching engine always hands
+    // back a promise. It is reachable for any other caller of the helper, and a
+    // span left open never reaches an exporter, so the failure would be
+    // invisible in exactly the case you most want to see.
+    expect(() =>
+      traceLookup('sync-throw', () => {
+        throw new Error('boom');
+      }),
+    ).toThrow('boom');
+
+    const span = telemetry.span('cache.sync-throw');
+
+    expect(span).toBeDefined();
+    expect(span!.attributes['error.type']).toBe('Error');
   });
 
   it('keeps the cached function api intact', async () => {
