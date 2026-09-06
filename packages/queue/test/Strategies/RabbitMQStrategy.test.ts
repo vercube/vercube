@@ -271,6 +271,27 @@ describe('RabbitMQStrategy', () => {
       expect(consumedQueues().filter((queue) => queue === 'emails')).toHaveLength(2);
     });
 
+    it('should still be consuming when a recovery lands in the middle of consume()', async () => {
+      const connection = state.connections[0];
+
+      state.channels[0]?.consume.mockClear();
+
+      const consuming = strategy.consume({ queue: 'emails', concurrency: 1, dispatch: async () => undefined });
+
+      // The recovery has already read this queue out of the ledger, so the call
+      // that is still starting must not fail and must not withdraw it.
+      connection.listeners.connect(undefined);
+
+      await expect(consuming).resolves.toMatchObject({ queue: 'emails' });
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      connection.listeners.connect(undefined);
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      // the queue is still known, so every later recovery keeps consuming it
+      expect(consumedQueues().filter((queue) => queue === 'emails').length).toBeGreaterThanOrEqual(3);
+    });
+
     it('should refuse to connect without a url', async () => {
       const bare = container.resolve(RabbitMQStrategy);
 

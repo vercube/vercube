@@ -276,6 +276,9 @@ export class RabbitMQStrategy extends QueueStrategy<RabbitMQStrategyOptions> {
     this.fRequests.set(request.queue, request);
 
     try {
+      // A reconnect during startup is not a failure: it already read this queue
+      // out of the ledger above and is starting it on the new connection, so the
+      // queue has to stay in the ledger and the caller has to see a success.
       await this.startConsumer(request, this.fGeneration);
     } catch (error) {
       this.fRequests.delete(request.queue);
@@ -294,10 +297,10 @@ export class RabbitMQStrategy extends QueueStrategy<RabbitMQStrategyOptions> {
    *
    * @param {QueueTypes.ConsumeRequest} request - Queue to consume, its concurrency and the dispatch callback
    * @param {number} generation - Connection this consumer is being started for
-   * @returns {Promise<void>} Resolves once the broker accepted the consumer
-   * @throws {Error} When the channel or the consumer cannot be created, or it is no longer wanted
+   * @returns {Promise<boolean>} Whether the consumer was installed, false when it was no longer wanted
+   * @throws {Error} When the channel or the consumer cannot be created
    */
-  private async startConsumer(request: QueueTypes.ConsumeRequest, generation: number): Promise<void> {
+  private async startConsumer(request: QueueTypes.ConsumeRequest, generation: number): Promise<boolean> {
     const options = this.requireOptions('consume');
     const connection = this.requireConnection('consume');
     const channel = await connection.createChannel();
@@ -319,19 +322,17 @@ export class RabbitMQStrategy extends QueueStrategy<RabbitMQStrategyOptions> {
       // The queue may have been stopped, or the connection replaced again, while
       // the broker was answering. Installing this consumer now would revive a
       // stopped one, or attach a channel of a connection that is already gone.
+      // Neither is a failure: the caller asked for something that has since been
+      // withdrawn, or the recovery for the newer connection now owns this queue.
       if (generation !== this.fGeneration || !this.fRequests.has(request.queue)) {
-        await channel.cancel(reply.consumerTag).catch(() => undefined);
+        await channel.close().catch(() => undefined);
 
-        throw new QueueError(
-          `Consumer of "${request.queue}" is no longer wanted`,
-          'consume',
-          undefined,
-          { queue: request.queue },
-          false,
-        );
+        return false;
       }
 
       this.fConsumers.set(request.queue, { channel, tag: reply.consumerTag, active: 0, stopping: false });
+
+      return true;
     } catch (error) {
       // Nothing tracks this channel yet, and a recovery retries the whole thing,
       // so leaving it open leaks one channel per attempt on the same connection.
@@ -353,6 +354,8 @@ export class RabbitMQStrategy extends QueueStrategy<RabbitMQStrategyOptions> {
    */
   private async resume(request: QueueTypes.ConsumeRequest, generation: number): Promise<void> {
     try {
+      // A false return means the queue was stopped, or a newer connection took
+      // over, in the time it took the broker to answer. Both are fine here.
       await this.startConsumer(request, generation);
     } catch (error) {
       this.gLogger?.error(`Vercube/RabbitMQStrategy::Failed to consume "${request.queue}" again after a recovery`, error);
