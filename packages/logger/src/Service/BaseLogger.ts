@@ -1,6 +1,7 @@
-import { initLogger, log } from 'evlog';
+import { drainPlugin, enricherPlugin, initLogger, log } from 'evlog';
 import { Logger } from '../Common/Logger';
 import type { LoggerTypes } from '../Types/LoggerTypes';
+import type { EvlogPlugin } from 'evlog';
 
 /**
  * Default {@link Logger} implementation backed by evlog (https://evlog.dev).
@@ -19,15 +20,126 @@ export class BaseLogger extends Logger {
   private fContext: LoggerTypes.Context = {};
 
   /**
+   * The last configuration applied, replayed whenever a plugin is added.
+   */
+  private fOptions: LoggerTypes.Options = {};
+
+  /**
+   * Plugins registered through {@link BaseLogger.addPlugin}, kept apart from
+   * the ones the application passed to {@link BaseLogger.configure} so that
+   * reconfiguring never drops them.
+   */
+  private readonly fPlugins: EvlogPlugin[] = [];
+
+  /**
+   * Providers consulted for every emitted event. Shared by reference with
+   * child loggers, so registering one after `child()` still reaches them.
+   */
+  private fContextProviders: LoggerTypes.ContextProvider[] = [];
+
+  /**
    * Configures the underlying evlog logger.
    * @param options - Configuration options
    */
   public configure(options: LoggerTypes.Options): void {
-    const { logLevel, ...config } = options ?? {};
+    this.fOptions = options ?? {};
+    this.apply();
+  }
+
+  /**
+   * Registers an evlog plugin, keeping the current configuration intact.
+   *
+   * Registering the same name twice replaces the previous registration, which
+   * makes attaching a plugin idempotent across hot reloads.
+   *
+   * @param plugin - The evlog plugin to register
+   */
+  public addPlugin(plugin: EvlogPlugin): void {
+    const existing = this.fPlugins.findIndex((registered) => registered.name === plugin.name);
+
+    if (existing === -1) {
+      this.fPlugins.push(plugin);
+    } else {
+      this.fPlugins[existing] = plugin;
+    }
+
+    this.apply();
+  }
+
+  /**
+   * Registers a drain: a callback receiving every emitted event.
+   *
+   * @param name - Stable plugin name
+   * @param drain - The drain callback
+   */
+  public addDrain(name: string, drain: NonNullable<EvlogPlugin['drain']>): void {
+    this.addPlugin(drainPlugin(name, drain));
+  }
+
+  /**
+   * Registers an enricher: a callback that may mutate an event before it drains.
+   *
+   * @param name - Stable plugin name
+   * @param enrich - The enricher callback
+   */
+  public addEnricher(name: string, enrich: NonNullable<EvlogPlugin['enrich']>): void {
+    this.addPlugin(enricherPlugin(name, enrich));
+  }
+
+  /**
+   * Registers a provider consulted for every event this logger emits.
+   *
+   * @param provider - Called per event
+   * @returns A function that unregisters the provider
+   */
+  public addContextProvider(provider: LoggerTypes.ContextProvider): () => void {
+    this.fContextProviders.push(provider);
+
+    return () => {
+      const index = this.fContextProviders.indexOf(provider);
+
+      if (index !== -1) {
+        this.fContextProviders.splice(index, 1);
+      }
+    };
+  }
+
+  /**
+   * Collects the fields every registered provider contributes.
+   *
+   * @returns The merged provided context, or null when nothing was contributed
+   * @private
+   */
+  private providedContext(): LoggerTypes.Context | null {
+    if (this.fContextProviders.length === 0) {
+      return null;
+    }
+
+    let merged: LoggerTypes.Context | null = null;
+
+    for (const provider of this.fContextProviders) {
+      const context = provider();
+
+      if (context) {
+        merged = merged === null ? { ...context } : Object.assign(merged, context);
+      }
+    }
+
+    return merged;
+  }
+
+  /**
+   * Pushes the stored configuration and every registered plugin into evlog.
+   *
+   * @private
+   */
+  private apply(): void {
+    const { logLevel, plugins, ...config } = this.fOptions;
 
     initLogger({
       ...config,
       minLevel: logLevel ?? config.minLevel,
+      plugins: plugins ? [...plugins, ...this.fPlugins] : this.fPlugins,
     });
   }
 
@@ -85,6 +197,7 @@ export class BaseLogger extends Logger {
   public child(context: LoggerTypes.Context): Logger {
     const child = new BaseLogger();
     child.fContext = { ...this.fContext, ...context };
+    child.fContextProviders = this.fContextProviders;
     return child;
   }
 
@@ -93,7 +206,7 @@ export class BaseLogger extends Logger {
    * @param overrides - Additional fields merged into the emitted event
    */
   public emit(overrides: LoggerTypes.Context = {}): void {
-    const event = { ...this.fContext, ...overrides };
+    const event = { ...this.providedContext(), ...this.fContext, ...overrides };
 
     if (Object.keys(event).length === 0) {
       return;
@@ -117,7 +230,8 @@ export class BaseLogger extends Logger {
    * @param args - The raw arguments passed to the log method
    */
   private dispatch(level: LoggerTypes.Level, args: LoggerTypes.Arg[]): void {
-    const hasContext = Object.keys(this.fContext).length > 0;
+    const provided = this.providedContext();
+    const hasContext = provided !== null || Object.keys(this.fContext).length > 0;
 
     // Fast path: native tagged log with no accumulated context for the prettiest output.
     if (!hasContext && args.length === 2 && typeof args[0] === 'string' && typeof args[1] === 'string') {
@@ -125,7 +239,7 @@ export class BaseLogger extends Logger {
       return;
     }
 
-    const event: Record<string, unknown> = { ...this.fContext };
+    const event: Record<string, unknown> = { ...provided, ...this.fContext };
     const messageParts: string[] = [];
     let tag: string | undefined;
 

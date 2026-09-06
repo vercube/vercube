@@ -1,4 +1,5 @@
 import { toLambdaHandler } from 'srvx/aws-lambda';
+import { flushTelemetry } from '../../Utils/flush';
 import type { ServerlessHandler } from '../../Types/ServerlessTypes';
 import type { App } from '@vercube/core';
 import type * as AWS from 'aws-lambda';
@@ -38,6 +39,8 @@ export function toServerlessHandler(
   return toLambdaHandler({
     fetch: async (request) => {
       const response = await app.fetch(request);
+      await flushTelemetry(app);
+
       return response;
     },
   }) as ServerlessHandler<

@@ -39,6 +39,12 @@ export namespace RouterTypes {
     asyncArgs?: boolean;
     /** True when the request body must be cloned before being consumed. */
     cloneBody?: boolean;
+    /** Controller class name, resolved once in `RequestHandler.prepareHandler`. */
+    controller?: string;
+    /** Route template this handler was registered under, set by `Router.addRoute`. */
+    path?: string;
+    /** Precomputed `${method} ${path}` telemetry span name, set by `Router.addRoute`. */
+    spanName?: string;
   }
 
   export interface RouteMatched<T = unknown> {

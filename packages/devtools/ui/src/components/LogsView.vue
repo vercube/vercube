@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-import { api, useResource } from '../api';
+import { clearSignals, loadLogs, useLoader } from '../api';
 import PageHeader from './PageHeader.vue';
 import type { LogEntry, LogLevel } from '../api';
 
@@ -8,7 +8,7 @@ const props = defineProps<{
   live: LogEntry[];
 }>();
 
-const { data, error, loading, reload } = useResource<LogEntry[]>('/api/logs');
+const { data, error, loading, reload } = useLoader<LogEntry[]>(loadLogs);
 
 const levels: LogLevel[] = ['debug', 'info', 'warn', 'error'];
 
@@ -79,7 +79,7 @@ function expand(id: string): void {
 }
 
 async function clear(): Promise<void> {
-  await api('/api/logs', { method: 'DELETE' });
+  await clearSignals('logs');
   expanded.value = new Set();
   await reload();
 }

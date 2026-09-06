@@ -2,7 +2,7 @@
   "name": "@vercube/scan",
   "version": "1.2.1",
   "description": "Source scanning and AST extraction utilities for the Vercube framework",
-  "packageManager": "pnpm@11.22.0",
+  "packageManager": "pnpm@12.3.4",
   "repository": {
     "type": "git",
     "url": "https://github.com/vercube/vercube.git",
@@ -32,7 +32,7 @@
     "build": "tsdown --config ../../tsdown.config.ts --config-loader=unrun"
   },
   "dependencies": {
-    "oxc-parser": "0.146.0",
+    "oxc-parser": "0.148.0",
     "pathe": "catalog:",
     "tinyglobby": "0.2.17"
   },

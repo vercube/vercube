@@ -1,4 +1,5 @@
 import type { VercubePluginInput } from './Plugin';
+import type { TelemetryTypes } from './TelemetryTypes';
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 import type { LoggerTypes } from '@vercube/logger';
 import type { DotenvOptions } from 'c12';
@@ -186,6 +187,19 @@ export namespace ConfigTypes {
      * @default true
      */
     requestContext?: boolean;
+
+    /**
+     * OpenTelemetry instrumentation, provided by `@vercube/telemetry`.
+     *
+     * Core only declares the shape; the whole setting is interpreted by
+     * `TelemetryPlugin`, which also binds whatever it needs. Without that
+     * plugin registered the field has no effect and costs nothing.
+     *
+     * `true` is shorthand for `{ enabled: true }`.
+     *
+     * @default true in development, false in production
+     */
+    telemetry?: boolean | TelemetryTypes.Options;
 
     /**
      * Server configuration options.

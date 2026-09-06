@@ -45,10 +45,24 @@ export class Router {
   private fStaticRoutes: Map<string, Map<string, RouterTypes.RouteMatched<RouterTypes.RouterHandler>>> = new Map();
 
   /**
+   * Counter bumped whenever the route table changes, so introspection can
+   * cache a described route list and know when it went stale.
+   * @private
+   */
+  private fRevision: number = 0;
+
+  /**
    * All routes registered in this router, in registration order.
    */
   public get routes(): readonly RouterTypes.Route[] {
     return this.fRoutes;
+  }
+
+  /**
+   * Revision of the route table. Changes on every registration and on reset.
+   */
+  public get revision(): number {
+    return this.fRevision;
   }
 
   /**
@@ -63,8 +77,17 @@ export class Router {
     }
 
     const method = route.method.toUpperCase();
+
+    // Resolved once at registration time so nothing on the request path has to
+    // build a span name or look the route template back up. `@Get` registers
+    // GET and HEAD through two separate `prepareHandler` calls, so this never
+    // overwrites another method's values.
+    route.handler.path = route.path;
+    route.handler.spanName = `${method} ${route.path}`;
+
     addRoute(this.fRouterContext, method, route.path, route.handler);
     this.fRoutes.push(route);
+    this.fRevision++;
 
     if (isStaticPath(route.path)) {
       let byPath = this.fStaticRoutes.get(method);
@@ -93,6 +116,7 @@ export class Router {
     this.fRouterContext = createRouter<RouterTypes.RouterHandler>();
     this.fRoutes = [];
     this.fStaticRoutes.clear();
+    this.fRevision++;
 
     // trigger after init hook
     this.gHooksService.trigger(RouterAfterInitHook);

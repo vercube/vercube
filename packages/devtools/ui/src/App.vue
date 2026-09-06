@@ -2,19 +2,17 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { apiUrl, openStream } from './api';
 import AuditView from './components/AuditView.vue';
-import BootstrapView from './components/BootstrapView.vue';
 import ConfigView from './components/ConfigView.vue';
 import GraphView from './components/GraphView.vue';
 import LogsView from './components/LogsView.vue';
 import OverviewView from './components/OverviewView.vue';
-import QueuesView from './components/QueuesView.vue';
 import RequestsView from './components/RequestsView.vue';
 import RoutesView from './components/RoutesView.vue';
 import StorageView from './components/StorageView.vue';
 import VercubeMark from './components/VercubeMark.vue';
-import type { LogEntry, MetricsSample, QueueJob, QueueMetrics, RequestRecord } from './api';
+import type { LogEntry, MetricsSample, RequestRecord } from './api';
 
-type TabId = 'overview' | 'requests' | 'logs' | 'storage' | 'queues' | 'routes' | 'graph' | 'config' | 'bootstrap' | 'audit';
+type TabId = 'overview' | 'requests' | 'logs' | 'storage' | 'routes' | 'graph' | 'config' | 'audit';
 
 interface Tab {
   id: TabId;
@@ -34,7 +32,6 @@ const groups: { label: string; tabs: Tab[] }[] = [
         label: 'Storage',
         icon: 'M4 7c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3Zm0 0v10c0 1.7 3.6 3 8 3s8-1.3 8-3V7M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3',
       },
-      { id: 'queues', label: 'Queues', icon: 'm12 4 8 4-8 4-8-4 8-4Zm8 8-8 4-8-4m16 4-8 4-8-4' },
     ],
   },
   {
@@ -56,7 +53,6 @@ const groups: { label: string; tabs: Tab[] }[] = [
   {
     label: 'Diagnostics',
     tabs: [
-      { id: 'bootstrap', label: 'Bootstrap', icon: 'M4 6h16M4 11h11M4 16h6M4 21h13' },
       { id: 'audit', label: 'Audit', icon: 'M12 3.5 19 6.4v5.1c0 4.2-2.9 7-7 8.1-4.1-1.1-7-3.9-7-8.1V6.4Zm0 4.9v4m0 2.6v.1' },
     ],
   },
@@ -72,9 +68,9 @@ const liveLogs = ref<LogEntry[]>([]);
 
 const liveMetrics = ref<MetricsSample[]>([]);
 
-const liveQueueJobs = ref<QueueJob[]>([]);
-const liveQueueMetrics = ref<QueueMetrics[]>([]);
-const liveQueueDropped = ref(0);
+// Last structural section the server reported as changed. Panels watch it and
+// re-fetch only the section they are showing.
+const invalidated = ref<{ id: string; at: number } | null>(null);
 const connected = ref(false);
 const streaming = ref(true);
 const theme = ref<'dark' | 'light'>(readTheme());
@@ -114,28 +110,26 @@ watch(streaming, (value) => (value ? connect() : disconnect()));
 function connect(): void {
   closeStream?.();
   closeStream = openStream({
-    onRequest: (record) => {
-      const index = live.value.findIndex((entry) => entry.id === record.id);
+    onRequests: (records) => {
+      // A trace arrives in batches, and a later batch can add spans to a trace
+      // that is already on screen, so records are merged by id rather than
+      // prepended.
+      const merged = new Map(live.value.map((entry) => [entry.id, entry]));
 
-      if (index === -1) {
-        live.value = [record, ...live.value].slice(0, 500);
-        return;
+      for (const record of records) {
+        merged.set(record.id, record);
       }
 
-      const next = [...live.value];
-      next[index] = record;
-      live.value = next;
+      live.value = [...merged.values()].sort((a, b) => b.startedAt - a.startedAt).slice(0, 500);
     },
-    onLog: (entry) => {
-      liveLogs.value = [entry, ...liveLogs.value].slice(0, 1000);
+    onLogs: (entries) => {
+      liveLogs.value = [...entries.reverse(), ...liveLogs.value].slice(0, 1000);
     },
-    onMetrics: (sample) => {
-      liveMetrics.value = [...liveMetrics.value, sample].slice(-120);
+    onMetrics: (samples) => {
+      liveMetrics.value = [...liveMetrics.value, ...samples].slice(-120);
     },
-    onQueue: (batch) => {
-      liveQueueJobs.value = [...batch.events, ...liveQueueJobs.value].slice(0, 500);
-      liveQueueMetrics.value = batch.metrics;
-      liveQueueDropped.value += batch.dropped;
+    onInvalidate: (id) => {
+      invalidated.value = { id, at: Date.now() };
     },
     onStatus: (state) => (connected.value = state),
   });
@@ -305,17 +299,9 @@ onUnmounted(() => {
       <RequestsView v-else-if="active === 'requests'" :live="live" :live-logs="liveLogs" />
       <LogsView v-else-if="active === 'logs'" :live="liveLogs" />
       <StorageView v-else-if="active === 'storage'" />
-
-      <QueuesView
-        v-else-if="active === 'queues'"
-        :live="liveQueueJobs"
-        :live-metrics="liveQueueMetrics"
-        :dropped="liveQueueDropped"
-      />
-      <ConfigView v-else-if="active === 'config'" />
-      <RoutesView v-else-if="active === 'routes'" />
-      <GraphView v-else-if="active === 'graph'" />
-      <BootstrapView v-else-if="active === 'bootstrap'" />
+      <ConfigView v-else-if="active === 'config'" :invalidated="invalidated" />
+      <RoutesView v-else-if="active === 'routes'" :invalidated="invalidated" />
+      <GraphView v-else-if="active === 'graph'" :invalidated="invalidated" />
       <AuditView v-else />
     </main>
   </div>

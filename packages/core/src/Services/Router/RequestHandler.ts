@@ -1,11 +1,14 @@
 import { Container, Inject } from '@vercube/di';
 import { FastResponse } from '../../Types/CommonTypes';
+import { skipsGlobalMiddlewares } from '../../Utils/Utils';
 import { ErrorHandlerProvider } from '../ErrorHandler/ErrorHandlerProvider';
 import { MetadataResolver } from '../Metadata/MetadataResolver';
 import { GlobalMiddlewareRegistry } from '../Middleware/GlobalMiddlewareRegistry';
+import { TelemetryRegistry } from '../Telemetry/TelemetryRegistry';
 import { RequestContext } from './RequestContext';
 import type { MetadataTypes } from '../../Types/MetadataTypes';
 import type { RouterTypes } from '../../Types/RouterTypes';
+import type { TelemetryTypes } from '../../Types/TelemetryTypes';
 
 /**
  * Options for configuring a request handler
@@ -32,6 +35,18 @@ const JSON_RESPONSE_INIT: ResponseInit = Object.freeze({
   statusText: 'OK',
   headers: Object.freeze({ 'Content-Type': DEFAULT_CONTENT_TYPE }) as Record<string, string>,
 });
+
+/**
+ * Dispatch modes, resolved once on the first request and cached.
+ *
+ * Reading two lazily-resolved services per request measurably cost throughput
+ * on a path where the whole request takes ~70ns, so the combination is
+ * collapsed into one integer and branched on directly.
+ */
+const MODE_UNRESOLVED = -1;
+const MODE_PLAIN = 0;
+const MODE_CONTEXT = 1;
+const MODE_TELEMETRY = 2;
 
 /**
  * Handles HTTP requests by preparing and executing route handlers with their associated middlewares
@@ -68,6 +83,12 @@ export class RequestHandler {
   /** Lazily resolved global middlewares used for CORS preflight responses. */
   private fPreflightMiddlewares: RouterTypes.MiddlewareDefinition[] | undefined;
 
+  /** Cached telemetry hooks (`null` when no telemetry package is installed). */
+  private fTelemetry: TelemetryTypes.Hooks | null | undefined;
+
+  /** Which of the three dispatch shapes this application needs. */
+  private fMode: number = MODE_UNRESOLVED;
+
   /**
    * Prepares a route handler by resolving its metadata and middlewares
    *
@@ -86,8 +107,9 @@ export class RequestHandler {
     // get middlewares
     const middlewares = this.gMetadataResolver.resolveMiddlewares(prototype, propertyName);
 
-    // get global middlewares
-    const globalMiddlewares = this.gGlobalMiddlewareRegistry.middlewares;
+    // Infrastructure controllers - an inspector, a health check - opt out of
+    // application-wide middlewares entirely.
+    const globalMiddlewares = skipsGlobalMiddlewares(prototype) ? [] : this.gGlobalMiddlewareRegistry.middlewares;
 
     const combined = [...middlewares, ...globalMiddlewares];
     const seen = new Set<MetadataTypes.Middleware['middleware']>();
@@ -129,6 +151,7 @@ export class RequestHandler {
     return {
       instance,
       propertyName,
+      controller: instance?.constructor?.name,
       args,
       middlewares: {
         beforeMiddlewares,
@@ -160,6 +183,14 @@ export class RequestHandler {
    */
   public async handlePreflight(request: Request): Promise<Response> {
     const context = this.requestContext;
+    const telemetry = this.telemetry;
+
+    if (telemetry !== null) {
+      const traced = (): Promise<Response> =>
+        telemetry.server({ request, name: request.method }, () => this.internalHandlePreflight(request)) as Promise<Response>;
+
+      return context ? context.run(traced) : traced();
+    }
 
     return context ? context.run(() => this.internalHandlePreflight(request)) : this.internalHandlePreflight(request);
   }
@@ -216,13 +247,60 @@ export class RequestHandler {
     request: Request,
     route: RouterTypes.RouteMatched<RouterTypes.RouterHandler>,
   ): Response | Promise<Response> {
-    const context = this.requestContext;
+    const mode = this.fMode;
 
-    if (context) {
-      return context.run(() => this.dispatch(request, route));
+    if (mode === MODE_PLAIN) {
+      return this.dispatch(request, route);
     }
 
-    return this.dispatch(request, route);
+    if (mode === MODE_CONTEXT) {
+      return (this.fRequestContext as RequestContext).run(() => this.dispatch(request, route));
+    }
+
+    if (mode === MODE_TELEMETRY) {
+      return this.tracedDispatch(request, route);
+    }
+
+    this.resolveMode();
+
+    return this.handleRequest(request, route);
+  }
+
+  /**
+   * Resolves which dispatch shape the application needs.
+   *
+   * Runs once, on the first request. A telemetry package therefore has to
+   * install itself during setup - by the time the first request is served this
+   * decision is frozen.
+   *
+   * @returns {void}
+   * @private
+   */
+  private resolveMode(): void {
+    const context = this.requestContext;
+    const telemetry = this.telemetry;
+
+    this.fMode = telemetry === null ? (context ? MODE_CONTEXT : MODE_PLAIN) : MODE_TELEMETRY;
+  }
+
+  /**
+   * Runs the request inside a server span, and inside the request context frame
+   * when one is bound.
+   *
+   * @param {Request} request - The incoming HTTP request
+   * @param {RouterTypes.RouteMatched<RouterTypes.RouterHandler>} route - The matched route
+   * @returns {Response | Promise<Response>} The HTTP response
+   * @private
+   */
+  private tracedDispatch(
+    request: Request,
+    route: RouterTypes.RouteMatched<RouterTypes.RouterHandler>,
+  ): Response | Promise<Response> {
+    const telemetry = this.fTelemetry as TelemetryTypes.Hooks;
+    const traced = (): Response | Promise<Response> =>
+      telemetry.server(toServerSpanContext(request, route.data), () => this.dispatch(request, route));
+
+    return this.fRequestContext ? this.fRequestContext.run(traced) : traced();
   }
 
   /**
@@ -414,6 +492,24 @@ export class RequestHandler {
   }
 
   /**
+   * Returns the installed telemetry hooks, or `null` when telemetry is off.
+   *
+   * Resolved once and cached, so a telemetry package has to install itself
+   * during application setup - by the time the first request is served this
+   * value is frozen.
+   *
+   * @returns {TelemetryTypes.Hooks | null} The telemetry hooks
+   * @private
+   */
+  private get telemetry(): TelemetryTypes.Hooks | null {
+    if (this.fTelemetry === undefined) {
+      this.fTelemetry = this.gContainer.getOptional(TelemetryRegistry)?.hooks ?? null;
+    }
+
+    return this.fTelemetry;
+  }
+
+  /**
    * Creates the intermediate response that middlewares and actions mutate.
    *
    * @returns The initial FastResponse
@@ -446,6 +542,10 @@ export class RequestHandler {
    * @private
    */
   private handleError(error: unknown): Response | Promise<Response> {
+    // Errors never escape the pipeline - they are turned into responses here -
+    // so this is the only place the active span can learn what actually failed.
+    this.telemetry?.recordError(error);
+
     this.fErrorHandler ??= this.gContainer.get(ErrorHandlerProvider);
     return this.fErrorHandler.handleError(error as Error);
   }
@@ -642,6 +742,26 @@ export class RequestHandler {
 
     return fakeResponse;
   }
+}
+
+/**
+ * Builds the span context for a matched route.
+ *
+ * Every field but the request itself was resolved at registration time, so this
+ * is a property copy rather than any real work.
+ *
+ * @param {Request} request - The incoming HTTP request
+ * @param {RouterTypes.RouterHandler} handler - The matched route handler
+ * @returns {TelemetryTypes.ServerSpanContext} The span context
+ */
+function toServerSpanContext(request: Request, handler: RouterTypes.RouterHandler): TelemetryTypes.ServerSpanContext {
+  return {
+    request,
+    name: handler.spanName ?? request.method,
+    route: handler.path,
+    controller: handler.controller,
+    handler: handler.propertyName,
+  };
 }
 
 /**

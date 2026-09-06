@@ -41,6 +41,9 @@ export default defineConfig({
         'packages/**/src/Hooks/**',
         // playground
         'playground/**',
+        // the devtools UI is a browser bundle inlined into a string at build
+        // time; node coverage cannot say anything useful about it
+        'packages/devtools/ui/**',
       ],
     },
   },

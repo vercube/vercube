@@ -19,6 +19,9 @@ export {
   EvlogError,
   defineError,
   defineErrorCatalog,
+  definePlugin,
+  drainPlugin,
+  enricherPlugin,
 } from 'evlog';
 
 export type {
@@ -33,5 +36,7 @@ export type {
   RedactConfig,
   DrainContext,
   DrainFn,
+  EnrichContext,
   ErrorOptions,
+  EvlogPlugin,
 } from 'evlog';

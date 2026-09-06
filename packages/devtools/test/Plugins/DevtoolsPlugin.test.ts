@@ -5,17 +5,23 @@ import {
   createApp,
   Get,
   GlobalMiddlewareRegistry,
+  clearTelemetryContributions,
+  TelemetryRegistry,
   vercubePluginFromClass,
 } from '@vercube/core';
+import { TelemetryPlugin } from '@vercube/telemetry';
 import { afterEach, describe, expect, it } from 'vitest';
-import { DevtoolsPlugin } from '../../src/Plugins/DevtoolsPlugin';
-import { resetBootstrapProfiler } from '../../src/Services/BootstrapProfiler';
+import { DevtoolsPlugin, resetDevtoolsContribution } from '../../src/Plugins/DevtoolsPlugin';
+import { resetDevtoolsTelemetry } from '../../src/Telemetry/DevtoolsTelemetry';
 import { createDevtoolsApp, devtoolsFetch, devtoolsJson } from '../Utils/App';
 import type { DevtoolsTypes } from '../../src/Types/DevtoolsTypes';
+import type { IntrospectionTypes } from '@vercube/core';
 
 describe('DevtoolsPlugin', () => {
-  afterEach(() => {
-    resetBootstrapProfiler();
+  afterEach(async () => {
+    await resetDevtoolsTelemetry();
+    resetDevtoolsContribution();
+    clearTelemetryContributions();
   });
 
   it('should stay disabled outside of development mode', async () => {
@@ -75,7 +81,7 @@ describe('DevtoolsPlugin', () => {
     const app = await createDevtoolsApp({ path: '/__inspect' });
 
     expect((await devtoolsFetch(app, '/__inspect')).status).toBe(200);
-    expect((await devtoolsFetch(app, '/__inspect/api/routes')).status).toBe(200);
+    expect((await devtoolsFetch(app, '/__inspect/api/introspect/routes')).status).toBe(200);
     expect((await devtoolsFetch(app, '/_devtools')).status).toBe(404);
   });
 
@@ -88,14 +94,16 @@ describe('DevtoolsPlugin', () => {
   it('should reject unauthenticated calls when a token is configured', async () => {
     const app = await createDevtoolsApp({ token: 's3cret' });
 
-    expect((await devtoolsFetch(app, '/_devtools/api/routes')).status).toBe(401);
-    expect((await devtoolsFetch(app, '/_devtools/api/routes?token=nope')).status).toBe(401);
+    expect((await devtoolsFetch(app, '/_devtools/api/introspect/routes')).status).toBe(401);
+    expect((await devtoolsFetch(app, '/_devtools/api/introspect/routes?token=nope')).status).toBe(401);
 
     // The query parameter only bootstraps the UI page; on an API path it is ignored.
-    expect((await devtoolsFetch(app, '/_devtools/api/routes?token=s3cret')).status).toBe(401);
+    expect((await devtoolsFetch(app, '/_devtools/api/introspect/routes?token=s3cret')).status).toBe(401);
     expect((await devtoolsFetch(app, '/_devtools?token=s3cret')).status).toBe(200);
 
-    const withHeader = await devtoolsFetch(app, '/_devtools/api/routes', { headers: { 'x-devtools-token': 's3cret' } });
+    const withHeader = await devtoolsFetch(app, '/_devtools/api/introspect/routes', {
+      headers: { 'x-devtools-token': 's3cret' },
+    });
     expect(withHeader.status).toBe(200);
   });
 
@@ -107,17 +115,19 @@ describe('DevtoolsPlugin', () => {
 
   it('should register each endpoint as a real route rather than a catch-all', async () => {
     const app = await createDevtoolsApp();
-    const routes = await devtoolsJson<DevtoolsTypes.RouteInfo[]>(app, '/_devtools/api/routes');
-    const own = routes.filter((route) => route.internal);
+    const section = await devtoolsJson<{ data: IntrospectionTypes.RouteDescription[] }>(app, '/_devtools/api/introspect/routes');
+    const own = section.data.filter((route) => route.path.startsWith('/_devtools'));
 
+    expect(own.length).toBeGreaterThan(0);
     expect(own.every((route) => route.controller === 'DevtoolsController')).toBe(true);
     expect(own.some((route) => route.path.includes('**'))).toBe(false);
-    expect(own.map((route) => `${route.method} ${route.path}`)).toEqual(
+    expect(own.map((route) => route.id)).toEqual(
       expect.arrayContaining([
-        'GET / HEAD /_devtools/',
-        'GET / HEAD /_devtools/api/graph',
-        'GET / HEAD /_devtools/api/requests/:id',
-        'DELETE /_devtools/api/requests',
+        'GET /_devtools/',
+        'GET /_devtools/api/introspect',
+        'GET /_devtools/api/introspect/:id',
+        'GET /_devtools/api/signals/:kind',
+        'GET /_devtools/api/stream',
       ]),
     );
   });
@@ -271,6 +281,71 @@ describe('DevtoolsPlugin', () => {
     expect(names).toContain('DevtoolsPlugin');
     expect(names).toContain('OtherPlugin');
     expect(overview.counts.plugins).toBe(names.length);
+  });
+
+  it('should boot alongside an application-registered TelemetryPlugin', async () => {
+    // Both plugins install telemetry, and the registry only accepts one.
+    const app = await createApp({
+      cfg: {
+        requestLogging: false,
+        telemetry: true,
+        plugins: [vercubePluginFromClass(TelemetryPlugin), vercubePluginFromClass(DevtoolsPlugin, { enabled: true })],
+      },
+    });
+
+    expect((await devtoolsFetch(app, '/_devtools/api/overview')).status).toBe(200);
+  });
+
+  it('should keep the application own telemetry exclusions', async () => {
+    const app = await createApp({
+      cfg: {
+        requestLogging: false,
+        telemetry: { exclude: ['/health'], spans: { middleware: true } },
+        plugins: [vercubePluginFromClass(DevtoolsPlugin, { enabled: true })],
+      },
+    });
+
+    const options = app.container.get(TelemetryRegistry).options!;
+
+    // Devtools adds its mount to the list rather than replacing it, and leaves
+    // span choices the application made alone.
+    expect(options.exclude).toEqual(expect.arrayContaining(['/health', '/_devtools']));
+    expect(options.spans?.middleware).toBe(true);
+  });
+
+  it('should reach telemetry options through the boolean shorthand', async () => {
+    // `telemetry: true` is what the docs show, and `defu` will not merge an
+    // object patch into a boolean, so this is the case a config patch misses.
+    const app = await createApp({
+      cfg: {
+        requestLogging: false,
+        telemetry: true,
+        plugins: [vercubePluginFromClass(TelemetryPlugin), vercubePluginFromClass(DevtoolsPlugin, { enabled: true })],
+      },
+    });
+
+    const options = app.container.get(TelemetryRegistry).options!;
+
+    expect(options.exclude).toContain('/_devtools');
+    expect(options.spans?.headers).not.toBe(false);
+  });
+
+  it('should not turn on body or header capture in production', async () => {
+    const app = await createApp({
+      cfg: {
+        requestLogging: false,
+        production: true,
+        dev: false,
+        plugins: [vercubePluginFromClass(DevtoolsPlugin, { enabled: true, token: 's3cret' })],
+      },
+    });
+
+    const options = app.container.get(TelemetryRegistry).options!;
+
+    // Both ride on the server span, so every exporter sharing the pipeline sees
+    // them. Telemetry documents them as off by default for that reason.
+    expect(options.spans?.bodies).toBe(false);
+    expect(options.spans?.headers).toBe(false);
   });
 
   it('should refuse to mount in production without a token', async () => {

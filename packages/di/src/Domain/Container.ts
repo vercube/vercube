@@ -37,6 +37,10 @@ export class Container {
   // container event handler
   protected fContainerEvents: ContainerEvents = new ContainerEvents();
 
+  // bumped whenever the container's observable state changes, so introspection
+  // can cache a description and know exactly when it went stale
+  protected fRevision: number = 0;
+
   /**
    * Constructor for container.
    * @param params initial params for container
@@ -95,6 +99,16 @@ export class Container {
   }
 
   /**
+   * Counter that changes whenever a binding is added, replaced or first
+   * instantiated - that is, whenever a description of this container would
+   * come out different.
+   * @returns {number} the current revision
+   */
+  public get revision(): number {
+    return this.fRevision;
+  }
+
+  /**
    * Binds particular key to container in singleton scope. Multiple queries/injects of this
    * service will always return the same instance.
    *
@@ -119,6 +133,7 @@ export class Container {
     }
 
     this.fServices.set(key, newDef);
+    this.fRevision++;
     this.fNewQueue.set(key, newDef);
   }
 
@@ -141,6 +156,7 @@ export class Container {
     }
 
     this.fServices.set(key, newDef);
+    this.fRevision++;
     this.fNewQueue.set(key, newDef);
   }
 
@@ -165,6 +181,7 @@ export class Container {
     }
 
     this.fServices.set(key, newDef);
+    this.fRevision++;
     this.fNewQueue.set(key, newDef);
   }
 
@@ -195,6 +212,7 @@ export class Container {
     }
 
     this.fServices.set(key, newDef);
+    this.fRevision++;
     this.fNewQueue.set(key, newDef);
   }
 
@@ -396,6 +414,7 @@ export class Container {
     // cache before inject so circular deps resolve to this instance
     if (singleton) {
       this.fSingletonInstances.set(serviceDef.serviceKey, instance);
+      this.fRevision++;
     }
 
     try {

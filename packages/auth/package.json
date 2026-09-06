@@ -2,7 +2,7 @@
   "name": "@vercube/auth",
   "version": "1.2.1",
   "description": "Auth module for Vercube framework",
-  "packageManager": "pnpm@11.22.0",
+  "packageManager": "pnpm@12.3.4",
   "repository": {
     "type": "git",
     "url": "https://github.com/vercube/vercube.git",
@@ -26,6 +26,7 @@
     "build": "tsdown --config ../../tsdown.config.ts --config-loader=unrun"
   },
   "dependencies": {
+    "@opentelemetry/api": "1.9.1",
     "@vercube/core": "workspace:*",
     "@vercube/di": "workspace:*",
     "@vercube/logger": "workspace:*"

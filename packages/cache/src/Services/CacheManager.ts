@@ -2,6 +2,7 @@ import { Container, Init, Inject, InjectOptional } from '@vercube/di';
 import { Logger } from '@vercube/logger';
 import { StorageManager } from '@vercube/storage';
 import { defineCachedFunction, expireCache, invalidateCache, resolveCacheKeys } from 'ocache';
+import { countLookup, countMiss, traceLookup } from '../Common/Instrument';
 import { CacheError } from '../Errors/CacheError';
 import { cacheBaseForStorage, CacheStorageAdapter } from './CacheStorageAdapter';
 import type { CacheTypes } from '../Types/CacheTypes';
@@ -93,7 +94,27 @@ export class CacheManager {
       throw new CacheError('Cached target must be a function', 'cached', undefined, { received: typeof fn });
     }
 
-    return defineCachedFunction<T, ArgsT>(fn, this.resolveOptions(options)) as CacheTypes.CachedFunction<T, ArgsT>;
+    const resolved = this.resolveOptions(options);
+    const name = resolved.name ?? fn.name ?? 'anonymous';
+
+    // The engine only calls the original function on a miss, so marking the
+    // span from inside it is what makes hit and miss distinguishable without
+    // per-call bookkeeping: the call already runs in that lookup's context.
+    const instrumented = (...args: ArgsT): T | Promise<T> => {
+      countMiss(name);
+      return fn(...args);
+    };
+
+    const cached = defineCachedFunction<T, ArgsT>(instrumented, resolved) as CacheTypes.CachedFunction<T, ArgsT>;
+
+    const wrapper = ((...args: ArgsT): Promise<T> => {
+      countLookup(name);
+      return traceLookup(name, () => Promise.resolve(cached(...args)));
+    }) as CacheTypes.CachedFunction<T, ArgsT>;
+
+    // The engine hangs `invalidate`, `expire` and friends off the function it
+    // returns, so they have to survive the wrapper.
+    return Object.assign(wrapper, cached);
   }
 
   /**

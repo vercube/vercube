@@ -2,7 +2,7 @@
   "name": "@vercube/devtools",
   "version": "1.2.1",
   "description": "Zero-config, self-hosted developer tools for Vercube - DI graph, route explorer, request waterfalls, bootstrap profiler and audits",
-  "packageManager": "pnpm@11.22.0",
+  "packageManager": "pnpm@12.3.4",
   "repository": {
     "type": "git",
     "url": "https://github.com/vercube/vercube.git",
@@ -35,15 +35,22 @@
     "dev:ui": "vite --config ./ui/vite.config.ts"
   },
   "dependencies": {
+    "@opentelemetry/api": "1.9.1",
+    "@opentelemetry/otlp-transformer": "0.222.0",
+    "@opentelemetry/resources": "2.11.0",
+    "@opentelemetry/sdk-metrics": "2.11.0",
+    "@opentelemetry/sdk-trace-base": "2.11.0",
+    "@opentelemetry/sdk-trace-node": "2.11.0",
     "@vercube/core": "workspace:*",
     "@vercube/di": "workspace:*",
     "@vercube/logger": "workspace:*",
+    "@vercube/telemetry": "workspace:*",
     "defu": "catalog:"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "6.0.8",
     "vite": "catalog:",
-    "vue": "3.5.41"
+    "vue": "3.5.42"
   },
   "publishConfig": {
     "access": "public"

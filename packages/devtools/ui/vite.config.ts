@@ -1,4 +1,4 @@
-import { writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import vue from '@vitejs/plugin-vue';
@@ -68,6 +68,9 @@ function emitSingleFile(): Plugin {
         '',
       ].join('\n');
 
+      // The directory is gitignored along with its contents, so a fresh clone
+      // does not have it.
+      mkdirSync(dirname(generated), { recursive: true });
       writeFileSync(generated, module, 'utf8');
       this.warn(`devtools UI written to src/Generated/UI.ts (${(inlined.length / 1024).toFixed(1)} kB)`);
     },

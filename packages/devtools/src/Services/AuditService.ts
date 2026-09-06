@@ -1,9 +1,12 @@
+import { IntrospectionRegistry } from '@vercube/core';
 import { Inject } from '@vercube/di';
-import { getBootstrapProfile } from './BootstrapProfiler';
-import { GraphCollector } from './GraphCollector';
-import { RequestRecorder } from './RequestRecorder';
-import { RouteCollector } from './RouteCollector';
+import { $DevtoolsOptions } from '../Symbols/DevtoolsSymbols';
+import { DevtoolsTelemetry } from '../Telemetry/DevtoolsTelemetry';
+import { isUnderMount } from '../Utils/Mount';
+import { bootstrapHotspots, durationMs, endpoint, serverSpans, statusOf } from './SignalsDigest';
 import type { DevtoolsTypes } from '../Types/DevtoolsTypes';
+import type { IntrospectionTypes } from '@vercube/core';
+import type { Describe } from '@vercube/di';
 
 /** Bootstrap self time (ms) above which a service is flagged as slow. */
 const SLOW_BOOTSTRAP_MS = 25;
@@ -22,22 +25,23 @@ const SEVERITY_WEIGHT: Record<DevtoolsTypes.AuditSeverity, number> = {
  * Runs static and runtime checks and reports findings with a health score.
  */
 export class AuditService {
-  @Inject(GraphCollector)
-  private readonly gGraph!: GraphCollector;
+  @Inject(IntrospectionRegistry)
+  private readonly gIntrospection!: IntrospectionRegistry;
 
-  @Inject(RouteCollector)
-  private readonly gRoutes!: RouteCollector;
+  @Inject(DevtoolsTelemetry)
+  private readonly gTelemetry!: DevtoolsTelemetry;
 
-  @Inject(RequestRecorder)
-  private readonly gRequests!: RequestRecorder;
+  @Inject($DevtoolsOptions)
+  private readonly gOptions!: DevtoolsTypes.ResolvedOptions;
 
   /**
    * Executes every audit rule.
    * @returns findings ordered by severity, with a health score
    */
-  public run(): DevtoolsTypes.AuditReport {
-    const graph = this.gGraph.collect();
-    const routes = this.gRoutes.collect().filter((route) => !route.internal);
+  public async run(): Promise<DevtoolsTypes.AuditReport> {
+    const graph = (await this.gIntrospection.describe<Describe.ContainerDescription>('container'))!.data;
+    const allRoutes = (await this.gIntrospection.describe<IntrospectionTypes.RouteDescription[]>('routes'))!.data;
+    const routes = allRoutes.filter((route) => !isUnderMount(route.path, this.gOptions.path));
 
     const issues: DevtoolsTypes.AuditIssue[] = [
       ...this.checkCycles(graph),
@@ -68,7 +72,7 @@ export class AuditService {
    * @param graph dependency graph snapshot
    * @returns findings, one per cycle
    */
-  private checkCycles(graph: DevtoolsTypes.Graph): DevtoolsTypes.AuditIssue[] {
+  private checkCycles(graph: Describe.ContainerDescription): DevtoolsTypes.AuditIssue[] {
     return graph.cycles.map((cycle) => ({
       rule: 'di/circular-dependency',
       severity: 'warning' as const,
@@ -83,7 +87,7 @@ export class AuditService {
    * @param graph dependency graph snapshot
    * @returns findings, one per unbound dependency
    */
-  private checkUnboundDependencies(graph: DevtoolsTypes.Graph): DevtoolsTypes.AuditIssue[] {
+  private checkUnboundDependencies(graph: Describe.ContainerDescription): DevtoolsTypes.AuditIssue[] {
     const issues: DevtoolsTypes.AuditIssue[] = [];
 
     for (const node of graph.nodes) {
@@ -112,7 +116,7 @@ export class AuditService {
    * @param graph dependency graph snapshot
    * @returns a single grouped finding, or nothing
    */
-  private checkUnusedServices(graph: DevtoolsTypes.Graph): DevtoolsTypes.AuditIssue[] {
+  private checkUnusedServices(graph: Describe.ContainerDescription): DevtoolsTypes.AuditIssue[] {
     const unused = graph.nodes.filter(
       (node) => !node.instantiated && node.dependents === 0 && node.role !== 'framework' && node.kind !== 'transient',
     );
@@ -138,8 +142,8 @@ export class AuditService {
    * @param routes route snapshot
    * @returns findings, one per duplicated route
    */
-  private checkDuplicateRoutes(routes: DevtoolsTypes.RouteInfo[]): DevtoolsTypes.AuditIssue[] {
-    const byId = new Map<string, DevtoolsTypes.RouteInfo[]>();
+  private checkDuplicateRoutes(routes: IntrospectionTypes.RouteDescription[]): DevtoolsTypes.AuditIssue[] {
+    const byId = new Map<string, IntrospectionTypes.RouteDescription[]>();
 
     for (const route of routes) {
       byId.set(route.id, [...(byId.get(route.id) ?? []), route]);
@@ -161,7 +165,7 @@ export class AuditService {
    * @param routes route snapshot
    * @returns a single grouped finding, or nothing
    */
-  private checkUnvalidatedInput(routes: DevtoolsTypes.RouteInfo[]): DevtoolsTypes.AuditIssue[] {
+  private checkUnvalidatedInput(routes: IntrospectionTypes.RouteDescription[]): DevtoolsTypes.AuditIssue[] {
     const offenders = routes.filter((route) =>
       route.args.some((arg) => (arg.type === 'body' || arg.type === 'query-params') && !arg.validated),
     );
@@ -188,9 +192,7 @@ export class AuditService {
    * @returns findings, one per slow service
    */
   private checkSlowBootstrap(): DevtoolsTypes.AuditIssue[] {
-    const profile = getBootstrapProfile();
-
-    return profile.hotspots
+    return bootstrapHotspots(this.gTelemetry.spans.spans())
       .filter((hotspot) => hotspot.selfMs >= SLOW_BOOTSTRAP_MS)
       .slice(0, 5)
       .map((hotspot) => ({
@@ -207,14 +209,14 @@ export class AuditService {
    * @returns findings derived from the request buffer
    */
   private checkRuntime(): DevtoolsTypes.AuditIssue[] {
-    const records = this.gRequests.records;
+    const requests = serverSpans(this.gTelemetry.spans.spans());
 
-    if (records.length === 0) {
+    if (requests.length === 0) {
       return [];
     }
 
     const issues: DevtoolsTypes.AuditIssue[] = [];
-    const failing = records.filter((record) => record.status >= 500);
+    const failing = requests.filter((span) => statusOf(span) >= 500);
 
     if (failing.length > 0) {
       issues.push({
@@ -222,19 +224,19 @@ export class AuditService {
         severity: 'error',
         title: `${failing.length} request${failing.length === 1 ? '' : 's'} failed with a server error`,
         detail: 'Requests returned a 5xx status. Open the request timeline to see which span threw.',
-        targets: [...new Set(failing.map((record) => `${record.method} ${record.path}`))],
+        targets: [...new Set(failing.map((span) => endpoint(span)))],
       });
     }
 
-    const slow = records.filter((record) => record.durationMs >= SLOW_REQUEST_MS);
+    const slow = requests.filter((span) => durationMs(span) >= SLOW_REQUEST_MS);
 
     if (slow.length > 0) {
       issues.push({
         rule: 'runtime/slow-requests',
         severity: 'warning',
         title: `${slow.length} slow request${slow.length === 1 ? '' : 's'}`,
-        detail: `Requests took longer than ${SLOW_REQUEST_MS}ms. The timeline breaks the duration down per middleware and handler.`,
-        targets: [...new Set(slow.map((record) => `${record.method} ${record.path}`))],
+        detail: `Requests took longer than ${SLOW_REQUEST_MS}ms. The timeline breaks the duration down per span.`,
+        targets: [...new Set(slow.map((span) => endpoint(span)))],
       });
     }
 

@@ -2,7 +2,7 @@
   "name": "@vercube/storage",
   "version": "1.2.1",
   "description": "Storage module for Vercube framework",
-  "packageManager": "pnpm@11.22.0",
+  "packageManager": "pnpm@12.3.4",
   "repository": {
     "type": "git",
     "url": "https://github.com/vercube/vercube.git",
@@ -28,13 +28,17 @@
     "build": "tsdown --config tsdown.config.ts --config-loader=unrun"
   },
   "dependencies": {
+    "@opentelemetry/api": "1.9.1",
     "@vercube/di": "workspace:*",
     "@vercube/logger": "workspace:*"
   },
   "optionalDependencies": {
-    "@aws-sdk/client-s3": "3.1114.0"
+    "@aws-sdk/client-s3": "3.1124.0"
   },
   "publishConfig": {
     "access": "public"
+  },
+  "devDependencies": {
+    "@vercube/telemetry": "workspace:*"
   }
 }

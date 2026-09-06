@@ -44,4 +44,33 @@ export namespace StorageTypes {
   export interface Clear extends BaseOptions {}
 
   export interface Size extends BaseOptions {}
+
+  /** One mounted storage, as reported by {@link StorageManager.describe}. */
+  export interface MountDescription {
+    /** Mount name, `default` unless another was given. */
+    name: string;
+    /** Driver class name, e.g. `MemoryStorage`. */
+    driver: string;
+    /** Number of stored items, or null when the driver could not be counted. */
+    size: number | null;
+    /** Keys currently held, capped; null when the driver cannot enumerate them. */
+    keys: string[] | null;
+    /** True when the key list was cut short by the cap. */
+    truncated: boolean;
+  }
+
+  /** What {@link StorageManager.describe} reports. */
+  export interface Description {
+    mounts: MountDescription[];
+  }
+
+  /** Options for {@link StorageManager.describe}. */
+  export interface DescribeOptions {
+    /**
+     * Maximum keys listed per mount.
+     *
+     * @default 250
+     */
+    maxKeys?: number;
+  }
 }
