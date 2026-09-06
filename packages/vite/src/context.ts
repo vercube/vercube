@@ -31,6 +31,7 @@ export function createContext(pluginConfig: VercubePluginConfig): VercubePluginC
     controllers: [],
     routes: [],
     services: [],
+    middlewares: [],
   };
 }
 
@@ -64,10 +65,11 @@ export async function setupContext(ctx: VercubePluginContext, options: { root: s
  * @param ctx - The plugin context to refresh.
  */
 export async function scanProject(ctx: VercubePluginContext): Promise<void> {
-  const { controllers, routes, services } = await scanSource({ dirs: ctx.scanDirs });
+  const { controllers, routes, services, middlewares } = await scanSource({ dirs: ctx.scanDirs });
   ctx.controllers = controllers;
   ctx.routes = routes;
   ctx.services = services;
+  ctx.middlewares = middlewares;
   writeServerEntry(ctx);
 }
 

@@ -1,33 +1,41 @@
-import { createApp } from '@vercube/core';
+import { createApp, vercubePluginFromClass } from '@vercube/core';
 import { DevtoolsPlugin } from '../../src/Plugins/DevtoolsPlugin';
 import type { DevtoolsTypes } from '../../src/Types/DevtoolsTypes';
 import type { App } from '@vercube/core';
 
 /**
  * Boots an application with devtools enabled.
- * @param options devtools options; `enabled` defaults to true
- * @param setup extra container wiring before the app initialises
- * @returns the running application
+ *
+ * Devtools is registered through the config rather than `addPlugin`, because
+ * only the config phase runs early enough for its metric reader and bootstrap
+ * observer to be in place.
+ *
+ * @param options - Devtools options; `enabled` defaults to true
+ * @param setup - Extra container wiring before the app initialises
+ * @returns The running application
  */
 export async function createDevtoolsApp(
   options: DevtoolsTypes.Options = {},
   setup?: (app: App) => void | Promise<void>,
 ): Promise<App> {
   return createApp({
-    cfg: { requestLogging: false },
+    cfg: {
+      requestLogging: false,
+      plugins: [vercubePluginFromClass(DevtoolsPlugin, { enabled: true, ...options })],
+    },
     setup: async (app) => {
       await setup?.(app);
-      app.addPlugin(DevtoolsPlugin, { enabled: true, ...options });
     },
   });
 }
 
 /**
  * Performs a devtools API call against a booted application.
- * @param app running application
- * @param path endpoint path relative to the devtools mount point
- * @param init extra request options
- * @returns the raw response
+ *
+ * @param app - Running application
+ * @param path - Endpoint path relative to the devtools mount point
+ * @param init - Extra request options
+ * @returns The raw response
  */
 export function devtoolsFetch(app: App, path: string, init?: RequestInit): Promise<Response> {
   return app.fetch(new Request(`http://localhost${path}`, init));
@@ -35,9 +43,10 @@ export function devtoolsFetch(app: App, path: string, init?: RequestInit): Promi
 
 /**
  * Performs a devtools API call and parses the JSON payload.
- * @param app running application
- * @param path endpoint path relative to the devtools mount point
- * @returns the parsed payload
+ *
+ * @param app - Running application
+ * @param path - Endpoint path relative to the devtools mount point
+ * @returns The parsed payload
  */
 export async function devtoolsJson<T>(app: App, path: string): Promise<T> {
   const response = await devtoolsFetch(app, path);

@@ -1,0 +1,94 @@
+{
+  "name": "@vercube/telemetry",
+  "version": "1.2.1",
+  "description": "OpenTelemetry instrumentation for the Vercube framework - traces, metrics and log correlation",
+  "packageManager": "pnpm@11.22.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vercube/vercube.git",
+    "directory": "packages/telemetry"
+  },
+  "license": "MIT",
+  "sideEffects": false,
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs",
+      "default": "./dist/index.mjs"
+    },
+    "./sdk": {
+      "types": "./dist/Sdk.d.mts",
+      "import": "./dist/Sdk.mjs",
+      "default": "./dist/Sdk.mjs"
+    },
+    "./testing": {
+      "types": "./dist/Testing.d.mts",
+      "import": "./dist/Testing.mjs",
+      "default": "./dist/Testing.mjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "keywords": [
+    "vercube",
+    "opentelemetry",
+    "otel",
+    "tracing",
+    "telemetry",
+    "observability"
+  ],
+  "scripts": {
+    "build": "tsdown --config tsdown.config.ts --config-loader=unrun"
+  },
+  "dependencies": {
+    "@opentelemetry/api": "1.9.1",
+    "@vercube/core": "workspace:*",
+    "@vercube/di": "workspace:*",
+    "@vercube/logger": "workspace:*"
+  },
+  "peerDependencies": {
+    "@opentelemetry/exporter-metrics-otlp-http": "^0.222.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.222.0",
+    "@opentelemetry/resources": "^2.11.0",
+    "@opentelemetry/sdk-metrics": "^2.11.0",
+    "@opentelemetry/sdk-trace-base": "^2.11.0",
+    "@opentelemetry/sdk-trace-node": "^2.11.0"
+  },
+  "peerDependenciesMeta": {
+    "@opentelemetry/exporter-metrics-otlp-http": {
+      "optional": true
+    },
+    "@opentelemetry/exporter-trace-otlp-http": {
+      "optional": true
+    },
+    "@opentelemetry/resources": {
+      "optional": true
+    },
+    "@opentelemetry/sdk-metrics": {
+      "optional": true
+    },
+    "@opentelemetry/sdk-trace-base": {
+      "optional": true
+    },
+    "@opentelemetry/sdk-trace-node": {
+      "optional": true
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@opentelemetry/exporter-trace-otlp-http": "0.222.0",
+    "@opentelemetry/resources": "2.11.0",
+    "@opentelemetry/sdk-metrics": "2.11.0",
+    "@opentelemetry/sdk-trace-base": "2.11.0",
+    "@opentelemetry/sdk-trace-node": "2.11.0"
+  }
+}

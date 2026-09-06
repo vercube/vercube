@@ -7,7 +7,9 @@ import { ErrorHandlerProvider } from '../ErrorHandler/ErrorHandlerProvider';
 import { RequestHandler } from '../Router/RequestHandler';
 import { Router } from '../Router/Router';
 import { StaticRequestHandler } from '../Router/StaticRequestHandler';
+import { TelemetryRegistry } from '../Telemetry/TelemetryRegistry';
 import type { ConfigTypes } from '../../Types/ConfigTypes';
+import type { TelemetryTypes } from '../../Types/TelemetryTypes';
 import type { Server, ServerPlugin } from 'srvx';
 
 /**
@@ -77,6 +79,12 @@ export class HttpServer {
    * @private
    */
   private fSpaPublicDir?: string;
+
+  /**
+   * Cached telemetry hooks (`null` when no telemetry package is installed).
+   * @private
+   */
+  private fTelemetry: TelemetryTypes.Hooks | null | undefined;
 
   /**
    * Adds a plugin to the HTTP server
@@ -170,6 +178,12 @@ export class HttpServer {
       }
 
       // no route matched - static assets and the SPA fallback are the slow path
+      const telemetry = this.telemetry;
+
+      if (telemetry !== null) {
+        return telemetry.server({ request, name: request.method }, () => this.handleUnmatchedRequest(request));
+      }
+
       return this.handleUnmatchedRequest(request);
     } catch (error) {
       return this.handleError(error);
@@ -211,6 +225,25 @@ export class HttpServer {
    * @private
    */
   private handleError(error: unknown): Response | Promise<Response> {
+    this.telemetry?.recordError(error);
+
     return this.gContainer.get(ErrorHandlerProvider).handleError(error instanceof Error ? error : new Error(String(error)));
+  }
+
+  /**
+   * Returns the installed telemetry hooks, or `null` when telemetry is off.
+   *
+   * Resolved once and cached, so a telemetry package has to install itself
+   * during application setup.
+   *
+   * @returns {TelemetryTypes.Hooks | null} The telemetry hooks
+   * @private
+   */
+  private get telemetry(): TelemetryTypes.Hooks | null {
+    if (this.fTelemetry === undefined) {
+      this.fTelemetry = this.gContainer.getOptional(TelemetryRegistry)?.hooks ?? null;
+    }
+
+    return this.fTelemetry;
   }
 }

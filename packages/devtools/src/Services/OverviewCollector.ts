@@ -1,15 +1,15 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { GlobalMiddlewareRegistry, PluginsRegistry } from '@vercube/core';
+import { GlobalMiddlewareRegistry, IntrospectionRegistry, PluginsRegistry } from '@vercube/core';
 import { Inject } from '@vercube/di';
-import { $DevtoolsAppConfig } from '../Symbols/DevtoolsSymbols';
+import { $DevtoolsAppConfig, $DevtoolsOptions } from '../Symbols/DevtoolsSymbols';
+import { DevtoolsTelemetry } from '../Telemetry/DevtoolsTelemetry';
+import { isUnderMount } from '../Utils/Mount';
 import { AuditService } from './AuditService';
-import { getBootstrapProfile } from './BootstrapProfiler';
-import { GraphCollector } from './GraphCollector';
-import { RequestRecorder } from './RequestRecorder';
-import { RouteCollector } from './RouteCollector';
+import { bootstrapTotalMs, requestStats } from './SignalsDigest';
 import type { DevtoolsTypes } from '../Types/DevtoolsTypes';
-import type { ConfigTypes } from '@vercube/core';
+import type { ConfigTypes, IntrospectionTypes } from '@vercube/core';
+import type { Describe } from '@vercube/di';
 
 /** Cached `package.json` lookup for the process lifetime. */
 let cachedPackage: { name: string; version: string | null } | null | undefined;
@@ -18,14 +18,14 @@ let cachedPackage: { name: string; version: string | null } | null | undefined;
  * Assembles the high-level snapshot shown on the overview screen.
  */
 export class OverviewCollector {
-  @Inject(GraphCollector)
-  private readonly gGraph!: GraphCollector;
+  @Inject(IntrospectionRegistry)
+  private readonly gIntrospection!: IntrospectionRegistry;
 
-  @Inject(RouteCollector)
-  private readonly gRoutes!: RouteCollector;
+  @Inject(DevtoolsTelemetry)
+  private readonly gTelemetry!: DevtoolsTelemetry;
 
-  @Inject(RequestRecorder)
-  private readonly gRequests!: RequestRecorder;
+  @Inject($DevtoolsOptions)
+  private readonly gOptions!: DevtoolsTypes.ResolvedOptions;
 
   @Inject(AuditService)
   private readonly gAudit!: AuditService;
@@ -59,11 +59,12 @@ export class OverviewCollector {
    * Builds the overview snapshot.
    * @returns application identity, counts, health and traffic summary
    */
-  public collect(): DevtoolsTypes.Overview {
-    const graph = this.gGraph.collect();
-    const routes = this.gRoutes.collect();
+  public async collect(): Promise<DevtoolsTypes.Overview> {
+    const graph = (await this.gIntrospection.describe<Describe.ContainerDescription>('container'))!.data;
+    const routes = (await this.gIntrospection.describe<IntrospectionTypes.RouteDescription[]>('routes'))!.data;
     const pkg = this.readPackage();
-    const audit = this.gAudit.run();
+    const audit = await this.gAudit.run();
+    const spans = this.gTelemetry.spans.spans();
 
     // Middlewares are resolved per route; the route table is the source of truth.
     const middlewares = new Set(routes.flatMap((route) => route.middlewares.map((middleware) => middleware.name)));
@@ -83,15 +84,15 @@ export class OverviewCollector {
         controllers: graph.nodes.filter((node) => node.role === 'controller').length,
         middlewares: middlewares.size,
         plugins: plugins.length,
-        routes: routes.filter((route) => !route.internal).length,
+        routes: routes.filter((route) => !isUnderMount(route.path, this.gOptions.path)).length,
         cycles: graph.cycles.length,
         issues: audit.issues.length,
       },
       score: audit.score,
       plugins,
       globalMiddlewares: this.gGlobalMiddlewares.middlewares.map((m) => m.middleware?.name ?? 'Middleware'),
-      bootstrapMs: getBootstrapProfile().totalMs,
-      requests: this.gRequests.stats(),
+      bootstrapMs: bootstrapTotalMs(spans),
+      requests: requestStats(spans),
     };
   }
 

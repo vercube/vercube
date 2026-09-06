@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue';
-import { formatMs, formatUptime, statusClass, useResource } from '../api';
+import { formatMs, formatUptime, loadLogs, loadMetrics, loadRequests, statusClass, useLoader, useResource } from '../api';
 import PageHeader from './PageHeader.vue';
 import ParticleField from './ParticleField.vue';
 import ProcessBand from './ProcessBand.vue';
@@ -17,10 +17,10 @@ const props = defineProps<{
 defineEmits<{ navigate: [tab: string] }>();
 
 const { data, error, loading, reload } = useResource<Overview>('/api/overview');
-const recorded = useResource<RequestRecord[]>('/api/requests');
-const recordedLogs = useResource<LogEntry[]>('/api/logs');
+const recorded = useLoader<RequestRecord[]>(loadRequests);
+const recordedLogs = useLoader<LogEntry[]>(loadLogs);
 
-const history = useResource<MetricsSample[]>('/api/metrics');
+const history = useLoader<MetricsSample[]>(loadMetrics);
 
 const metrics = computed(() => {
   const merged = new Map<number, MetricsSample>();

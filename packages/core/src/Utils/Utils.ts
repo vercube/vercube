@@ -107,3 +107,37 @@ export function initializeMetadata(target: any): MetadataTypes.Ctx {
 
   return target.__metadata;
 }
+
+/**
+ * Metadata flag marking a controller as exempt from global middlewares.
+ */
+const SKIP_GLOBAL_MIDDLEWARES = '__skipGlobalMiddlewares';
+
+/**
+ * Exempts every route of a controller from application-wide middlewares.
+ *
+ * Some endpoints are infrastructure rather than application surface - a health
+ * check, a metrics scrape, an inspector - and an application-wide
+ * authentication or tenancy middleware guarding them is at best noise and at
+ * worst a lockout. Opting out at registration time is what keeps them off the
+ * chain; stripping them afterwards would depend on when the route was built.
+ *
+ * Call it before the container resolves the controller, since the middleware
+ * chain is assembled once when the HTTP decorators run.
+ *
+ * @param {any} target - Controller prototype
+ * @returns {void}
+ */
+export function skipGlobalMiddlewares(target: any): void {
+  initializeMetadata(target).__meta = { ...initializeMetadata(target).__meta, [SKIP_GLOBAL_MIDDLEWARES]: true };
+}
+
+/**
+ * Whether a controller opted out of application-wide middlewares.
+ *
+ * @param {any} target - Controller prototype
+ * @returns {boolean} True when global middlewares must not be attached
+ */
+export function skipsGlobalMiddlewares(target: any): boolean {
+  return target?.__metadata?.__meta?.[SKIP_GLOBAL_MIDDLEWARES] === true;
+}

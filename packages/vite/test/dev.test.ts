@@ -55,6 +55,7 @@ function ctx(overrides: Partial<VercubePluginContext> = {}): VercubePluginContex
     dev: true,
     hasClient: false,
     controllers: [],
+    middlewares: [],
     routes: [
       { route: '/api/hello', method: 'GET', import: '', importClassName: 'HelloController', fullPath: '', path: '', params: [] },
     ],

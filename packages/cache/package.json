@@ -26,9 +26,11 @@
     "build": "tsdown --config ../../tsdown.config.ts --config-loader=unrun"
   },
   "devDependencies": {
-    "@vercube/core": "workspace:*"
+    "@vercube/core": "workspace:*",
+    "@vercube/telemetry": "workspace:*"
   },
   "dependencies": {
+    "@opentelemetry/api": "1.9.1",
     "@vercube/di": "workspace:*",
     "@vercube/logger": "workspace:*",
     "@vercube/storage": "workspace:*",

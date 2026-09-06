@@ -1,6 +1,7 @@
 import { initializeContainer, Inject } from '@vercube/di';
 import { RuntimeConfig } from '../Services/Config/RuntimeConfig';
 import { HttpServer } from '../Services/HttpServer/HttpServer';
+import { IntrospectionRegistry } from '../Services/Introspection/IntrospectionRegistry';
 import { PluginsRegistry } from '../Services/Plugins/PluginsRegistry';
 import { Router } from '../Services/Router/Router';
 import { StaticRequestHandler } from '../Services/Router/StaticRequestHandler';
@@ -115,6 +116,14 @@ export class App {
     // initialize container with all decorators
     initializeContainer(this.container);
 
+    // `vercube inspect` runs the application's own entry file - that is the
+    // only way to see the routes and bindings its setup actually produces -
+    // and stops it right before it would bind a port.
+    if (process.env.VERCUBE_INSPECT) {
+      await this.printInspection(process.env.VERCUBE_INSPECT);
+      return;
+    }
+
     // listen for incoming requests
     await this.gHttpServer.listen();
 
@@ -130,6 +139,60 @@ export class App {
    */
   public async fetch(request: Request): Promise<Response> {
     return this.gHttpServer.handleRequest(request);
+  }
+
+  /**
+   * Describes the application's structure: routes, configuration, container
+   * bindings, plugins and whatever else registered an introspection provider.
+   *
+   * @param {string} [section] - Describe only this section when given.
+   * @returns {Promise<unknown>} The described sections, keyed by id.
+   */
+  public async inspect(section?: string): Promise<unknown> {
+    const registry = this.container.get(IntrospectionRegistry);
+
+    if (section) {
+      return registry.describe(section);
+    }
+
+    return registry.describeAll();
+  }
+
+  /**
+   * Writes the inspection result to stdout for the CLI to read.
+   *
+   * @param {string} sections - `*` for everything, or a comma-separated list of section ids.
+   * @returns {Promise<void>} Resolves once the JSON has been written.
+   * @private
+   */
+  private async printInspection(sections: string): Promise<void> {
+    const wanted = sections === '1' || sections === '*' ? undefined : sections.split(',').filter(Boolean);
+    const registry = this.container.get(IntrospectionRegistry);
+
+    const result = wanted
+      ? Object.fromEntries(
+          (await Promise.all(wanted.map(async (id) => [id, await registry.describe(id)] as const))).filter(
+            ([, value]) => value !== undefined,
+          ),
+        )
+      : await registry.describeAll();
+
+    const json = `${JSON.stringify(result, null, 2)}\n`;
+    const target = process.env.VERCUBE_INSPECT_OUT;
+
+    // Written to a file when the CLI asks for one: the application is free to
+    // log to stdout while it boots, and mixing that into the payload would make
+    // `vercube inspect | jq` fail for reasons that have nothing to do with the
+    // application. Without the variable it still prints, so running the entry
+    // by hand works.
+    if (target) {
+      const { writeFileSync } = await import('node:fs');
+      writeFileSync(target, json, 'utf8');
+
+      return;
+    }
+
+    process.stdout.write(json);
   }
 
   /**

@@ -1,4 +1,4 @@
-import { BasePlugin } from '@vercube/core';
+import { BasePlugin, IntrospectionRegistry } from '@vercube/core';
 import { defu } from 'defu';
 import { DEFAULT_SCHEMA_PLUGIN_OPTIONS } from '../Constants/SchemaDefaults';
 import { SchemaController } from '../Controllers/SchameController';
@@ -50,5 +50,17 @@ export class SchemaPlugin extends BasePlugin<SchemaPluginOptions> {
     app.container.bindInstance($SchemaPluginOptions, mergedOptions);
     app.container.bind(SchemaRegistry);
     app.container.bind(SchemaController);
+
+    // Publish the generated document as an introspection section, so tooling
+    // reads it the same way it reads routes or config instead of having to
+    // know that this plugin mounts an HTTP endpoint.
+    const registry = app.container.get(SchemaRegistry);
+
+    app.container.getOptional(IntrospectionRegistry)?.register({
+      id: 'openapi',
+      title: 'OpenAPI',
+      revision: () => registry.revision,
+      describe: () => registry.generateSchema(),
+    });
   }
 }

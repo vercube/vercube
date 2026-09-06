@@ -2,6 +2,14 @@
  * Public type surface of `@vercube/devtools`.
  */
 export namespace DevtoolsTypes {
+  /*
+   * Structural shapes - the container graph, the route table, the flattened
+   * config - are no longer declared here. They belong to the packages that
+   * produce them and reach devtools through core's introspection registry
+   * (`IntrospectionTypes`, `Describe`). What remains are the view models the
+   * UI assembles from OpenTelemetry signals, plus devtools' own options.
+   */
+
   /**
    * Options accepted by the devtools plugin.
    */
@@ -75,129 +83,6 @@ export namespace DevtoolsTypes {
 
   /** Fully resolved options, with every default applied. */
   export type ResolvedOptions = Required<Omit<Options, 'token'>> & { token: string | null };
-
-  /** Classification of a container entry for the DI graph. */
-  export type ServiceRole = 'controller' | 'middleware' | 'plugin' | 'framework' | 'service' | 'value';
-
-  /** How a service was bound into the container. */
-  export type ServiceKind = 'singleton' | 'transient' | 'instance';
-
-  /** A single `@Inject`/`@InjectOptional` edge, as seen from the owning service. */
-  export interface Dependency {
-    /** Stable id of the dependency target. */
-    id: string;
-    /** Display name of the dependency target. */
-    name: string;
-    /** Property the dependency is injected into. */
-    property: string;
-    /** Whether the dependency was declared with `@InjectOptional`. */
-    optional: boolean;
-    /** Whether the dependency is actually bound in the container. */
-    bound: boolean;
-  }
-
-  /** A node of the dependency injection graph. */
-  export interface ServiceNode {
-    id: string;
-    name: string;
-    kind: ServiceKind;
-    role: ServiceRole;
-    /** Implementation class name when it differs from the binding key. */
-    implementation: string | null;
-    /** Whether a singleton instance already exists. */
-    instantiated: boolean;
-    /** True when the key is an `Identity()` symbol. */
-    symbol: boolean;
-    /** Outgoing dependency edges. */
-    dependencies: Dependency[];
-    /** Number of other services depending on this one. */
-    dependents: number;
-    /** Controller base path, when the node is a controller. */
-    basePath?: string;
-    /** Bootstrap cost, present when the service was constructed while profiling. */
-    timing?: BootstrapTiming;
-  }
-
-  /** A directed edge of the dependency injection graph. */
-  export interface GraphEdge {
-    from: string;
-    to: string;
-    property: string;
-    optional: boolean;
-  }
-
-  /** The full dependency injection graph. */
-  export interface Graph {
-    nodes: ServiceNode[];
-    edges: GraphEdge[];
-    /** Dependency cycles, each expressed as the list of node ids forming the loop. */
-    cycles: string[][];
-    /** Number of services that were never instantiated. */
-    unusedCount: number;
-  }
-
-  /** Construction cost of a single service during bootstrap. */
-  export interface BootstrapTiming {
-    /** Wall time including every nested dependency construction. */
-    totalMs: number;
-    /** Wall time excluding nested dependency construction. */
-    selfMs: number;
-  }
-
-  /** A node of the bootstrap call tree. */
-  export interface BootstrapNode extends BootstrapTiming {
-    id: string;
-    name: string;
-    kind: ServiceKind;
-    /** Offset from the first recorded construction, in milliseconds. */
-    offsetMs: number;
-    children: BootstrapNode[];
-  }
-
-  /** Aggregated bootstrap profile. */
-  export interface BootstrapProfile {
-    /** Whether the profiler was installed early enough to observe bootstrap. */
-    available: boolean;
-    /** Total wall time spanned by all recorded constructions. */
-    totalMs: number;
-    /** Number of instances constructed. */
-    count: number;
-    /** Call tree reconstructed from nested construction intervals. */
-    tree: BootstrapNode[];
-    /** Flat list ordered by self time descending. */
-    hotspots: (BootstrapTiming & { id: string; name: string })[];
-  }
-
-  /** A handler argument as declared by parameter decorators. */
-  export interface RouteArg {
-    idx: number;
-    type: string;
-    name?: string;
-    validated: boolean;
-  }
-
-  /** A middleware attached to a route. */
-  export interface RouteMiddleware {
-    name: string;
-    phase: 'before' | 'after';
-    priority: number;
-    global: boolean;
-  }
-
-  /** A single registered route. */
-  export interface RouteInfo {
-    id: string;
-    method: string;
-    path: string;
-    controller: string;
-    handler: string;
-    args: RouteArg[];
-    middlewares: RouteMiddleware[];
-    /** Number of `@Status`/`@Redirect`/`@SetHeader` style actions bound to the route. */
-    actions: number;
-    /** True for routes owned by the devtools themselves. */
-    internal: boolean;
-  }
 
   /** A timed segment of the request lifecycle. */
   export interface Span {
@@ -275,37 +160,6 @@ export namespace DevtoolsTypes {
     resources: { total: number; kinds: Record<string, number> } | null;
   }
 
-  /** One configuration value, flattened to a dotted path. */
-  export interface ConfigEntry {
-    path: string;
-    /** Value rendered as text. */
-    value: string;
-    /** True when the value was redacted. */
-    redacted?: boolean;
-  }
-
-  /** Resolved application configuration. */
-  export interface ConfigView {
-    /** Merged `vercube.config.ts`. */
-    app: ConfigEntry[];
-    /** Runtime config section. */
-    runtime: ConfigEntry[];
-  }
-
-  /** One mounted storage. */
-  export interface StorageMount {
-    name: string;
-    /** Class name of the driver. */
-    driver: string;
-    /** Key count, or null when unavailable. */
-    size: number | null;
-    keys: string[];
-    /** True when more keys exist than were listed. */
-    truncated: boolean;
-    /** Set when reading the mount failed. */
-    error?: string;
-  }
-
   /**
    * A previewed storage value, fetched on demand.
    */
@@ -322,21 +176,6 @@ export namespace DevtoolsTypes {
     truncated: boolean;
     /** Set when the key is missing or the read failed. */
     error?: string;
-  }
-
-  /** Storage and cache inspection result. */
-  export interface StorageView {
-    /** False when `@vercube/storage` is not in use. */
-    available: boolean;
-    mounts: StorageMount[];
-    cache: {
-      /** False when `@vercube/cache` is not in use. */
-      available: boolean;
-      /** Configured cache defaults, flattened. */
-      defaults: ConfigEntry[];
-      /** Storage mount the cache writes through, when declared. */
-      mount: string | null;
-    };
   }
 
   /** Severity of a captured log line, matching the logger's own levels. */
@@ -403,12 +242,4 @@ export namespace DevtoolsTypes {
     bootstrapMs: number;
     requests: { total: number; errors: number; averageMs: number; p95Ms: number };
   }
-
-  /** Events pushed over the devtools SSE stream. */
-  export type StreamEvent =
-    | { type: 'hello'; payload: { path: string } }
-    | { type: 'request'; payload: RequestRecord }
-    | { type: 'log'; payload: LogEntry }
-    | { type: 'metrics'; payload: MetricsSample }
-    | { type: 'ping'; payload: { at: number } };
 }

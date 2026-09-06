@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue';
-import { formatMs, useResource } from '../api';
+import { useIntrospection } from '../api';
 import PageHeader from './PageHeader.vue';
 import type { Graph, ServiceNode } from '../api';
 
@@ -13,7 +13,7 @@ interface Placed {
   radius: number;
 }
 
-const { data, error, loading, reload } = useResource<Graph>('/api/graph');
+const { data, error, loading, reload } = useIntrospection<Graph>('container');
 
 const roles = ['controller', 'middleware', 'service', 'plugin', 'framework', 'value'] as const;
 type Role = (typeof roles)[number];
@@ -461,7 +461,6 @@ onUnmounted(() => {
         </span>
         <span v-if="selected.symbol" class="tag">symbol key</span>
         <span v-if="selected.basePath" class="tag accent mono">{{ selected.basePath }}</span>
-        <span v-if="selected.timing" class="tag teal">built in {{ formatMs(selected.timing.totalMs) }}</span>
       </div>
 
       <p v-if="selected.implementation" class="impl">

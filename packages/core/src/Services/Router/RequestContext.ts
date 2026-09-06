@@ -5,9 +5,34 @@ import { AsyncLocalStorage } from 'node:async_hooks';
  *
  * The backing map is created on first write: most requests never touch the
  * context, so allocating a `Map` for every one of them is pure overhead.
+ *
+ * Telemetry opens nested frames on the same storage (see
+ * {@link RequestContext.runWithOtelContext}) so that a trace context and the
+ * request context share a single `AsyncLocalStorage`. Nested frames carry their
+ * own {@link RequestContextStore.otel} but point {@link RequestContextStore.root}
+ * at the frame the request started in, so `set()` from anywhere inside the
+ * request stays visible everywhere else in it.
  */
 interface RequestContextStore {
+  /** The frame the request started in. The root frame points at itself. */
+  root: RequestContextStore;
+  /** Lazily created key/value store. Only ever read from and written to on the root. */
   map: Map<string, unknown> | null;
+  /** Opaque OpenTelemetry `Context`. Core never inspects it. */
+  otel: unknown;
+}
+
+/**
+ * Creates a fresh root frame.
+ *
+ * @param otel - Optional OpenTelemetry context to seed the frame with
+ * @returns The new store, pointing at itself as its own root
+ */
+function createRootStore(otel: unknown = undefined): RequestContextStore {
+  const store: RequestContextStore = { root: undefined as unknown as RequestContextStore, map: null, otel };
+  store.root = store;
+
+  return store;
 }
 
 /**
@@ -44,7 +69,7 @@ export class RequestContext {
    */
   public run<T>(fn: () => T): T {
     // AsyncLocalStorage automatically cleans up the context when fn() completes
-    return this.fStorage.run({ map: null }, fn);
+    return this.fStorage.run(createRootStore(), fn);
   }
 
   /**
@@ -63,7 +88,8 @@ export class RequestContext {
       );
     }
 
-    (store.map ??= new Map<string, unknown>()).set(key, value);
+    const root = store.root;
+    (root.map ??= new Map<string, unknown>()).set(key, value);
   }
 
   /**
@@ -82,7 +108,7 @@ export class RequestContext {
       );
     }
 
-    return store.map?.get(key) as T | undefined;
+    return store.root.map?.get(key) as T | undefined;
   }
 
   /**
@@ -104,7 +130,7 @@ export class RequestContext {
    * @returns True if the key exists, false otherwise
    */
   public has(key: string): boolean {
-    return this.fStorage.getStore()?.map?.has(key) ?? false;
+    return this.fStorage.getStore()?.root.map?.has(key) ?? false;
   }
 
   /**
@@ -113,7 +139,7 @@ export class RequestContext {
    * @returns Array of keys in the context
    */
   public keys(): string[] {
-    const map = this.fStorage.getStore()?.map;
+    const map = this.fStorage.getStore()?.root.map;
     return map ? [...map.keys()] : [];
   }
 
@@ -123,7 +149,50 @@ export class RequestContext {
    * @returns Map of all key-value pairs in the context
    */
   public getAll(): Map<string, unknown> {
-    const map = this.fStorage.getStore()?.map;
+    const map = this.fStorage.getStore()?.root.map;
     return map ? new Map(map) : new Map();
+  }
+
+  /**
+   * Whether execution is currently inside a request context frame.
+   *
+   * @returns True when a frame is active
+   */
+  public get active(): boolean {
+    return this.fStorage.getStore() !== undefined;
+  }
+
+  /**
+   * Returns the OpenTelemetry context attached to the current frame.
+   *
+   * Typed as `unknown` on purpose: core has no OpenTelemetry dependency and
+   * never looks inside the value. `@vercube/telemetry` casts it back.
+   *
+   * @returns The active OpenTelemetry context, or undefined
+   */
+  public getOtelContext(): unknown {
+    return this.fStorage.getStore()?.otel;
+  }
+
+  /**
+   * Runs `fn` in a nested frame carrying `otel` as the active OpenTelemetry
+   * context, reusing this request's storage instead of a second
+   * `AsyncLocalStorage`.
+   *
+   * Called outside a request (during bootstrap, for example) it opens a fresh
+   * root frame so spans still nest correctly.
+   *
+   * @param otel - The OpenTelemetry context to make active
+   * @param fn - The function to run
+   * @returns The result of the function, passed through unchanged
+   */
+  public runWithOtelContext<T>(otel: unknown, fn: () => T): T {
+    const store = this.fStorage.getStore();
+
+    if (!store) {
+      return this.fStorage.run(createRootStore(otel), fn);
+    }
+
+    return this.fStorage.run({ root: store.root, map: null, otel }, fn);
   }
 }

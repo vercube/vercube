@@ -16,11 +16,27 @@ export class SchemaRegistry {
   private fRegistry: OpenAPIRegistry = new OpenAPIRegistry();
 
   /**
+   * Bumped on every registration, so introspection can cache the generated
+   * document and know when it went stale.
+   * @private
+   */
+  private fRevision: number = 1;
+
+  /**
+   * Revision of the registry contents.
+   * @returns The current revision.
+   */
+  public get revision(): number {
+    return this.fRevision;
+  }
+
+  /**
    * Registers a route configuration with the registry.
    * @param cfg - The route configuration to register.
    */
   public register(cfg: RouteConfig): void {
     this.fRegistry.registerPath(cfg);
+    this.fRevision++;
   }
 
   /**

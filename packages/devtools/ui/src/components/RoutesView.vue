@@ -1,12 +1,67 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
-import { useResource } from '../api';
+import { base, useIntrospection } from '../api';
 import { useInspectorWidth } from '../inspector';
 import PageHeader from './PageHeader.vue';
 import SplitHandle from './SplitHandle.vue';
 import type { RouteInfo } from '../api';
 
-const { data, error, loading, reload } = useResource<RouteInfo[]>('/api/routes');
+const { data, error, loading, reload } = useIntrospection<RouteInfo[]>('routes');
+
+/**
+ * Folds the HEAD twin `@Get` registers onto its GET row.
+ *
+ * The route table reports one entry per registration, which is the truth the
+ * router holds, but showing every GET route twice doubles the list for no
+ * information. A standalone `@Head` handler keeps its own row.
+ *
+ * @param routes - Raw route registrations
+ * @returns Routes with implicit pairs merged
+ */
+function mergeImplicitHead(routes: RouteInfo[]): RouteInfo[] {
+  const folded = new Set<RouteInfo>();
+  const merged: RouteInfo[] = [];
+
+  for (const route of routes) {
+    if (route.method !== 'GET') {
+      continue;
+    }
+
+    const head = routes.find(
+      (candidate) =>
+        candidate.method === 'HEAD' &&
+        candidate.path === route.path &&
+        candidate.controller === route.controller &&
+        candidate.handler === route.handler,
+    );
+
+    if (!head) {
+      merged.push(route);
+      continue;
+    }
+
+    folded.add(head);
+    merged.push({ ...route, id: `GET / HEAD ${route.path}`, method: 'GET / HEAD' });
+  }
+
+  for (const route of routes) {
+    if (route.method !== 'GET' && !folded.has(route)) {
+      merged.push(route);
+    }
+  }
+
+  return merged;
+}
+
+/**
+ * Whether a route belongs to devtools itself.
+ *
+ * The route table is now produced by core, which knows nothing about the
+ * inspector, so the mount prefix is what identifies its own endpoints.
+ */
+function isInternal(route: RouteInfo): boolean {
+  return route.path === base || route.path.startsWith(`${base}/`);
+}
 
 const query = ref('');
 const showInternal = ref(false);
@@ -21,8 +76,8 @@ const methodOrder = ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS',
 const filtered = computed(() => {
   const needle = query.value.trim().toLowerCase();
 
-  return (data.value ?? [])
-    .filter((route) => showInternal.value || !route.internal)
+  return mergeImplicitHead(data.value ?? [])
+    .filter((route) => showInternal.value || !isInternal(route))
     .filter(
       (route) =>
         !needle ||
@@ -152,7 +207,7 @@ onMounted(reload);
             </td>
             <td class="mono path">
               {{ route.path }}
-              <span v-if="route.internal" class="tag teal">devtools</span>
+              <span v-if="isInternal(route)" class="tag teal">devtools</span>
             </td>
             <td class="mono faint handler">{{ route.handler }}()</td>
             <td class="mono col-chain">{{ route.middlewares.length || '--' }}</td>

@@ -18,6 +18,6 @@ export function useContainer(container: Container): void {
   container.get(StorageManager).mount({ storage: MemoryStorage });
 
   container.get(Logger).configure({
-    logLevel: 'error',
+    logLevel: 'info',
   });
 }
