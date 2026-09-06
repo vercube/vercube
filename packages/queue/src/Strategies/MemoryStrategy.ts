@@ -129,9 +129,11 @@ export class MemoryStrategy extends QueueStrategy {
     return {
       queue: request.queue,
       stop: async () => {
-        // in-flight jobs are awaited, jobs still waiting stay untouched
-        await this.waitFor(() => queue.active === 0);
+        // Detached first: every finishing job pumps the queue again, so waiting
+        // for the in-flight ones while still attached would drain the backlog
+        // instead of stopping.
         queue.consumer = undefined;
+        await this.waitFor(() => queue.active === 0);
       },
     };
   }

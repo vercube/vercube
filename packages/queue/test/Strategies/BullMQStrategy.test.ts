@@ -79,7 +79,11 @@ vi.mock('bullmq', () => {
     }
   }
 
-  return { Queue, Worker };
+  class UnrecoverableError extends Error {
+    public override name = 'UnrecoverableError';
+  }
+
+  return { Queue, UnrecoverableError, Worker };
 });
 
 /**
@@ -198,6 +202,15 @@ describe('BullMQStrategy', () => {
         removeOnComplete: 10,
         removeOnFail: true,
       });
+    });
+
+    it('should leave the options it was given nothing for alone', async () => {
+      await strategy.publish(request({ options: { attempts: 3 } }));
+
+      // BullMQ merges these over the queue's defaultJobOptions with
+      // Object.assign, so an own property holding undefined would erase a
+      // configured default instead of leaving it in place.
+      expect(state.queues[0].add.mock.calls[0][2]).toEqual({ attempts: 3 });
     });
 
     it('should treat a plain backoff number as a fixed delay', async () => {
@@ -346,6 +359,30 @@ describe('BullMQStrategy', () => {
       await handle.stop();
 
       expect(state.workers[0].close).toHaveBeenCalled();
+    });
+  });
+
+  describe('unrecoverable failures', () => {
+    it('should stop BullMQ retrying a failure that running the job again cannot fix', async () => {
+      const dispatch = vi.fn().mockRejectedValue(new QueueError('bad payload', 'validate', undefined, undefined, false));
+
+      await strategy.consume({ queue: 'emails', concurrency: 1, dispatch });
+
+      // BullMQ owns the retries here, so a validation failure would otherwise
+      // burn every attempt the job was published with.
+      await expect(
+        state.workers[0].processor({ id: 1, name: 'welcome', data: { payload: {}, headers: {} }, attemptsMade: 0, opts: {} }),
+      ).rejects.toMatchObject({ name: 'UnrecoverableError', message: 'bad payload' });
+    });
+
+    it('should let a failure that could pass next time retry as usual', async () => {
+      const dispatch = vi.fn().mockRejectedValue(new Error('redis blinked'));
+
+      await strategy.consume({ queue: 'emails', concurrency: 1, dispatch });
+
+      await expect(
+        state.workers[0].processor({ id: 1, name: 'welcome', data: { payload: {}, headers: {} }, attemptsMade: 0, opts: {} }),
+      ).rejects.toThrow('redis blinked');
     });
   });
 

@@ -64,6 +64,9 @@ interface RabbitConsumer {
   tag: string;
   active: number;
   stopping: boolean;
+
+  /** What the consumer was started with, so it can be started again after a recovery. */
+  request: QueueTypes.ConsumeRequest;
 }
 
 /**
@@ -163,10 +166,21 @@ export class RabbitMQStrategy extends QueueStrategy<RabbitMQStrategyOptions> {
       this.gLogger?.error('Vercube/RabbitMQStrategy::Connection failed', error);
     });
 
-    // a recovered connection starts from an empty topology, so assert everything again
+    // A recovered connection starts from an empty topology, so assert everything
+    // again. The consumer channels belonged to the dead connection, so they are
+    // dropped and started again on the new one, otherwise the process stays up
+    // with every consumer silently detached.
     this.fConnection.on('connect', () => {
       this.fAsserted.clear();
       this.fPublishChannel = null;
+
+      const consuming = [...this.fConsumers.entries()];
+
+      this.fConsumers.clear();
+
+      for (const [, consumer] of consuming) {
+        void this.resume(consumer.request);
+      }
     });
   }
 
@@ -197,8 +211,32 @@ export class RabbitMQStrategy extends QueueStrategy<RabbitMQStrategyOptions> {
       });
 
       if (!written) {
-        // the channel buffer is full, let it flush before returning
-        await new Promise<void>((resolve) => channel.once('drain', resolve));
+        // The channel buffer is full, let it flush before returning. A channel
+        // that errors or closes instead never emits `drain`, so those settle the
+        // wait as well rather than leaving the publisher hanging forever.
+        await new Promise<void>((resolve, reject) => {
+          let settled = false;
+
+          // Whichever of the three arrives first wins; the listeners are one-shot
+          // and the flag keeps the losers from settling an already settled promise.
+          const settle = (error?: Error): void => {
+            if (settled) {
+              return;
+            }
+
+            settled = true;
+
+            if (error) {
+              reject(error);
+            } else {
+              resolve();
+            }
+          };
+
+          channel.once('drain', () => settle());
+          channel.once('error', (channelError: Error) => settle(channelError));
+          channel.once('close', () => settle(new Error('The channel closed before the job was flushed')));
+        });
       }
 
       return { id, queue: request.queue, job: request.job, strategy: this.transport };
@@ -221,33 +259,60 @@ export class RabbitMQStrategy extends QueueStrategy<RabbitMQStrategyOptions> {
    * @throws {QueueError} When the consumer cannot be started
    */
   public async consume(request: QueueTypes.ConsumeRequest): Promise<QueueTypes.ConsumerHandle> {
-    const options = this.requireOptions('consume');
-    const connection = this.requireConnection('consume');
-
     try {
-      const channel = await connection.createChannel();
-
-      await this.assertQueue(channel, request.queue);
-      await channel.prefetch(options.prefetch ?? Math.max(1, request.concurrency));
-
-      const reply = await channel.consume(request.queue, (message: ConsumeMessage | null) => {
-        if (!message) {
-          this.gLogger?.warn(`Vercube/RabbitMQStrategy::Consumer of "${request.queue}" was cancelled by the broker`);
-
-          return;
-        }
-
-        void this.handle(request, message);
-      });
-
-      this.fConsumers.set(request.queue, { channel, tag: reply.consumerTag, active: 0, stopping: false });
-
-      return {
-        queue: request.queue,
-        stop: () => this.stopConsumer(request.queue),
-      };
+      await this.startConsumer(request);
     } catch (error) {
       throw toQueueError(error, 'Failed to consume RabbitMQ queue', 'consume', { queue: request.queue });
+    }
+
+    return {
+      queue: request.queue,
+      stop: () => this.stopConsumer(request.queue),
+    };
+  }
+
+  /**
+   * Opens a channel for a queue and starts delivering its messages.
+   *
+   * @param {QueueTypes.ConsumeRequest} request - Queue to consume, its concurrency and the dispatch callback
+   * @returns {Promise<void>} Resolves once the broker accepted the consumer
+   * @throws {Error} When the channel or the consumer cannot be created
+   */
+  private async startConsumer(request: QueueTypes.ConsumeRequest): Promise<void> {
+    const options = this.requireOptions('consume');
+    const connection = this.requireConnection('consume');
+    const channel = await connection.createChannel();
+
+    await this.assertQueue(channel, request.queue);
+    await channel.prefetch(options.prefetch ?? Math.max(1, request.concurrency));
+
+    const reply = await channel.consume(request.queue, (message: ConsumeMessage | null) => {
+      if (!message) {
+        this.gLogger?.warn(`Vercube/RabbitMQStrategy::Consumer of "${request.queue}" was cancelled by the broker`);
+
+        return;
+      }
+
+      void this.handle(request, message);
+    });
+
+    this.fConsumers.set(request.queue, { channel, tag: reply.consumerTag, active: 0, stopping: false, request });
+  }
+
+  /**
+   * Starts a consumer again on a recovered connection.
+   *
+   * Failing here is reported rather than thrown: nothing is waiting on a
+   * recovery, and a queue that cannot be consumed again has to be visible.
+   *
+   * @param {QueueTypes.ConsumeRequest} request - What the consumer was started with
+   * @returns {Promise<void>} Resolves once the consumer is running again, or once the failure was reported
+   */
+  private async resume(request: QueueTypes.ConsumeRequest): Promise<void> {
+    try {
+      await this.startConsumer(request);
+    } catch (error) {
+      this.gLogger?.error(`Vercube/RabbitMQStrategy::Failed to consume "${request.queue}" again after a recovery`, error);
     }
   }
 
@@ -259,14 +324,24 @@ export class RabbitMQStrategy extends QueueStrategy<RabbitMQStrategyOptions> {
    * @throws {QueueError} When the queue cannot be inspected
    */
   public override async stats(queue: string): Promise<QueueTypes.QueueStats> {
+    const connection = this.requireConnection('stats');
+
+    // On its own channel: RabbitMQ closes the channel with NOT_FOUND when the
+    // queue does not exist, and the publish channel is shared, so asking about a
+    // queue nobody created would break the next publish.
+    let channel: Channel | null = null;
+
     try {
-      const channel = await this.publishChannel();
+      channel = await connection.createChannel();
+
       const info = await channel.checkQueue(queue);
       const consumer = this.fConsumers.get(queue);
 
       return { waiting: info.messageCount, active: consumer?.active ?? 0 };
     } catch (error) {
       throw toQueueError(error, 'Failed to inspect RabbitMQ queue', 'stats', { queue });
+    } finally {
+      await channel?.close().catch(() => undefined);
     }
   }
 

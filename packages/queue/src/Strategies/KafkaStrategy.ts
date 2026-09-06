@@ -235,12 +235,23 @@ export class KafkaStrategy extends QueueStrategy<KafkaStrategyOptions> {
       throw toQueueError(error, 'Failed to consume the Kafka topic', 'consume', { queue: request.queue });
     }
 
+    // consume() is public, so a second call must not orphan the first consumer
+    const previous = this.fConsumers.get(request.queue);
+
     this.fConsumers.set(request.queue, consumer);
+
+    if (previous) {
+      await previous.disconnect().catch(() => undefined);
+    }
 
     return {
       queue: request.queue,
       stop: async () => {
-        this.fConsumers.delete(request.queue);
+        // only this consumer's entry, never the one that replaced it
+        if (this.fConsumers.get(request.queue) === consumer) {
+          this.fConsumers.delete(request.queue);
+        }
+
         await consumer.disconnect();
       },
     };

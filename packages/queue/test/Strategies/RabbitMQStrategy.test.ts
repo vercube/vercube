@@ -189,6 +189,20 @@ describe('RabbitMQStrategy', () => {
       expect(state.connectArgs[1]).toEqual(['amqp://localhost', undefined]);
     });
 
+    it('should consume again on a recovered connection', async () => {
+      await strategy.consume({ queue: 'emails', concurrency: 1, dispatch: async () => undefined });
+
+      const before = state.channels.length;
+
+      state.connections[0].listeners.connect(undefined);
+      await new Promise((resolve) => setTimeout(resolve, 5));
+
+      // The old channels belonged to the dead connection. Without starting again
+      // the process stays up with every consumer silently detached.
+      expect(state.channels.length).toBeGreaterThan(before);
+      expect(state.channels.at(-1)!.consume).toHaveBeenCalledWith('emails', expect.any(Function));
+    });
+
     it('should refuse to connect without a url', async () => {
       const bare = container.resolve(RabbitMQStrategy);
 
@@ -289,6 +303,19 @@ describe('RabbitMQStrategy', () => {
       state.channels[0].listeners.drain(undefined);
 
       await expect(publishing).resolves.toMatchObject({ queue: 'emails' });
+    });
+
+    it('should stop waiting for a drain the channel can no longer deliver', async () => {
+      state.sendResult = false;
+
+      const publishing = strategy.publish(request());
+
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      // Without this the publisher waits for a `drain` that a closed channel
+      // never emits, and the caller hangs forever.
+      state.channels[0].listeners.close(undefined);
+
+      await expect(publishing).rejects.toMatchObject({ name: 'QueueError', operation: 'publish' });
     });
 
     it('should wrap a broker failure', async () => {
@@ -455,6 +482,21 @@ describe('RabbitMQStrategy', () => {
       state.checkError = new Error('no such queue');
 
       await expect(strategy.stats('emails')).rejects.toMatchObject({ operation: 'stats' });
+    });
+
+    it('should inspect a queue on a channel of its own', async () => {
+      await strategy.publish(request());
+
+      const publishChannel = state.channels[0];
+
+      state.checkError = new Error('no such queue');
+      await expect(strategy.stats('nothing')).rejects.toMatchObject({ operation: 'stats' });
+
+      state.checkError = null;
+      // RabbitMQ closes the channel that asked about a missing queue, so asking
+      // on the shared publish channel would break the next publish.
+      await expect(strategy.publish(request())).resolves.toMatchObject({ queue: 'emails' });
+      expect(publishChannel.close).not.toHaveBeenCalled();
     });
 
     it('should stop consumers and close the connection', async () => {

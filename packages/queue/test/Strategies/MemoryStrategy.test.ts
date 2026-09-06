@@ -221,6 +221,41 @@ describe('MemoryStrategy', () => {
     expect(dispatch).not.toHaveBeenCalled();
   });
 
+  describe('stopping', () => {
+    it('should leave the backlog alone and only await what is in flight', async () => {
+      let release: (() => void) | undefined;
+      const started: string[] = [];
+
+      const handle = await strategy.consume({
+        queue: 'emails',
+        concurrency: 1,
+        dispatch: async (job) => {
+          started.push(job.id);
+
+          if (started.length === 1) {
+            await new Promise<void>((resolve) => {
+              release = resolve;
+            });
+          }
+        },
+      });
+
+      await strategy.publish(request({ options: { jobId: 'a' } }));
+      await strategy.publish(request({ options: { jobId: 'b' } }));
+      await strategy.publish(request({ options: { jobId: 'c' } }));
+
+      const stopping = handle.stop();
+
+      release?.();
+      await stopping;
+
+      // Every finishing job pumps the queue again, so stopping while still
+      // attached would work through the whole backlog instead.
+      expect(started).toEqual(['a']);
+      await expect(strategy.stats('emails')).resolves.toMatchObject({ waiting: 2, active: 0 });
+    });
+  });
+
   describe('peeking', () => {
     it('should show what is waiting, in the order it would run', async () => {
       await strategy.publish(request({ payload: { id: 1 }, options: { priority: 5 } }));

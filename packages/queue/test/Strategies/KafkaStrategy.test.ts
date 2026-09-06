@@ -278,6 +278,20 @@ describe('KafkaStrategy', () => {
       expect(state.consumers[0].subscribe).toHaveBeenCalledWith({ topic: 'emails', fromBeginning: true });
     });
 
+    it('should disconnect a consumer it replaces', async () => {
+      await strategy.consume({ queue: 'emails', concurrency: 1, dispatch: async () => undefined });
+
+      const handle = await strategy.consume({ queue: 'emails', concurrency: 1, dispatch: async () => undefined });
+
+      // consume() is public, so a second call must not orphan the first consumer
+      expect(state.consumers[0].disconnect).toHaveBeenCalled();
+      expect(state.consumers[1].disconnect).not.toHaveBeenCalled();
+
+      await handle.stop();
+
+      expect(state.consumers[1].disconnect).toHaveBeenCalled();
+    });
+
     it('should refuse to consume without a consumer group', async () => {
       const anonymous = container.resolve(KafkaStrategy);
 

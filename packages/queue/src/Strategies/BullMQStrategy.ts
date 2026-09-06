@@ -1,9 +1,10 @@
 import { InjectOptional } from '@vercube/di';
 import { Logger } from '@vercube/logger';
-import { Queue, Worker } from 'bullmq';
+import { Queue, UnrecoverableError, Worker } from 'bullmq';
 import { QueueError } from '../Errors/QueueError';
 import { QueueStrategy } from '../Services/QueueStrategy';
 import { toQueueError } from '../Utils/Errors';
+import { prune } from '../Utils/Job';
 import type { QueueTypes } from '../Types/QueueTypes';
 import type { ConnectionOptions, Job, JobsOptions, QueueOptions, WorkerOptions } from 'bullmq';
 
@@ -179,16 +180,27 @@ export class BullMQStrategy extends QueueStrategy<BullMQStrategyOptions> {
       async (job: Job) => {
         const { payload, headers } = this.fromEnvelope(job.data);
 
-        await request.dispatch({
-          id: String(job.id),
-          job: job.name,
-          payload,
-          headers,
-          attempt: job.attemptsStarted || job.attemptsMade + 1,
-          attempts: job.opts?.attempts ?? 1,
-          raw: job,
-          updateProgress: (progress) => job.updateProgress(progress),
-        });
+        try {
+          await request.dispatch({
+            id: String(job.id),
+            job: job.name,
+            payload,
+            headers,
+            attempt: job.attemptsStarted || job.attemptsMade + 1,
+            attempts: job.opts?.attempts ?? 1,
+            raw: job,
+            updateProgress: (progress) => job.updateProgress(progress),
+          });
+        } catch (error) {
+          // BullMQ owns the retries here, so a failure it cannot fix by running
+          // the job again has to say so. A payload that fails validation would
+          // otherwise burn every attempt the job was published with.
+          if (error instanceof QueueError && !error.retryable) {
+            throw new UnrecoverableError(error.message);
+          }
+
+          throw error;
+        }
       },
       {
         ...options.workerOptions,
@@ -342,7 +354,10 @@ export class BullMQStrategy extends QueueStrategy<BullMQStrategyOptions> {
   private toJobOptions(options: QueueTypes.JobOptions): JobsOptions {
     const backoff = options.backoff;
 
-    return {
+    // BullMQ merges these over the queue's `defaultJobOptions` with
+    // `Object.assign`, so an own property set to `undefined` would erase a
+    // configured default rather than leave it alone.
+    return prune({
       attempts: options.attempts,
       backoff: typeof backoff === 'number' ? { type: 'fixed', delay: backoff } : backoff,
       delay: options.delay,
@@ -350,7 +365,7 @@ export class BullMQStrategy extends QueueStrategy<BullMQStrategyOptions> {
       jobId: options.jobId,
       removeOnComplete: options.removeOnComplete,
       removeOnFail: options.removeOnFail,
-    };
+    });
   }
 
   /**
