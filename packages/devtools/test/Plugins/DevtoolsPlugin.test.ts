@@ -330,6 +330,24 @@ describe('DevtoolsPlugin', () => {
     expect(options.spans?.headers).not.toBe(false);
   });
 
+  it('should not turn on body or header capture in production', async () => {
+    const app = await createApp({
+      cfg: {
+        requestLogging: false,
+        production: true,
+        dev: false,
+        plugins: [vercubePluginFromClass(DevtoolsPlugin, { enabled: true, token: 's3cret' })],
+      },
+    });
+
+    const options = app.container.get(TelemetryRegistry).options!;
+
+    // Both ride on the server span, so every exporter sharing the pipeline sees
+    // them. Telemetry documents them as off by default for that reason.
+    expect(options.spans?.bodies).toBe(false);
+    expect(options.spans?.headers).toBe(false);
+  });
+
   it('should refuse to mount in production without a token', async () => {
     const app = await createApp({
       cfg: { requestLogging: false, dev: true, production: true },

@@ -78,7 +78,15 @@ export class DevtoolsPlugin extends BasePlugin<DevtoolsTypes.Options> {
     const resolved = this.resolveOptions(config, options);
 
     ensureDevtoolsTelemetry(resolved).installMetrics();
-    this.contribute(resolved);
+
+    // `use()` refuses to mount an unprotected inspector in production, and this
+    // phase runs first, so it has to refuse on the same terms. Otherwise the
+    // capture settings would be applied for a UI that never appears.
+    if (config.production === true && !resolved.token) {
+      return;
+    }
+
+    this.contribute(config, resolved);
   }
 
   /**
@@ -122,7 +130,7 @@ export class DevtoolsPlugin extends BasePlugin<DevtoolsTypes.Options> {
     // instruments here, and an instrument made before a provider is registered
     // stays a no-op for the life of the process. Skipped when the application
     // registered TelemetryPlugin itself and it already ran.
-    this.contribute(resolved);
+    this.contribute(config, resolved);
 
     if (!app.container.get(TelemetryRegistry).enabled) {
       // Devtools is useless without spans, so enabling it enables telemetry
@@ -159,19 +167,27 @@ export class DevtoolsPlugin extends BasePlugin<DevtoolsTypes.Options> {
    *
    * @param resolved - Fully resolved devtools options
    */
-  private contribute(resolved: DevtoolsTypes.ResolvedOptions): void {
+  private contribute(config: ConfigTypes.Config, resolved: DevtoolsTypes.ResolvedOptions): void {
     if (contributed) {
       return;
     }
 
     contributed = true;
 
+    // Bodies and headers go onto the server span, which means every registered
+    // exporter sees them, not just the in-process buffer this inspector reads.
+    // Telemetry documents both as off by default because they carry
+    // credentials and personal data, so devtools only turns them on where that
+    // trade is obviously acceptable: a development machine. In production they
+    // stay off and have to be asked for through `telemetry.spans` explicitly.
+    const development = config.production !== true;
+
     contributeTelemetryOptions({
       // The inspector must not appear in the data it is inspecting.
       exclude: [resolved.path],
       spans: {
-        bodies: resolved.captureBodies ? { maxBytes: resolved.maxBodyBytes } : false,
-        headers: resolved.captureHeaders ? { redact: resolved.redactHeaders } : false,
+        bodies: development && resolved.captureBodies ? { maxBytes: resolved.maxBodyBytes } : false,
+        headers: development && resolved.captureHeaders ? { redact: resolved.redactHeaders } : false,
       },
     });
   }
