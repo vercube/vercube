@@ -13,6 +13,7 @@ const state = vi.hoisted(() => ({
   sendResult: true,
   checkError: null as Error | null,
   consumeError: null as Error | null,
+  consumeErrorOnce: null as Error | null,
   closeError: null as Error | null,
 }));
 
@@ -42,6 +43,13 @@ vi.mock('amqplib', () => {
     });
 
     public consume = vi.fn(async (_queue: string, onMessage: (message: unknown) => void) => {
+      if (state.consumeErrorOnce) {
+        const failure = state.consumeErrorOnce;
+        state.consumeErrorOnce = null;
+
+        throw failure;
+      }
+
       if (state.consumeError) {
         throw state.consumeError;
       }
@@ -167,6 +175,7 @@ describe('RabbitMQStrategy', () => {
     state.closeError = null;
     state.checkError = null;
     state.consumeError = null;
+    state.consumeErrorOnce = null;
     state.sendResult = true;
 
     container = new Container();
@@ -285,11 +294,35 @@ describe('RabbitMQStrategy', () => {
       await expect(consuming).resolves.toMatchObject({ queue: 'emails' });
       await new Promise((resolve) => setTimeout(resolve, 10));
 
+      // the startup that was in flight, and the recovery that superseded it
+      expect(consumedQueues().filter((queue) => queue === 'emails')).toHaveLength(2);
+
       connection.listeners.connect(undefined);
       await new Promise((resolve) => setTimeout(resolve, 10));
 
       // the queue is still known, so every later recovery keeps consuming it
-      expect(consumedQueues().filter((queue) => queue === 'emails').length).toBeGreaterThanOrEqual(3);
+      expect(consumedQueues().filter((queue) => queue === 'emails')).toHaveLength(3);
+    });
+
+    it('should keep a queue whose startup failed only because a recovery took over', async () => {
+      const connection = state.connections[0];
+
+      // The startup against the connection that is being replaced fails, which
+      // is expected. The recovery owns the queue now, so it has to stay known.
+      state.consumeErrorOnce = new Error('the connection closed under it');
+
+      const consuming = strategy.consume({ queue: 'emails', concurrency: 1, dispatch: async () => undefined });
+
+      connection.listeners.connect(undefined);
+
+      await expect(consuming).resolves.toMatchObject({ queue: 'emails' });
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      connection.listeners.connect(undefined);
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      // the failed startup, the recovery that took over, and the one after it
+      expect(consumedQueues().filter((queue) => queue === 'emails')).toHaveLength(3);
     });
 
     it('should refuse to connect without a url', async () => {

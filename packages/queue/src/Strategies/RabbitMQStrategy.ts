@@ -273,14 +273,22 @@ export class RabbitMQStrategy extends QueueStrategy<RabbitMQStrategyOptions> {
    * @throws {QueueError} When the consumer cannot be started
    */
   public async consume(request: QueueTypes.ConsumeRequest): Promise<QueueTypes.ConsumerHandle> {
+    const generation = this.fGeneration;
+
     this.fRequests.set(request.queue, request);
 
     try {
       // A reconnect during startup is not a failure: it already read this queue
       // out of the ledger above and is starting it on the new connection, so the
       // queue has to stay in the ledger and the caller has to see a success.
-      await this.startConsumer(request, this.fGeneration);
+      // That holds whether this attempt returns or throws, because a startup
+      // against a connection that has just been replaced is expected to throw.
+      await this.startConsumer(request, generation);
     } catch (error) {
+      if (generation !== this.fGeneration) {
+        return { queue: request.queue, stop: () => this.stopConsumer(request.queue) };
+      }
+
       this.fRequests.delete(request.queue);
 
       throw toQueueError(error, 'Failed to consume RabbitMQ queue', 'consume', { queue: request.queue });
