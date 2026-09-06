@@ -6,13 +6,8 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    include: [
-      'packages/**/test/**/*.test.ts',
-      'packages/**/test/**/*.bench.ts',
-      'playground/test/**/*.test.ts',
-      'playground/test/**/*.bench.ts',
-    ],
-    projects: ['packages/*'],
+    include: ['packages/**/test/**/*.test.ts', 'playground/test/**/*.test.ts'],
+    projects: ['packages/*', 'playground'],
     coverage: {
       reporter: ['text', 'json', 'html'],
       include: ['packages/**/src/**/*.ts'],

@@ -15,6 +15,7 @@ package-lock.json
 
 # Testing
 coverage
+.vitest
 
 # Turbo
 .turbo

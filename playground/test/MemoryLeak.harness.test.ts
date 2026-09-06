@@ -163,7 +163,7 @@ async function runRecreateAppScenario(): Promise<MemorySample[]> {
   return samples;
 }
 
-describe.sequential('[Diag] Memory Leak Harness', () => {
+describe('[Diag] Memory Leak Harness', { concurrent: false }, () => {
   it('runs reproducible memory checkpoints', async () => {
     if (!RUN_ENABLED) {
       console.log('[LeakHarness] Skipping. Set LEAK_HARNESS=1 to run.');

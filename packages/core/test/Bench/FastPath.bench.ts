@@ -1,4 +1,4 @@
-import { bench, describe } from 'vitest';
+import { describe, test } from 'vitest';
 import { Controller, createApp, Get } from '../../src';
 import { RequestHandler } from '../../src/Services/Router/RequestHandler';
 import { Router } from '../../src/Services/Router/Router';
@@ -23,7 +23,9 @@ const request = new Request('http://localhost/bench/plain');
 // Deliberately synchronous: this measures the dispatch branch itself, not the
 // promise machinery around it, which is where a telemetry check would show up.
 describe('[Bench] Request fast path', () => {
-  bench('handleRequest - simple route, telemetry off', () => {
-    handler.handleRequest(request, route);
+  test('handleRequest - simple route, telemetry off', async ({ bench }) => {
+    await bench('handleRequest - simple route, telemetry off', () => {
+      handler.handleRequest(request, route);
+    }).run();
   });
 });
