@@ -17,9 +17,11 @@ import { DevtoolsProtocol } from '../Protocol/Frames';
 import { AuditService } from '../Services/AuditService';
 import { DevtoolsFrameBus } from '../Services/DevtoolsFrameBus';
 import { OverviewCollector } from '../Services/OverviewCollector';
+import { QueueIntrospection } from '../Services/QueueIntrospection';
 import { StorageIntrospection } from '../Services/StorageIntrospection';
 import { $DevtoolsOptions } from '../Symbols/DevtoolsSymbols';
 import { DevtoolsTelemetry } from '../Telemetry/DevtoolsTelemetry';
+import type { QueueMessages } from '../Services/QueueIntrospection';
 import type { DevtoolsTypes } from '../Types/DevtoolsTypes';
 
 /** Interval between keep-alive frames, in milliseconds. */
@@ -57,6 +59,9 @@ export class DevtoolsController {
 
   @Inject(StorageIntrospection)
   private readonly gStorage!: StorageIntrospection;
+
+  @Inject(QueueIntrospection)
+  private readonly gQueues!: QueueIntrospection;
 
   @Inject(DevtoolsFrameBus)
   private readonly gBus!: DevtoolsFrameBus;
@@ -175,6 +180,28 @@ export class DevtoolsController {
     @QueryParam({ name: 'key' }) key: string,
   ): Promise<DevtoolsTypes.StorageValue> {
     return this.gStorage.readValue(mount, key);
+  }
+
+  /**
+   * Lists what a queue is holding, without consuming any of it.
+   *
+   * Kept out of the queues introspection section for the same reason as storage
+   * values: this costs a broker round trip per queue, and only the queue
+   * somebody opened is worth paying it for.
+   *
+   * @param queue - Queue to list
+   * @param strategy - Mount to list it through
+   * @param limit - How many messages to read
+   * @returns The messages found, or why they could not be read
+   */
+  @Get('/api/queues/messages')
+  @SetHeader('Cache-Control', 'no-store')
+  public queueMessages(
+    @QueryParam({ name: 'queue' }) queue: string,
+    @QueryParam({ name: 'strategy' }) strategy: string,
+    @QueryParam({ name: 'limit' }) limit: string,
+  ): Promise<QueueMessages> {
+    return this.gQueues.readMessages(queue, strategy ?? 'default', Number(limit) || 20);
   }
 
   /**

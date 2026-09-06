@@ -1,21 +1,19 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
-import { api, formatMs, useResource } from '../api';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { formatMs, queueMessages, useIntrospection } from '../api';
 import { useInspectorWidth } from '../inspector';
 import PageHeader from './PageHeader.vue';
 import SplitHandle from './SplitHandle.vue';
-import type { QueueJob, QueueLine, QueueMessages, QueueMetrics, QueueView } from '../api';
+import type { QueueJobEvent as QueueJob, QueueLineInfo as QueueLine, QueueMessageList, QueueView } from '../api';
 
-const props = defineProps<{
-  /** Jobs pushed over the stream since the page was opened, newest first. */
-  live?: QueueJob[];
-  /** Counters as of the last batch. */
-  liveMetrics?: QueueMetrics[];
-  /** Jobs the stream left out because a batch was full. */
-  dropped?: number;
-}>();
+/**
+ * How often the ledger refreshes while the panel is open. Individual jobs are
+ * traced by the queue module and show up in Requests as consumer spans; this
+ * panel is the structural view, so a slow refresh is enough.
+ */
+const REFRESH_MS = 2000;
 
-const { data, error, loading, reload } = useResource<QueueView>('/api/queues');
+const { data, error, loading, reload } = useIntrospection<QueueView>('queues');
 
 const query = ref('');
 
@@ -27,21 +25,7 @@ const DEFAULT_INSPECTOR_WIDTH = 420;
 
 const inspectorWidth = useInspectorWidth('queues-inspector', DEFAULT_INSPECTOR_WIDTH);
 
-/**
- * The fetched queues with the counters of the last streamed batch applied, so
- * the ledger keeps up without refetching. Transport counters stay as fetched:
- * reading those costs a broker round trip.
- */
-const lines = computed<QueueLine[]>(() => {
-  const fetched = data.value?.queues ?? [];
-  const live = new Map((props.liveMetrics ?? []).map((entry) => [`${entry.strategy}::${entry.queue}`, entry]));
-
-  return fetched.map((line) => {
-    const fresh = live.get(keyOf(line));
-
-    return fresh ? { ...line, ...fresh } : line;
-  });
-});
+const lines = computed<QueueLine[]>(() => data.value?.queues ?? []);
 
 /** Queues match on their own name, their strategy or any job they handle. */
 const queues = computed(() => {
@@ -56,22 +40,7 @@ const queues = computed(() => {
   );
 });
 
-/** Streamed jobs first, then whatever the last fetch knew, without repeating any. */
-const journal = computed<QueueJob[]>(() => {
-  const seen = new Set<string>();
-  const merged: QueueJob[] = [];
-
-  for (const event of [...(props.live ?? []), ...(data.value?.events ?? [])]) {
-    const key = `${event.at}-${event.strategy}-${event.queue}-${event.id}-${event.attempt}-${event.status}`;
-
-    if (!seen.has(key)) {
-      seen.add(key);
-      merged.push(event);
-    }
-  }
-
-  return merged;
-});
+const journal = computed<QueueJob[]>(() => data.value?.events ?? []);
 
 const events = computed(() => {
   const needle = query.value.trim().toLowerCase();
@@ -123,22 +92,7 @@ const queueEvents = computed(() =>
   journal.value.filter((event) => queue.value && keyOf(event) === keyOf(queue.value)).slice(0, 25),
 );
 
-/**
- * A queue nobody fetched yet can show up in a streamed batch. Its counters are
- * there, but its handlers and transport are not, so refetch once it appears.
- */
-watch(
-  () => props.liveMetrics,
-  (metrics) => {
-    const known = new Set((data.value?.queues ?? []).map((line) => keyOf(line)));
-
-    if ((metrics ?? []).some((entry) => !known.has(`${entry.strategy}::${entry.queue}`))) {
-      void reload();
-    }
-  },
-);
-
-const messages = ref<QueueMessages | null>(null);
+const messages = ref<QueueMessageList | null>(null);
 const loadingMessages = ref(false);
 
 /** Reads what the open queue is holding. Costs a broker round trip, so it is explicit. */
@@ -152,9 +106,7 @@ async function loadMessages(): Promise<void> {
   loadingMessages.value = true;
 
   try {
-    messages.value = await api<QueueMessages>(
-      `/api/queues/messages?queue=${encodeURIComponent(line.queue)}&strategy=${encodeURIComponent(line.strategy)}&limit=25`,
-    );
+    messages.value = await queueMessages(line.queue, line.strategy, 25);
   } catch (error) {
     messages.value = {
       queue: line.queue,
@@ -256,14 +208,22 @@ const meta = computed(() => {
     `${report.handlers.length} handler${report.handlers.length === 1 ? '' : 's'}`,
   ];
 
-  if (props.dropped) {
-    parts.push(`${props.dropped} not shown`);
-  }
-
   return `${parts.join(' · ')}${report.started ? '' : ' · stopped'}`;
 });
 
-onMounted(reload);
+let timer: ReturnType<typeof setInterval> | null = null;
+
+onMounted(() => {
+  void reload();
+  timer = setInterval(() => void reload(), REFRESH_MS);
+});
+
+onUnmounted(() => {
+  if (timer) {
+    clearInterval(timer);
+    timer = null;
+  }
+});
 </script>
 
 <template>

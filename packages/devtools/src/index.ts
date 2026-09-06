@@ -15,6 +15,7 @@ export * from './Services/AuditService';
 export * from './Services/DevtoolsFrameBus';
 export * from './Services/OverviewCollector';
 export * from './Services/SignalsDigest';
+export * from './Services/QueueIntrospection';
 export * from './Services/StorageIntrospection';
 
 // Telemetry pipeline
