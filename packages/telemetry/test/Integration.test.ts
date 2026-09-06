@@ -138,6 +138,25 @@ describe('@vercube/telemetry end to end', () => {
     expect(span!.attributes['url.path']).toBe('/missing');
   });
 
+  it('withholds credential-bearing query parameters', async () => {
+    await app.fetch(new Request('http://localhost/users/42?access_token=super-secret&page=2'));
+
+    const span = telemetry.span('GET /users/:id')!;
+    const query = String(span.attributes['url.query']);
+
+    // A secret in the query string is as sensitive as one in a header, and it
+    // travels to every exporter that shares the pipeline.
+    expect(query).not.toContain('super-secret');
+    expect(query).toContain('page=2');
+    expect(query).toContain('%3Credacted%3E');
+  });
+
+  it('leaves an ordinary query string untouched', async () => {
+    await app.fetch(new Request('http://localhost/users/42?page=2&sort=name'));
+
+    expect(telemetry.span('GET /users/:id')!.attributes['url.query']).toBe('page=2&sort=name');
+  });
+
   it('does not mark a 4xx as a failed span', async () => {
     await app.fetch(new Request('http://localhost/missing'));
 

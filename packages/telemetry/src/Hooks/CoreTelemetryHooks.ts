@@ -1,5 +1,5 @@
 import { context, SpanKind, trace } from '@opentelemetry/api';
-import { getRequestPathname, getRequestSearch } from '@vercube/core';
+import { getRequestPathname, getRequestSearch, isSecretKey } from '@vercube/core';
 import { bootstrapRecorder } from '../Bootstrap/BootstrapSpans';
 import {
   ERROR_TYPE,
@@ -249,7 +249,7 @@ function toAttributes(spanContext: TelemetryTypes.ServerSpanContext): Attributes
   const query = getRequestSearch(request);
 
   if (query.length > 1) {
-    attributes[URL_QUERY] = query.slice(1);
+    attributes[URL_QUERY] = redactQuery(query.slice(1));
   }
 
   const host = request.headers.get('host');
@@ -284,6 +284,32 @@ function toAttributes(spanContext: TelemetryTypes.ServerSpanContext): Attributes
   }
 
   return attributes;
+}
+
+/**
+ * Rewrites a query string with credential-bearing values withheld.
+ *
+ * A secret in `?access_token=` is as sensitive as one in an `Authorization`
+ * header, and it ends up in traces, downloadable snapshots and any exporter
+ * that shares the pipeline. The same name matching used for configuration
+ * values decides what to withhold.
+ *
+ * @param query - The raw query string, without the leading `?`
+ * @returns The query string with secret values replaced
+ */
+function redactQuery(query: string): string {
+  const params = new URLSearchParams(query);
+  let redacted = false;
+
+  // Snapshotted into a Set, because the loop writes back into `params`.
+  for (const key of new Set(params.keys())) {
+    if (isSecretKey(key)) {
+      params.set(key, '<redacted>');
+      redacted = true;
+    }
+  }
+
+  return redacted ? params.toString() : query;
 }
 
 /**
