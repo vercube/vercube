@@ -727,14 +727,27 @@ export class QueueManager {
       ...(priority === 0 ? {} : { priority }),
     };
 
-    const publish = (): Promise<QueueTypes.JobRef> | undefined =>
-      mount?.strategy.publish({
-        queue: registration.queue,
-        job: context.job,
-        payload: context.payload,
-        headers,
-        options,
-      });
+    // A strategy unmounted between the failure and the retry leaves nothing to
+    // publish to. Optional chaining would make that look like a published retry,
+    // so the attempt would be acknowledged and the job would quietly disappear.
+    const publish = (): Promise<QueueTypes.JobRef> =>
+      mount
+        ? mount.strategy.publish({
+            queue: registration.queue,
+            job: context.job,
+            payload: context.payload,
+            headers,
+            options,
+          })
+        : Promise.reject(
+            new QueueError(
+              `Strategy "${registration.strategy}" is no longer mounted`,
+              'publish',
+              undefined,
+              { queue: registration.queue, job: context.job },
+              false,
+            ),
+          );
 
     // Nothing has to be waited for before the retry can be published, so it is
     // awaited: the transport has not acknowledged this attempt yet, and a

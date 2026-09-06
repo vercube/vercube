@@ -215,16 +215,17 @@ export class RabbitMQStrategy extends QueueStrategy<RabbitMQStrategyOptions> {
         // that errors or closes instead never emits `drain`, so those settle the
         // wait as well rather than leaving the publisher hanging forever.
         await new Promise<void>((resolve, reject) => {
-          let settled = false;
+          const drained = (): void => settle();
+          const failed = (channelError: Error): void => settle(channelError);
+          const closed = (): void => settle(new Error('The channel closed before the job was flushed'));
 
-          // Whichever of the three arrives first wins; the listeners are one-shot
-          // and the flag keeps the losers from settling an already settled promise.
+          // Whichever of the three arrives first wins. The two that did not fire
+          // have to be taken off again: the publish channel is long lived, so a
+          // pair left behind per backpressed publish would grow without bound.
           const settle = (error?: Error): void => {
-            if (settled) {
-              return;
-            }
-
-            settled = true;
+            channel.removeListener('drain', drained);
+            channel.removeListener('error', failed);
+            channel.removeListener('close', closed);
 
             if (error) {
               reject(error);
@@ -233,9 +234,9 @@ export class RabbitMQStrategy extends QueueStrategy<RabbitMQStrategyOptions> {
             }
           };
 
-          channel.once('drain', () => settle());
-          channel.once('error', (channelError: Error) => settle(channelError));
-          channel.once('close', () => settle(new Error('The channel closed before the job was flushed')));
+          channel.once('drain', drained);
+          channel.once('error', failed);
+          channel.once('close', closed);
         });
       }
 
@@ -283,20 +284,28 @@ export class RabbitMQStrategy extends QueueStrategy<RabbitMQStrategyOptions> {
     const connection = this.requireConnection('consume');
     const channel = await connection.createChannel();
 
-    await this.assertQueue(channel, request.queue);
-    await channel.prefetch(options.prefetch ?? Math.max(1, request.concurrency));
+    try {
+      await this.assertQueue(channel, request.queue);
+      await channel.prefetch(options.prefetch ?? Math.max(1, request.concurrency));
 
-    const reply = await channel.consume(request.queue, (message: ConsumeMessage | null) => {
-      if (!message) {
-        this.gLogger?.warn(`Vercube/RabbitMQStrategy::Consumer of "${request.queue}" was cancelled by the broker`);
+      const reply = await channel.consume(request.queue, (message: ConsumeMessage | null) => {
+        if (!message) {
+          this.gLogger?.warn(`Vercube/RabbitMQStrategy::Consumer of "${request.queue}" was cancelled by the broker`);
 
-        return;
-      }
+          return;
+        }
 
-      void this.handle(request, message);
-    });
+        void this.handle(request, message);
+      });
 
-    this.fConsumers.set(request.queue, { channel, tag: reply.consumerTag, active: 0, stopping: false, request });
+      this.fConsumers.set(request.queue, { channel, tag: reply.consumerTag, active: 0, stopping: false, request });
+    } catch (error) {
+      // Nothing tracks this channel yet, and a recovery retries the whole thing,
+      // so leaving it open leaks one channel per attempt on the same connection.
+      await channel.close().catch(() => undefined);
+
+      throw error;
+    }
   }
 
   /**

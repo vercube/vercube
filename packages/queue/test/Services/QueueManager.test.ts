@@ -797,6 +797,25 @@ describe('QueueManager', () => {
       expect(strategy.published[1].options).toMatchObject({ key: 'user-42', priority: 3 });
     });
 
+    it('should refuse to acknowledge an attempt whose strategy went away', async () => {
+      const strategy = await mountRecording();
+
+      manager.registerConsumer(
+        registration({
+          handler: vi.fn().mockImplementation(async () => {
+            await manager.unmount('default');
+            throw new Error('boom');
+          }),
+          options: { attempts: 2 },
+        }),
+      );
+      await manager.start();
+
+      // There is nothing left to publish the retry to, and treating that as a
+      // published retry would acknowledge the attempt and lose the job.
+      await expect(strategy.deliver('emails', { job: 'welcome' })).rejects.toThrow('no longer mounted');
+    });
+
     it('should give up once the attempts are exhausted', async () => {
       const strategy = await mountRecording();
 

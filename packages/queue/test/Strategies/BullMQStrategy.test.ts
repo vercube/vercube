@@ -375,6 +375,20 @@ describe('BullMQStrategy', () => {
       ).rejects.toMatchObject({ name: 'UnrecoverableError', message: 'bad payload' });
     });
 
+    it('should carry the cause into the message BullMQ keeps', async () => {
+      const dispatch = vi
+        .fn()
+        .mockRejectedValue(new QueueError('bad payload', 'validate', new Error('id must be a number'), undefined, false));
+
+      await strategy.consume({ queue: 'emails', concurrency: 1, dispatch });
+
+      // BullMQ stores only the message as `failedReason`, so a cause left off it
+      // is gone from the failed job record.
+      await expect(
+        state.workers[0].processor({ id: 1, name: 'welcome', data: { payload: {}, headers: {} }, attemptsMade: 0, opts: {} }),
+      ).rejects.toMatchObject({ message: 'bad payload: id must be a number' });
+    });
+
     it('should let a failure that could pass next time retry as usual', async () => {
       const dispatch = vi.fn().mockRejectedValue(new Error('redis blinked'));
 

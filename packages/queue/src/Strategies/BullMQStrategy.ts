@@ -196,7 +196,11 @@ export class BullMQStrategy extends QueueStrategy<BullMQStrategyOptions> {
           // the job again has to say so. A payload that fails validation would
           // otherwise burn every attempt the job was published with.
           if (error instanceof QueueError && !error.retryable) {
-            throw new UnrecoverableError(error.message);
+            // BullMQ keeps only `message` as the job's `failedReason`, so the
+            // cause has to travel in it or it is gone from the failed record.
+            const cause = error.cause instanceof Error ? `: ${error.cause.message}` : '';
+
+            throw new UnrecoverableError(`${error.message}${cause}`);
           }
 
           throw error;

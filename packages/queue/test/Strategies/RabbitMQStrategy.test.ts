@@ -12,6 +12,7 @@ const state = vi.hoisted(() => ({
   connectError: null as Error | null,
   sendResult: true,
   checkError: null as Error | null,
+  consumeError: null as Error | null,
   closeError: null as Error | null,
 }));
 
@@ -41,6 +42,10 @@ vi.mock('amqplib', () => {
     });
 
     public consume = vi.fn(async (_queue: string, onMessage: (message: unknown) => void) => {
+      if (state.consumeError) {
+        throw state.consumeError;
+      }
+
       this.deliveries.push(onMessage);
 
       return { consumerTag: `tag-${state.channels.indexOf(this)}` };
@@ -54,6 +59,14 @@ vi.mock('amqplib', () => {
 
     public once = vi.fn((event: string, listener: (payload: unknown) => void) => {
       this.listeners[event] = listener;
+
+      return this;
+    });
+
+    public removeListener = vi.fn((event: string, listener: (payload: unknown) => void) => {
+      if (this.listeners[event] === listener) {
+        delete this.listeners[event];
+      }
 
       return this;
     });
@@ -144,6 +157,7 @@ describe('RabbitMQStrategy', () => {
     state.connectError = null;
     state.closeError = null;
     state.checkError = null;
+    state.consumeError = null;
     state.sendResult = true;
 
     container = new Container();
@@ -201,6 +215,18 @@ describe('RabbitMQStrategy', () => {
       // the process stays up with every consumer silently detached.
       expect(state.channels.length).toBeGreaterThan(before);
       expect(state.channels.at(-1)!.consume).toHaveBeenCalledWith('emails', expect.any(Function));
+    });
+
+    it('should close the channel when a consumer cannot be started', async () => {
+      state.consumeError = new Error('the broker said no');
+
+      await expect(strategy.consume({ queue: 'emails', concurrency: 1, dispatch: async () => undefined })).rejects.toMatchObject({
+        operation: 'consume',
+      });
+
+      // Nothing tracks this channel yet, and a recovery starts every consumer
+      // again, so leaving it open leaks one channel per attempt.
+      expect(state.channels.at(-1)!.close).toHaveBeenCalled();
     });
 
     it('should refuse to connect without a url', async () => {
@@ -316,6 +342,21 @@ describe('RabbitMQStrategy', () => {
       state.channels[0].listeners.close(undefined);
 
       await expect(publishing).rejects.toMatchObject({ name: 'QueueError', operation: 'publish' });
+    });
+
+    it('should leave no listeners behind after a drain', async () => {
+      state.sendResult = false;
+
+      const publishing = strategy.publish(request());
+
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      state.channels[0].listeners.drain(undefined);
+      await publishing;
+
+      // The publish channel is long lived, so a pair left behind per backpressed
+      // publish grows without bound and warns after ten of them.
+      expect(state.channels[0].listeners.error).toBeUndefined();
+      expect(state.channels[0].listeners.close).toBeUndefined();
     });
 
     it('should wrap a broker failure', async () => {
