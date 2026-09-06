@@ -732,13 +732,32 @@ describe('QueueManager', () => {
       expect(strategy.published[0].options).toEqual({});
     });
 
-    it('should report a retry that cannot be published', async () => {
+    it('should hand a retry it cannot publish back to the transport', async () => {
       const strategy = await mountRecording();
 
       manager.registerConsumer(registration({ handler: vi.fn().mockRejectedValue(new Error('boom')), options: { attempts: 2 } }));
       await manager.start();
 
       strategy.publishError = new Error('broker down');
+
+      // Nothing has to be waited for, so the retry is published before the
+      // attempt is acknowledged: the transport still owns the message and can
+      // redeliver it rather than the job disappearing.
+      await expect(strategy.deliver('emails', { job: 'welcome' })).rejects.toThrow('broker down');
+    });
+
+    it('should report a delayed retry that cannot be published', async () => {
+      const strategy = await mountRecording();
+
+      manager.registerConsumer(
+        registration({ handler: vi.fn().mockRejectedValue(new Error('boom')), options: { attempts: 2, backoff: 1 } }),
+      );
+      await manager.start();
+
+      strategy.publishError = new Error('broker down');
+
+      // The backoff is on a timer, so the attempt is acknowledged first and the
+      // job really is lost. That has to be visible rather than only logged.
       await strategy.deliver('emails', { job: 'welcome' });
       await manager.drain();
 
@@ -747,6 +766,35 @@ describe('QueueManager', () => {
         expect.anything(),
         expect.anything(),
       );
+      expect(manager.inspect().events[0]).toMatchObject({ status: 'failed', error: { message: 'broker down' } });
+    });
+
+    it('should cap the retry budget a job asks for on the wire', async () => {
+      const strategy = await mountRecording();
+
+      manager.registerConsumer(registration({ handler: vi.fn().mockRejectedValue(new Error('boom')) }));
+      await manager.start();
+
+      await strategy.deliver('emails', { job: 'welcome', headers: { [ATTEMPTS_HEADER]: '100000' } });
+      await manager.drain();
+
+      // Otherwise one poison message turns into an unbounded republish loop.
+      expect(strategy.published[0].headers[ATTEMPTS_HEADER]).toBe('50');
+    });
+
+    it('should keep the key and the priority a job was published with across a retry', async () => {
+      const strategy = await mountRecording();
+
+      manager.registerConsumer(registration({ handler: vi.fn().mockRejectedValue(new Error('boom')), options: { attempts: 2 } }));
+      await manager.start();
+
+      await manager.add({ queue: 'emails', job: 'welcome', payload: {}, options: { key: 'user-42', priority: 3 } });
+      await strategy.deliver('emails', { job: 'welcome', headers: strategy.published[0].headers });
+      await manager.drain();
+
+      // A retry is a fresh publish, so losing these would move the job to
+      // another Kafka partition and drop its RabbitMQ priority.
+      expect(strategy.published[1].options).toMatchObject({ key: 'user-42', priority: 3 });
     });
 
     it('should give up once the attempts are exhausted', async () => {

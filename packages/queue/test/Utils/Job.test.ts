@@ -5,7 +5,9 @@ import {
   delay,
   encodePayload,
   generateJobId,
+  MAX_BACKOFF_MS,
   normalizeHeaders,
+  prune,
   readNumericHeader,
   resolveBackoff,
 } from '../../src/Utils/Job';
@@ -28,6 +30,39 @@ describe('Job utils', () => {
 
     it('should floor fractional values', () => {
       expect(readNumericHeader('2.9', 1)).toBe(2);
+    });
+  });
+
+  describe('clamping', () => {
+    it('should never read more than the maximum from a header', () => {
+      // The value comes off the wire, so a producer must not be able to ask for
+      // an arbitrarily large retry budget.
+      expect(readNumericHeader('1000000', 1, 50)).toBe(50);
+    });
+
+    it('should still read a value below the maximum as it is', () => {
+      expect(readNumericHeader('7', 1, 50)).toBe(7);
+    });
+
+    it('should never hold a retry longer than a day', () => {
+      // An unclamped exponential overflows to Infinity, which setTimeout turns
+      // into one millisecond: the slowest backoff becomes the fastest.
+      expect(resolveBackoff({ type: 'exponential', delay: 1000 }, 60)).toBe(MAX_BACKOFF_MS);
+      expect(Number.isFinite(resolveBackoff({ type: 'exponential', delay: 1000 }, 60))).toBe(true);
+    });
+
+    it('should clamp a fixed backoff too', () => {
+      expect(resolveBackoff(MAX_BACKOFF_MS * 3, 1)).toBe(MAX_BACKOFF_MS);
+    });
+  });
+
+  describe('prune', () => {
+    it('should drop the keys holding undefined', () => {
+      expect(prune({ attempts: 3, delay: undefined, priority: 0 })).toEqual({ attempts: 3, priority: 0 });
+    });
+
+    it('should keep null, which is a value somebody chose', () => {
+      expect(prune({ removeOnComplete: null })).toEqual({ removeOnComplete: null });
     });
   });
 

@@ -9,6 +9,9 @@ import {
   ATTEMPTS_HEADER,
   delay,
   JOB_HEADER,
+  KEY_HEADER,
+  MAX_ATTEMPTS,
+  PRIORITY_HEADER,
   readNumericHeader,
   resolveBackoff,
   WILDCARD_JOB,
@@ -583,8 +586,12 @@ export class QueueManager {
       return;
     }
 
-    const attempts =
-      incoming.attempts ?? readNumericHeader(incoming.headers[ATTEMPTS_HEADER], registration.options.attempts ?? 1);
+    // The budget may come off the wire, so it is capped: a producer must not be
+    // able to turn one poison message into an unbounded republish loop.
+    const attempts = Math.min(
+      incoming.attempts ?? readNumericHeader(incoming.headers[ATTEMPTS_HEADER], registration.options.attempts ?? 1, MAX_ATTEMPTS),
+      MAX_ATTEMPTS,
+    );
     const context = this.createContext(strategy, queue, incoming, attempts);
     const started = performance.now();
 
@@ -684,7 +691,7 @@ export class QueueManager {
       context.headers,
     );
 
-    this.scheduleRetry(registration, context, error);
+    await this.scheduleRetry(registration, context, error);
   }
 
   /**
@@ -696,37 +703,78 @@ export class QueueManager {
    * @param {QueueTypes.Registration} registration - Handler that failed
    * @param {QueueTypes.JobContext} context - Context of the failed attempt
    * @param {Error} error - Error the attempt failed with, reported when the retry cannot be published
-   * @returns {void}
+   * @returns {Promise<void>} Resolves once the retry exists, or once it has been scheduled on a timer
+   * @throws {Error} When the retry could be published right away and the transport refused it
    */
-  protected scheduleRetry(registration: QueueTypes.Registration, context: QueueTypes.JobContext, error: Error): void {
+  protected scheduleRetry(registration: QueueTypes.Registration, context: QueueTypes.JobContext, error: Error): Promise<void> {
     const mount = this.fStrategies.get(registration.strategy);
     const wait = resolveBackoff(registration.options.backoff, context.attempt);
     const native = mount?.strategy.capabilities.delay ?? false;
 
-    const headers = {
+    const headers: Record<string, string> = {
       ...context.headers,
       [ATTEMPT_HEADER]: String(context.attempt + 1),
       [ATTEMPTS_HEADER]: String(context.attempts),
     };
 
-    const republish = async (): Promise<void> => {
-      try {
-        await mount?.strategy.publish({
-          queue: registration.queue,
-          job: context.job,
-          payload: context.payload,
-          headers,
-          options: native ? { delay: wait } : {},
-        });
-      } catch (publishError) {
-        this.gLogger?.error('Vercube/QueueManager::Failed to schedule retry', publishError, error);
-      }
+    // What the job was published with, read back off its own headers: a fresh
+    // publish is all the transport sees, and a retry that changes partition or
+    // drops its priority is not the same job any more.
+    const priority = readNumericHeader(headers[PRIORITY_HEADER], 0);
+    const options: QueueTypes.JobOptions = {
+      ...(native ? { delay: wait } : {}),
+      ...(headers[KEY_HEADER] === undefined ? {} : { key: headers[KEY_HEADER] }),
+      ...(priority === 0 ? {} : { priority }),
     };
 
-    const pending = (native || wait === 0 ? Promise.resolve() : delay(wait)).then(republish);
+    const publish = (): Promise<QueueTypes.JobRef> | undefined =>
+      mount?.strategy.publish({
+        queue: registration.queue,
+        job: context.job,
+        payload: context.payload,
+        headers,
+        options,
+      });
+
+    // Nothing has to be waited for before the retry can be published, so it is
+    // awaited: the transport has not acknowledged this attempt yet, and a
+    // publish that fails now becomes its problem instead of a lost job.
+    if (native || wait === 0) {
+      return Promise.resolve(publish()).then(() => undefined);
+    }
+
+    // The backoff is on a timer instead, because holding the handler slot for it
+    // would idle the consumer. The attempt is acknowledged before the retry
+    // exists, so a failed publish loses the job and is reported as such.
+    const pending = delay(wait)
+      .then(publish)
+      .then(
+        () => undefined,
+        (publishError: unknown) => {
+          this.gLogger?.error('Vercube/QueueManager::Failed to schedule retry', publishError, error);
+          this.record(
+            {
+              strategy: registration.strategy,
+              queue: registration.queue,
+              job: context.job,
+              id: context.id,
+              attempt: context.attempt,
+              status: 'failed',
+              duration: 0,
+              error: this.describeFailure(publishError as Error),
+              source: registration.source,
+            },
+            context.payload,
+            context.headers,
+          );
+          countOutcome({ queue: registration.queue, job: context.job }, 'lost');
+        },
+      );
 
     this.fPendingRetries.add(pending);
     void pending.finally(() => this.fPendingRetries.delete(pending));
+
+    return Promise.resolve();
   }
 
   /**
@@ -747,6 +795,11 @@ export class QueueManager {
     }
 
     let timer: ReturnType<typeof setTimeout> | undefined;
+
+    // The handler is not interrupted by the timeout, only stopped being waited
+    // for. Nothing observes it after that, so its eventual rejection would crash
+    // the process as an unhandled one.
+    run.catch(() => undefined);
 
     try {
       await Promise.race([
@@ -1044,6 +1097,17 @@ export class QueueManager {
 
     if (options.attempts && options.attempts > 1) {
       headers[ATTEMPTS_HEADER] = String(options.attempts);
+    }
+
+    // A retry is a fresh publish, and the transport only sees what it is given.
+    // Without these a Kafka retry lands on another partition and a RabbitMQ one
+    // loses its priority.
+    if (options.key !== undefined) {
+      headers[KEY_HEADER] = options.key;
+    }
+
+    if (options.priority !== undefined) {
+      headers[PRIORITY_HEADER] = String(options.priority);
     }
 
     // Carries the publishing trace into the consumer, wherever it runs. Retries

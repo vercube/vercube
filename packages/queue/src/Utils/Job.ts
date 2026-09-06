@@ -16,21 +16,46 @@ export const ATTEMPT_HEADER = 'x-attempt';
 /** Header carrying the total number of attempts the publisher asked for. */
 export const ATTEMPTS_HEADER = 'x-attempts';
 
+/** Header carrying the partition or routing key a job was published with. */
+export const KEY_HEADER = 'x-key';
+
+/** Header carrying the priority a job was published with. */
+export const PRIORITY_HEADER = 'x-priority';
+
+/**
+ * Most attempts a job may ever take.
+ *
+ * On transports that do not retry natively the budget is read off the wire, so a
+ * producer could otherwise ask for an arbitrarily large one and turn a single
+ * poison message into an unbounded republish loop.
+ */
+export const MAX_ATTEMPTS = 50;
+
+/**
+ * Longest a retry may be held back, one day.
+ *
+ * An exponential backoff over a large attempt count overflows to `Infinity`,
+ * which `setTimeout` clamps to one millisecond: the backoff meant to slow
+ * retries down would make them as fast as the runtime allows.
+ */
+export const MAX_BACKOFF_MS = 86_400_000;
+
 /**
  * Reads a positive integer from a raw header value.
  *
  * @param raw - Header value as received from the transport, in any shape.
  * @param fallback - Value returned when the header is absent or unusable.
+ * @param max - Largest value accepted, so a value off the wire cannot be unbounded.
  * @returns The parsed integer, or the fallback.
  */
-export function readNumericHeader(raw: unknown, fallback: number): number {
+export function readNumericHeader(raw: unknown, fallback: number, max: number = Number.MAX_SAFE_INTEGER): number {
   if (raw === null || raw === undefined) {
     return fallback;
   }
 
   const value = Number(typeof raw === 'object' ? String(raw) : raw);
 
-  return Number.isFinite(value) && value > 0 ? Math.floor(value) : fallback;
+  return Number.isFinite(value) && value > 0 ? Math.min(Math.floor(value), max) : fallback;
 }
 
 /**
@@ -61,7 +86,7 @@ export function normalizeHeaders(headers: Record<string, unknown> | undefined | 
  *
  * @param backoff - Backoff policy, a number being a fixed delay in milliseconds.
  * @param attempt - Attempt that just failed, starting at 1.
- * @returns Delay in milliseconds, zero when no backoff is configured.
+ * @returns Delay in milliseconds, zero when no backoff is configured and never above {@link MAX_BACKOFF_MS}.
  */
 export function resolveBackoff(backoff: QueueTypes.Backoff | undefined, attempt: number): number {
   if (!backoff) {
@@ -69,12 +94,13 @@ export function resolveBackoff(backoff: QueueTypes.Backoff | undefined, attempt:
   }
 
   if (typeof backoff === 'number') {
-    return Math.max(0, backoff);
+    return Math.min(Math.max(0, backoff), MAX_BACKOFF_MS);
   }
 
   const delay = Math.max(0, backoff.delay);
+  const resolved = backoff.type === 'exponential' ? delay * 2 ** Math.max(0, attempt - 1) : delay;
 
-  return backoff.type === 'exponential' ? delay * 2 ** Math.max(0, attempt - 1) : delay;
+  return Math.min(resolved, MAX_BACKOFF_MS);
 }
 
 /**
@@ -143,4 +169,27 @@ export function delay(ms: number): Promise<void> {
     // a pending retry must never hold the process open on its own
     timer.unref?.();
   });
+}
+
+/**
+ * Drops the keys whose value is undefined.
+ *
+ * Options objects are built by spreading whatever the caller set, which leaves
+ * own properties holding `undefined` behind. A library that merges options with
+ * `Object.assign` cannot tell those apart from a deliberate value, so they have
+ * to go before the object is handed over.
+ *
+ * @param source - Object to clean up.
+ * @returns A copy without the undefined entries.
+ */
+export function prune<T extends Record<string, unknown>>(source: T): T {
+  const pruned: Record<string, unknown> = {};
+
+  for (const [key, value] of Object.entries(source)) {
+    if (value !== undefined) {
+      pruned[key] = value;
+    }
+  }
+
+  return pruned as T;
 }
