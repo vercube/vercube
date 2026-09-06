@@ -1,6 +1,7 @@
 import { ref, shallowRef } from 'vue';
 import { decodeLogs, decodeMetrics, decodeSpans, toRequestRecords } from './otlp';
 import type { DevtoolsProtocol } from '../../src/Protocol/Frames';
+import type { QueueDescription, QueueJob, QueueLine, QueueMessages, QueueMount } from '../../src/Services/QueueIntrospection';
 import type { StorageDescription } from '../../src/Services/StorageIntrospection';
 import type { DevtoolsTypes } from '../../src/Types/DevtoolsTypes';
 import type { IntrospectionTypes } from '@vercube/core';
@@ -24,6 +25,11 @@ export type RouteInfo = IntrospectionTypes.RouteDescription;
 export type ConfigView = IntrospectionTypes.ConfigDescription;
 export type ConfigEntry = IntrospectionTypes.ConfigEntry;
 export type StorageView = StorageDescription;
+export type QueueView = QueueDescription;
+export type QueueLineInfo = QueueLine;
+export type QueueMountInfo = QueueMount;
+export type QueueJobEvent = QueueJob;
+export type QueueMessageList = QueueMessages;
 
 export const base: string = globalThis.location.pathname.replace(/\/+$/, '') || '/_devtools';
 
@@ -171,6 +177,20 @@ export function signals(kind: 'traces' | 'logs' | 'metrics'): Promise<unknown> {
  */
 export async function clearSignals(kind: 'traces' | 'logs' | 'metrics'): Promise<void> {
   await api(`/api/signals/${kind}/clear`);
+}
+
+/**
+ * Lists what a queue is holding.
+ *
+ * @param queue - Queue to list
+ * @param strategy - Mount to list it through
+ * @param limit - How many messages to read
+ * @returns The messages found, or why they could not be read
+ */
+export function queueMessages(queue: string, strategy: string, limit = 20): Promise<QueueMessageList> {
+  const params = new URLSearchParams({ queue, strategy, limit: String(limit) });
+
+  return api<QueueMessageList>(`/api/queues/messages?${params.toString()}`);
 }
 
 export interface StreamHandlers {

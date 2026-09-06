@@ -23,6 +23,7 @@
 - **Container graph** - bindings and `@Inject` edges, with cycle detection. Inspection never instantiates services.
 - **Route explorer** - route table grouped by controller, with middleware chains and argument decorators.
 - **Request inspector** - live span-by-span waterfall per request (middleware, handler, framework overhead).
+- **Queue panel** - mounted transports, registered handlers and per-queue counters, with recent outcomes and a stack trace behind a failure that carried one.
 - **Bootstrap profiler** - flamegraph of container construction with self-time hotspots.
 - **Audit** - circular deps, unbound injections, duplicate routes, unvalidated input, slow constructors and failing endpoints, scored 0-100.
 - **Snapshot export** - one JSON file with everything.
@@ -92,6 +93,7 @@ Everything the UI shows is plain JSON:
 | `GET /api/routes`       | Route table with middlewares and arguments          |
 | `GET /api/requests`     | Recorded requests (newest first)                    |
 | `GET /api/requests/:id` | A single recorded request                           |
+| `GET /api/queues`       | Queue transports, handlers, counters and jobs       |
 | `GET /api/bootstrap`    | Bootstrap call tree and hotspots                    |
 | `GET /api/audit`        | Audit findings and health score                     |
 | `GET /api/route`        | Which route handles `?method=&path=`                |

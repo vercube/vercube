@@ -1,4 +1,4 @@
-import { context, metrics, trace } from '@opentelemetry/api';
+import { context, metrics, propagation, trace } from '@opentelemetry/api';
 import {
   AggregationTemporality,
   InMemoryMetricExporter,
@@ -7,6 +7,7 @@ import {
 } from '@opentelemetry/sdk-metrics';
 import { BasicTracerProvider, InMemorySpanExporter, SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base';
 import { RequestContext } from '@vercube/core';
+import { W3CTraceContextPropagator } from './Common/Propagation';
 import { VercubeContextManager } from './Context/VercubeContextManager';
 import type { ResourceMetrics } from '@opentelemetry/sdk-metrics';
 import type { ReadableSpan } from '@opentelemetry/sdk-trace-base';
@@ -90,6 +91,11 @@ export function createTestTelemetry(): TestTelemetry {
   // under test.
   context.setGlobalContextManager(new VercubeContextManager(new RequestContext()).enable());
 
+  // The same propagator TelemetryPlugin installs, so anything that crosses a
+  // process boundary in production - an outgoing header, a queued job - crosses
+  // it in a test too.
+  propagation.setGlobalPropagator(new W3CTraceContextPropagator());
+
   return {
     provider,
     meterProvider,
@@ -111,6 +117,7 @@ export function createTestTelemetry(): TestTelemetry {
       trace.disable();
       metrics.disable();
       context.disable();
+      propagation.disable();
       await Promise.all([provider.shutdown(), meterProvider.shutdown()]);
     },
   };

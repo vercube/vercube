@@ -6,13 +6,14 @@ import ConfigView from './components/ConfigView.vue';
 import GraphView from './components/GraphView.vue';
 import LogsView from './components/LogsView.vue';
 import OverviewView from './components/OverviewView.vue';
+import QueuesView from './components/QueuesView.vue';
 import RequestsView from './components/RequestsView.vue';
 import RoutesView from './components/RoutesView.vue';
 import StorageView from './components/StorageView.vue';
 import VercubeMark from './components/VercubeMark.vue';
 import type { LogEntry, MetricsSample, RequestRecord } from './api';
 
-type TabId = 'overview' | 'requests' | 'logs' | 'storage' | 'routes' | 'graph' | 'config' | 'audit';
+type TabId = 'overview' | 'requests' | 'logs' | 'storage' | 'queues' | 'routes' | 'graph' | 'config' | 'audit';
 
 interface Tab {
   id: TabId;
@@ -32,6 +33,7 @@ const groups: { label: string; tabs: Tab[] }[] = [
         label: 'Storage',
         icon: 'M4 7c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3Zm0 0v10c0 1.7 3.6 3 8 3s8-1.3 8-3V7M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3',
       },
+      { id: 'queues', label: 'Queues', icon: 'M4 6h16M4 12h16M4 18h16M8 3v3m8 12v3' },
     ],
   },
   {
@@ -299,6 +301,7 @@ onUnmounted(() => {
       <RequestsView v-else-if="active === 'requests'" :live="live" :live-logs="liveLogs" />
       <LogsView v-else-if="active === 'logs'" :live="liveLogs" />
       <StorageView v-else-if="active === 'storage'" />
+      <QueuesView v-else-if="active === 'queues'" />
       <ConfigView v-else-if="active === 'config'" :invalidated="invalidated" />
       <RoutesView v-else-if="active === 'routes'" :invalidated="invalidated" />
       <GraphView v-else-if="active === 'graph'" :invalidated="invalidated" />
