@@ -2,7 +2,7 @@
   "name": "@vercube/telemetry",
   "version": "1.2.1",
   "description": "OpenTelemetry instrumentation for the Vercube framework - traces, metrics and log correlation",
-  "packageManager": "pnpm@11.22.0",
+  "packageManager": "pnpm@11.25.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/vercube/vercube.git",
