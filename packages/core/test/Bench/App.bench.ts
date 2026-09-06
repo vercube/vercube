@@ -1,4 +1,4 @@
-import { bench, describe } from 'vitest';
+import { describe, test } from 'vitest';
 import { createTestApp } from '../Utils/App.mock';
 import type { App } from '@vercube/core';
 
@@ -7,203 +7,255 @@ const app: App = await createTestApp();
 // This bench should simulate a 404 request when no route is found
 describe('[Bench] Application', () => {
   describe('[GET] 404', () => {
-    bench('Fetch 404', async () => {
-      await app.fetch(new Request('http://localhost/not-found'));
+    test('Fetch 404', async ({ bench }) => {
+      await bench('Fetch 404', async () => {
+        await app.fetch(new Request('http://localhost/not-found'));
+      }).run();
     });
   });
 
   describe('[GET] without middlewares', () => {
-    bench('Fetch GET', async () => {
-      await app.fetch(new Request('http://localhost/mock/get'));
+    test('Fetch GET', async ({ bench }) => {
+      await bench('Fetch GET', async () => {
+        await app.fetch(new Request('http://localhost/mock/get'));
+      }).run();
     });
   });
 
   describe('[POST] methods', () => {
-    bench('Fetch POST', async () => {
-      await app.fetch(
-        new Request('http://localhost/mock/post', {
-          method: 'POST',
-        }),
-      );
+    test('Fetch POST', async ({ bench }) => {
+      await bench('Fetch POST', async () => {
+        await app.fetch(
+          new Request('http://localhost/mock/post', {
+            method: 'POST',
+          }),
+        );
+      }).run();
     });
 
-    bench('Fetch POST with body', async () => {
-      await app.fetch(
-        new Request('http://localhost/mock/body', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ test: 'data' }),
-        }),
-      );
+    test('Fetch POST with body', async ({ bench }) => {
+      await bench('Fetch POST with body', async () => {
+        await app.fetch(
+          new Request('http://localhost/mock/body', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ test: 'data' }),
+          }),
+        );
+      }).run();
     });
 
-    bench('Fetch POST with body validation', async () => {
-      await app.fetch(
-        new Request('http://localhost/mock/body-validation', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: 'test', age: 25 }),
-        }),
-      );
+    test('Fetch POST with body validation', async ({ bench }) => {
+      await bench('Fetch POST with body validation', async () => {
+        await app.fetch(
+          new Request('http://localhost/mock/body-validation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: 'test', age: 25 }),
+          }),
+        );
+      }).run();
     });
 
-    bench('Fetch POST with multipart form data', async () => {
-      const formData = new FormData();
-      formData.append('file', new Blob(['test']), 'test.txt');
-      formData.append('field', 'value');
+    test('Fetch POST with multipart form data', async ({ bench }) => {
+      await bench('Fetch POST with multipart form data', async () => {
+        const formData = new FormData();
+        formData.append('file', new Blob(['test']), 'test.txt');
+        formData.append('field', 'value');
 
-      await app.fetch(
-        new Request('http://localhost/mock/multipart-form-data', {
-          method: 'POST',
-          body: formData,
-        }),
-      );
+        await app.fetch(
+          new Request('http://localhost/mock/multipart-form-data', {
+            method: 'POST',
+            body: formData,
+          }),
+        );
+      }).run();
     });
   });
 
   describe('[PUT] methods', () => {
-    bench('Fetch PUT', async () => {
-      await app.fetch(
-        new Request('http://localhost/mock/put', {
-          method: 'PUT',
-        }),
-      );
+    test('Fetch PUT', async ({ bench }) => {
+      await bench('Fetch PUT', async () => {
+        await app.fetch(
+          new Request('http://localhost/mock/put', {
+            method: 'PUT',
+          }),
+        );
+      }).run();
     });
   });
 
   describe('[DELETE] methods', () => {
-    bench('Fetch DELETE', async () => {
-      await app.fetch(
-        new Request('http://localhost/mock/delete', {
-          method: 'DELETE',
-        }),
-      );
+    test('Fetch DELETE', async ({ bench }) => {
+      await bench('Fetch DELETE', async () => {
+        await app.fetch(
+          new Request('http://localhost/mock/delete', {
+            method: 'DELETE',
+          }),
+        );
+      }).run();
     });
   });
 
   describe('[PATCH] methods', () => {
-    bench('Fetch PATCH', async () => {
-      await app.fetch(
-        new Request('http://localhost/mock/patch', {
-          method: 'PATCH',
-        }),
-      );
+    test('Fetch PATCH', async ({ bench }) => {
+      await bench('Fetch PATCH', async () => {
+        await app.fetch(
+          new Request('http://localhost/mock/patch', {
+            method: 'PATCH',
+          }),
+        );
+      }).run();
     });
   });
 
   describe('[TRACE] methods', () => {
-    bench('Fetch TRACE', async () => {
-      await app.fetch(
-        new Request('http://localhost/mock/trace', {
-          method: 'TRACE',
-        }),
-      );
+    test('Fetch TRACE', async ({ bench }) => {
+      await bench('Fetch TRACE', async () => {
+        await app.fetch(
+          new Request('http://localhost/mock/trace', {
+            method: 'TRACE',
+          }),
+        );
+      }).run();
     });
   });
 
   describe('[HEAD] methods', () => {
-    bench('Fetch HEAD', async () => {
-      await app.fetch(
-        new Request('http://localhost/mock/head', {
-          method: 'HEAD',
-        }),
-      );
+    test('Fetch HEAD', async ({ bench }) => {
+      await bench('Fetch HEAD', async () => {
+        await app.fetch(
+          new Request('http://localhost/mock/head', {
+            method: 'HEAD',
+          }),
+        );
+      }).run();
     });
   });
 
   describe('[CONNECT] methods', () => {
-    bench('Fetch CONNECT', async () => {
-      await app.fetch(
-        new Request('http://localhost/mock/connect', {
-          method: 'CONNECT',
-        }),
-      );
+    test('Fetch CONNECT', async ({ bench }) => {
+      await bench('Fetch CONNECT', async () => {
+        await app.fetch(
+          new Request('http://localhost/mock/connect', {
+            method: 'CONNECT',
+          }),
+        );
+      }).run();
     });
   });
 
   describe('[OPTIONS] methods', () => {
-    bench('Fetch OPTIONS', async () => {
-      await app.fetch(
-        new Request('http://localhost/mock/options', {
-          method: 'OPTIONS',
-        }),
-      );
+    test('Fetch OPTIONS', async ({ bench }) => {
+      await bench('Fetch OPTIONS', async () => {
+        await app.fetch(
+          new Request('http://localhost/mock/options', {
+            method: 'OPTIONS',
+          }),
+        );
+      }).run();
     });
   });
 
   describe('[GET] with query parameters', () => {
-    bench('Fetch GET with query param', async () => {
-      await app.fetch(new Request('http://localhost/mock/query?age=25'));
+    test('Fetch GET with query param', async ({ bench }) => {
+      await bench('Fetch GET with query param', async () => {
+        await app.fetch(new Request('http://localhost/mock/query?age=25'));
+      }).run();
     });
 
-    bench('Fetch GET with query param validation', async () => {
-      await app.fetch(new Request('http://localhost/mock/query-validation?age=25'));
+    test('Fetch GET with query param validation', async ({ bench }) => {
+      await bench('Fetch GET with query param validation', async () => {
+        await app.fetch(new Request('http://localhost/mock/query-validation?age=25'));
+      }).run();
     });
 
-    bench('Fetch GET with query params', async () => {
-      await app.fetch(new Request('http://localhost/mock/query-params?age=25&name=test'));
+    test('Fetch GET with query params', async ({ bench }) => {
+      await bench('Fetch GET with query params', async () => {
+        await app.fetch(new Request('http://localhost/mock/query-params?age=25&name=test'));
+      }).run();
     });
 
-    bench('Fetch GET with query params validation', async () => {
-      await app.fetch(new Request('http://localhost/mock/query-params-validation?age=25'));
+    test('Fetch GET with query params validation', async ({ bench }) => {
+      await bench('Fetch GET with query params validation', async () => {
+        await app.fetch(new Request('http://localhost/mock/query-params-validation?age=25'));
+      }).run();
     });
   });
 
   describe('[GET] with path parameters', () => {
-    bench('Fetch GET with path param', async () => {
-      await app.fetch(new Request('http://localhost/mock/test-param'));
+    test('Fetch GET with path param', async ({ bench }) => {
+      await bench('Fetch GET with path param', async () => {
+        await app.fetch(new Request('http://localhost/mock/test-param'));
+      }).run();
     });
   });
 
   describe('[GET] with headers', () => {
-    bench('Fetch GET with header', async () => {
-      await app.fetch(
-        new Request('http://localhost/mock/header', {
-          headers: { 'x-test': 'test-value' },
-        }),
-      );
+    test('Fetch GET with header', async ({ bench }) => {
+      await bench('Fetch GET with header', async () => {
+        await app.fetch(
+          new Request('http://localhost/mock/header', {
+            headers: { 'x-test': 'test-value' },
+          }),
+        );
+      }).run();
     });
 
-    bench('Fetch GET with headers', async () => {
-      await app.fetch(
-        new Request('http://localhost/mock/headers', {
-          headers: {
-            'x-test': 'test-value',
-            'content-type': 'application/json',
-            'user-agent': 'benchmark-test',
-          },
-        }),
-      );
+    test('Fetch GET with headers', async ({ bench }) => {
+      await bench('Fetch GET with headers', async () => {
+        await app.fetch(
+          new Request('http://localhost/mock/headers', {
+            headers: {
+              'x-test': 'test-value',
+              'content-type': 'application/json',
+              'user-agent': 'benchmark-test',
+            },
+          }),
+        );
+      }).run();
     });
   });
 
   describe('[GET] with response decorators', () => {
-    bench('Fetch GET with redirect', async () => {
-      await app.fetch(new Request('http://localhost/mock/redirect'));
+    test('Fetch GET with redirect', async ({ bench }) => {
+      await bench('Fetch GET with redirect', async () => {
+        await app.fetch(new Request('http://localhost/mock/redirect'));
+      }).run();
     });
 
-    bench('Fetch GET with status', async () => {
-      await app.fetch(new Request('http://localhost/mock/status'));
+    test('Fetch GET with status', async ({ bench }) => {
+      await bench('Fetch GET with status', async () => {
+        await app.fetch(new Request('http://localhost/mock/status'));
+      }).run();
     });
 
-    bench('Fetch GET with set header', async () => {
-      await app.fetch(new Request('http://localhost/mock/set-header'));
+    test('Fetch GET with set header', async ({ bench }) => {
+      await bench('Fetch GET with set header', async () => {
+        await app.fetch(new Request('http://localhost/mock/set-header'));
+      }).run();
     });
   });
 
   describe('[GET] with request/response objects', () => {
-    bench('Fetch GET with request object', async () => {
-      await app.fetch(new Request('http://localhost/mock/request'));
+    test('Fetch GET with request object', async ({ bench }) => {
+      await bench('Fetch GET with request object', async () => {
+        await app.fetch(new Request('http://localhost/mock/request'));
+      }).run();
     });
 
-    bench('Fetch GET with response object', async () => {
-      await app.fetch(new Request('http://localhost/mock/response'));
+    test('Fetch GET with response object', async ({ bench }) => {
+      await bench('Fetch GET with response object', async () => {
+        await app.fetch(new Request('http://localhost/mock/response'));
+      }).run();
     });
   });
 
   describe('[GET] with additional middleware', () => {
-    bench('Fetch GET with method-level middleware', async () => {
-      await app.fetch(new Request('http://localhost/mock/middleware'));
+    test('Fetch GET with method-level middleware', async ({ bench }) => {
+      await bench('Fetch GET with method-level middleware', async () => {
+        await app.fetch(new Request('http://localhost/mock/middleware'));
+      }).run();
     });
   });
 });

@@ -1,7 +1,7 @@
 import { RequestContext } from '@vercube/core';
 import { Container } from '@vercube/di';
 import { Logger } from '@vercube/logger';
-import { beforeEach, bench, describe, vi } from 'vitest';
+import { beforeEach, describe, test, vi } from 'vitest';
 import { RequestIdKey, RequestStartTimeKey } from '../src/Services/RequestContextKeys';
 import { TypedRequestContext } from '../src/Services/TypedRequestContext';
 
@@ -20,24 +20,28 @@ describe('TypedRequestContext overhead', () => {
     container.bindTransient(TypedRequestContext);
   });
 
-  bench('direct RequestContext set/get', async () => {
-    const requestContext = container.get(RequestContext);
-    await requestContext.run(async () => {
-      requestContext.set('requestId', 'req-123');
-      requestContext.set('requestStartTime', 1_234_567_890);
-      requestContext.get('requestId');
-      requestContext.get('requestStartTime');
-    });
+  test('direct RequestContext set/get', async ({ bench }) => {
+    await bench('direct RequestContext set/get', async () => {
+      const requestContext = container.get(RequestContext);
+      await requestContext.run(async () => {
+        requestContext.set('requestId', 'req-123');
+        requestContext.set('requestStartTime', 1_234_567_890);
+        requestContext.get('requestId');
+        requestContext.get('requestStartTime');
+      });
+    }).run();
   });
 
-  bench('TypedRequestContext set/get', async () => {
-    const requestContext = container.get(RequestContext);
-    const ctx = container.get(TypedRequestContext);
-    await requestContext.run(async () => {
-      ctx.set(RequestIdKey, 'req-123');
-      ctx.set(RequestStartTimeKey, 1_234_567_890);
-      ctx.get(RequestIdKey);
-      ctx.get(RequestStartTimeKey);
-    });
+  test('TypedRequestContext set/get', async ({ bench }) => {
+    await bench('TypedRequestContext set/get', async () => {
+      const requestContext = container.get(RequestContext);
+      const ctx = container.get(TypedRequestContext);
+      await requestContext.run(async () => {
+        ctx.set(RequestIdKey, 'req-123');
+        ctx.set(RequestStartTimeKey, 1_234_567_890);
+        ctx.get(RequestIdKey);
+        ctx.get(RequestStartTimeKey);
+      });
+    }).run();
   });
 });

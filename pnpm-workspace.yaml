@@ -9,7 +9,7 @@ catalog:
   c12: 4.0.0-rc.1
   consola: 3.4.2
   jiti: 2.7.0
-  nitro: 3.0.260610-beta
+  nitro: 3.0.260903-beta
   ocache: 0.3.0
   ohash: 2.0.12
   ufo: 1.6.4

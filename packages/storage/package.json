@@ -33,7 +33,7 @@
     "@vercube/logger": "workspace:*"
   },
   "optionalDependencies": {
-    "@aws-sdk/client-s3": "3.1124.0"
+    "@aws-sdk/client-s3": "3.1127.0"
   },
   "publishConfig": {
     "access": "public"
