@@ -983,18 +983,44 @@ export class QueueManager {
     }
 
     try {
-      await this.ensureReady(mount);
-
-      const handle = await mount.strategy.consume({
-        queue,
-        concurrency,
-        dispatch: (job) => this.process(strategy, queue, job),
-      });
-
-      this.fConsumers.set(key, { handle, concurrency });
+      await this.consumeQueue(mount, queue, concurrency);
     } catch (error) {
       this.gLogger?.error(`Vercube/QueueManager::Failed to consume queue "${queue}"`, error);
+
+      if (!running) {
+        return;
+      }
+
+      // A raise stopped a consumer that was working. Leaving the queue idle
+      // because the replacement failed is worse than running it at the rate it
+      // was already running at, so it goes back the way it was.
+      try {
+        await this.consumeQueue(mount, queue, running.concurrency);
+      } catch (restoreError) {
+        this.gLogger?.error(`Vercube/QueueManager::Failed to restore the consumer of "${queue}"`, restoreError);
+      }
     }
+  }
+
+  /**
+   * Starts consuming a queue at a given concurrency and records the handle.
+   *
+   * @param {QueueTypes.MountedStrategy} mount - Mount the queue lives on
+   * @param {string} queue - Queue to consume
+   * @param {number} concurrency - How many jobs the transport may hand over at once
+   * @returns {Promise<void>} Resolves once the transport is delivering
+   * @throws {Error} When the strategy cannot start consuming
+   */
+  private async consumeQueue(mount: QueueTypes.MountedStrategy, queue: string, concurrency: number): Promise<void> {
+    await this.ensureReady(mount);
+
+    const handle = await mount.strategy.consume({
+      queue,
+      concurrency,
+      dispatch: (job) => this.process(mount.name, queue, job),
+    });
+
+    this.fConsumers.set(this.queueKey(mount.name, queue), { handle, concurrency });
   }
 
   /**

@@ -390,6 +390,22 @@ describe('QueueManager', () => {
       expect(strategy.consumers.get('emails')?.concurrency).toBe(8);
     });
 
+    it('should keep consuming at the old rate when a raise cannot be applied', async () => {
+      const strategy = await mountRecording();
+
+      manager.registerConsumer(registration({ job: 'welcome', concurrency: 2 }));
+      await manager.start();
+
+      strategy.consumeErrorOnce = new Error('the broker said no');
+      manager.registerConsumer(registration({ job: 'digest', concurrency: 8 }));
+      await manager.drain();
+
+      // Raising means stopping the live consumer first. A queue that was already
+      // processing jobs must not go idle because the replacement failed.
+      expect(strategy.consumers.get('emails')?.concurrency).toBe(2);
+      expect(manager.inspect().consumers.every((consumer) => consumer.running)).toBe(true);
+    });
+
     it('should log a consumer that fails to stop', async () => {
       const strategy = await mountRecording();
 

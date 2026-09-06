@@ -45,8 +45,11 @@ export class RecordingStrategy extends QueueStrategy<{ label?: string } | undefi
   /** Error thrown by the next `publish()` call. */
   public publishError: Error | null = null;
 
-  /** Error thrown by the next `consume()` call. */
+  /** Error thrown by every `consume()` call. */
   public consumeError: Error | null = null;
+
+  /** Error thrown by the next `consume()` call only, then cleared. */
+  public consumeErrorOnce: Error | null = null;
 
   public override get capabilities(): QueueTypes.Capabilities {
     return this.reported;
@@ -77,6 +80,13 @@ export class RecordingStrategy extends QueueStrategy<{ label?: string } | undefi
   }
 
   public async consume(request: QueueTypes.ConsumeRequest): Promise<QueueTypes.ConsumerHandle> {
+    if (this.consumeErrorOnce) {
+      const failure = this.consumeErrorOnce;
+      this.consumeErrorOnce = null;
+
+      throw failure;
+    }
+
     if (this.consumeError) {
       throw this.consumeError;
     }
