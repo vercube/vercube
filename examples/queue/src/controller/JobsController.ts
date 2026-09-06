@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post } from '@vercube/core';
+import { BadRequestError, Body, Controller, Get, Post } from '@vercube/core';
 import { Inject } from '@vercube/di';
 import { QueueManager } from '@vercube/queue';
 import type { QueueTypes } from '@vercube/queue';
@@ -61,10 +61,18 @@ export default class JobsController {
    */
   @Post('/batch')
   public async batch(@Body() body: { userIds?: string[] }): Promise<QueueTypes.JobRef[]> {
+    const userIds = body?.userIds ?? ['a', 'b', 'c'];
+
+    // @Body() parses JSON, it does not check it against the declared type, so
+    // `{"userIds":"one"}` would reach the map below and fail as a 500.
+    if (!Array.isArray(userIds) || userIds.some((userId) => typeof userId !== 'string')) {
+      throw new BadRequestError('userIds must be an array of strings');
+    }
+
     return this.gQueue.addMany({
       queue: 'emails',
       job: 'digest',
-      payloads: (body?.userIds ?? ['a', 'b', 'c']).map((userId) => ({ userId, period: 'daily' as const })),
+      payloads: userIds.map((userId) => ({ userId, period: 'daily' as const })),
     });
   }
 

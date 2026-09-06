@@ -23,7 +23,7 @@
 - **Container graph** - bindings and `@Inject` edges, with cycle detection. Inspection never instantiates services.
 - **Route explorer** - route table grouped by controller, with middleware chains and argument decorators.
 - **Request inspector** - live span-by-span waterfall per request (middleware, handler, framework overhead).
-- **Queue panel** - mounted transports, registered handlers and per-queue counters, with jobs streaming in live and a stack trace behind every failure.
+- **Queue panel** - mounted transports, registered handlers and per-queue counters, with recent outcomes and a stack trace behind a failure that carried one.
 - **Bootstrap profiler** - flamegraph of container construction with self-time hotspots.
 - **Audit** - circular deps, unbound injections, duplicate routes, unvalidated input, slow constructors and failing endpoints, scored 0-100.
 - **Snapshot export** - one JSON file with everything.

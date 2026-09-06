@@ -1,12 +1,12 @@
 <div align="center">
-  <a href="https://vercube.dev/"><img src="../../.github/assets/logo.png" alt="Vite logo" width="200"></a>
+  <a href="https://vercube.dev/"><img src="../../.github/assets/logo.png" alt="Vercube logo" width="200"></a>
 </div>
 
 # Vercube Queue Example
 
 A minimal example showcasing background jobs in Vercube. It shows a consumer class with `@Consumer()` and `@Job()`, payload validation, retries with backoff, lifecycle hooks, and how to inspect what the queue module holds.
 
-It runs on the in-memory strategy, so **no broker is needed**. See `src/boot/Setup.ts` for the one line that swaps in BullMQ, RabbitMQ or Kafka, or mounts several of them at once.
+It runs on the in-memory strategy, so **no broker is needed**. See `vercube.config.ts` for the one line that swaps in BullMQ, RabbitMQ or Kafka, or mounts several of them at once.
 
 ## <a name="getting-started">🚀 Quick Start</a>
 
