@@ -4,6 +4,9 @@ import type { IntrospectionTypes } from '@vercube/core';
 /** Maximum processed jobs listed. */
 const MAX_EVENTS = 200;
 
+/** Most messages one listing may read, whatever the caller asked for. */
+const MAX_MESSAGES = 100;
+
 /** What a transport supports, as `@vercube/queue` reports it. */
 type QueueCapabilities = Record<string, boolean>;
 
@@ -209,6 +212,13 @@ export class QueueIntrospection implements IntrospectionTypes.Provider<QueueDesc
       return { queue, strategy, peekable: false, messages: [], error: 'The queue module cannot be read.' };
     }
 
+    // Only queues this application declared. A transport reaches every queue
+    // sharing its connection, so without this an inspector doubles as a reader
+    // of whatever else lives on that broker.
+    if (!this.declares(snapshot, strategy, queue)) {
+      return { queue, strategy, peekable: false, messages: [], error: `No "${queue}" queue is registered on "${strategy}".` };
+    }
+
     if (!peekable) {
       return {
         queue,
@@ -220,7 +230,9 @@ export class QueueIntrospection implements IntrospectionTypes.Provider<QueueDesc
     }
 
     try {
-      return { queue, strategy, peekable: true, messages: await manager.peek({ queue, strategy, limit }) };
+      const capped = Math.min(Math.max(1, Math.floor(limit)), MAX_MESSAGES);
+
+      return { queue, strategy, peekable: true, messages: await manager.peek({ queue, strategy, limit: capped }) };
     } catch (error) {
       return {
         queue,
@@ -230,6 +242,20 @@ export class QueueIntrospection implements IntrospectionTypes.Provider<QueueDesc
         error: error instanceof Error ? error.message : String(error),
       };
     }
+  }
+
+  /**
+   * Whether the application registered a queue under a given strategy.
+   *
+   * @param snapshot - What the manager currently holds
+   * @param strategy - Mount the queue would be on
+   * @param queue - Queue being asked about
+   * @returns Whether it is one of this application's queues
+   */
+  private declares(snapshot: QueueSnapshot | null, strategy: string, queue: string): boolean {
+    const matches = (entry: { strategy: string; queue: string }): boolean => entry.strategy === strategy && entry.queue === queue;
+
+    return (snapshot?.metrics ?? []).some(matches) || (snapshot?.consumers ?? []).some(matches);
   }
 
   /**

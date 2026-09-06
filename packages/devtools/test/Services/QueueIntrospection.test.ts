@@ -59,7 +59,11 @@ class QueueManager {
     return Promise.resolve({ waiting: 4 });
   }
 
-  public peek(): Promise<unknown[]> {
+  public peeked: { queue: string; strategy?: string; limit?: number }[] = [];
+
+  public peek(params: { queue: string; strategy?: string; limit?: number }): Promise<unknown[]> {
+    this.peeked.push(params);
+
     if (this.peekError) {
       return Promise.reject(this.peekError);
     }
@@ -172,6 +176,35 @@ describe('QueueIntrospection', () => {
       messages: [],
       error: 'This transport cannot show a queue without consuming it.',
     });
+  });
+
+  it('refuses to list a queue this application never registered', async () => {
+    const manager = live();
+
+    // A transport reaches every queue sharing its connection, so without this an
+    // inspector doubles as a reader of whatever else lives on that broker.
+    await expect(introspection.readMessages('someone-elses-queue', 'default', 10)).resolves.toMatchObject({
+      peekable: false,
+      messages: [],
+      error: 'No "someone-elses-queue" queue is registered on "default".',
+    });
+    expect(manager.peeked).toEqual([]);
+  });
+
+  it('caps how much of a queue one listing reads', async () => {
+    const manager = live();
+
+    await introspection.readMessages('emails', 'default', 100_000);
+
+    expect(manager.peeked[0].limit).toBe(100);
+  });
+
+  it('reads at least one message when asked for nonsense', async () => {
+    const manager = live();
+
+    await introspection.readMessages('emails', 'default', 0);
+
+    expect(manager.peeked[0].limit).toBe(1);
   });
 
   it('reports why a listing failed', async () => {

@@ -30,6 +30,9 @@ const PING_INTERVAL_MS = 20_000;
 /** Signal buffers a client can read or clear. */
 const SIGNALS = new Set(['traces', 'metrics', 'logs']);
 
+/** Messages a queue listing reads when the caller asks for no usable number. */
+const DEFAULT_MESSAGE_LIMIT = 20;
+
 /**
  * Serves the devtools UI, its introspection API and the signal stream.
  *
@@ -201,7 +204,11 @@ export class DevtoolsController {
     @QueryParam({ name: 'strategy' }) strategy: string,
     @QueryParam({ name: 'limit' }) limit: string,
   ): Promise<QueueMessages> {
-    return this.gQueues.readMessages(queue, strategy ?? 'default', Number(limit) || 20);
+    // `Number()` alone would forward -1, 1.5 or Infinity as a message count.
+    const requested = Number(limit);
+    const parsed = Number.isSafeInteger(requested) && requested > 0 ? requested : DEFAULT_MESSAGE_LIMIT;
+
+    return this.gQueues.readMessages(queue, strategy || 'default', parsed);
   }
 
   /**

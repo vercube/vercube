@@ -103,20 +103,32 @@ async function loadMessages(): Promise<void> {
     return;
   }
 
+  const requested = keyOf(line);
+
   loadingMessages.value = true;
 
   try {
-    messages.value = await queueMessages(line.queue, line.strategy, 25);
+    const read = await queueMessages(line.queue, line.strategy, 25);
+
+    // Selecting another queue while this one was still loading must not fill the
+    // inspector of the new queue with the messages of the old one.
+    if (selectedQueue.value === requested) {
+      messages.value = read;
+    }
   } catch (error) {
-    messages.value = {
-      queue: line.queue,
-      strategy: line.strategy,
-      peekable: true,
-      messages: [],
-      error: error instanceof Error ? error.message : String(error),
-    };
+    if (selectedQueue.value === requested) {
+      messages.value = {
+        queue: line.queue,
+        strategy: line.strategy,
+        peekable: true,
+        messages: [],
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
   } finally {
-    loadingMessages.value = false;
+    if (selectedQueue.value === requested) {
+      loadingMessages.value = false;
+    }
   }
 }
 
