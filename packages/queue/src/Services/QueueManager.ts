@@ -1,6 +1,7 @@
 import { ValidationProvider } from '@vercube/core';
 import { Container, Destroy, Init, Inject, InjectOptional } from '@vercube/di';
 import { Logger } from '@vercube/logger';
+import { countOutcome, injectTraceContext, traceProcess, tracePublish } from '../Common/Instrument';
 import { QueueError } from '../Errors/QueueError';
 import { toQueueError } from '../Utils/Errors';
 import {
@@ -202,15 +203,17 @@ export class QueueManager {
     const queue = request.queue as string;
     const job = request.job as string;
 
-    try {
-      const ref = await mount.strategy.publish(this.createPublishRequest(queue, job, request.payload, request.options));
+    return tracePublish({ strategy: mount.name, queue, job }, 1, async () => {
+      try {
+        const ref = await mount.strategy.publish(this.createPublishRequest(queue, job, request.payload, request.options));
 
-      this.metricsFor(mount.name, queue).published++;
+        this.metricsFor(mount.name, queue).published++;
 
-      return ref;
-    } catch (error) {
-      throw toQueueError(error, 'Failed to publish job', 'add', { strategy: mount.name, queue, job });
-    }
+        return ref;
+      } catch (error) {
+        throw toQueueError(error, 'Failed to publish job', 'add', { strategy: mount.name, queue, job });
+      }
+    });
   }
 
   /**
@@ -234,17 +237,19 @@ export class QueueManager {
     const queue = request.queue as string;
     const job = request.job as string;
 
-    try {
-      const refs = await mount.strategy.publishMany(
-        request.payloads.map((payload) => this.createPublishRequest(queue, job, payload, request.options)),
-      );
+    return tracePublish({ strategy: mount.name, queue, job }, request.payloads.length, async () => {
+      try {
+        const refs = await mount.strategy.publishMany(
+          request.payloads.map((payload) => this.createPublishRequest(queue, job, payload, request.options)),
+        );
 
-      this.metricsFor(mount.name, queue).published += refs.length;
+        this.metricsFor(mount.name, queue).published += refs.length;
 
-      return refs;
-    } catch (error) {
-      throw toQueueError(error, 'Failed to publish jobs', 'addMany', { strategy: mount.name, queue, job });
-    }
+        return refs;
+      } catch (error) {
+        throw toQueueError(error, 'Failed to publish jobs', 'addMany', { strategy: mount.name, queue, job });
+      }
+    });
   }
 
   /**
@@ -526,7 +531,22 @@ export class QueueManager {
    * @returns {Promise<void>} Resolves when the job may be acknowledged
    * @throws {Error} When the job failed and the transport has to deal with it
    */
-  protected async process(strategy: string, queue: string, incoming: QueueTypes.IncomingJob): Promise<void> {
+  protected process(strategy: string, queue: string, incoming: QueueTypes.IncomingJob): Promise<void> {
+    return traceProcess({ strategy, queue, job: incoming.job, attempt: incoming.attempt }, incoming.headers, () =>
+      this.processJob(strategy, queue, incoming),
+    );
+  }
+
+  /**
+   * Does the work {@link QueueManager.process} traces.
+   *
+   * @param {string} strategy - Mount name the job came from
+   * @param {string} queue - Queue the job came from
+   * @param {QueueTypes.IncomingJob} incoming - The job as received from the transport
+   * @returns {Promise<void>} Resolves when the job may be acknowledged
+   * @throws {Error} When the job failed and the transport has to deal with it
+   */
+  protected async processJob(strategy: string, queue: string, incoming: QueueTypes.IncomingJob): Promise<void> {
     const metrics = this.metricsFor(strategy, queue);
     const registration =
       this.fRegistrations.get(this.consumerKey(strategy, queue, incoming.job)) ??
@@ -554,6 +574,7 @@ export class QueueManager {
         incoming.headers,
       );
       this.gLogger?.warn(`Vercube/QueueManager::No handler for job "${incoming.job}" on queue "${queue}"`);
+      countOutcome({ queue, job: incoming.job }, 'unhandled');
 
       if (this.fDefaults.onUnhandled === 'fail') {
         throw new QueueError(`No handler registered for job "${incoming.job}"`, 'process', undefined, { strategy, queue }, false);
@@ -575,6 +596,7 @@ export class QueueManager {
       await this.runHandler(registration, context);
 
       metrics.processed++;
+      countOutcome({ queue, job: context.job }, 'completed');
       this.record({
         strategy,
         queue,
@@ -624,6 +646,7 @@ export class QueueManager {
 
     // transports retrying on their own only need to learn that the attempt failed
     if (mount?.strategy.capabilities.retries || !canRetry) {
+      countOutcome({ queue: registration.queue, job: context.job }, 'failed');
       this.record(
         {
           strategy: registration.strategy,
@@ -644,6 +667,7 @@ export class QueueManager {
     }
 
     metrics.retried++;
+    countOutcome({ queue: registration.queue, job: context.job }, 'retried');
     this.record(
       {
         strategy: registration.strategy,
@@ -1021,6 +1045,10 @@ export class QueueManager {
     if (options.attempts && options.attempts > 1) {
       headers[ATTEMPTS_HEADER] = String(options.attempts);
     }
+
+    // Carries the publishing trace into the consumer, wherever it runs. Retries
+    // reuse these headers, so every attempt stays in the trace that queued it.
+    injectTraceContext(headers);
 
     return { queue, job, payload, headers, options };
   }
