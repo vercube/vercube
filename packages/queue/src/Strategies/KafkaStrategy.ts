@@ -198,6 +198,16 @@ export class KafkaStrategy extends QueueStrategy<KafkaStrategyOptions> {
       throw new QueueError('Kafka needs a groupId to consume a topic', 'consume', undefined, { queue: request.queue }, false);
     }
 
+    // consume() is public, so a second call must not leave two members of the
+    // same group on the topic: they would rebalance twice and both take
+    // delivery of the same records in between. The old one goes first.
+    const previous = this.fConsumers.get(request.queue);
+
+    if (previous) {
+      this.fConsumers.delete(request.queue);
+      await previous.disconnect().catch(() => undefined);
+    }
+
     const consumer = kafka.consumer({ ...options.consumer, groupId: options.groupId });
 
     try {
@@ -235,14 +245,7 @@ export class KafkaStrategy extends QueueStrategy<KafkaStrategyOptions> {
       throw toQueueError(error, 'Failed to consume the Kafka topic', 'consume', { queue: request.queue });
     }
 
-    // consume() is public, so a second call must not orphan the first consumer
-    const previous = this.fConsumers.get(request.queue);
-
     this.fConsumers.set(request.queue, consumer);
-
-    if (previous) {
-      await previous.disconnect().catch(() => undefined);
-    }
 
     return {
       queue: request.queue,

@@ -145,6 +145,15 @@ function delivery(overrides: Record<string, unknown> = {}): Record<string, unkno
   };
 }
 
+/**
+ * Every queue the fake broker was asked to consume, in order.
+ *
+ * @returns One entry per `consume()` call across every channel
+ */
+function consumedQueues(): string[] {
+  return state.channels.flatMap((channel) => channel.consume.mock.calls.map((call: unknown[]) => call[0] as string));
+}
+
 describe('RabbitMQStrategy', () => {
   let container: Container;
   let logger: Logger;
@@ -227,6 +236,39 @@ describe('RabbitMQStrategy', () => {
       // Nothing tracks this channel yet, and a recovery starts every consumer
       // again, so leaving it open leaks one channel per attempt.
       expect(state.channels.at(-1)!.close).toHaveBeenCalled();
+    });
+
+    it('should consume every queue again when recoveries arrive back to back', async () => {
+      await strategy.consume({ queue: 'emails', concurrency: 1, dispatch: async () => undefined });
+      await strategy.consume({ queue: 'reports', concurrency: 1, dispatch: async () => undefined });
+
+      const connection = state.connections[0];
+
+      // The second reconnect must not find an empty ledger just because the
+      // first one is still starting consumers.
+      connection.listeners.connect(undefined);
+      connection.listeners.connect(undefined);
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      // one initial start plus one per recovery, for each queue
+      expect(consumedQueues().filter((queue) => queue === 'emails')).toHaveLength(3);
+      expect(consumedQueues().filter((queue) => queue === 'reports')).toHaveLength(3);
+    });
+
+    it('should not bring a stopped consumer back through a recovery', async () => {
+      const handle = await strategy.consume({ queue: 'emails', concurrency: 1, dispatch: async () => undefined });
+
+      // The recovery is already rebuilding this consumer when it is stopped, so
+      // what it builds has to be thrown away rather than installed.
+      state.connections[0].listeners.connect(undefined);
+      await handle.stop();
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      state.connections[0].listeners.connect(undefined);
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      // the initial start and the racing recovery, and nothing after that
+      expect(consumedQueues().filter((queue) => queue === 'emails')).toHaveLength(2);
     });
 
     it('should refuse to connect without a url', async () => {

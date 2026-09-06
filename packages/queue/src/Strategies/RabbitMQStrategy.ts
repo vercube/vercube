@@ -64,9 +64,6 @@ interface RabbitConsumer {
   tag: string;
   active: number;
   stopping: boolean;
-
-  /** What the consumer was started with, so it can be started again after a recovery. */
-  request: QueueTypes.ConsumeRequest;
 }
 
 /**
@@ -117,6 +114,21 @@ export class RabbitMQStrategy extends QueueStrategy<RabbitMQStrategyOptions> {
 
   /** Running consumers, indexed by queue name */
   private fConsumers: Map<string, RabbitConsumer> = new Map();
+
+  /**
+   * Queues the application asked to consume, indexed by queue name.
+   *
+   * Kept apart from {@link RabbitMQStrategy.fConsumers}, which holds the live
+   * channels: those belong to one connection and are thrown away when it is
+   * replaced, while what should be consumed does not change with a reconnect.
+   */
+  private fRequests: Map<string, QueueTypes.ConsumeRequest> = new Map();
+
+  /**
+   * Bumped on every connection. A consumer that finishes starting after its
+   * connection was replaced belongs to a dead one and is discarded.
+   */
+  private fGeneration: number = 0;
 
   /** Queues already asserted on the current connection */
   private fAsserted: Set<string> = new Set();
@@ -173,13 +185,14 @@ export class RabbitMQStrategy extends QueueStrategy<RabbitMQStrategyOptions> {
     this.fConnection.on('connect', () => {
       this.fAsserted.clear();
       this.fPublishChannel = null;
-
-      const consuming = [...this.fConsumers.entries()];
-
       this.fConsumers.clear();
+      this.fGeneration++;
 
-      for (const [, consumer] of consuming) {
-        void this.resume(consumer.request);
+      // Read from what the application asked for rather than from what was
+      // running, so a reconnect arriving while the previous one is still
+      // starting consumers still knows about every queue.
+      for (const request of this.fRequests.values()) {
+        void this.resume(request, this.fGeneration);
       }
     });
   }
@@ -260,9 +273,13 @@ export class RabbitMQStrategy extends QueueStrategy<RabbitMQStrategyOptions> {
    * @throws {QueueError} When the consumer cannot be started
    */
   public async consume(request: QueueTypes.ConsumeRequest): Promise<QueueTypes.ConsumerHandle> {
+    this.fRequests.set(request.queue, request);
+
     try {
-      await this.startConsumer(request);
+      await this.startConsumer(request, this.fGeneration);
     } catch (error) {
+      this.fRequests.delete(request.queue);
+
       throw toQueueError(error, 'Failed to consume RabbitMQ queue', 'consume', { queue: request.queue });
     }
 
@@ -276,10 +293,11 @@ export class RabbitMQStrategy extends QueueStrategy<RabbitMQStrategyOptions> {
    * Opens a channel for a queue and starts delivering its messages.
    *
    * @param {QueueTypes.ConsumeRequest} request - Queue to consume, its concurrency and the dispatch callback
+   * @param {number} generation - Connection this consumer is being started for
    * @returns {Promise<void>} Resolves once the broker accepted the consumer
-   * @throws {Error} When the channel or the consumer cannot be created
+   * @throws {Error} When the channel or the consumer cannot be created, or it is no longer wanted
    */
-  private async startConsumer(request: QueueTypes.ConsumeRequest): Promise<void> {
+  private async startConsumer(request: QueueTypes.ConsumeRequest, generation: number): Promise<void> {
     const options = this.requireOptions('consume');
     const connection = this.requireConnection('consume');
     const channel = await connection.createChannel();
@@ -298,7 +316,22 @@ export class RabbitMQStrategy extends QueueStrategy<RabbitMQStrategyOptions> {
         void this.handle(request, message);
       });
 
-      this.fConsumers.set(request.queue, { channel, tag: reply.consumerTag, active: 0, stopping: false, request });
+      // The queue may have been stopped, or the connection replaced again, while
+      // the broker was answering. Installing this consumer now would revive a
+      // stopped one, or attach a channel of a connection that is already gone.
+      if (generation !== this.fGeneration || !this.fRequests.has(request.queue)) {
+        await channel.cancel(reply.consumerTag).catch(() => undefined);
+
+        throw new QueueError(
+          `Consumer of "${request.queue}" is no longer wanted`,
+          'consume',
+          undefined,
+          { queue: request.queue },
+          false,
+        );
+      }
+
+      this.fConsumers.set(request.queue, { channel, tag: reply.consumerTag, active: 0, stopping: false });
     } catch (error) {
       // Nothing tracks this channel yet, and a recovery retries the whole thing,
       // so leaving it open leaks one channel per attempt on the same connection.
@@ -315,11 +348,12 @@ export class RabbitMQStrategy extends QueueStrategy<RabbitMQStrategyOptions> {
    * recovery, and a queue that cannot be consumed again has to be visible.
    *
    * @param {QueueTypes.ConsumeRequest} request - What the consumer was started with
+   * @param {number} generation - Connection being recovered onto
    * @returns {Promise<void>} Resolves once the consumer is running again, or once the failure was reported
    */
-  private async resume(request: QueueTypes.ConsumeRequest): Promise<void> {
+  private async resume(request: QueueTypes.ConsumeRequest, generation: number): Promise<void> {
     try {
-      await this.startConsumer(request);
+      await this.startConsumer(request, generation);
     } catch (error) {
       this.gLogger?.error(`Vercube/RabbitMQStrategy::Failed to consume "${request.queue}" again after a recovery`, error);
     }
@@ -360,7 +394,7 @@ export class RabbitMQStrategy extends QueueStrategy<RabbitMQStrategyOptions> {
    * @returns {Promise<void>} Resolves once the connection is closed
    */
   public async close(): Promise<void> {
-    const consuming = [...this.fConsumers.keys()];
+    const consuming = new Set([...this.fConsumers.keys(), ...this.fRequests.keys()]);
 
     for (const queue of consuming) {
       await this.stopConsumer(queue);
@@ -424,6 +458,10 @@ export class RabbitMQStrategy extends QueueStrategy<RabbitMQStrategyOptions> {
    * @returns {Promise<void>} Resolves once the channel is closed
    */
   private async stopConsumer(queue: string): Promise<void> {
+    // Withdrawn first, so a recovery already starting this consumer again drops
+    // what it built instead of reviving a queue that was stopped.
+    this.fRequests.delete(queue);
+
     const consumer = this.fConsumers.get(queue);
 
     if (!consumer || consumer.stopping) {
