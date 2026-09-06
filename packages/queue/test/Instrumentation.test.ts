@@ -1,6 +1,7 @@
 import { Container } from '@vercube/di';
 import { createTestTelemetry } from '@vercube/telemetry/testing';
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { QUEUE_NAME } from '../src/Common/Instrument';
 import { QueueManager } from '../src/Services/QueueManager';
 import { RecordingStrategy, registration } from './Utils/Mock.mock';
 import type { TestTelemetry } from '@vercube/telemetry/testing';
@@ -141,6 +142,18 @@ describe('queue instrumentation', () => {
     await strategy.deliver('emails', { job: 'unknown' });
 
     expect(telemetry.span('queue.process emails.unknown')!.attributes['vercube.queue.outcome']).toBe('unhandled');
+  });
+
+  it('does not count a job the transport refused as published', async () => {
+    strategy.publishError = new Error('broker down');
+
+    await expect(manager.add({ queue: 'refused', job: 'welcome', payload: {} })).rejects.toThrow();
+
+    const collected = await telemetry.collect();
+
+    // Otherwise this drifts away from the manager's own `published` counter,
+    // which only moves once the transport took the job.
+    expect(points(collected, 'vercube.queue.published').some((point) => point.attributes[QUEUE_NAME] === 'refused')).toBe(false);
   });
 
   it('counts published jobs and their outcomes', async () => {

@@ -80,9 +80,13 @@ export function tracePublish<T>(
     valueType: ValueType.INT,
   });
 
-  published.add(count, { [QUEUE_NAME]: target.queue, [QUEUE_JOB]: target.job });
+  // Counted once the transport took them, so this keeps agreeing with the
+  // manager's own `published` counter instead of drifting on every rejection.
+  return settle(span, parent, fn).then((value) => {
+    published?.add(count, { [QUEUE_NAME]: target.queue, [QUEUE_JOB]: target.job });
 
-  return settle(span, parent, fn);
+    return value;
+  });
 }
 
 /**

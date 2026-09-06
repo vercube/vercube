@@ -338,6 +338,58 @@ describe('QueueManager', () => {
       await expect(manager.add({ queue: 'emails', job: 'welcome', payload: {} })).resolves.toBeDefined();
     });
 
+    it('should not start consuming when autoStart is turned off after the container built it', async () => {
+      const bound = new Container();
+      bound.bindInstance(Container, bound);
+      bound.bind(QueueManager);
+      initializeContainer(bound);
+
+      const late = bound.get(QueueManager);
+
+      // This is the order the plugin works in: the container builds the manager,
+      // and only then does `use()` hand it the settings. Reading `autoStart` any
+      // earlier makes a producer-only process start consuming anyway.
+      late.configure({ autoStart: false });
+      await late.mount({ strategy: RecordingStrategy, initOptions: undefined });
+      late.registerConsumer(registration());
+
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      await late.drain();
+
+      expect(late.started).toBe(false);
+      expect((late.getStrategy() as RecordingStrategy).consumers.size).toBe(0);
+    });
+
+    it('should raise the concurrency for a handler registered after the queue started', async () => {
+      const strategy = await mountRecording();
+
+      manager.registerConsumer(registration({ job: 'welcome', concurrency: 2 }));
+      await manager.start();
+
+      expect(strategy.consumers.get('emails')?.concurrency).toBe(2);
+
+      manager.registerConsumer(registration({ job: 'digest', concurrency: 8 }));
+      await manager.drain();
+
+      // The highest request wins, and a handler is free to arrive late.
+      expect(strategy.consumers.get('emails')?.concurrency).toBe(8);
+    });
+
+    it('should leave a running consumer alone when a later handler asks for less', async () => {
+      const strategy = await mountRecording();
+
+      manager.registerConsumer(registration({ job: 'welcome', concurrency: 8 }));
+      await manager.start();
+
+      const consumed = strategy.consumed.length;
+
+      manager.registerConsumer(registration({ job: 'digest', concurrency: 2 }));
+      await manager.drain();
+
+      expect(strategy.consumed).toHaveLength(consumed);
+      expect(strategy.consumers.get('emails')?.concurrency).toBe(8);
+    });
+
     it('should log a consumer that fails to stop', async () => {
       const strategy = await mountRecording();
 
@@ -349,11 +401,16 @@ describe('QueueManager', () => {
       strategy.consumers.set('emails', handle!);
 
       // replace the stop function of the handle the manager holds
-      const manual = manager as unknown as { fConsumers: Map<string, QueueTypes.ConsumerHandle> };
+      const manual = manager as unknown as {
+        fConsumers: Map<string, { handle: QueueTypes.ConsumerHandle; concurrency: number }>;
+      };
       manual.fConsumers.set('default::emails', {
-        queue: 'emails',
-        stop: async () => {
-          throw new Error('stuck');
+        concurrency: 1,
+        handle: {
+          queue: 'emails',
+          stop: async () => {
+            throw new Error('stuck');
+          },
         },
       });
 
@@ -814,6 +871,26 @@ describe('QueueManager', () => {
       // There is nothing left to publish the retry to, and treating that as a
       // published retry would acknowledge the attempt and lose the job.
       await expect(strategy.deliver('emails', { job: 'welcome' })).rejects.toThrow('no longer mounted');
+    });
+
+    it('should refuse a delayed retry whose strategy was unmounted while it waited', async () => {
+      const strategy = await mountRecording();
+
+      manager.registerConsumer(
+        registration({ handler: vi.fn().mockRejectedValue(new Error('boom')), options: { attempts: 2, backoff: 5 } }),
+      );
+      await manager.start();
+
+      await strategy.deliver('emails', { job: 'welcome' });
+      await manager.unmount('default');
+      await manager.drain();
+
+      // The mount is looked up when the retry is published, not when the attempt
+      // failed, so this does not talk to a strategy that has since been closed.
+      expect(manager.inspect().events[0]).toMatchObject({
+        status: 'failed',
+        error: { message: expect.stringContaining('mounted') },
+      });
     });
 
     it('should give up once the attempts are exhausted', async () => {

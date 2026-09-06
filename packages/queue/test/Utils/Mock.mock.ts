@@ -33,6 +33,9 @@ export class RecordingStrategy extends QueueStrategy<{ label?: string } | undefi
   /** Running consumers, indexed by queue. */
   public consumers: Map<string, QueueTypes.ConsumeRequest> = new Map();
 
+  /** Every `consume()` call, in order, including the ones later replaced. */
+  public consumed: QueueTypes.ConsumeRequest[] = [];
+
   /** Queues whose consumer has been stopped, in order. */
   public stopped: string[] = [];
 
@@ -78,6 +81,7 @@ export class RecordingStrategy extends QueueStrategy<{ label?: string } | undefi
       throw this.consumeError;
     }
 
+    this.consumed.push(request);
     this.consumers.set(request.queue, request);
 
     return {

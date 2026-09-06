@@ -77,7 +77,7 @@ export class QueueManager {
   };
 
   /** Running consumers, indexed by strategy and queue */
-  protected fConsumers: Map<string, QueueTypes.ConsumerHandle> = new Map();
+  protected fConsumers: Map<string, { handle: QueueTypes.ConsumerHandle; concurrency: number }> = new Map();
 
   /** Per-queue counters, indexed by strategy and queue */
   protected fMetrics: Map<string, QueueTypes.QueueMetrics> = new Map();
@@ -707,9 +707,8 @@ export class QueueManager {
    * @throws {Error} When the retry could be published right away and the transport refused it
    */
   protected scheduleRetry(registration: QueueTypes.Registration, context: QueueTypes.JobContext, error: Error): Promise<void> {
-    const mount = this.fStrategies.get(registration.strategy);
     const wait = resolveBackoff(registration.options.backoff, context.attempt);
-    const native = mount?.strategy.capabilities.delay ?? false;
+    const native = this.fStrategies.get(registration.strategy)?.strategy.capabilities.delay ?? false;
 
     const headers: Record<string, string> = {
       ...context.headers,
@@ -730,8 +729,13 @@ export class QueueManager {
     // A strategy unmounted between the failure and the retry leaves nothing to
     // publish to. Optional chaining would make that look like a published retry,
     // so the attempt would be acknowledged and the job would quietly disappear.
-    const publish = (): Promise<QueueTypes.JobRef> =>
-      mount
+    const publish = (): Promise<QueueTypes.JobRef> => {
+      // Looked up when the retry is published rather than when the attempt
+      // failed: an unmount during the backoff would otherwise leave this talking
+      // to a strategy that has since been closed.
+      const mount = this.fStrategies.get(registration.strategy);
+
+      return mount
         ? mount.strategy.publish({
             queue: registration.queue,
             job: context.job,
@@ -748,6 +752,7 @@ export class QueueManager {
               false,
             ),
           );
+    };
 
     // Nothing has to be waited for before the retry can be published, so it is
     // awaited: the transport has not acknowledged this attempt yet, and a
@@ -951,7 +956,7 @@ export class QueueManager {
     const key = this.queueKey(strategy, queue);
     const mount = this.fStrategies.get(strategy);
 
-    if (!mount || this.fConsumers.has(key) || !this.fStarted) {
+    if (!mount || !this.fStarted) {
       return;
     }
 
@@ -963,16 +968,30 @@ export class QueueManager {
       return;
     }
 
+    const concurrency = Math.max(this.fDefaults.concurrency, ...registrations.map((entry) => entry.concurrency ?? 0));
+    const running = this.fConsumers.get(key);
+
+    if (running) {
+      // A handler registered after the queue started consuming may ask for more
+      // than the transport was told. The highest request wins, so the consumer
+      // is replaced; asking for no more than it already has changes nothing.
+      if (running.concurrency >= concurrency) {
+        return;
+      }
+
+      await this.stopQueue(strategy, queue);
+    }
+
     try {
       await this.ensureReady(mount);
 
       const handle = await mount.strategy.consume({
         queue,
-        concurrency: Math.max(this.fDefaults.concurrency, ...registrations.map((entry) => entry.concurrency ?? 0)),
+        concurrency,
         dispatch: (job) => this.process(strategy, queue, job),
       });
 
-      this.fConsumers.set(key, handle);
+      this.fConsumers.set(key, { handle, concurrency });
     } catch (error) {
       this.gLogger?.error(`Vercube/QueueManager::Failed to consume queue "${queue}"`, error);
     }
@@ -987,9 +1006,9 @@ export class QueueManager {
   protected async stopConsumers(strategy: string): Promise<void> {
     const running = [...this.fConsumers];
 
-    for (const [key, handle] of running) {
-      if (key === this.queueKey(strategy, handle.queue)) {
-        await this.stopQueue(strategy, handle.queue);
+    for (const [key, consumer] of running) {
+      if (key === this.queueKey(strategy, consumer.handle.queue)) {
+        await this.stopQueue(strategy, consumer.handle.queue);
       }
     }
   }
@@ -1003,14 +1022,14 @@ export class QueueManager {
    */
   protected async stopQueue(strategy: string, queue: string): Promise<void> {
     const key = this.queueKey(strategy, queue);
-    const handle = this.fConsumers.get(key);
+    const consumer = this.fConsumers.get(key);
 
-    if (!handle) {
+    if (!consumer) {
       return;
     }
 
     try {
-      await handle.stop();
+      await consumer.handle.stop();
     } catch (error) {
       this.gLogger?.error(`Vercube/QueueManager::Failed to stop consumer of "${queue}"`, error);
     }
@@ -1312,13 +1331,16 @@ export class QueueManager {
    */
   @Init()
   protected init(): void {
-    if (!this.fDefaults.autoStart) {
-      return;
-    }
-
     // decorators register their handlers while the container is being flushed,
     // a microtask lands right after that
     queueMicrotask(() => {
+      // Read here rather than above: the plugin configures the manager after the
+      // container built it, so `autoStart: false` is not known yet at that point
+      // and a producer-only process would start consuming anyway.
+      if (!this.fDefaults.autoStart) {
+        return;
+      }
+
       void this.start().catch((error) => this.gLogger?.error('Vercube/QueueManager::Failed to start', error));
     });
   }
