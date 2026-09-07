@@ -20,6 +20,12 @@ export namespace RouterTypes {
     args?: unknown;
   }
 
+  /**
+   * Resolves one handler argument from a request. Built once per route by
+   * `MetadataResolver.compileArgs`.
+   */
+  export type ArgResolver = (event: RouterTypes.RouterEvent) => unknown;
+
   export interface RouterHandler {
     instance: any;
     propertyName: string;
@@ -35,6 +41,12 @@ export namespace RouterTypes {
      * building one.
      */
     simple?: boolean;
+    /**
+     * One resolver per entry of `args`, compiled in
+     * `RequestHandler.prepareHandler` so the request path neither dispatches on
+     * the argument type nor re-reads the parameter name out of the metadata.
+     */
+    argResolvers?: RouterTypes.ArgResolver[];
     /** True when at least one argument resolver returns a promise. */
     asyncArgs?: boolean;
     /** True when the request body must be cloned before being consumed. */

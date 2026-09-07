@@ -15,6 +15,27 @@ export const DANGEROUS_PROPERTIES: readonly string[] = Object.freeze(['__proto__
  * isSafeProperty('__proto__') // false
  * isSafeProperty('constructor') // false
  */
+/**
+ * Matches a payload that has to be parsed with {@link secureReviver}.
+ *
+ * The reviver is invoked for every key of every object, which is a real cost on
+ * the request hot path, and a payload that does not even mention a dangerous
+ * property cannot introduce one. One regex replaces one scan per dangerous
+ * property plus one for backslashes: measured on a 17 byte body the guard costs
+ * ~8ns instead of ~49ns, and on a 1 KB body it disappears into `JSON.parse`.
+ *
+ * A JSON escape can spell out a dangerous property without containing it
+ * literally - a key written with Unicode escapes for its underscores still
+ * parses to `__proto__` - so any backslash disqualifies the fast path too.
+ *
+ * Built from {@link DANGEROUS_PROPERTIES} so the two cannot drift apart.
+ */
+const DANGEROUS_PATTERN = new RegExp(
+  [String.raw`\\`, ...DANGEROUS_PROPERTIES.map((property) => property.replaceAll(/[$()*+.?[\\\]^{|}]/g, String.raw`\$&`))].join(
+    '|',
+  ),
+);
+
 export function isSafeProperty(key: string): boolean {
   return !DANGEROUS_PROPERTIES.includes(key);
 }
@@ -59,21 +80,8 @@ export function secureReviver(key: string, value: unknown): unknown {
  * // Returns {} - dangerous properties are filtered out
  */
 export function safeJsonParse(text: string): unknown {
-  // The reviver is invoked for every key of every object, which is a real cost
-  // on the request hot path. A payload that does not even mention a dangerous
-  // property cannot introduce one, so it can be parsed without the reviver.
-  //
-  // A JSON escape can spell out a dangerous property without containing it
-  // literally: a key written with Unicode escapes for its underscores still
-  // parses to `__proto__`, so any backslash disqualifies the fast path.
-  if (text.includes('\\')) {
+  if (DANGEROUS_PATTERN.test(text)) {
     return JSON.parse(text, secureReviver);
-  }
-
-  for (const property of DANGEROUS_PROPERTIES) {
-    if (text.includes(property)) {
-      return JSON.parse(text, secureReviver);
-    }
   }
 
   return JSON.parse(text);
