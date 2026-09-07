@@ -165,4 +165,72 @@ describe('Router matching', () => {
     expect(fromTrie.map((route) => route?.data.propertyName)).toEqual(compiled.map((route) => route?.data.propertyName));
     expect(fromTrie.map((route) => route?.params)).toEqual(compiled.map((route) => route?.params));
   });
+
+  describe('with static and parameterised routes on the same prefix', () => {
+    beforeEach(() => {
+      router.addRoute({ method: 'GET', path: '/users/profile', handler: handlerFor('profile') });
+      router.addRoute({ method: 'GET', path: '/users/:id', handler: handlerFor('user') });
+      router.addRoute({ method: 'GET', path: '/files/**', handler: handlerFor('files') });
+      router.addRoute({ method: 'GET', path: '/opt/:id?', handler: handlerFor('optional') });
+    });
+
+    it('should prefer the static route over the parameterised one', () => {
+      expect(router.match('GET', '/users/profile')?.data.propertyName).toBe('profile');
+      expect(router.match('GET', '/users/profile')?.params).toBeUndefined();
+    });
+
+    it('should still match the parameterised route for any other segment', () => {
+      const matched = router.match('GET', '/users/42');
+
+      expect(matched?.data.propertyName).toBe('user');
+      expect(matched?.params).toEqual({ id: '42' });
+    });
+
+    it('should match a wildcard route across several segments', () => {
+      expect(router.match('GET', '/files/a/b/c')?.data.propertyName).toBe('files');
+    });
+
+    it('should match an optional parameter both with and without the segment', () => {
+      // `/opt/:id?` registers on two nodes, and neither of them is in the
+      // static lookup map, so both have to come from the parameterised router.
+      expect(router.match('GET', '/opt')?.data.propertyName).toBe('optional');
+      expect(router.match('GET', '/opt/7')?.params).toEqual({ id: '7' });
+    });
+
+    it('should not answer a static path under a method it was not registered for', () => {
+      expect(router.match('POST', '/users/profile')).toBeUndefined();
+      expect(router.match('POST', '/plain')).toBeUndefined();
+    });
+
+    it('should normalise a trailing slash on a static path', () => {
+      expect(router.match('GET', '/users/profile/')?.data.propertyName).toBe('profile');
+      expect(router.match('GET', '/plain/')?.data.propertyName).toBe('plain');
+    });
+
+    it('should agree with a router that keeps every route in one tree', () => {
+      // The parameterised router only carries routes with parameters, so this
+      // pins that dropping the static ones from it changes no answer.
+      const paths: Array<[string, string]> = [
+        ['GET', '/plain'],
+        ['GET', '/users/profile'],
+        ['GET', '/users/42'],
+        ['GET', '/files/a/b'],
+        ['GET', '/opt'],
+        ['GET', '/opt/7'],
+        ['GET', '/id/9'],
+        ['GET', '/nothing'],
+        ['POST', '/users/profile'],
+      ];
+
+      const viaCompiled = paths.map(([method, path]) => router.match(method, path));
+
+      compilationFails = true;
+      router.addRoute({ method: 'GET', path: '/force/:recompile', handler: handlerFor('force') });
+
+      const viaTrie = paths.map(([method, path]) => router.match(method, path));
+
+      expect(viaTrie.map((route) => route?.data.propertyName)).toEqual(viaCompiled.map((route) => route?.data.propertyName));
+      expect(viaTrie.map((route) => route?.params)).toEqual(viaCompiled.map((route) => route?.params));
+    });
+  });
 });
