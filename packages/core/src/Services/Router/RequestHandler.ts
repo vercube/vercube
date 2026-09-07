@@ -153,6 +153,7 @@ export class RequestHandler {
       propertyName,
       controller: instance?.constructor?.name,
       args,
+      argResolvers: MetadataResolver.compileArgs(args),
       middlewares: {
         beforeMiddlewares,
         afterMiddlewares,
@@ -332,12 +333,16 @@ export class RequestHandler {
     request: Request,
     route: RouterTypes.RouteMatched<RouterTypes.RouterHandler>,
   ): Response | Promise<Response> {
-    const { instance, propertyName, args, asyncArgs, cloneBody } = route.data;
+    const { instance, propertyName, args, argResolvers, asyncArgs, cloneBody } = route.data;
 
     try {
       if (args.length === 0) {
         return this.finalize(instance[propertyName]());
       }
+
+      // Absent only for a handler assembled without `prepareHandler`, which the
+      // resolver still serves from the raw metadata.
+      const plan = argResolvers ?? MetadataResolver.compileArgs(args);
 
       const event: RouterTypes.RouterEvent = {
         data: route.data,
@@ -350,13 +355,13 @@ export class RequestHandler {
       };
 
       if (asyncArgs) {
-        return this.gMetadataResolver.resolveArgValuesAsync(args, event).then(
+        return this.gMetadataResolver.resolveCompiledArgValuesAsync(plan, event).then(
           (values) => this.finalize(instance[propertyName](...values)),
           (error: unknown) => this.handleError(error),
         );
       }
 
-      const values = this.gMetadataResolver.resolveArgValues(args, event);
+      const values = this.gMetadataResolver.resolveCompiledArgValues(plan, event);
       return this.finalize(instance[propertyName](...values));
     } catch (error) {
       return this.handleError(error);
@@ -771,10 +776,10 @@ function toServerSpanContext(request: Request, handler: RouterTypes.RouterHandle
  * @returns {unknown[]} The values in handler parameter order
  */
 function toValues(args: MetadataTypes.Arg[]): unknown[] {
-  const values: unknown[] = Array.from({ length: args.length });
+  const values: unknown[] = [];
 
   for (let i = 0; i < args.length; i++) {
-    values[i] = args[i].resolved;
+    values.push(args[i].resolved);
   }
 
   return values;
