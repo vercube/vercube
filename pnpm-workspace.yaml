@@ -4,7 +4,7 @@ packages:
   - playground
 
 catalog:
-  '@oxc-project/runtime': 0.148.0
+  '@oxc-project/runtime': 0.149.0
   '@standard-schema/spec': 1.1.0
   c12: 4.0.0-rc.1
   consola: 3.4.2
