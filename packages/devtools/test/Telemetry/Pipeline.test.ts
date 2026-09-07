@@ -1,11 +1,11 @@
-import { SpanKind } from '@opentelemetry/api';
+import { SpanKind } from '@vercube/telemetry/api';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DevtoolsFrameBus } from '../../src/Services/DevtoolsFrameBus';
 import { DevtoolsLogDrain } from '../../src/Telemetry/DevtoolsLogDrain';
 import { DevtoolsMetricPipeline } from '../../src/Telemetry/DevtoolsMetricPipeline';
 import { DevtoolsSpanProcessor } from '../../src/Telemetry/DevtoolsSpanProcessor';
-import type { ReadableSpan } from '@opentelemetry/sdk-trace-base';
 import type { WideEvent } from '@vercube/logger';
+import type { ReadableSpan } from '@vercube/telemetry/sdk';
 
 /**
  * Builds a finished span shaped enough for the processor.

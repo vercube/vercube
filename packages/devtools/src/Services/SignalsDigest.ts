@@ -1,6 +1,12 @@
-import { SpanKind, SpanStatusCode } from '@opentelemetry/api';
-import { HTTP_REQUEST_METHOD, HTTP_RESPONSE_STATUS_CODE, HTTP_ROUTE, URL_PATH, VERCUBE_DI_KEY } from '@vercube/telemetry';
-import type { ReadableSpan } from '@opentelemetry/sdk-trace-base';
+import { SpanKind, SpanStatusCode } from '@vercube/telemetry/api';
+import {
+  HTTP_REQUEST_METHOD,
+  HTTP_RESPONSE_STATUS_CODE,
+  HTTP_ROUTE,
+  URL_PATH,
+  VERCUBE_DI_KEY,
+} from '@vercube/telemetry/attributes';
+import type { ReadableSpan } from '@vercube/telemetry/sdk';
 
 /** Aggregate view of recorded HTTP traffic. */
 export interface RequestStats {

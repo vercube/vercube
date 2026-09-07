@@ -1,4 +1,4 @@
-import { HTTP_ROUTE, URL_PATH } from '@vercube/telemetry';
+import { HTTP_ROUTE, URL_PATH } from '@vercube/telemetry/attributes';
 import {
   addMetricReader,
   addSpanProcessor,
@@ -12,8 +12,8 @@ import { DevtoolsLogDrain, DEVTOOLS_LOG_PLUGIN } from './DevtoolsLogDrain';
 import { DevtoolsMetricPipeline } from './DevtoolsMetricPipeline';
 import { DevtoolsSpanProcessor } from './DevtoolsSpanProcessor';
 import type { DevtoolsTypes } from '../Types/DevtoolsTypes';
-import type { ReadableSpan } from '@opentelemetry/sdk-trace-base';
 import type { Logger } from '@vercube/logger';
+import type { ReadableSpan } from '@vercube/telemetry/sdk';
 
 /**
  * Everything devtools listens to, in one place.

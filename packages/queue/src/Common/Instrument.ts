@@ -1,8 +1,14 @@
-import { context, metrics, propagation, ROOT_CONTEXT, SpanKind, SpanStatusCode, trace, ValueType } from '@opentelemetry/api';
-import type { Counter, Exception, Span } from '@opentelemetry/api';
+import { createInstrument, SpanKind, ValueType } from '@vercube/telemetry/instrument';
+import type { Context } from '@vercube/telemetry/instrument';
 
-/** Instrumentation scope reported for queue signals. */
-const SCOPE = '@vercube/queue';
+/**
+ * Traces and counts queue activity.
+ *
+ * The toolkit comes from `@vercube/telemetry/instrument`, which is the only
+ * place in the framework that speaks to OpenTelemetry directly, and it creates
+ * no instrument until one is actually used.
+ */
+const instrument = createInstrument('@vercube/queue');
 
 /** Attribute naming the transport a job travelled through. */
 export const QUEUE_STRATEGY = 'vercube.queue.strategy';
@@ -16,9 +22,8 @@ export const QUEUE_JOB = 'vercube.queue.job';
 /** Attribute carrying the attempt number. */
 export const QUEUE_ATTEMPT = 'vercube.queue.attempt';
 
-/** Lazily created counters, so no instrument exists until the queue is used. */
-let published: Counter | undefined;
-let processed: Counter | undefined;
+/** Attribute carrying how an attempt ended. */
+const QUEUE_OUTCOME = 'vercube.queue.outcome';
 
 /**
  * Writes the active trace context into a job's headers.
@@ -33,7 +38,7 @@ let processed: Counter | undefined;
  * @param headers - Headers the job will carry
  */
 export function injectTraceContext(headers: Record<string, string>): void {
-  propagation.inject(context.active(), headers);
+  instrument.inject(headers);
 }
 
 /**
@@ -42,8 +47,8 @@ export function injectTraceContext(headers: Record<string, string>): void {
  * @param headers - Headers the job arrived with
  * @returns A context carrying the publishing span as parent
  */
-export function extractTraceContext(headers: Record<string, string> | undefined): ReturnType<typeof propagation.extract> {
-  return propagation.extract(ROOT_CONTEXT, headers ?? {});
+export function extractTraceContext(headers: Record<string, string> | undefined): Context {
+  return instrument.extract(headers);
 }
 
 /**
@@ -59,8 +64,13 @@ export function tracePublish<T>(
   count: number,
   fn: () => Promise<T>,
 ): Promise<T> {
-  const parent = context.active();
-  const span = trace.getTracer(SCOPE).startSpan(
+  const published = instrument.counter('vercube.queue.published', {
+    description: 'Jobs handed to a transport.',
+    unit: '{job}',
+    valueType: ValueType.INT,
+  });
+
+  const publish = instrument.span(
     `queue.publish ${target.queue}`,
     {
       kind: SpanKind.PRODUCER,
@@ -71,19 +81,13 @@ export function tracePublish<T>(
         'vercube.queue.batch': count,
       },
     },
-    parent,
+    fn,
   );
-
-  published ??= metrics.getMeter(SCOPE).createCounter('vercube.queue.published', {
-    description: 'Jobs handed to a transport.',
-    unit: '{job}',
-    valueType: ValueType.INT,
-  });
 
   // Counted once the transport took them, so this keeps agreeing with the
   // manager's own `published` counter instead of drifting on every rejection.
-  return settle(span, parent, fn).then((value) => {
-    published?.add(count, { [QUEUE_NAME]: target.queue, [QUEUE_JOB]: target.job });
+  return publish.then((value) => {
+    published.add(count, { [QUEUE_NAME]: target.queue, [QUEUE_JOB]: target.job });
 
     return value;
   });
@@ -106,8 +110,7 @@ export function traceProcess<T>(
   headers: Record<string, string> | undefined,
   fn: () => Promise<T>,
 ): Promise<T> {
-  const parent = extractTraceContext(headers);
-  const span = trace.getTracer(SCOPE).startSpan(
+  return instrument.spanFrom(
     `queue.process ${target.queue}.${target.job}`,
     {
       kind: SpanKind.CONSUMER,
@@ -118,10 +121,9 @@ export function traceProcess<T>(
         [QUEUE_ATTEMPT]: target.attempt,
       },
     },
-    parent,
+    extractTraceContext(headers),
+    fn,
   );
-
-  return settle(span, parent, fn);
 }
 
 /**
@@ -131,59 +133,13 @@ export function traceProcess<T>(
  * @param outcome - How the attempt ended
  */
 export function countOutcome(target: { queue: string; job: string }, outcome: string): void {
-  processed ??= metrics.getMeter(SCOPE).createCounter('vercube.queue.processed', {
-    description: 'Job attempts by outcome.',
-    unit: '{attempt}',
-    valueType: ValueType.INT,
-  });
+  instrument
+    .counter('vercube.queue.processed', {
+      description: 'Job attempts by outcome.',
+      unit: '{attempt}',
+      valueType: ValueType.INT,
+    })
+    .add(1, { [QUEUE_NAME]: target.queue, [QUEUE_JOB]: target.job, [QUEUE_OUTCOME]: outcome });
 
-  processed.add(1, { [QUEUE_NAME]: target.queue, [QUEUE_JOB]: target.job, 'vercube.queue.outcome': outcome });
-  trace.getActiveSpan()?.setAttribute('vercube.queue.outcome', outcome);
-}
-
-/**
- * Runs the traced work inside the span and ends it once it settles.
- *
- * @param span - The span covering the work
- * @param parent - Context the span was started from
- * @param fn - The work
- * @returns Whatever the work returned
- */
-function settle<T>(span: Span, parent: ReturnType<typeof context.active>, fn: () => Promise<T>): Promise<T> {
-  return context.with(trace.setSpan(parent, span), () => {
-    let pending: Promise<T>;
-
-    try {
-      pending = fn();
-    } catch (error) {
-      fail(span, error);
-      span.end();
-
-      throw error;
-    }
-
-    return pending.then(
-      (value) => {
-        span.end();
-        return value;
-      },
-      (error: unknown) => {
-        fail(span, error);
-        span.end();
-        throw error;
-      },
-    );
-  });
-}
-
-/**
- * Records a failure on a span.
- *
- * @param span - The span to update
- * @param error - The thrown value
- */
-function fail(span: Span, error: unknown): void {
-  span.recordException(error as Exception);
-  span.setAttribute('error.type', error instanceof Error ? error.name : typeof error);
-  span.setStatus({ code: SpanStatusCode.ERROR, message: error instanceof Error ? error.message : String(error) });
+  instrument.activeSpan()?.setAttribute(QUEUE_OUTCOME, outcome);
 }

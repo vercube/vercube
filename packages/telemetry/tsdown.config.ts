@@ -5,5 +5,13 @@ import defaultConfig from '../../tsdown.config.ts';
 // return config for tsdown
 export default defineConfig({
   ...defaultConfig,
-  entry: ['./src/index.ts', './src/Sdk.ts', './src/Testing.ts'],
+  entry: [
+    './src/index.ts',
+    './src/Api.ts',
+    './src/Attributes.ts',
+    './src/Instrument.ts',
+    './src/Otlp.ts',
+    './src/Sdk.ts',
+    './src/Testing.ts',
+  ],
 });

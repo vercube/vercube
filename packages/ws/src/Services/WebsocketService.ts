@@ -1,12 +1,12 @@
-import { context, metrics, SpanKind, trace, ValueType } from '@opentelemetry/api';
 import { BadRequestError, HttpServer, ValidationProvider, safeJsonParse, sanitizeObject } from '@vercube/core';
 import { Inject, InjectOptional } from '@vercube/di';
 import { Logger } from '@vercube/logger';
+import { createInstrument, SpanKind, ValueType } from '@vercube/telemetry/instrument';
 import { defineHooks } from 'crossws';
 import { plugin } from 'crossws/server';
 import { WebsocketTypes } from '../Types/WebsocketTypes';
 import type { WSError, WSMessage, WSPeer } from '../Types/WebsocketTypes';
-import type { Span, UpDownCounter } from '@opentelemetry/api';
+import type { Span } from '@vercube/telemetry/instrument';
 import type { NodeAdapter } from 'crossws/adapters/node';
 import type { IncomingMessage } from 'node:http';
 import type { Duplex } from 'node:stream';
@@ -28,11 +28,16 @@ type WsUpgradeGlobal = { __vercube_ws_upgrade__?: (req: IncomingMessage, socket:
  * - Registering namespaces and accepting websocket connections for them
  * - Registering event handlers and handling them
  */
-/** Instrumentation scope reported for websocket signals. */
-const SCOPE = '@vercube/ws';
+/**
+ * Records websocket signals.
+ *
+ * The toolkit comes from `@vercube/telemetry/instrument`, which is the only
+ * place in the framework that speaks to OpenTelemetry directly.
+ */
+const instrument = createInstrument('@vercube/ws');
 
-/** Lazily created gauge of currently connected peers. */
-let connections: UpDownCounter | undefined;
+/** Attribute naming the namespace a peer or message belongs to. */
+const WS_NAMESPACE = 'vercube.ws.namespace';
 
 /**
  * Records a change in the number of connected peers.
@@ -46,13 +51,13 @@ let connections: UpDownCounter | undefined;
  * @returns {void}
  */
 function countConnection(delta: number, namespace: string): void {
-  connections ??= metrics.getMeter(SCOPE).createUpDownCounter('vercube.ws.connections', {
-    description: 'Currently connected websocket peers.',
-    unit: '{connection}',
-    valueType: ValueType.INT,
-  });
-
-  connections.add(delta, { 'vercube.ws.namespace': namespace });
+  instrument
+    .upDownCounter('vercube.ws.connections', {
+      description: 'Currently connected websocket peers.',
+      unit: '{connection}',
+      valueType: ValueType.INT,
+    })
+    .add(delta, { [WS_NAMESPACE]: namespace });
 }
 
 export class WebsocketService {
@@ -287,15 +292,11 @@ export class WebsocketService {
     // A websocket message is work the server does on its own behalf, so it gets
     // a CONSUMER span of its own rather than hanging off whatever request
     // happened to open the socket.
-    const span = trace
-      .getTracer(SCOPE)
-      .startSpan('ws.message', { kind: SpanKind.CONSUMER, attributes: { 'vercube.ws.namespace': peer.namespace ?? '' } });
-
-    try {
-      await context.with(trace.setSpan(context.active(), span), () => this.internalHandleMessage(peer, rawMessage, span));
-    } finally {
-      span.end();
-    }
+    await instrument.span(
+      'ws.message',
+      { kind: SpanKind.CONSUMER, attributes: { [WS_NAMESPACE]: peer.namespace ?? '' } },
+      (span) => this.internalHandleMessage(peer, rawMessage, span),
+    );
   }
 
   /**

@@ -25,6 +25,7 @@
     "@vercube/schema": "workspace:*",
     "@vercube/serverless": "workspace:*",
     "@vercube/storage": "workspace:*",
+    "@vercube/telemetry": "workspace:*",
     "@vercube/ws": "workspace:*",
     "serverless": "4.41.1",
     "serverless-offline": "14.8.2",

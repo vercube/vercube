@@ -1,7 +1,7 @@
-import { JsonMetricsSerializer } from '@opentelemetry/otlp-transformer';
-import { AggregationTemporality, InMemoryMetricExporter, PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
+import { JsonMetricsSerializer } from '@vercube/telemetry/otlp';
+import { AggregationTemporality, InMemoryMetricExporter, PeriodicExportingMetricReader } from '@vercube/telemetry/sdk';
 import type { DevtoolsFrameBus } from '../Services/DevtoolsFrameBus';
-import type { IMetricReader, ResourceMetrics } from '@opentelemetry/sdk-metrics';
+import type { IMetricReader, ResourceMetrics } from '@vercube/telemetry/sdk';
 
 /** How often metrics are collected while a UI is connected, in milliseconds. */
 const COLLECT_INTERVAL_MS = 2000;

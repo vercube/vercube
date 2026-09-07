@@ -1,7 +1,7 @@
-import { JsonTraceSerializer } from '@opentelemetry/otlp-transformer';
+import { JsonTraceSerializer } from '@vercube/telemetry/otlp';
 import type { DevtoolsFrameBus } from '../Services/DevtoolsFrameBus';
-import type { Context } from '@opentelemetry/api';
-import type { ReadableSpan, Span, SpanProcessor } from '@opentelemetry/sdk-trace-base';
+import type { Context } from '@vercube/telemetry/api';
+import type { ReadableSpan, SdkSpan, SpanProcessor } from '@vercube/telemetry/sdk';
 
 /** How long finished spans are held before being flushed, in milliseconds. */
 const FLUSH_INTERVAL_MS = 100;
@@ -74,7 +74,7 @@ export class DevtoolsSpanProcessor implements SpanProcessor {
   }
 
   /** @inheritdoc */
-  public onStart(_span: Span, _parentContext: Context): void {
+  public onStart(_span: SdkSpan, _parentContext: Context): void {
     // Nothing to do: devtools only shows finished work.
   }
 

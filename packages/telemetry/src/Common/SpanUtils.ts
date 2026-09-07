@@ -109,23 +109,46 @@ export function completeSpan(span: Span, value: unknown): void {
 }
 
 /**
- * Records a thrown value on a span and marks the span as failed.
+ * Records a thrown value on a span and marks the span as failed, whatever the
+ * error looks like.
+ *
+ * This is the variant for spans that carry no HTTP status semantics - the
+ * `CLIENT`, `PRODUCER` and `CONSUMER` spans an instrumented package produces.
+ * `failSpan` is the server-span variant and deliberately behaves differently;
+ * see the comment there before merging the two.
+ *
+ * @param span - The span to update
+ * @param error - The thrown value
+ */
+export function recordFailure(span: Span, error: unknown): void {
+  span.recordException(error as Exception);
+  span.setAttribute(ERROR_TYPE, errorType(error));
+  span.setStatus({ code: SpanStatusCode.ERROR, message: errorMessage(error) });
+}
+
+/**
+ * Records a thrown value on a *server* span and marks it failed only when the
+ * failure is the server's own.
  *
  * @param span - The span to update
  * @param error - The thrown value
  */
 export function failSpan(span: Span, error: unknown): void {
-  span.recordException(error as Exception);
-  span.setAttribute(ERROR_TYPE, errorType(error));
-
   // A 404 or a 401 describes the request, not a fault of the server, and the
   // HTTP semantic conventions say a server span must only be ERROR for 5xx.
   // Marking them failed turns every probe for a missing page into an incident.
+  //
+  // A storage or cache span must NOT inherit this rule: an S3 error carrying
+  // `status: 404` is a genuine failure of that operation. Those call sites use
+  // `recordFailure` instead, which is why the two exist side by side.
   if (httpStatusOf(error) < SERVER_ERROR_STATUS) {
+    span.recordException(error as Exception);
+    span.setAttribute(ERROR_TYPE, errorType(error));
+
     return;
   }
 
-  span.setStatus({ code: SpanStatusCode.ERROR, message: errorMessage(error) });
+  recordFailure(span, error);
 }
 
 /**
@@ -179,6 +202,6 @@ export function errorMessage(error: unknown): string {
  * @param value - The value to test
  * @returns True for thenables
  */
-function isPromiseLike(value: unknown): boolean {
+export function isPromiseLike(value: unknown): boolean {
   return value instanceof Promise || typeof (value as PromiseLike<unknown> | undefined)?.then === 'function';
 }

@@ -28,17 +28,14 @@
     "build": "tsdown --config tsdown.config.ts --config-loader=unrun"
   },
   "dependencies": {
-    "@opentelemetry/api": "1.9.1",
     "@vercube/di": "workspace:*",
-    "@vercube/logger": "workspace:*"
+    "@vercube/logger": "workspace:*",
+    "@vercube/telemetry": "workspace:*"
   },
   "optionalDependencies": {
     "@aws-sdk/client-s3": "3.1127.0"
   },
   "publishConfig": {
     "access": "public"
-  },
-  "devDependencies": {
-    "@vercube/telemetry": "workspace:*"
   }
 }

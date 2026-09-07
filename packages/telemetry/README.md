@@ -23,7 +23,7 @@
 - **A span per request** - route template, controller, handler and the stable HTTP semantic conventions
 - **W3C trace context** - `traceparent` read on the way in, injectable on the way out
 - **One AsyncLocalStorage** - trace context rides in the request context Vercube already opens, not a second frame
-- **API only by default** - `@opentelemetry/api` is the single dependency; the SDK, exporters and samplers are optional
+- **One OpenTelemetry dependency** - this is the only package in the framework that declares one; everything else reaches OpenTelemetry through a subpath here
 - **Zero cost when off** - core sees a `null` check, and the allocation-free route fast path stays synchronous
 
 ## 📦 Installation
@@ -32,10 +32,10 @@
 pnpm add @vercube/telemetry
 ```
 
-Exporting to a collector additionally needs the OpenTelemetry SDK:
+That is the whole installation: the tracer and meter providers, the samplers and the in-memory test providers all ship with it. Exporting to an OTLP collector is the one thing that needs more, because the exporter pulls a protobuf stack an application doing local tracing has no use for:
 
 ```bash
-pnpm add @opentelemetry/sdk-trace-node @opentelemetry/resources @opentelemetry/exporter-trace-otlp-http
+pnpm add @opentelemetry/exporter-trace-otlp-http
 ```
 
 ## 📖 Usage

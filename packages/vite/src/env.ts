@@ -21,6 +21,10 @@ export const FRAMEWORK_RUNTIME_DEPS: (string | RegExp)[] = [
   'evlog',
   /^evlog\//,
   '@standard-schema/spec',
+  // Runtime dependencies of `@vercube/telemetry`, which every instrumented
+  // package reaches through. Only that package declares them, so an app that
+  // does not depend on it directly has them nested and unresolvable from root.
+  /^@opentelemetry\//,
 ];
 
 /**
@@ -31,7 +35,17 @@ export const FRAMEWORK_RUNTIME_DEPS: (string | RegExp)[] = [
 export const DEFAULT_NO_EXTERNAL: (string | RegExp)[] = [/^@vercube\//, ...FRAMEWORK_RUNTIME_DEPS];
 
 /** Vercube packages that must resolve to a single module id (class-reference DI tokens). */
-export const VERCUBE_PACKAGES = ['@vercube/core', '@vercube/di', '@vercube/auth', '@vercube/logger', '@vercube/schema'] as const;
+export const VERCUBE_PACKAGES = [
+  '@vercube/core',
+  '@vercube/di',
+  '@vercube/auth',
+  '@vercube/logger',
+  '@vercube/schema',
+  // `Telemetry` is a class-reference token, and this package now enters the
+  // graph from every instrumented package at once. Two copies of it mean
+  // `@Inject(Telemetry)` resolves against a binding that was never made.
+  '@vercube/telemetry',
+] as const;
 
 /**
  * Canonical entry paths for `@vercube/*` packages from the consuming app's root.
