@@ -684,4 +684,55 @@ describe('MetadataResolver', () => {
       );
     });
   });
+
+  describe('exception contract of the asynchronous paths', () => {
+    it('should reject rather than throw when a single resolver throws synchronously', async () => {
+      // `@Body()` on a request whose body was already consumed throws from
+      // `clone()`, synchronously. It has to come back as a rejection, which is
+      // what the `async` frame used to guarantee.
+      vi.mocked(resolveRequestBody).mockImplementation(() => {
+        throw new Error('body already used');
+      });
+
+      const plan = MetadataResolver.compileArgs([{ idx: 0, type: 'body' }] as MetadataTypes.Arg[]);
+      let threw = false;
+
+      try {
+        const result = resolver.resolveCompiledArgValuesAsync(plan, mockEvent);
+        expect(result).toBeInstanceOf(Promise);
+        await expect(result).rejects.toThrow('body already used');
+      } catch {
+        threw = true;
+      }
+
+      expect(threw).toBe(false);
+    });
+
+    it('should reject rather than throw when a later resolver throws synchronously', async () => {
+      vi.mocked(resolveRouterParam).mockReturnValue('123');
+      vi.mocked(resolveRequestBody).mockImplementation(() => {
+        throw new Error('body already used');
+      });
+
+      const plan = MetadataResolver.compileArgs([
+        { idx: 0, type: 'param', data: { name: 'id' } },
+        { idx: 1, type: 'body' },
+      ] as MetadataTypes.Arg[]);
+
+      await expect(resolver.resolveCompiledArgValuesAsync(plan, mockEvent)).rejects.toThrow('body already used');
+    });
+
+    it('should reject rather than throw when compiling the arguments fails', async () => {
+      const args = [{ idx: 0, type: 'nope' }] as unknown as MetadataTypes.Arg[];
+      let threw = false;
+
+      try {
+        await expect(resolver.resolveArgValuesAsync(args, mockEvent)).rejects.toThrow('Unknown argument type: nope');
+      } catch {
+        threw = true;
+      }
+
+      expect(threw).toBe(false);
+    });
+  });
 });

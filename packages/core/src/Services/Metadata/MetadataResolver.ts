@@ -133,7 +133,17 @@ export class MetadataResolver {
    */
   public resolveCompiledArgValuesAsync(plan: RouterTypes.ArgResolver[], event: RouterTypes.RouterEvent): Promise<unknown[]> {
     if (plan.length === 1) {
-      const resolved = plan[0](event);
+      // A resolver that throws synchronously - `@Body()` on a request whose
+      // body was already consumed, for one - has to come back as a rejection
+      // rather than escape past the caller's `.then`. try/catch keeps that
+      // contract without the microtask an `async` frame would add.
+      let resolved: unknown;
+
+      try {
+        resolved = plan[0](event);
+      } catch (error) {
+        return Promise.reject(error);
+      }
 
       return resolved instanceof Promise ? resolved.then(toSingleValue) : Promise.resolve([resolved]);
     }
@@ -234,7 +244,10 @@ export class MetadataResolver {
    * @param {RouterTypes.RouterEvent} event - The event to resolve arguments for.
    * @returns {Promise<unknown[]>} The resolved values in handler parameter order.
    */
-  public resolveArgValuesAsync(args: MetadataTypes.Arg[], event: RouterTypes.RouterEvent): Promise<unknown[]> {
+  public async resolveArgValuesAsync(args: MetadataTypes.Arg[], event: RouterTypes.RouterEvent): Promise<unknown[]> {
+    // Kept `async` so a compiler or resolver failure still surfaces as a
+    // rejection, as it did before. This wrapper is not on the request path, so
+    // the frame it costs buys back the contract for free.
     return this.resolveCompiledArgValuesAsync(MetadataResolver.compileArgs(args), event);
   }
 

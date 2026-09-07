@@ -207,6 +207,37 @@ describe('Router matching', () => {
       expect(router.match('GET', '/plain/')?.data.propertyName).toBe('plain');
     });
 
+    it.each([
+      ['/plain', 'plain'],
+      ['/plain/', 'plain'],
+      ['/plain//', 'plain'],
+      ['/users/profile//', 'profile'],
+    ])('should resolve %s to the static route, as rou3 did', (path, handler) => {
+      // rou3 strips one trailing slash and then compares against the `x/`
+      // variants too, so two of them resolve. These routes no longer reach
+      // rou3, so the tolerance has to be reproduced here.
+      expect(router.match('GET', path)?.data.propertyName).toBe(handler);
+    });
+
+    it.each(['/plain///', '/users/profile///', '//plain'])('should not resolve %s, as rou3 did not', (path) => {
+      expect(router.match('GET', path)).toBeUndefined();
+    });
+
+    it('should treat the root as accepting one trailing slash less', () => {
+      // The root's own key already ends in a slash, so it stops one earlier
+      // than every other static path.
+      router.addRoute({ method: 'GET', path: '/', handler: handlerFor('root') });
+
+      expect(router.match('GET', '/')?.data.propertyName).toBe('root');
+      expect(router.match('GET', '//')?.data.propertyName).toBe('root');
+      expect(router.match('GET', '///')).toBeUndefined();
+    });
+
+    it('should still tolerate trailing slashes on a parameterised path', () => {
+      expect(router.match('GET', '/users/42/')?.params).toEqual({ id: '42' });
+      expect(router.match('GET', '/users/42//')?.params).toEqual({ id: '42' });
+    });
+
     it('should agree with a router that keeps every route in one tree', () => {
       // The parameterised router only carries routes with parameters, so this
       // pins that dropping the static ones from it changes no answer.

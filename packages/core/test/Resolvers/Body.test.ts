@@ -425,4 +425,31 @@ describe('resolveRequestBody', () => {
       expect((newObj as any).polluted).toBeUndefined();
     });
   });
+
+  describe('exception contract', () => {
+    it('should reject rather than throw when the body has already been consumed', async () => {
+      // `clone()` throws synchronously on a used body, and this used to be an
+      // `async` function, so callers are entitled to a rejection.
+      const request = new Request('http://localhost/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hello: 'world' }),
+      });
+      await request.text();
+
+      const event = createMockEvent(request);
+      let threw = false;
+      let result: Promise<unknown> | undefined;
+
+      try {
+        result = resolveRequestBody(event);
+      } catch {
+        threw = true;
+      }
+
+      expect(threw).toBe(false);
+      expect(result).toBeInstanceOf(Promise);
+      await expect(result).rejects.toThrow();
+    });
+  });
 });

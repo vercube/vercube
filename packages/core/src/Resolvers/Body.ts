@@ -27,7 +27,16 @@ export function resolveRequestBody(event: RouterTypes.RouterEvent): Promise<unkn
   // materialize a full native Request with a teed stream - one of the most
   // expensive things we can do per request. It is only needed when the handler
   // also receives the raw request and may read the body itself.
-  const request = event.cloneBody === false ? event.request : event.request.clone();
+  // `clone()` throws when the body has already been consumed, and that has to
+  // reject rather than throw past the caller, which is what an `async` function
+  // used to guarantee. try/catch keeps the contract without the microtask.
+  let request: Request;
+
+  try {
+    request = event.cloneBody === false ? event.request : event.request.clone();
+  } catch (error) {
+    return Promise.reject(error);
+  }
 
   // Chained rather than awaited: an async function here adds a frame and a
   // microtask to every request carrying a body, for no gain over `.then`.
