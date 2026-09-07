@@ -194,15 +194,19 @@ export class MetadataResolver {
    */
   public async resolveArgs(args: MetadataTypes.Arg[], event: RouterTypes.RouterEvent): Promise<MetadataTypes.Arg[]> {
     const list = sortArgs(args);
+    // Compiled per call rather than per route: this path already copies every
+    // argument's metadata and runs a middleware chain, so a few closures are
+    // noise against it, and one compiler beats keeping two dispatch tables in
+    // step with each other.
+    const plan = MetadataResolver.compileArgs(list);
 
     const resolvedArgs: MetadataTypes.Arg[] = [];
     for (let i = 0; i < list.length; i++) {
-      const arg = list[i];
-      let resolved: unknown = this.resolveArg(arg, event);
+      let resolved: unknown = plan[i](event);
       if (resolved instanceof Promise) {
         resolved = await resolved;
       }
-      resolvedArgs.push({ ...arg, resolved });
+      resolvedArgs.push({ ...list[i], resolved });
     }
     return resolvedArgs;
   }
@@ -219,16 +223,7 @@ export class MetadataResolver {
    * @returns {unknown[]} The resolved values in handler parameter order.
    */
   public resolveArgValues(args: MetadataTypes.Arg[], event: RouterTypes.RouterEvent): unknown[] {
-    // `Array.from({ length })` walks an array-like through the iteration
-    // protocol: ~145ns for two elements against ~21ns for pushing onto a packed
-    // array, which was the single largest cost on the argument path.
-    const values: unknown[] = [];
-
-    for (let i = 0; i < args.length; i++) {
-      values.push(this.resolveArg(args[i], event));
-    }
-
-    return values;
+    return this.resolveCompiledArgValues(MetadataResolver.compileArgs(args), event);
   }
 
   /**
@@ -239,76 +234,8 @@ export class MetadataResolver {
    * @param {RouterTypes.RouterEvent} event - The event to resolve arguments for.
    * @returns {Promise<unknown[]>} The resolved values in handler parameter order.
    */
-  public async resolveArgValuesAsync(args: MetadataTypes.Arg[], event: RouterTypes.RouterEvent): Promise<unknown[]> {
-    const values: unknown[] = [];
-
-    for (let i = 0; i < args.length; i++) {
-      const resolved = this.resolveArg(args[i], event);
-      values.push(resolved instanceof Promise ? await resolved : resolved);
-    }
-
-    return values;
-  }
-
-  /**
-   * Resolves an argument for a given event.
-   *
-   * @param {MetadataTypes.Arg} arg - The argument to resolve.
-   *
-   * @return {unknown} The resolved argument.
-   * @private
-   */
-  private resolveArg(arg: MetadataTypes.Arg, event: RouterTypes.RouterEvent): unknown | Promise<unknown> {
-    switch (arg.type) {
-      case 'param': {
-        return resolveRouterParam(arg?.data?.name ?? '', event);
-      }
-      case 'body': {
-        return resolveRequestBody(event);
-      }
-      case 'multipart-form-data': {
-        // TODO: add support for multipart/form-data
-        return null;
-        // return readMultipartFormData(event);
-      }
-      case 'query-param': {
-        return resolveQueryParam(arg?.data?.name ?? '', event);
-      }
-      case 'query-params': {
-        return resolveQueryParams(event);
-      }
-      case 'header': {
-        return getRequestHeader(arg.data?.name ?? '', event);
-      }
-      case 'headers': {
-        return getRequestHeaders(event);
-      }
-      case 'request': {
-        return event.request;
-      }
-      case 'response': {
-        return event.response;
-      }
-      case 'custom': {
-        return arg.resolver?.(event);
-      }
-      case 'session': {
-        // TODO: add support for session
-        return null;
-        // return useSession(event, {
-        //   name: arg?.data?.name,
-        //   password: arg?.data?.secret,
-        //   cookie: {
-        //     httpOnly: true,
-        //     secure: true,
-        //   },
-        //   maxAge: arg?.data?.duration,
-        // });
-      }
-      default: {
-        throw new Error(`Unknown argument type: ${arg.type}`);
-      }
-    }
+  public resolveArgValuesAsync(args: MetadataTypes.Arg[], event: RouterTypes.RouterEvent): Promise<unknown[]> {
+    return this.resolveCompiledArgValuesAsync(MetadataResolver.compileArgs(args), event);
   }
 
   /**

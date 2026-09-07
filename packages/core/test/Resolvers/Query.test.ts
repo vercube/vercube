@@ -95,6 +95,71 @@ describe('Query Resolvers', () => {
 
       expect(result).toBe('{"key":"value"}');
     });
+
+    it('should return an empty string for a key without a value', () => {
+      const event = createMockEvent('http://localhost/test?flag&name=John');
+      const result = resolveQueryParam('flag', event);
+
+      expect(result).toBe('');
+    });
+
+    it('should return an empty string for a key with an empty value', () => {
+      const event = createMockEvent('http://localhost/test?flag=&name=John');
+
+      expect(resolveQueryParam('flag', event)).toBe('');
+    });
+
+    it('should skip empty segments', () => {
+      const event = createMockEvent('http://localhost/test?&&name=John&&age=30');
+
+      expect(resolveQueryParam('name', event)).toBe('John');
+      expect(resolveQueryParam('age', event)).toBe('30');
+    });
+
+    it('should decode a plus sign as a space in the key and the value', () => {
+      const event = createMockEvent('http://localhost/test?first+name=John+Smith');
+
+      expect(resolveQueryParam('first name', event)).toBe('John Smith');
+    });
+
+    it('should match a percent-encoded key against its decoded name', () => {
+      const event = createMockEvent('http://localhost/test?first%20name=John');
+
+      expect(resolveQueryParam('first name', event)).toBe('John');
+    });
+
+    it('should keep a malformed percent sequence verbatim rather than throwing', () => {
+      // `decodeURIComponent('%zz')` throws where `URLSearchParams` keeps it, and
+      // a odd query string must not turn into a 500.
+      const event = createMockEvent('http://localhost/test?broken=%zz&name=John');
+
+      expect(resolveQueryParam('broken', event)).toBe('%zz');
+      expect(resolveQueryParam('name', event)).toBe('John');
+    });
+
+    it('should keep a malformed percent sequence in a key verbatim', () => {
+      const event = createMockEvent('http://localhost/test?%zz=value');
+
+      expect(resolveQueryParam('%zz', event)).toBe('value');
+    });
+
+    it('should return null when the query is only a question mark', () => {
+      const event = createMockEvent('http://localhost/test?');
+
+      expect(resolveQueryParam('name', event)).toBeNull();
+    });
+
+    it('should resolve the last parameter when it carries no trailing separator', () => {
+      const event = createMockEvent('http://localhost/test?a=1&b=2&c=3');
+
+      expect(resolveQueryParam('c', event)).toBe('3');
+    });
+
+    it('should not match a name that only appears inside another value', () => {
+      const event = createMockEvent('http://localhost/test?query=name%3DJohn');
+
+      expect(resolveQueryParam('name', event)).toBeNull();
+    });
   });
 
   describe('resolveQueryParams', () => {

@@ -482,4 +482,181 @@ describe('MetadataResolver', () => {
       expect(result).toEqual([]);
     });
   });
+
+  describe('compileArgs', () => {
+    const compileOne = (arg: Partial<MetadataTypes.Arg>): RouterTypes.ArgResolver =>
+      MetadataResolver.compileArgs([{ idx: 0, ...arg } as MetadataTypes.Arg])[0];
+
+    it('should compile one resolver per argument, in order', () => {
+      const plan = MetadataResolver.compileArgs([
+        { idx: 0, type: 'param', data: { name: 'id' } },
+        { idx: 1, type: 'query-param', data: { name: 'name' } },
+      ] as MetadataTypes.Arg[]);
+
+      expect(plan).toHaveLength(2);
+      expect(plan.every((resolver) => typeof resolver === 'function')).toBe(true);
+    });
+
+    it('should bind the parameter name at compile time', () => {
+      vi.mocked(resolveRouterParam).mockReturnValue('123');
+      const arg = { idx: 0, type: 'param', data: { name: 'id' } } as MetadataTypes.Arg;
+      const resolver = MetadataResolver.compileArgs([arg])[0];
+
+      // Renaming the metadata after compilation must not change what the
+      // compiled resolver asks for: that is the point of compiling.
+      arg.data!.name = 'somethingElse';
+
+      expect(resolver(mockEvent)).toBe('123');
+      expect(resolveRouterParam).toHaveBeenCalledWith('id', mockEvent);
+    });
+
+    it('should compile a param resolver', () => {
+      vi.mocked(resolveRouterParam).mockReturnValue('123');
+
+      expect(compileOne({ type: 'param', data: { name: 'id' } })(mockEvent)).toBe('123');
+      expect(resolveRouterParam).toHaveBeenCalledWith('id', mockEvent);
+    });
+
+    it('should compile a body resolver', () => {
+      vi.mocked(resolveRequestBody).mockResolvedValue({ ok: true });
+
+      compileOne({ type: 'body' })(mockEvent);
+
+      expect(resolveRequestBody).toHaveBeenCalledWith(mockEvent);
+    });
+
+    it('should compile a query-param resolver', () => {
+      vi.mocked(resolveQueryParam).mockReturnValue('bun');
+
+      expect(compileOne({ type: 'query-param', data: { name: 'name' } })(mockEvent)).toBe('bun');
+      expect(resolveQueryParam).toHaveBeenCalledWith('name', mockEvent);
+    });
+
+    it('should compile a query-params resolver', () => {
+      vi.mocked(resolveQueryParams).mockReturnValue({ name: 'bun' });
+
+      expect(compileOne({ type: 'query-params' })(mockEvent)).toEqual({ name: 'bun' });
+      expect(resolveQueryParams).toHaveBeenCalledWith(mockEvent);
+    });
+
+    it('should compile a header resolver', () => {
+      vi.mocked(getRequestHeader).mockReturnValue('application/json');
+
+      expect(compileOne({ type: 'header', data: { name: 'content-type' } })(mockEvent)).toBe('application/json');
+      expect(getRequestHeader).toHaveBeenCalledWith('content-type', mockEvent);
+    });
+
+    it('should compile a headers resolver', () => {
+      const headers = new Headers({ accept: '*/*' });
+      vi.mocked(getRequestHeaders).mockReturnValue(headers);
+
+      expect(compileOne({ type: 'headers' })(mockEvent)).toBe(headers);
+      expect(getRequestHeaders).toHaveBeenCalledWith(mockEvent);
+    });
+
+    it('should compile request and response resolvers', () => {
+      expect(compileOne({ type: 'request' })(mockEvent)).toBe(mockEvent.request);
+      expect(compileOne({ type: 'response' })(mockEvent)).toBe(mockEvent.response);
+    });
+
+    it('should compile a custom resolver', () => {
+      const custom = vi.fn().mockReturnValue('resolved');
+
+      expect(compileOne({ type: 'custom', resolver: custom })(mockEvent)).toBe('resolved');
+      expect(custom).toHaveBeenCalledWith(mockEvent);
+    });
+
+    it('should compile a custom argument without a resolver to undefined', () => {
+      expect(compileOne({ type: 'custom' })(mockEvent)).toBeUndefined();
+    });
+
+    it('should compile the not-yet-supported types to null', () => {
+      expect(compileOne({ type: 'multipart-form-data' })(mockEvent)).toBeNull();
+      expect(compileOne({ type: 'session' })(mockEvent)).toBeNull();
+    });
+
+    it('should default a missing parameter name to an empty string', () => {
+      vi.mocked(resolveQueryParam).mockReturnValue(null);
+
+      compileOne({ type: 'query-param' })(mockEvent);
+
+      expect(resolveQueryParam).toHaveBeenCalledWith('', mockEvent);
+    });
+
+    it('should reject an unknown argument type when the route is registered', () => {
+      expect(() => MetadataResolver.compileArgs([{ idx: 0, type: 'nope' } as unknown as MetadataTypes.Arg])).toThrow(
+        'Unknown argument type: nope',
+      );
+    });
+  });
+
+  describe('resolveCompiledArgValues', () => {
+    it('should resolve every argument in handler parameter order', () => {
+      vi.mocked(resolveRouterParam).mockReturnValue('123');
+      vi.mocked(resolveQueryParam).mockReturnValue('bun');
+
+      const plan = MetadataResolver.compileArgs([
+        { idx: 0, type: 'param', data: { name: 'id' } },
+        { idx: 1, type: 'query-param', data: { name: 'name' } },
+      ] as MetadataTypes.Arg[]);
+
+      expect(resolver.resolveCompiledArgValues(plan, mockEvent)).toEqual(['123', 'bun']);
+    });
+
+    it('should return an empty list for an empty plan', () => {
+      expect(resolver.resolveCompiledArgValues([], mockEvent)).toEqual([]);
+    });
+  });
+
+  describe('resolveCompiledArgValuesAsync', () => {
+    it('should resolve a single asynchronous argument', async () => {
+      vi.mocked(resolveRequestBody).mockResolvedValue({ hello: 'world' });
+
+      const plan = MetadataResolver.compileArgs([{ idx: 0, type: 'body' }] as MetadataTypes.Arg[]);
+
+      await expect(resolver.resolveCompiledArgValuesAsync(plan, mockEvent)).resolves.toEqual([{ hello: 'world' }]);
+    });
+
+    it('should resolve a single synchronous argument through the same path', async () => {
+      vi.mocked(resolveRouterParam).mockReturnValue('123');
+
+      const plan = MetadataResolver.compileArgs([{ idx: 0, type: 'param', data: { name: 'id' } }] as MetadataTypes.Arg[]);
+
+      await expect(resolver.resolveCompiledArgValuesAsync(plan, mockEvent)).resolves.toEqual(['123']);
+    });
+
+    it('should mix synchronous and asynchronous arguments in order', async () => {
+      vi.mocked(resolveRouterParam).mockReturnValue('123');
+      vi.mocked(resolveRequestBody).mockResolvedValue({ hello: 'world' });
+      vi.mocked(resolveQueryParam).mockReturnValue('bun');
+
+      const plan = MetadataResolver.compileArgs([
+        { idx: 0, type: 'param', data: { name: 'id' } },
+        { idx: 1, type: 'body' },
+        { idx: 2, type: 'query-param', data: { name: 'name' } },
+      ] as MetadataTypes.Arg[]);
+
+      await expect(resolver.resolveCompiledArgValuesAsync(plan, mockEvent)).resolves.toEqual(['123', { hello: 'world' }, 'bun']);
+    });
+
+    it('should reject when an argument resolver rejects', async () => {
+      vi.mocked(resolveRequestBody).mockRejectedValue(new Error('Invalid JSON body'));
+
+      const plan = MetadataResolver.compileArgs([{ idx: 0, type: 'body' }] as MetadataTypes.Arg[]);
+
+      await expect(resolver.resolveCompiledArgValuesAsync(plan, mockEvent)).rejects.toThrow('Invalid JSON body');
+    });
+
+    it('should reject when a later argument resolver rejects', async () => {
+      vi.mocked(resolveRouterParam).mockReturnValue('123');
+      vi.mocked(resolveRequestBody).mockRejectedValue(new Error('Invalid JSON body'));
+
+      const plan = MetadataResolver.compileArgs([
+        { idx: 0, type: 'param', data: { name: 'id' } },
+        { idx: 1, type: 'body' },
+      ] as MetadataTypes.Arg[]);
+
+      await expect(resolver.resolveCompiledArgValuesAsync(plan, mockEvent)).rejects.toThrow('Invalid JSON body');
+    });
+  });
 });

@@ -1,6 +1,6 @@
 import { BaseDecorator, createDecorator } from '@vercube/di';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { Body, Controller, createApp, Post, Response as Res } from '../../src';
+import { Body, Controller, createApp, Get, Param, Post, QueryParam, Response as Res } from '../../src';
 import { initializeMetadata, initializeMetadataMethod } from '../../src/Utils/Utils';
 import type { App } from '../../src';
 import type { MetadataTypes } from '../../src/Types/MetadataTypes';
@@ -46,6 +46,16 @@ class SimpleController {
     return { stamp };
   }
 
+  @Post('/one-body')
+  public oneBody(@Body() payload: any): unknown {
+    return payload;
+  }
+
+  @Get('/sync/:id')
+  public sync(@Param('id') id: string, @QueryParam({ name: 'name' }) name: string | null): unknown {
+    return { id, name };
+  }
+
   @Post('/response')
   public response(@Res() response: Response): unknown {
     response.headers.set('x-from-handler', 'yes');
@@ -67,6 +77,21 @@ describe('Routes without middlewares', () => {
     });
   });
 
+  it('should read a single @Body() without cloning the request', async () => {
+    // One reader and no raw request means nothing else can consume the body, so
+    // the handler is served without materializing a clone.
+    const response = await app.fetch(
+      new globalThis.Request('http://localhost/simple/one-body', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hello: 'world' }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ hello: 'world' });
+  });
+
   it('should let two @Body() arguments read the body', async () => {
     const response = await app.fetch(
       new globalThis.Request('http://localhost/simple/two-bodies', {
@@ -86,6 +111,22 @@ describe('Routes without middlewares', () => {
     expect(response.status).toBe(200);
     expect(response.headers.get('x-stamp')).toBe('stamped');
     await expect(response.json()).resolves.toEqual({ stamp: 'stamped' });
+  });
+
+  it('should serve synchronous arguments without allocating a promise', async () => {
+    // The shape most routes actually have: a path parameter and a query
+    // parameter, no middlewares, nothing asynchronous.
+    const response = await app.fetch(new globalThis.Request('http://localhost/simple/sync/42?name=bun'));
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ id: '42', name: 'bun' });
+  });
+
+  it('should resolve a missing query parameter to null', async () => {
+    const response = await app.fetch(new globalThis.Request('http://localhost/simple/sync/42'));
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ id: '42', name: null });
   });
 
   it('should apply a response mutation made through @Response()', async () => {
