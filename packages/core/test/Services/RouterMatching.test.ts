@@ -10,12 +10,15 @@ import type { RouterTypes } from '../../src/Types/RouterTypes';
  * router underneath is the real one.
  */
 let compilationFails = false;
+let compileAttempts = 0;
 
 vi.mock('rou3/compiler', async (importOriginal) => {
   const actual = await importOriginal<typeof import('rou3/compiler')>();
 
   return {
     compileRouter: (context: never) => {
+      compileAttempts++;
+
       // Stands in for a runtime that refuses `new Function`, which is what a
       // strict content security policy does.
       if (compilationFails) {
@@ -35,6 +38,7 @@ describe('Router matching', () => {
 
   beforeEach(() => {
     compilationFails = false;
+    compileAttempts = 0;
 
     const container = new Container();
     container.bindMock(HooksService, { trigger: vi.fn() });
@@ -111,6 +115,35 @@ describe('Router matching', () => {
     expect(router.match('GET', '/id/1')?.params).toEqual({ id: '1' });
     expect(router.match('GET', '/users/1/messages/2')?.params).toEqual({ id: '1', messageId: '2' });
     expect(router.match('GET', '/nothing')).toBeUndefined();
+  });
+
+  it('should stop attempting to compile once the runtime has refused', () => {
+    compilationFails = true;
+
+    router.match('GET', '/id/1');
+    const afterRefusal = compileAttempts;
+
+    expect(afterRefusal).toBeGreaterThan(0);
+
+    // A route registered after a refusal must not make the router try, and
+    // fail, all over again.
+    router.addRoute({ method: 'GET', path: '/after/:id', handler: handlerFor('after') });
+
+    expect(router.match('GET', '/after/9')?.params).toEqual({ id: '9' });
+    expect(router.match('GET', '/id/2')?.params).toEqual({ id: '2' });
+    expect(compileAttempts).toBe(afterRefusal);
+  });
+
+  it('should compile once and reuse it until the route table changes', () => {
+    router.match('GET', '/id/1');
+    router.match('GET', '/id/2');
+
+    expect(compileAttempts).toBe(1);
+
+    router.addRoute({ method: 'GET', path: '/fresh/:id', handler: handlerFor('fresh') });
+
+    expect(router.match('GET', '/fresh/1')?.params).toEqual({ id: '1' });
+    expect(compileAttempts).toBe(2);
   });
 
   it('should agree with the trie on every registered route', () => {

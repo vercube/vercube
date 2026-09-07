@@ -59,6 +59,14 @@ export class Router {
   private fCompiledRevision = -1;
 
   /**
+   * Set once the runtime has refused to compile, which it will keep doing.
+   * Without it every route registered afterwards would raise and swallow the
+   * same error again.
+   * @private
+   */
+  private fCompilerUnavailable = false;
+
+  /**
    * Lookup tables for routes without parameters, one per HTTP method.
    *
    * Most routes of a real application are static, and a map hit is far cheaper
@@ -218,6 +226,10 @@ export class Router {
   private compiledMatcher():
     | ((method: string, path: string) => RouterTypes.RouteMatched<RouterTypes.RouterHandler> | undefined)
     | null {
+    if (this.fCompilerUnavailable) {
+      return null;
+    }
+
     if (this.fCompiledMatcher !== undefined && this.fCompiledRevision === this.fRevision) {
       return this.fCompiledMatcher;
     }
@@ -227,7 +239,10 @@ export class Router {
     try {
       this.fCompiledMatcher = compileRouter(this.fRouterContext);
     } catch {
-      this.fCompiledMatcher = null;
+      this.fCompilerUnavailable = true;
+      this.fCompiledMatcher = undefined;
+
+      return null;
     }
 
     return this.fCompiledMatcher;
