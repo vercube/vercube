@@ -4,9 +4,15 @@ import type { RouterTypes } from '../Types/RouterTypes';
 /**
  * Decodes one urlencoded component the way the WHATWG urlencoded parser does.
  *
- * `decodeURIComponent` throws on a malformed sequence such as `%zz`, where
- * `URLSearchParams` keeps it verbatim, so a failure falls back to the raw text
- * rather than turning a odd query string into a 500.
+ * `decodeURIComponent` throws on anything the parser instead handles: `%zz` is
+ * kept verbatim, and a sequence that is valid hex but invalid UTF-8, such as
+ * `%E0%A4%A`, decodes to a replacement character followed by whatever is left.
+ * Both cases go back through `URLSearchParams` for that one component, so a
+ * malformed request target reaches the handler with exactly the value it did
+ * before rather than raising a 500 or an undecoded string.
+ *
+ * The component cannot contain `&`, having been sliced between separators, and
+ * a key cannot contain `=`, so wrapping it in a one-parameter query is safe.
  *
  * @param raw - The raw component, still percent-encoded
  * @returns The decoded component
@@ -21,7 +27,7 @@ function decodeComponent(raw: string): string {
   try {
     return decodeURIComponent(plussed);
   } catch {
-    return plussed;
+    return new URLSearchParams(`_=${plussed}`).get('_') ?? plussed;
   }
 }
 

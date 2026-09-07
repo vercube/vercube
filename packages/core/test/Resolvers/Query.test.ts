@@ -128,7 +128,7 @@ describe('Query Resolvers', () => {
       expect(resolveQueryParam('first name', event)).toBe('John');
     });
 
-    it('should keep a malformed percent sequence verbatim rather than throwing', () => {
+    it('should keep an invalid escape verbatim rather than throwing', () => {
       // `decodeURIComponent('%zz')` throws where `URLSearchParams` keeps it, and
       // a odd query string must not turn into a 500.
       const event = createMockEvent('http://localhost/test?broken=%zz&name=John');
@@ -137,10 +137,40 @@ describe('Query Resolvers', () => {
       expect(resolveQueryParam('name', event)).toBe('John');
     });
 
-    it('should keep a malformed percent sequence in a key verbatim', () => {
+    it('should keep an invalid escape in a key verbatim', () => {
       const event = createMockEvent('http://localhost/test?%zz=value');
 
       expect(resolveQueryParam('%zz', event)).toBe('value');
+    });
+
+    it.each([
+      ['%E0%A4%A', '\uFFFD%A'],
+      ['%C3', '\uFFFD'],
+      ['%F0%9F%92', '\uFFFD'],
+      ['%80', '\uFFFD'],
+      ['%C3%28', '\uFFFD('],
+      ['%', '%'],
+      ['%2', '%2'],
+    ])('should decode valid hex that is invalid UTF-8 the way URLSearchParams does (%s)', (raw, expected) => {
+      // Valid escapes whose bytes are not valid UTF-8: the urlencoded parser
+      // substitutes a replacement character and keeps the rest, where
+      // `decodeURIComponent` throws.
+      const event = createMockEvent(`http://localhost/test?broken=${raw}`);
+
+      expect(resolveQueryParam('broken', event)).toBe(expected);
+      expect(resolveQueryParam('broken', event)).toBe(new URLSearchParams(`?broken=${raw}`).get('broken'));
+    });
+
+    it('should decode a key whose escape is valid hex but invalid UTF-8', () => {
+      const event = createMockEvent('http://localhost/test?%E0%A4%A=value');
+
+      expect(resolveQueryParam('\uFFFD%A', event)).toBe('value');
+    });
+
+    it('should still decode a valid multi-byte escape', () => {
+      const event = createMockEvent('http://localhost/test?word=%E0%A4%A4');
+
+      expect(resolveQueryParam('word', event)).toBe('\u0924');
     });
 
     it('should return null when the query is only a question mark', () => {

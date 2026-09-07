@@ -659,4 +659,29 @@ describe('MetadataResolver', () => {
       await expect(resolver.resolveCompiledArgValuesAsync(plan, mockEvent)).rejects.toThrow('Invalid JSON body');
     });
   });
+
+  describe('resolveArgValues', () => {
+    it('should resolve raw arguments to values in order', () => {
+      vi.mocked(resolveRouterParam).mockReturnValue('123');
+      vi.mocked(resolveQueryParam).mockReturnValue('bun');
+
+      const values = resolver.resolveArgValues(
+        [
+          { idx: 0, type: 'param', data: { name: 'id' } },
+          { idx: 1, type: 'query-param', data: { name: 'name' } },
+        ] as MetadataTypes.Arg[],
+        mockEvent,
+      );
+
+      expect(values).toEqual(['123', 'bun']);
+    });
+
+    it('should resolve raw arguments asynchronously', async () => {
+      vi.mocked(resolveRequestBody).mockResolvedValue({ hello: 'world' });
+
+      await expect(resolver.resolveArgValuesAsync([{ idx: 0, type: 'body' }] as MetadataTypes.Arg[], mockEvent)).resolves.toEqual(
+        [{ hello: 'world' }],
+      );
+    });
+  });
 });
