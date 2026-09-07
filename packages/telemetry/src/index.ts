@@ -1,44 +1,16 @@
-// Public API
-export * from './Bootstrap/BootstrapSpans';
-export * from './Common/Attributes';
-export * from './Common/BodyCapture';
-export * from './Common/HeaderCapture';
-export * from './Common/Propagation';
-export * from './Common/SpanUtils';
-export * from './Common/Telemetry';
-export * from './Context/VercubeContextManager';
-export * from './Hooks/CoreTelemetryHooks';
-export * from './Hooks/TraceCorrelation';
-export * from './Metrics/ProcessMetrics';
-export * from './Plugins/TelemetryPlugin';
-export * from './Service/OtelTelemetry';
-
-// Re-exported so applications can annotate spans without adding a direct
-// dependency on the OpenTelemetry API package.
-export {
-  context,
-  metrics,
-  propagation,
-  ROOT_CONTEXT,
-  SpanKind,
-  SpanStatusCode,
-  trace,
-  TraceFlags,
-  ValueType,
-} from '@opentelemetry/api';
-export type {
-  Attributes,
-  Context,
-  Counter,
-  Histogram,
-  Link,
-  Meter,
-  Span,
-  SpanContext,
-  SpanOptions,
-  TextMapGetter,
-  TextMapPropagator,
-  TextMapSetter,
-  Tracer,
-  UpDownCounter,
-} from '@opentelemetry/api';
+/**
+ * The application-facing entry point: the DI token and the plugin.
+ *
+ * Everything else the package publishes lives on a subpath of its own, so an
+ * import says what it reaches for and the framework's internals are not part of
+ * the public surface:
+ *
+ * - `@vercube/telemetry/api` - the OpenTelemetry API
+ * - `@vercube/telemetry/attributes` - span and metric attribute keys
+ * - `@vercube/telemetry/instrument` - the toolkit for instrumenting a library
+ * - `@vercube/telemetry/sdk` - tracer and meter provider wiring
+ * - `@vercube/telemetry/otlp` - OTLP serializers and exporters
+ * - `@vercube/telemetry/testing` - in-memory providers for tests
+ */
+export { Telemetry } from './Common/Telemetry';
+export { TelemetryPlugin } from './Plugins/TelemetryPlugin';

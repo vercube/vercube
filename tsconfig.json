@@ -23,6 +23,15 @@
     "lib": ["dom", "es6", "es2017", "es2019", "ESNext"],
     "typeRoots": ["node_modules/@types"],
     "paths": {
+      // The wildcard below only resolves bare package roots, so a subpath
+      // export would fall through to node_modules and require a built `dist`.
+      // Mapped explicitly so a clean clone typechecks before anything is built.
+      "@vercube/telemetry/api": ["./packages/telemetry/src/Api.ts"],
+      "@vercube/telemetry/attributes": ["./packages/telemetry/src/Attributes.ts"],
+      "@vercube/telemetry/instrument": ["./packages/telemetry/src/Instrument.ts"],
+      "@vercube/telemetry/otlp": ["./packages/telemetry/src/Otlp.ts"],
+      "@vercube/telemetry/sdk": ["./packages/telemetry/src/Sdk.ts"],
+      "@vercube/telemetry/testing": ["./packages/telemetry/src/Testing.ts"],
       "@vercube/*": ["./packages/*/src"]
     }
   },

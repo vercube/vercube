@@ -1,4 +1,4 @@
-import { SpanKind, SpanStatusCode } from '@opentelemetry/api';
+import { SpanKind, SpanStatusCode } from '@vercube/telemetry/api';
 import { describe, expect, it } from 'vitest';
 import {
   bootstrapHotspots,
@@ -9,7 +9,7 @@ import {
   serverSpans,
   statusOf,
 } from '../../src/Services/SignalsDigest';
-import type { ReadableSpan } from '@opentelemetry/sdk-trace-base';
+import type { ReadableSpan } from '@vercube/telemetry/sdk';
 
 /**
  * Builds a span shaped enough for the digest helpers.

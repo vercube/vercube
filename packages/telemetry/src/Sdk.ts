@@ -9,12 +9,30 @@ import {
   ParentBasedSampler,
   TraceIdRatioBasedSampler,
 } from '@opentelemetry/sdk-trace-node';
+import { createOtlpTraceExporter } from './Otlp';
 import { CompositeSpanProcessor } from './Sdk/Composite';
 import type { IMetricReader } from '@opentelemetry/sdk-metrics';
 import type { Sampler, SpanExporter, SpanProcessor } from '@opentelemetry/sdk-trace-node';
+import type { TelemetryTypes } from '@vercube/core';
 
 export { CompositeSpanProcessor } from './Sdk/Composite';
-import type { TelemetryTypes } from '@vercube/core';
+
+// The SDK surface a consumer needs to build its own pipeline, re-exported so
+// `@vercube/telemetry` stays the only package in the framework that declares an
+// `@opentelemetry/*` dependency. `SdkSpan` is renamed because the SDK's mutable
+// `Span` class collides with the API's `Span` interface, and the two are not
+// interchangeable.
+export {
+  AggregationTemporality,
+  InMemoryMetricExporter,
+  MeterProvider,
+  PeriodicExportingMetricReader,
+} from '@opentelemetry/sdk-metrics';
+export type { IMetricReader, PushMetricExporter, ResourceMetrics } from '@opentelemetry/sdk-metrics';
+export { BasicTracerProvider, InMemorySpanExporter, SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base';
+export type { ReadableSpan, Span as SdkSpan, SpanExporter, SpanProcessor } from '@opentelemetry/sdk-trace-base';
+export { BatchSpanProcessor, NodeTracerProvider } from '@opentelemetry/sdk-trace-node';
+export type { Sampler } from '@opentelemetry/sdk-trace-node';
 
 /**
  * Options for {@link startNodeTelemetry}.
@@ -166,10 +184,6 @@ export function ensureTracerProvider(options: NodeTelemetryOptions = {}): NodeTe
 /**
  * Builds the OTLP/HTTP exporter, when an endpoint is configured.
  *
- * The exporter package is an optional peer dependency, so it is required
- * lazily and its absence produces an actionable message rather than a
- * module-resolution error at import time.
- *
  * @param options - The telemetry options
  * @returns The exporter, or undefined when no endpoint is configured
  */
@@ -180,21 +194,7 @@ async function createOtlpExporter(options: NodeTelemetryOptions): Promise<SpanEx
     return undefined;
   }
 
-  let module: { OTLPTraceExporter: new (config: { url: string; headers?: Record<string, string> }) => SpanExporter };
-
-  try {
-    module = await import('@opentelemetry/exporter-trace-otlp-http');
-  } catch {
-    throw new Error(
-      'An OTLP endpoint is configured but @opentelemetry/exporter-trace-otlp-http is not installed. ' +
-        'Install it, or pass your own `exporter` to startNodeTelemetry().',
-    );
-  }
-
-  return new module.OTLPTraceExporter({
-    url: `${endpoint.replace(/\/$/, '')}/v1/traces`,
-    headers: options.headers,
-  });
+  return createOtlpTraceExporter({ endpoint, headers: options.headers });
 }
 
 /**

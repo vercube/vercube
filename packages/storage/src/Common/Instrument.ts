@@ -1,18 +1,17 @@
-import { context, SpanKind, SpanStatusCode, trace } from '@opentelemetry/api';
-import type { Exception, Span } from '@opentelemetry/api';
-
-/**
- * Instrumentation scope reported for storage spans.
- */
-const SCOPE = '@vercube/storage';
+import { createInstrument, SpanKind } from '@vercube/telemetry/instrument';
 
 /**
  * Traces storage operations.
  *
- * This depends on `@opentelemetry/api` and nothing else: it is the contract an
- * instrumented library is supposed to speak, it is a no-op until an application
- * registers a tracer provider, and it keeps `@vercube/storage` usable without
- * the rest of the framework.
+ * The toolkit comes from `@vercube/telemetry/instrument`, which is the only
+ * place in the framework that speaks to OpenTelemetry directly. It is a no-op
+ * until an application registers a tracer provider, so this costs nothing in a
+ * process that is not collecting telemetry.
+ */
+const instrument = createInstrument('@vercube/storage');
+
+/**
+ * Traces one storage operation.
  *
  * @param name - Operation name, e.g. `storage.getItem`
  * @param attributes - Attributes describing the operation
@@ -24,33 +23,5 @@ export function traceOperation<T>(
   attributes: Record<string, string | number | boolean | undefined>,
   fn: () => Promise<T>,
 ): Promise<T> {
-  const tracer = trace.getTracer(SCOPE);
-  const parent = context.active();
-  const span = tracer.startSpan(name, { kind: SpanKind.CLIENT, attributes }, parent);
-
-  return context.with(trace.setSpan(parent, span), () =>
-    fn().then(
-      (value) => {
-        span.end();
-        return value;
-      },
-      (error: unknown) => {
-        fail(span, error);
-        span.end();
-        throw error;
-      },
-    ),
-  );
-}
-
-/**
- * Records a failure on a span.
- *
- * @param span - The span to update
- * @param error - The thrown value
- */
-function fail(span: Span, error: unknown): void {
-  span.recordException(error as Exception);
-  span.setAttribute('error.type', error instanceof Error ? error.name : typeof error);
-  span.setStatus({ code: SpanStatusCode.ERROR, message: error instanceof Error ? error.message : String(error) });
+  return instrument.span(name, { kind: SpanKind.CLIENT, attributes }, fn);
 }

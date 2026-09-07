@@ -31,6 +31,7 @@ vi.mock('env-runner', async (importOriginal) => {
 import {
   createProdExternal,
   createVercubeEnvironment,
+  createVercubeAliasEntries,
   createVercubeResolveAliases,
   DEFAULT_NO_EXTERNAL,
   DEV_NO_EXTERNAL,
@@ -154,6 +155,50 @@ describe('createVercubeResolveAliases', () => {
 
     expect(aliases['@vercube/core']).toContain('packages/core');
     expect(aliases['@vercube/di']).toContain('packages/di');
+  });
+});
+
+describe('createVercubeAliasEntries', () => {
+  const root = resolve(process.cwd(), '../..');
+
+  /**
+   * How Vite resolves `resolve.alias`, copied from `@rollup/plugin-alias`: a
+   * string `find` is a prefix match and the replacement is a `String.replace`.
+   * Replicated here because the bug this guards against is invisible from the
+   * outside - the specifier is silently rewritten into a path that does not
+   * exist - and only shows up as a resolution failure in a consuming app.
+   *
+   * @param entries - The alias entries under test
+   * @param importee - The specifier being imported
+   * @returns The rewritten specifier, or undefined when no entry matched
+   */
+  function resolveAlias(entries: { find: RegExp; replacement: string }[], importee: string): string | undefined {
+    const matched = entries.find((entry) => entry.find.test(importee));
+
+    return matched ? importee.replace(matched.find, matched.replacement) : undefined;
+  }
+
+  it('pins each package root to a single resolved entry', () => {
+    const entries = createVercubeAliasEntries(root);
+
+    expect(resolveAlias(entries, '@vercube/core')).toContain('packages/core');
+    expect(resolveAlias(entries, '@vercube/di')).toContain('packages/di');
+  });
+
+  it('leaves subpath exports alone', () => {
+    const entries = createVercubeAliasEntries(root);
+
+    // A prefix-matching alias would rewrite these to `dist/index.mjs/instrument`
+    // and break every instrumented package.
+    expect(resolveAlias(entries, '@vercube/telemetry/instrument')).toBeUndefined();
+    expect(resolveAlias(entries, '@vercube/telemetry/sdk')).toBeUndefined();
+    expect(resolveAlias(entries, '@vercube/logger/toolkit')).toBeUndefined();
+  });
+
+  it('does not alias a package that only shares a prefix', () => {
+    const entries = createVercubeAliasEntries(root);
+
+    expect(resolveAlias(entries, '@vercube/core-extras')).toBeUndefined();
   });
 });
 

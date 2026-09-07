@@ -20,6 +20,26 @@
       "import": "./dist/index.mjs",
       "default": "./dist/index.mjs"
     },
+    "./api": {
+      "types": "./dist/Api.d.mts",
+      "import": "./dist/Api.mjs",
+      "default": "./dist/Api.mjs"
+    },
+    "./attributes": {
+      "types": "./dist/Attributes.d.mts",
+      "import": "./dist/Attributes.mjs",
+      "default": "./dist/Attributes.mjs"
+    },
+    "./instrument": {
+      "types": "./dist/Instrument.d.mts",
+      "import": "./dist/Instrument.mjs",
+      "default": "./dist/Instrument.mjs"
+    },
+    "./otlp": {
+      "types": "./dist/Otlp.d.mts",
+      "import": "./dist/Otlp.mjs",
+      "default": "./dist/Otlp.mjs"
+    },
     "./sdk": {
       "types": "./dist/Sdk.d.mts",
       "import": "./dist/Sdk.mjs",
@@ -49,17 +69,18 @@
   },
   "dependencies": {
     "@opentelemetry/api": "1.9.1",
+    "@opentelemetry/otlp-transformer": "0.222.0",
+    "@opentelemetry/resources": "2.11.0",
+    "@opentelemetry/sdk-metrics": "2.11.0",
+    "@opentelemetry/sdk-trace-base": "2.11.0",
+    "@opentelemetry/sdk-trace-node": "2.11.0",
     "@vercube/core": "workspace:*",
     "@vercube/di": "workspace:*",
     "@vercube/logger": "workspace:*"
   },
   "peerDependencies": {
     "@opentelemetry/exporter-metrics-otlp-http": "^0.222.0",
-    "@opentelemetry/exporter-trace-otlp-http": "^0.222.0",
-    "@opentelemetry/resources": "^2.11.0",
-    "@opentelemetry/sdk-metrics": "^2.11.0",
-    "@opentelemetry/sdk-trace-base": "^2.11.0",
-    "@opentelemetry/sdk-trace-node": "^2.11.0"
+    "@opentelemetry/exporter-trace-otlp-http": "^0.222.0"
   },
   "peerDependenciesMeta": {
     "@opentelemetry/exporter-metrics-otlp-http": {
@@ -67,28 +88,13 @@
     },
     "@opentelemetry/exporter-trace-otlp-http": {
       "optional": true
-    },
-    "@opentelemetry/resources": {
-      "optional": true
-    },
-    "@opentelemetry/sdk-metrics": {
-      "optional": true
-    },
-    "@opentelemetry/sdk-trace-base": {
-      "optional": true
-    },
-    "@opentelemetry/sdk-trace-node": {
-      "optional": true
     }
   },
   "publishConfig": {
     "access": "public"
   },
   "devDependencies": {
-    "@opentelemetry/exporter-trace-otlp-http": "0.222.0",
-    "@opentelemetry/resources": "2.11.0",
-    "@opentelemetry/sdk-metrics": "2.11.0",
-    "@opentelemetry/sdk-trace-base": "2.11.0",
-    "@opentelemetry/sdk-trace-node": "2.11.0"
+    "@opentelemetry/exporter-metrics-otlp-http": "0.222.0",
+    "@opentelemetry/exporter-trace-otlp-http": "0.222.0"
   }
 }

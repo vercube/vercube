@@ -1,17 +1,21 @@
-import { metrics, trace, ValueType } from '@opentelemetry/api';
 import { UnauthorizedError } from '@vercube/core';
 import { Container, Inject, InjectOptional } from '@vercube/di';
 import { Logger } from '@vercube/logger';
+import { createInstrument, ValueType } from '@vercube/telemetry/instrument';
 import { AuthProvider } from '../Services/AuthProvider';
 import type { AuthTypes } from '../Types/AuthTypes';
-import type { Counter } from '@opentelemetry/api';
 import type { BaseMiddleware, MiddlewareOptions } from '@vercube/core';
 
-/** Instrumentation scope reported for auth signals. */
-const SCOPE = '@vercube/auth';
+/**
+ * Records auth signals.
+ *
+ * The toolkit comes from `@vercube/telemetry/instrument`, which is the only
+ * place in the framework that speaks to OpenTelemetry directly.
+ */
+const instrument = createInstrument('@vercube/auth');
 
-/** Lazily created outcome counter. */
-let outcomes: Counter | undefined;
+/** Attribute carrying how an authentication attempt ended. */
+const AUTH_OUTCOME = 'vercube.auth.outcome';
 
 /**
  * Records the outcome of one authentication attempt.
@@ -25,15 +29,15 @@ let outcomes: Counter | undefined;
  * @returns {void}
  */
 function recordOutcome(outcome: string): void {
-  trace.getActiveSpan()?.addEvent('auth.decision', { 'vercube.auth.outcome': outcome });
+  instrument.activeSpan()?.addEvent('auth.decision', { [AUTH_OUTCOME]: outcome });
 
-  outcomes ??= metrics.getMeter(SCOPE).createCounter('vercube.auth.decisions', {
-    description: 'Authentication decisions by outcome.',
-    unit: '{decision}',
-    valueType: ValueType.INT,
-  });
-
-  outcomes.add(1, { 'vercube.auth.outcome': outcome });
+  instrument
+    .counter('vercube.auth.decisions', {
+      description: 'Authentication decisions by outcome.',
+      unit: '{decision}',
+      valueType: ValueType.INT,
+    })
+    .add(1, { [AUTH_OUTCOME]: outcome });
 }
 
 /**

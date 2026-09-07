@@ -423,9 +423,6 @@ importers:
 
   packages/auth:
     dependencies:
-      '@opentelemetry/api':
-        specifier: 1.9.1
-        version: 1.9.1
       '@vercube/core':
         specifier: workspace:*
         version: link:../core
@@ -435,12 +432,12 @@ importers:
       '@vercube/logger':
         specifier: workspace:*
         version: link:../logger
+      '@vercube/telemetry':
+        specifier: workspace:*
+        version: link:../telemetry
 
   packages/cache:
     dependencies:
-      '@opentelemetry/api':
-        specifier: 1.9.1
-        version: 1.9.1
       '@vercube/di':
         specifier: workspace:*
         version: link:../di
@@ -450,6 +447,9 @@ importers:
       '@vercube/storage':
         specifier: workspace:*
         version: link:../storage
+      '@vercube/telemetry':
+        specifier: workspace:*
+        version: link:../telemetry
       ocache:
         specifier: 'catalog:'
         version: 0.3.0
@@ -460,9 +460,6 @@ importers:
       '@vercube/core':
         specifier: workspace:*
         version: link:../core
-      '@vercube/telemetry':
-        specifier: workspace:*
-        version: link:../telemetry
 
   packages/cli:
     dependencies:
@@ -593,24 +590,6 @@ importers:
 
   packages/devtools:
     dependencies:
-      '@opentelemetry/api':
-        specifier: 1.9.1
-        version: 1.9.1
-      '@opentelemetry/otlp-transformer':
-        specifier: 0.222.0
-        version: 0.222.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/resources':
-        specifier: 2.11.0
-        version: 2.11.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/sdk-metrics':
-        specifier: 2.11.0
-        version: 2.11.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/sdk-trace-base':
-        specifier: 2.11.0
-        version: 2.11.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/sdk-trace-node':
-        specifier: 2.11.0
-        version: 2.11.0(@opentelemetry/api@1.9.1)
       '@vercube/core':
         specifier: workspace:*
         version: link:../core
@@ -683,9 +662,6 @@ importers:
 
   packages/queue:
     dependencies:
-      '@opentelemetry/api':
-        specifier: 1.9.1
-        version: 1.9.1
       '@vercube/core':
         specifier: workspace:*
         version: link:../core
@@ -695,7 +671,6 @@ importers:
       '@vercube/logger':
         specifier: workspace:*
         version: link:../logger
-    devDependencies:
       '@vercube/telemetry':
         specifier: workspace:*
         version: link:../telemetry
@@ -770,16 +745,12 @@ importers:
 
   packages/storage:
     dependencies:
-      '@opentelemetry/api':
-        specifier: 1.9.1
-        version: 1.9.1
       '@vercube/di':
         specifier: workspace:*
         version: link:../di
       '@vercube/logger':
         specifier: workspace:*
         version: link:../logger
-    devDependencies:
       '@vercube/telemetry':
         specifier: workspace:*
         version: link:../telemetry
@@ -793,20 +764,7 @@ importers:
       '@opentelemetry/api':
         specifier: 1.9.1
         version: 1.9.1
-      '@opentelemetry/exporter-metrics-otlp-http':
-        specifier: ^0.222.0
-        version: 0.222.0(@opentelemetry/api@1.9.1)
-      '@vercube/core':
-        specifier: workspace:*
-        version: link:../core
-      '@vercube/di':
-        specifier: workspace:*
-        version: link:../di
-      '@vercube/logger':
-        specifier: workspace:*
-        version: link:../logger
-    devDependencies:
-      '@opentelemetry/exporter-trace-otlp-http':
+      '@opentelemetry/otlp-transformer':
         specifier: 0.222.0
         version: 0.222.0(@opentelemetry/api@1.9.1)
       '@opentelemetry/resources':
@@ -821,6 +779,22 @@ importers:
       '@opentelemetry/sdk-trace-node':
         specifier: 2.11.0
         version: 2.11.0(@opentelemetry/api@1.9.1)
+      '@vercube/core':
+        specifier: workspace:*
+        version: link:../core
+      '@vercube/di':
+        specifier: workspace:*
+        version: link:../di
+      '@vercube/logger':
+        specifier: workspace:*
+        version: link:../logger
+    devDependencies:
+      '@opentelemetry/exporter-metrics-otlp-http':
+        specifier: 0.222.0
+        version: 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/exporter-trace-otlp-http':
+        specifier: 0.222.0
+        version: 0.222.0(@opentelemetry/api@1.9.1)
 
   packages/vite:
     dependencies:
@@ -852,9 +826,6 @@ importers:
 
   packages/ws:
     dependencies:
-      '@opentelemetry/api':
-        specifier: 1.9.1
-        version: 1.9.1
       '@vercube/core':
         specifier: workspace:*
         version: link:../core
@@ -864,6 +835,9 @@ importers:
       '@vercube/logger':
         specifier: workspace:*
         version: link:../logger
+      '@vercube/telemetry':
+        specifier: workspace:*
+        version: link:../telemetry
       crossws:
         specifier: 0.4.12
         version: 0.4.12(srvx@1.0.3)
@@ -904,6 +878,9 @@ importers:
       '@vercube/storage':
         specifier: workspace:*
         version: link:../packages/storage
+      '@vercube/telemetry':
+        specifier: workspace:*
+        version: link:../packages/telemetry
       '@vercube/ws':
         specifier: workspace:*
         version: link:../packages/ws
