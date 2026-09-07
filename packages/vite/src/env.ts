@@ -67,6 +67,43 @@ export function createVercubeResolveAliases(root: string): Record<string, string
   return aliases;
 }
 
+/**
+ * The same canonical entries in the form `resolve.alias` needs.
+ *
+ * A string `find` in Vite's alias config is a **prefix** match: it matches the
+ * bare specifier and anything under it, and the replacement is a plain
+ * `String.replace`. Mapping `'@vercube/telemetry'` to `.../dist/index.mjs`
+ * would therefore rewrite `@vercube/telemetry/instrument` into
+ * `.../dist/index.mjs/instrument`, which resolves to nothing. Every subpath
+ * export in the workspace is affected: `@vercube/telemetry/instrument` is what
+ * six instrumented packages import, and `@vercube/logger/toolkit` is what core
+ * imports.
+ *
+ * An anchored `RegExp` matches the package root and nothing below it, so a
+ * subpath falls through to normal resolution. `$` in the *replacement* is
+ * escaped separately, because `String.replace` reads `$&` and friends as
+ * capture references there.
+ *
+ * @param root - The consuming app's root
+ * @returns Alias entries safe to hand to `resolve.alias`
+ */
+export function createVercubeAliasEntries(root: string): { find: RegExp; replacement: string }[] {
+  return Object.entries(createVercubeResolveAliases(root)).map(([name, entry]) => ({
+    find: new RegExp(`^${escapeRegExp(name)}$`),
+    replacement: entry.replaceAll('$', '$$$$'),
+  }));
+}
+
+/**
+ * Escapes the characters that would otherwise be read as pattern syntax.
+ *
+ * @param value - The literal to match
+ * @returns The escaped literal
+ */
+function escapeRegExp(value: string): string {
+  return value.replaceAll(/[$()*+.?[\\\]^{|}]/g, String.raw`\$&`);
+}
+
 /** @deprecated Use {@link DEFAULT_NO_EXTERNAL}. */
 export const DEV_NO_EXTERNAL = DEFAULT_NO_EXTERNAL;
 

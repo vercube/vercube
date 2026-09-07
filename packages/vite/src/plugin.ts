@@ -1,7 +1,7 @@
 import { defu } from 'defu';
 import { resolve } from 'pathe';
 import { CLIENT_OUT_DIR, createContext, setupContext } from './context';
-import { createVercubeEnvironment, createVercubeResolveAliases, initEnvRunner } from './env';
+import { createVercubeAliasEntries, createVercubeEnvironment, createVercubeResolveAliases, initEnvRunner } from './env';
 import { VERCUBE_ENV } from './types';
 import type { VercubePluginConfig, VercubePluginContext } from './types';
 import type { Plugin } from 'vite';
@@ -54,7 +54,7 @@ function vercubeMain(ctx: VercubePluginContext): Plugin {
       return {
         builder: { sharedConfigBuild: true },
         resolve: {
-          alias: createVercubeResolveAliases(ctx.root),
+          alias: createVercubeAliasEntries(ctx.root),
         },
         environments: {
           client: { build: { outDir: resolve(ctx.root, CLIENT_OUT_DIR) } },
