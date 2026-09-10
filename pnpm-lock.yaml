@@ -153,8 +153,8 @@ catalogs:
       specifier: 8.2.2
       version: 8.2.2
     zod:
-      specifier: 4.5.4
-      version: 4.5.4
+      specifier: 4.6.1
+      version: 4.6.1
 
 importers:
 
@@ -368,7 +368,7 @@ importers:
         version: link:../../packages/queue
       zod:
         specifier: 'catalog:'
-        version: 4.5.4
+        version: 4.6.1
     devDependencies:
       '@vercube/cli':
         specifier: workspace:*
@@ -538,7 +538,7 @@ importers:
         version: 1.2.8
       zod:
         specifier: 'catalog:'
-        version: 4.5.4
+        version: 4.6.1
 
   packages/create-app:
     dependencies:
@@ -701,7 +701,7 @@ importers:
     dependencies:
       '@asteasolutions/zod-to-openapi':
         specifier: 9.1.0
-        version: 9.1.0(zod@4.5.4)
+        version: 9.1.0(zod@4.6.1)
       '@scalar/client-side-rendering':
         specifier: 0.4.0
         version: 0.4.0
@@ -719,7 +719,7 @@ importers:
         version: 6.1.7
       zod:
         specifier: 'catalog:'
-        version: 4.5.4
+        version: 4.6.1
 
   packages/serverless:
     dependencies:
@@ -847,7 +847,7 @@ importers:
     devDependencies:
       zod:
         specifier: 'catalog:'
-        version: 4.5.4
+        version: 4.6.1
 
   playground:
     dependencies:
@@ -895,7 +895,7 @@ importers:
         version: 2.8.1
       zod:
         specifier: 'catalog:'
-        version: 4.5.4
+        version: 4.6.1
     devDependencies:
       '@vercube/cli':
         specifier: workspace:*
@@ -4699,15 +4699,15 @@ packages:
   yuku-parser@0.9.4:
     resolution: {integrity: sha512-VWnoJzdB2g1JjsMEcB2MxSLoDbgISgOiNRsgiR0qrQKiUw2yyzEfYEYkNHSMNhdGkSo7gtmcN+2UOczzGDLAuw==}
 
-  zod@4.5.4:
-    resolution: {integrity: sha512-sC95tT5iHHH9gtpj6A81kh+NEaRAUFN+qlUPDUbRfOMvNf5QCBqsb3WgvnpVtK5Y+4UfA6KqufotuTvMGiTlsA==}
+  zod@4.6.1:
+    resolution: {integrity: sha512-341aRWQsve0rvronKNTqZpjmzdbUDlFuzHaI/XLg/Ej82qffDJRRfBTCuv7+9q/rMjB6LSLyEBnW4InJeMtt/Q==}
 
 snapshots:
 
-  '@asteasolutions/zod-to-openapi@9.1.0(zod@4.5.4)':
+  '@asteasolutions/zod-to-openapi@9.1.0(zod@4.6.1)':
     dependencies:
       openapi3-ts: 4.6.0
-      zod: 4.5.4
+      zod: 4.6.1
 
   '@aws-sdk/checksums@3.1001.0':
     dependencies:
@@ -6112,7 +6112,7 @@ snapshots:
       '@scalar/helpers': 0.11.3
       nanoid: 5.1.16
       type-fest: 5.8.0
-      zod: 4.5.4
+      zod: 4.6.1
 
   '@scalar/validation@0.6.3': {}
 
@@ -8071,4 +8071,4 @@ snapshots:
       '@yuku-parser/binding-win32-arm64': 0.9.4
       '@yuku-parser/binding-win32-x64': 0.9.4
 
-  zod@4.5.4: {}
+  zod@4.6.1: {}
