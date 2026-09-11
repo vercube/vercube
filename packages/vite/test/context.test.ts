@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -30,7 +30,11 @@ describe('createContext', () => {
     expect(ctx.scanDirs).toEqual([]);
     expect(ctx.dev).toBe(true);
     expect(ctx.hasClient).toBe(false);
-    expect(ctx.serverEntry).toContain('node_modules/.vercube/server-entry.mjs');
+    expect(ctx.serverEntry).toMatch(/node_modules\/\.vercube\/server-entry\.[0-9a-f]{8}\.mjs$/);
+  });
+
+  it('keeps the server entry path stable for the same root', () => {
+    expect(createContext({ rootDir: '/app' }).serverEntry).toBe(createContext({ rootDir: '/app' }).serverEntry);
   });
 });
 
@@ -65,5 +69,23 @@ describe('setupContext', () => {
     expect(ctx.hasClient).toBe(false);
     expect(ctx.setupFile).toBe(join(appRoot, 'setup.ts'));
     expect(readFileSync(ctx.serverEntry, 'utf8')).toContain('await __vercubeSetup__(app);');
+  });
+
+  it('does not let a second server reaching the project through another path overwrite the entry', async () => {
+    // A symlink stands in for a container mounting the same checkout at another path.
+    const project = join(baseDir, 'project');
+    const mounted = join(baseDir, 'mounted');
+    mkdirSync(project, { recursive: true });
+    symlinkSync(project, mounted);
+    write('project/src', 'HelloController.ts', `@Controller('/hello') export class HelloController { @Get('/') index() {} }`);
+
+    const host = createContext({});
+    await setupContext(host, { root: project, dev: true });
+    const container = createContext({});
+    await setupContext(container, { root: mounted, dev: true });
+
+    expect(container.serverEntry).not.toBe(host.serverEntry);
+    expect(readFileSync(host.serverEntry, 'utf8')).toContain(join(project, 'src'));
+    expect(readFileSync(host.serverEntry, 'utf8')).not.toContain(mounted);
   });
 });

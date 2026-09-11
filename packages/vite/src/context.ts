@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { scanSource } from '@vercube/scan';
 import { isAbsolute, resolve } from 'pathe';
@@ -5,9 +6,6 @@ import { writeServerEntry } from './entry';
 import type { VercubePluginConfig, VercubePluginContext } from './types';
 
 const DEFAULT_SCAN_DIRS = ['src'];
-
-/** Location of the generated server entry, kept inside node_modules so it stays out of source control and file watchers. */
-const SERVER_ENTRY_REL = 'node_modules/.vercube/server-entry.mjs';
 
 /** Build output directory (relative to root) for the frontend client, served by the built server in production. */
 export const CLIENT_OUT_DIR = 'dist/public';
@@ -25,7 +23,7 @@ export function createContext(pluginConfig: VercubePluginConfig): VercubePluginC
     pluginConfig,
     root,
     scanDirs: [],
-    serverEntry: resolve(root, SERVER_ENTRY_REL),
+    serverEntry: serverEntryPath(root),
     dev: true,
     hasClient: false,
     controllers: [],
@@ -45,7 +43,7 @@ export function createContext(pluginConfig: VercubePluginConfig): VercubePluginC
 export async function setupContext(ctx: VercubePluginContext, options: { root: string; dev: boolean }): Promise<void> {
   ctx.root = ctx.pluginConfig.rootDir ? resolveFrom(options.root, ctx.pluginConfig.rootDir) : options.root;
   ctx.dev = options.dev;
-  ctx.serverEntry = resolve(ctx.root, SERVER_ENTRY_REL);
+  ctx.serverEntry = serverEntryPath(ctx.root);
   // A project with an `index.html` has a frontend Vite serves in dev; the built
   // server then serves it from `CLIENT_OUT_DIR` in production.
   ctx.hasClient = existsSync(resolve(ctx.root, 'index.html'));
@@ -71,6 +69,24 @@ export async function scanProject(ctx: VercubePluginContext): Promise<void> {
   ctx.services = services;
   ctx.middlewares = middlewares;
   writeServerEntry(ctx);
+}
+
+/**
+ * Location of the generated server entry, kept inside node_modules so it stays
+ * out of source control and file watchers.
+ *
+ * The file name carries a hash of the project root. The entry imports discovered
+ * classes by absolute path, so two dev servers reaching one checkout through
+ * different paths (the host and a container with the project mounted at
+ * `/var/www`) would otherwise overwrite each other's entry, and whichever reloads
+ * next would import paths that do not exist on its side.
+ *
+ * @param root - The absolute project root.
+ * @returns The absolute path of the server entry for that root.
+ */
+function serverEntryPath(root: string): string {
+  const hash = createHash('sha256').update(root).digest('hex').slice(0, 8);
+  return resolve(root, `node_modules/.vercube/server-entry.${hash}.mjs`);
 }
 
 /**

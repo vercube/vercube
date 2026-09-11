@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { dirname } from 'pathe';
 import { describe, expect, it } from 'vitest';
 import { generateServerEntry, writeServerEntry } from '../src/entry';
@@ -98,6 +98,8 @@ describe('writeServerEntry', () => {
       writeServerEntry(context);
       expect(existsSync(serverEntry)).toBe(true);
       expect(readFileSync(serverEntry, 'utf8')).toBe(generateServerEntry(context));
+      // written through a renamed temporary file, which must not be left behind
+      expect(readdirSync(dirname(serverEntry)).toSorted()).toEqual(['discovery.json', 'server-entry.mjs']);
     } finally {
       rmSync(dirname(dirname(serverEntry)), { recursive: true, force: true });
     }
