@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'pathe';
 import type { VercubePluginContext } from './types';
 
@@ -106,8 +106,22 @@ export function generateServerEntry(ctx: VercubePluginContext): string {
  */
 export function writeServerEntry(ctx: VercubePluginContext): void {
   mkdirSync(dirname(ctx.serverEntry), { recursive: true });
-  writeFileSync(ctx.serverEntry, generateServerEntry(ctx), 'utf8');
+  writeFileAtomic(ctx.serverEntry, generateServerEntry(ctx));
   writeDiscoveryManifest(ctx);
+}
+
+/**
+ * Writes a file through a temporary sibling that is renamed into place, so a
+ * reader never observes it truncated. The worker can re-import the entry while a
+ * rescan is rewriting it, when files are edited in quick succession.
+ *
+ * @param path - The destination path.
+ * @param content - The file content.
+ */
+function writeFileAtomic(path: string, content: string): void {
+  const tmp = `${path}.${process.pid}.tmp`;
+  writeFileSync(tmp, content, 'utf8');
+  renameSync(tmp, path);
 }
 
 /**
@@ -136,5 +150,5 @@ export function writeDiscoveryManifest(ctx: VercubePluginContext): void {
     })),
   };
 
-  writeFileSync(join(dirname(ctx.serverEntry), 'discovery.json'), `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
+  writeFileAtomic(join(dirname(ctx.serverEntry), 'discovery.json'), `${JSON.stringify(manifest, null, 2)}\n`);
 }
