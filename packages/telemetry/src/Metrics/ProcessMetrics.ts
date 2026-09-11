@@ -4,7 +4,7 @@ import { getHeapStatistics } from 'node:v8';
 import { ValueType } from '@opentelemetry/api';
 import type { Telemetry } from '../Common/Telemetry';
 import type { BatchObservableResult, ObservableGauge } from '@opentelemetry/api';
-import type { EventLoopUtilization, IntervalHistogram } from 'node:perf_hooks';
+import type { ELDHistogram, EventLoopUtilization } from 'node:perf_hooks';
 
 /**
  * Resolution of the event loop delay histogram, in milliseconds.
@@ -154,7 +154,7 @@ class ProcessSampler {
   private fLastElu: EventLoopUtilization | null = null;
 
   /** Event loop delay histogram, reset after every reading. */
-  private fLoop: IntervalHistogram | null = null;
+  private fLoop: ELDHistogram | null = null;
 
   constructor() {
     this.fLastCpu = safely(() => process.cpuUsage());
