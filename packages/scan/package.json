@@ -2,7 +2,7 @@
   "name": "@vercube/scan",
   "version": "1.2.1",
   "description": "Source scanning and AST extraction utilities for the Vercube framework",
-  "packageManager": "pnpm@12.3.4",
+  "packageManager": "pnpm@12.4.1",
   "repository": {
     "type": "git",
     "url": "https://github.com/vercube/vercube.git",
