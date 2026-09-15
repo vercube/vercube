@@ -42,7 +42,7 @@
     "defu": "catalog:"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "6.0.8",
+    "@vitejs/plugin-vue": "6.0.9",
     "vite": "catalog:",
     "vue": "3.5.42"
   },
