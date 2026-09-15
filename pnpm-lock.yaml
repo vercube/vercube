@@ -201,8 +201,8 @@ catalogs:
       specifier: 1.2.8
       version: 1.2.8
     srvx:
-      specifier: 1.0.4
-      version: 1.0.4
+      specifier: 1.0.5
+      version: 1.0.5
     ufo:
       specifier: 1.6.4
       version: 1.6.4
@@ -555,7 +555,7 @@ importers:
         version: 2.0.3
       srvx:
         specifier: 'catalog:'
-        version: 1.0.4
+        version: 1.0.5
       std-env:
         specifier: 4.2.0
         version: 4.2.0
@@ -588,7 +588,7 @@ importers:
         version: 0.9.2
       srvx:
         specifier: 'catalog:'
-        version: 1.0.4
+        version: 1.0.5
     devDependencies:
       rolldown:
         specifier: 'catalog:'
@@ -788,7 +788,7 @@ importers:
         version: link:../di
       srvx:
         specifier: 'catalog:'
-        version: 1.0.4
+        version: 1.0.5
       ufo:
         specifier: 'catalog:'
         version: 1.6.4
@@ -875,7 +875,7 @@ importers:
         version: 0.9.2
       srvx:
         specifier: 'catalog:'
-        version: 1.0.4
+        version: 1.0.5
     devDependencies:
       vite:
         specifier: ^8.2.1
@@ -897,10 +897,10 @@ importers:
         version: link:../telemetry
       crossws:
         specifier: 0.4.12
-        version: 0.4.12(srvx@1.0.4)
+        version: 0.4.12(srvx@1.0.5)
       srvx:
         specifier: 'catalog:'
-        version: 1.0.4
+        version: 1.0.5
     devDependencies:
       zod:
         specifier: 'catalog:'
@@ -2636,6 +2636,11 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@turbo/windows-arm64@2.10.13':
+    resolution: {integrity: sha512-rM+cFO1P8iAHXdasOdMyK9nDk0UGII7VEFLIA8+jwv/+rh48pnVBbF2OSjJDBOw57pxNLIOEDA0JyKcarTBcIw==}
+    cpu: [arm64]
+    os: [win32]
+
   '@tybys/wasm-util@0.10.3':
     resolution: {integrity: sha512-F3fo1MYrRJYL3zER0OUOmkutjr1Vp23m7OsSgp7nq4SP6OqX6C/56XFIPAl5bt3zaBRjmW7SGz3u/6LwFpYcOg==}
 
@@ -4217,11 +4222,6 @@ packages:
 
   srvx@1.0.3:
     resolution: {integrity: sha512-aOuk+yNJA61yA6eJJvQJxpJLIxz090hKMqDGzd35tGsvwaodi1RPuYSFUp5EINaJp7snjVwLkO2RXVMPZBYnnA==}
-    engines: {node: '>=20.16.0'}
-    hasBin: true
-
-  srvx@1.0.4:
-    resolution: {integrity: sha512-eZmYaxUfZSo7/8m8UdsHRJNmTLSCTPPom9d7a60vMmuVeZvwhbvflRR+00/CxTCjMOFa5+H8tgBeNDVZ+w7AAQ==}
     engines: {node: '>=20.16.0'}
     hasBin: true
 
@@ -6151,6 +6151,9 @@ snapshots:
   '@turbo/windows-64@2.10.13':
     optional: true
 
+  '@turbo/windows-arm64@2.10.13':
+    optional: true
+
   '@tybys/wasm-util@0.10.3':
     dependencies:
       tslib: 2.8.1
@@ -6651,10 +6654,6 @@ snapshots:
   crossws@0.4.12(srvx@1.0.3):
     optionalDependencies:
       srvx: 1.0.3
-
-  crossws@0.4.12(srvx@1.0.4):
-    optionalDependencies:
-      srvx: 1.0.4
 
   crossws@0.4.12(srvx@1.0.5):
     optionalDependencies:
@@ -7680,8 +7679,6 @@ snapshots:
 
   srvx@1.0.3: {}
 
-  srvx@1.0.4: {}
-
   srvx@1.0.5: {}
 
   stack-trace@1.0.0-pre2: {}
@@ -7791,6 +7788,7 @@ snapshots:
       '@turbo/linux-64': 2.10.13
       '@turbo/linux-arm64': 2.10.13
       '@turbo/windows-64': 2.10.13
+      '@turbo/windows-arm64': 2.10.13
 
   type-fest@2.19.0: {}
 
