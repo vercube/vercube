@@ -33,7 +33,7 @@
     "consola": "catalog:",
     "defu": "catalog:",
     "dotenv": "17.4.2",
-    "hookable": "6.1.1",
+    "hookable": "6.1.2",
     "oxc-parser": "0.150.0",
     "oxc-transform": "0.150.0",
     "pathe": "catalog:",
