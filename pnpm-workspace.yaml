@@ -17,7 +17,7 @@ catalog:
   env-runner: 0.2.3
   pathe: 2.0.3
   vite: 8.3.0
-  rolldown: 1.2.8
+  rolldown: 1.2.9
   srvx: 1.0.5
   zod: 4.6.5
 
