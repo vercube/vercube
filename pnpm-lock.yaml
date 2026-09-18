@@ -613,7 +613,7 @@ importers:
         version: link:../core
       c12:
         specifier: 'catalog:'
-        version: 4.0.0-rc.1(chokidar@5.0.0)(dotenv@18.0.0)(giget@3.3.1)(jiti@2.7.0)(magicast@0.5.3)
+        version: 4.0.0-rc.1(chokidar@5.0.0)(dotenv@18.0.1)(giget@3.3.1)(jiti@2.7.0)(magicast@0.5.3)
       chokidar:
         specifier: 5.0.0
         version: 5.0.0
@@ -624,8 +624,8 @@ importers:
         specifier: 'catalog:'
         version: 6.1.7
       dotenv:
-        specifier: 18.0.0
-        version: 18.0.0
+        specifier: 18.0.1
+        version: 18.0.1
       hookable:
         specifier: 6.1.2
         version: 6.1.2
@@ -3414,8 +3414,8 @@ packages:
     resolution: {integrity: sha512-nI4U3TottKAcAD9LLud4Cb7b2QztQMUEfHbvhTH09bqXTxnSie8WnjPALV/WMCrJZ6UV/qHJ6L03OqO3LcdYZw==}
     engines: {node: '>=12'}
 
-  dotenv@18.0.0:
-    resolution: {integrity: sha512-16YSUvsKtKbwrTbESvtTSZzzJUug6jdFdqiBFg9Q6Bk1JY9r0hAtrtTiWxdI9YrsgOTmkjZRdgU0n3LnwGpECw==}
+  dotenv@18.0.1:
+    resolution: {integrity: sha512-0eR4m4D/jH5eaI3evo2ZqqMii5mrTCR12v12VChdie6O1gPHs7XAjzTep0CWc1Bd+oNx3vVfbi734dK4zghigw==}
     engines: {node: '>=12'}
     hasBin: true
 
@@ -6819,7 +6819,7 @@ snapshots:
       jiti: 2.7.0
       magicast: 0.5.3
 
-  c12@4.0.0-rc.1(chokidar@5.0.0)(dotenv@18.0.0)(giget@3.3.1)(jiti@2.7.0)(magicast@0.5.3):
+  c12@4.0.0-rc.1(chokidar@5.0.0)(dotenv@18.0.1)(giget@3.3.1)(jiti@2.7.0)(magicast@0.5.3):
     dependencies:
       confbox: 0.3.1
       defu: 6.1.7
@@ -6829,7 +6829,7 @@ snapshots:
       rc9: 3.1.0
     optionalDependencies:
       chokidar: 5.0.0
-      dotenv: 18.0.0
+      dotenv: 18.0.1
       giget: 3.3.1
       jiti: 2.7.0
       magicast: 0.5.3
@@ -6956,7 +6956,7 @@ snapshots:
   dotenv@17.4.2:
     optional: true
 
-  dotenv@18.0.0: {}
+  dotenv@18.0.1: {}
 
   dts-resolver@3.0.0: {}
 
