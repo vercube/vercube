@@ -627,8 +627,8 @@ importers:
         specifier: 17.4.2
         version: 17.4.2
       hookable:
-        specifier: 6.1.1
-        version: 6.1.1
+        specifier: 6.1.2
+        version: 6.1.2
       oxc-parser:
         specifier: 0.150.0
         version: 0.150.0
@@ -3710,6 +3710,9 @@ packages:
 
   hookable@6.1.1:
     resolution: {integrity: sha512-U9LYDy1CwhMCnprUfeAZWZGByVbhd54hwepegYTK7Pi5NvqEj63ifz5z+xukznehT7i6NIZRu89Ay1AZmRsLEQ==}
+
+  hookable@6.1.2:
+    resolution: {integrity: sha512-+abwxtiEA52GCVIsQqut3S/uKTbUwYIp4Pe/vv+6py5XiXBCqMZHg6pA6Y5qhgLSEys0/cYuPbO0z1QFj5ZCmg==}
 
   https-proxy-agent@5.0.1:
     resolution: {integrity: sha512-dFcAjpTQFgoLMzC2VwU+C/CbS7uRL0lWmxDITmqm7C+7F0Odmj6s9l6alZc6AELXhrnggM2CeWSXHGOdX2YtwA==}
@@ -7181,6 +7184,8 @@ snapshots:
       function-bind: 1.1.2
 
   hookable@6.1.1: {}
+
+  hookable@6.1.2: {}
 
   https-proxy-agent@5.0.1(supports-color@7.2.0):
     dependencies:
