@@ -165,8 +165,8 @@ settings:
 catalogs:
   default:
     '@oxc-project/runtime':
-      specifier: 0.150.0
-      version: 0.150.0
+      specifier: 0.151.0
+      version: 0.151.0
     '@standard-schema/spec':
       specifier: 1.1.0
       version: 1.1.0
@@ -228,7 +228,7 @@ importers:
         version: 21.2.3
       '@oxc-project/runtime':
         specifier: 'catalog:'
-        version: 0.150.0
+        version: 0.151.0
       '@types/node':
         specifier: 26.6.2
         version: 26.6.2
@@ -276,7 +276,7 @@ importers:
     dependencies:
       '@oxc-project/runtime':
         specifier: 'catalog:'
-        version: 0.150.0
+        version: 0.151.0
       '@vercube/cli':
         specifier: workspace:*
         version: link:../../packages/cli
@@ -327,7 +327,7 @@ importers:
     dependencies:
       '@oxc-project/runtime':
         specifier: 'catalog:'
-        version: 0.150.0
+        version: 0.151.0
       '@vercube/cli':
         specifier: workspace:*
         version: link:../../packages/cli
@@ -360,7 +360,7 @@ importers:
     dependencies:
       '@oxc-project/runtime':
         specifier: 'catalog:'
-        version: 0.150.0
+        version: 0.151.0
       '@vercube/cli':
         specifier: workspace:*
         version: link:../../packages/cli
@@ -407,7 +407,7 @@ importers:
     dependencies:
       '@oxc-project/runtime':
         specifier: 'catalog:'
-        version: 0.150.0
+        version: 0.151.0
       '@vercube/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -460,7 +460,7 @@ importers:
     dependencies:
       '@oxc-project/runtime':
         specifier: 'catalog:'
-        version: 0.150.0
+        version: 0.151.0
       '@vercube/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -607,7 +607,7 @@ importers:
     dependencies:
       '@oxc-project/runtime':
         specifier: 'catalog:'
-        version: 0.150.0
+        version: 0.151.0
       '@vercube/core':
         specifier: workspace:*
         version: link:../core
@@ -665,7 +665,7 @@ importers:
     devDependencies:
       '@vitejs/plugin-vue':
         specifier: 6.0.9
-        version: 6.0.9(vite@8.3.0(@types/node@26.6.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))(vue@3.5.43(typescript@7.0.2))
+        version: 6.0.9(vite@8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))(vue@3.5.43(typescript@7.0.2))
       vite:
         specifier: 'catalog:'
         version: 8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)
@@ -1695,8 +1695,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@oxc-project/runtime@0.150.0':
-    resolution: {integrity: sha512-vC4tN4n2c+gVq69Oi6CoZxGk/1mYjLiN4hVEYwvtuns/S4QwUBiJYViwLGLxPaLQnsY5FQDgGs+h6moAmSedvA==}
+  '@oxc-project/runtime@0.151.0':
+    resolution: {integrity: sha512-fNuliiqGTseerW2FTbxq6UOQavKL/NvNh9K3peJZZVNi1NbM4Ehscwp3MX9nu+9bfbSfmPUEivF779XQU5exiw==}
     engines: {node: ^20.19.0 || >=22.12.0}
 
   '@oxc-project/types@0.150.0':
@@ -5243,7 +5243,7 @@ snapshots:
   '@oxc-parser/binding-win32-x64-msvc@0.150.0':
     optional: true
 
-  '@oxc-project/runtime@0.150.0': {}
+  '@oxc-project/runtime@0.151.0': {}
 
   '@oxc-project/types@0.150.0': {}
 
@@ -5717,7 +5717,7 @@ snapshots:
       vite: 8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)
       vue: 3.5.42(typescript@7.0.2)
 
-  '@vitejs/plugin-vue@6.0.9(vite@8.3.0(@types/node@26.6.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))(vue@3.5.43(typescript@7.0.2))':
+  '@vitejs/plugin-vue@6.0.9(vite@8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))(vue@3.5.43(typescript@7.0.2))':
     dependencies:
       '@rolldown/pluginutils': 1.0.1
       vite: 8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)
