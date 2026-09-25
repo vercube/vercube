@@ -180,8 +180,8 @@ catalogs:
       specifier: 6.1.7
       version: 6.1.7
     env-runner:
-      specifier: 0.2.3
-      version: 0.2.3
+      specifier: 0.3.0
+      version: 0.3.0
     jiti:
       specifier: 2.7.0
       version: 2.7.0
@@ -866,7 +866,7 @@ importers:
         version: 6.1.7
       env-runner:
         specifier: 'catalog:'
-        version: 0.2.3
+        version: 0.3.0
       pathe:
         specifier: 'catalog:'
         version: 2.0.3
@@ -3368,6 +3368,10 @@ packages:
 
   env-runner@0.2.3:
     resolution: {integrity: sha512-S8EFBKyznRwPVwayK187cYjvnpgC92xy+q0BIF++V965pfjMVVRbQ/HoTYGA/1EHmZ7E68k6Heq+4WnvVhOL5w==}
+    hasBin: true
+
+  env-runner@0.3.0:
+    resolution: {integrity: sha512-w9R/zLUwt8a2LC6GIMs6ehLYFqcvIUzvkrUAixu7xVuzsfX8HBse9gOnoolPvtUUzKTEz8wkFber7fPF1QpsHA==}
     hasBin: true
 
   error-ex@1.3.4:
@@ -6809,6 +6813,13 @@ snapshots:
       httpxy: 0.5.5
       srvx: 1.0.5
 
+  env-runner@0.3.0:
+    dependencies:
+      crossws: 0.4.12(srvx@1.0.5)
+      exsolve: 1.1.1
+      httpxy: 0.5.5
+      srvx: 1.0.5
+
   error-ex@1.3.4:
     dependencies:
       is-arrayish: 0.2.1
@@ -7981,7 +7992,7 @@ snapshots:
       lightningcss: 1.33.0
       picomatch: 4.0.7
       postcss: 8.5.28
-      rolldown: 1.2.10
+      rolldown: 1.2.11
       tinyglobby: 0.2.17
     optionalDependencies:
       '@types/node': 26.6.2
