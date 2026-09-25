@@ -613,7 +613,7 @@ importers:
         version: link:../core
       c12:
         specifier: 'catalog:'
-        version: 4.0.0-rc.2(dotenv@18.0.3)(giget@3.3.1)(jiti@2.7.0)(magicast@0.5.5)
+        version: 4.0.0-rc.2(dotenv@18.0.4)(giget@3.3.1)(jiti@2.7.0)(magicast@0.5.5)
       chokidar:
         specifier: 5.0.0
         version: 5.0.0
@@ -624,8 +624,8 @@ importers:
         specifier: 'catalog:'
         version: 6.1.7
       dotenv:
-        specifier: 18.0.3
-        version: 18.0.3
+        specifier: 18.0.4
+        version: 18.0.4
       hookable:
         specifier: 6.1.2
         version: 6.1.2
@@ -760,8 +760,8 @@ importers:
         specifier: 9.1.0
         version: 9.1.0(zod@4.6.5)
       '@scalar/client-side-rendering':
-        specifier: 0.4.3
-        version: 0.4.3
+        specifier: 0.4.5
+        version: 0.4.5
       '@standard-schema/spec':
         specifier: 'catalog:'
         version: 1.1.0
@@ -942,11 +942,11 @@ importers:
         specifier: workspace:*
         version: link:../packages/ws
       serverless:
-        specifier: 4.42.0
-        version: 4.42.0
+        specifier: 4.43.0
+        version: 4.43.0
       serverless-offline:
         specifier: 14.8.2
-        version: 14.8.2(serverless@4.42.0)
+        version: 14.8.2(serverless@4.43.0)
       tslib:
         specifier: 2.8.1
         version: 2.8.1
@@ -2562,24 +2562,24 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@scalar/client-side-rendering@0.4.3':
-    resolution: {integrity: sha512-a7Hs+YpaT3CEtJcx6pJS/1XMhV/cCGmheYrwuCd51LvrnJLluVqq7ID6F9xWqPnc7Y0E3vs6XZcz+h3exjUFdg==}
+  '@scalar/client-side-rendering@0.4.5':
+    resolution: {integrity: sha512-6dhBKaRecrrk2WyVLxrA8oyTiY+4zzhwf5OUjUyuyQXZHt/751QDf/TvW14p2osEaNELfY/gjtN8meX+UslFQw==}
     engines: {node: '>=22'}
 
-  '@scalar/helpers@0.13.0':
-    resolution: {integrity: sha512-1vB6AZXCQZPb+MApSrso6ss+rbLuiI/vGe+PmiXm8Cnt6B+10JeacDPoPr51EgSwltSfH2hZhJ7hHjW2pSg+bQ==}
+  '@scalar/helpers@0.15.0':
+    resolution: {integrity: sha512-eUnaVQ1EE2YFIVrPOQxVaUiVYZjM6Yg2Oh0yUI87pyI0ilH6jOLA6wIJVWP/AXLv5WnhsfJW33xlZcztozEZ2A==}
     engines: {node: '>=22'}
 
-  '@scalar/schemas@0.11.0':
-    resolution: {integrity: sha512-rtvZSsL7IFcHLB1j0VJIgW2MJ702NPOvlhRoRWU4gDK4rGDRmy58BzXtF7gbKOm8vA8aX24NIMr7itwc1Pp6AQ==}
+  '@scalar/schemas@0.12.1':
+    resolution: {integrity: sha512-D/1h/ek2mCwZFOBHQQ8gqD/pQ6Dz5xwur3s6aCwA71AnDF8/Wh+nwUNyIz+H4iquYIq5AUQD02mRyhUE/nIqtg==}
     engines: {node: '>=22'}
 
-  '@scalar/types@0.21.0':
-    resolution: {integrity: sha512-kl/GSKZ2DynaaP1LxnyXxopgoIYrtUI95cOeG3KYkdGJ6pEn3MJ6PDmWfRQNj3gH/ZRx2UuNIf3jVvtMNrlrKA==}
+  '@scalar/types@0.22.1':
+    resolution: {integrity: sha512-h8/oe1tG1UIPoAKETiOBtYpyoH7GW3mp4Yu3Znl1RWa2iYLWl7ZtnqJ2A+n5s7MvZEDAb33pt4W/eswB3VVr6Q==}
     engines: {node: '>=22'}
 
-  '@scalar/validation@0.6.4':
-    resolution: {integrity: sha512-s93HFX0+N6bLwGjZPKFGVHq/gWiZy1YQkR2+dSflbUdYp+4j2Pg+WDA0gwbFrsOlgtkEjwQbjXtbmBiFTtPYUg==}
+  '@scalar/validation@0.6.5':
+    resolution: {integrity: sha512-t/dtbqesbOLsTusFI2kXfiFEQOiZC7+oAY+jZnE82Y64xLamo/1KrZpta8GkuAfIHyeOHOx5bDFid04eO13MIg==}
     engines: {node: '>=20'}
 
   '@simple-libs/child-process-utils@2.0.0':
@@ -3321,8 +3321,8 @@ packages:
     engines: {node: '>=12'}
     hasBin: true
 
-  dotenv@18.0.3:
-    resolution: {integrity: sha512-/8CJTyL817qPnfbQrJgOEcrU3fDrJkRIoXBE566wHuvIXKOCHUZhPqGPbCPi9SogjdGnreF0TlvnTgK6J/8zpA==}
+  dotenv@18.0.4:
+    resolution: {integrity: sha512-jGt9uI5BIxpVO15kvy+iEFqNAwxYClKWnkptLjSNPnFLC003Imd0ofr3aEVsbpHdSBdSsbcApNIlz4nbyGMwdA==}
     engines: {node: '>=12'}
     hasBin: true
 
@@ -4205,8 +4205,8 @@ packages:
     engines: {node: '>=18.17.0'}
     hasBin: true
 
-  serverless@4.42.0:
-    resolution: {integrity: sha512-auc1KKlWN1VEkA6bljjWIp3NFISnTRnhbRr69P/Z0lF1WJxxHrsUZfeWk9tPxeOWvfjCTjDZU7Nw33dtYw8MJw==}
+  serverless@4.43.0:
+    resolution: {integrity: sha512-ukk3LARQ89Cn2phMyIrwabfy3rx3IoENWKvDY3Cyj4tGJOMv9XAkxgnx8n71jDaG+ijOxBXyPBL72jTkPPju0w==}
     engines: {node: '>=18.17.0'}
     hasBin: true
 
@@ -6098,27 +6098,28 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.63.4':
     optional: true
 
-  '@scalar/client-side-rendering@0.4.3':
+  '@scalar/client-side-rendering@0.4.5':
     dependencies:
-      '@scalar/schemas': 0.11.0
-      '@scalar/types': 0.21.0
-      '@scalar/validation': 0.6.4
+      '@scalar/helpers': 0.15.0
+      '@scalar/schemas': 0.12.1
+      '@scalar/types': 0.22.1
+      '@scalar/validation': 0.6.5
 
-  '@scalar/helpers@0.13.0': {}
+  '@scalar/helpers@0.15.0': {}
 
-  '@scalar/schemas@0.11.0':
+  '@scalar/schemas@0.12.1':
     dependencies:
-      '@scalar/helpers': 0.13.0
-      '@scalar/validation': 0.6.4
+      '@scalar/helpers': 0.15.0
+      '@scalar/validation': 0.6.5
 
-  '@scalar/types@0.21.0':
+  '@scalar/types@0.22.1':
     dependencies:
-      '@scalar/helpers': 0.13.0
+      '@scalar/helpers': 0.15.0
       nanoid: 5.1.16
       type-fest: 5.10.0
       zod: 4.6.5
 
-  '@scalar/validation@0.6.4': {}
+  '@scalar/validation@0.6.5': {}
 
   '@simple-libs/child-process-utils@2.0.0':
     dependencies:
@@ -6644,7 +6645,7 @@ snapshots:
       jiti: 2.7.0
       magicast: 0.5.5
 
-  c12@4.0.0-rc.2(dotenv@18.0.3)(giget@3.3.1)(jiti@2.7.0)(magicast@0.5.5):
+  c12@4.0.0-rc.2(dotenv@18.0.4)(giget@3.3.1)(jiti@2.7.0)(magicast@0.5.5):
     dependencies:
       confbox: 0.3.1
       defu: 6.1.7
@@ -6653,7 +6654,7 @@ snapshots:
       pkg-types: 2.3.3
       rc9: 3.1.0
     optionalDependencies:
-      dotenv: 18.0.3
+      dotenv: 18.0.4
       giget: 3.3.1
       jiti: 2.7.0
       magicast: 0.5.5
@@ -6774,7 +6775,7 @@ snapshots:
   dotenv@18.0.1:
     optional: true
 
-  dotenv@18.0.3: {}
+  dotenv@18.0.4: {}
 
   dts-resolver@3.0.0: {}
 
@@ -7673,7 +7674,7 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  serverless-offline@14.8.2(serverless@4.42.0):
+  serverless-offline@14.8.2(serverless@4.43.0):
     dependencies:
       '@aws-sdk/client-lambda': 3.1136.0
       '@hapi/boom': 10.0.1
@@ -7696,7 +7697,7 @@ snapshots:
       node-fetch: 3.3.2
       node-schedule: 2.1.1
       p-memoize: 7.1.1
-      serverless: 4.42.0
+      serverless: 4.43.0
       tree-kill: 1.2.2
       tsx: 4.23.15
       velocityjs: 2.1.7
@@ -7710,7 +7711,7 @@ snapshots:
     dependencies:
       undici: 6.28.0
 
-  serverless@4.42.0:
+  serverless@4.43.0:
     dependencies:
       undici: 6.28.1
 
