@@ -736,8 +736,8 @@ importers:
         specifier: 2.0.1
         version: 2.0.1
       bullmq:
-        specifier: 6.3.8
-        version: 6.3.8
+        specifier: 6.3.9
+        version: 6.3.9
       kafkajs:
         specifier: 2.2.4
         version: 2.2.4
@@ -3122,8 +3122,8 @@ packages:
   buffer-crc32@0.2.13:
     resolution: {integrity: sha512-VO9Ht/+p3SN7SKWqcrgEzjGbRSJYTx+Q1pTQC0wrWqHx0vpJraQ6GtHx8tvcg1rlK1byhU5gccxgOgj7B0TDkQ==}
 
-  bullmq@6.3.8:
-    resolution: {integrity: sha512-09zcOQ1uycyCK2C9iY2Pm+/JPa/gIXiZqGBUiIlO1v3VshwBgarmAgWRTWDL/IAvI8NFE1zqrkdKFgRfXHHM5A==}
+  bullmq@6.3.9:
+    resolution: {integrity: sha512-wBGk4tHZRFcQayZlC5DPRxg2EFfCqhgkJq0uQ8EvufMgh2hYmPeH8tK+1U4ffimNmnJzTUhwwW1PNUIQMhvSpQ==}
     engines: {node: '>=14.17.0'}
     peerDependencies:
       bullmq-otel: '>=2.0.0'
@@ -6605,7 +6605,7 @@ snapshots:
 
   buffer-crc32@0.2.13: {}
 
-  bullmq@6.3.8:
+  bullmq@6.3.9:
     dependencies:
       cron-parser: 5.10.1
       msgpackr: 2.1.0
@@ -7981,7 +7981,7 @@ snapshots:
       lightningcss: 1.33.0
       picomatch: 4.0.7
       postcss: 8.5.28
-      rolldown: 1.2.10
+      rolldown: 1.2.11
       tinyglobby: 0.2.17
     optionalDependencies:
       '@types/node': 26.6.2
