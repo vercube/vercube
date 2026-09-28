@@ -14,7 +14,7 @@ catalog:
   ohash: 2.0.12
   ufo: 1.6.4
   defu: 6.1.7
-  env-runner: 0.2.3
+  env-runner: 0.3.0
   pathe: 2.0.3
   vite: 8.3.1
   rolldown: 1.2.11
