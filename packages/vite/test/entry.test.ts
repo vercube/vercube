@@ -62,6 +62,18 @@ describe('generateServerEntry', () => {
     expect(code.indexOf('await __vercubeSetup__(app);')).toBeLessThan(code.indexOf('app.container.bind(UserController);'));
   });
 
+  it('passes appConfig to createApp as cfg', () => {
+    const code = generateServerEntry(ctx({ pluginConfig: { appConfig: { requestLogging: false } } }));
+
+    expect(code).toContain('const app = await createApp({ cfg: {"requestLogging":false} });');
+  });
+
+  it('passes appConfig next to the setup hook', () => {
+    const code = generateServerEntry(ctx({ pluginConfig: { appConfig: { logLevel: 'warn' } }, setupFile: '/abs/setup.ts' }));
+
+    expect(code).toContain('const app = await createApp({ cfg: {"logLevel":"warn"}, setup: async (app) => {');
+  });
+
   it('produces a valid empty app when nothing is discovered', () => {
     const code = generateServerEntry(ctx({}));
     expect(code).toContain('const app = await createApp();');

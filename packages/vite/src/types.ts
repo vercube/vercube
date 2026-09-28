@@ -1,3 +1,4 @@
+import type { ConfigTypes } from '@vercube/core';
 import type { MiddlewareInfo, RouteInfo, ServiceInfo } from '@vercube/scan';
 import type { RunnerManager } from 'env-runner';
 
@@ -29,6 +30,19 @@ export interface VercubePluginConfig {
    * cannot infer.
    */
   setupFile?: string;
+
+  /**
+   * App config passed to `createApp({ cfg })` in the generated server entry, so
+   * it is part of the build instead of a `vercube.config` read from the working
+   * directory at runtime. It wins over that file.
+   *
+   * The value is written into the entry as JSON: only plain data survives
+   * (no functions, class instances or plugins).
+   *
+   * @example
+   * vercube({ appConfig: { requestLogging: false } })
+   */
+  appConfig?: ConfigTypes.Config;
 
   /**
    * The runner used to execute server code in the dev environment.

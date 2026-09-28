@@ -5,11 +5,11 @@ import type { VercubePluginContext } from './types';
 /**
  * Generates the source of the server entry module.
  *
- * The module creates a Vercube app, binds every auto-discovered controller and
- * service into its DI container, runs the optional setup file, flushes the
- * container queue (which registers routes via decorator initialization), and
- * exports the app's `fetch` handler. Imports and binds are deduplicated by class
- * name.
+ * The module creates a Vercube app (with the plugin's `appConfig`, if any),
+ * binds every auto-discovered controller and service into its DI container,
+ * runs the optional setup file, flushes the container queue (which registers
+ * routes via decorator initialization), and exports the app's `fetch` handler.
+ * Imports and binds are deduplicated by class name.
  *
  * The entry is written to a real file rather than served as a `\0`-virtual
  * module: Vite resolves bare imports from virtual modules inconsistently with
@@ -65,8 +65,11 @@ export function generateServerEntry(ctx: VercubePluginContext): string {
     );
   }
 
+  const cfg = ctx.pluginConfig.appConfig ? `cfg: ${JSON.stringify(ctx.pluginConfig.appConfig)}` : undefined;
   if (setupBody.length > 0) {
-    lines.push('const app = await createApp({ setup: async (app) => {', ...setupBody, '} });', '');
+    lines.push(`const app = await createApp({ ${cfg ? `${cfg}, ` : ''}setup: async (app) => {`, ...setupBody, '} });', '');
+  } else if (cfg) {
+    lines.push(`const app = await createApp({ ${cfg} });`, '');
   } else {
     lines.push('const app = await createApp();', '');
   }

@@ -73,13 +73,14 @@ node dist/index.mjs   # runs the built server
 
 ## Options
 
-| Option       | Type                   | Default         | Description                                                                                                       |
-| ------------ | ---------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `rootDir`    | `string`               | Vite `root`     | Project root used to resolve `scanDirs` and `setupFile`.                                                          |
-| `scanDirs`   | `string[]`             | `['src']`       | Directories scanned (recursively) for `@Controller` and `@Injectable` classes.                                    |
-| `setupFile`  | `string`               | `undefined`     | Module whose default export `(app: App) => void \| Promise<void>` runs as `createApp`'s setup hook (before init). |
-| `runner`     | `string`               | `'node-worker'` | The `env-runner` runner used to execute server code in dev.                                                       |
-| `noExternal` | `(string \| RegExp)[]` | `undefined`     | Extra package patterns merged after `@vercube/*` for dev and production bundling (see below).                     |
+| Option       | Type                   | Default         | Description                                                                                                                                                                    |
+| ------------ | ---------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `rootDir`    | `string`               | Vite `root`     | Project root used to resolve `scanDirs` and `setupFile`.                                                                                                                       |
+| `scanDirs`   | `string[]`             | `['src']`       | Directories scanned (recursively) for `@Controller` and `@Injectable` classes.                                                                                                 |
+| `setupFile`  | `string`               | `undefined`     | Module whose default export `(app: App) => void \| Promise<void>` runs as `createApp`'s setup hook (before init).                                                              |
+| `appConfig`  | `ConfigTypes.Config`   | `undefined`     | App config passed to `createApp({ cfg })` in the generated entry, so it ships with the build instead of a `vercube.config` read at runtime. Plain data only (written as JSON). |
+| `runner`     | `string`               | `'node-worker'` | The `env-runner` runner used to execute server code in dev.                                                                                                                    |
+| `noExternal` | `(string \| RegExp)[]` | `undefined`     | Extra package patterns merged after `@vercube/*` for dev and production bundling (see below).                                                                                  |
 
 ### `noExternal`
 
