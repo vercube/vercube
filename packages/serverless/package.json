@@ -54,6 +54,6 @@
   },
   "inlinedDependencies": {
     "@azure/functions": "4.16.5",
-    "@types/aws-lambda": "8.10.163"
+    "@types/aws-lambda": "8.10.164"
   }
 }
