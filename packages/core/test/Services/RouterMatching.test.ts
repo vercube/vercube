@@ -1,4 +1,5 @@
 import { Container } from '@vercube/di';
+import { addRoute, createRouter, findRoute } from 'rou3';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { HooksService } from '../../src/Services/Hooks/HooksService';
 import { Router } from '../../src/Services/Router/Router';
@@ -210,33 +211,65 @@ describe('Router matching', () => {
     it.each([
       ['/plain', 'plain'],
       ['/plain/', 'plain'],
-      ['/plain//', 'plain'],
-      ['/users/profile//', 'profile'],
-    ])('should resolve %s to the static route, as rou3 did', (path, handler) => {
-      // rou3 strips one trailing slash and then compares against the `x/`
-      // variants too, so two of them resolve. These routes no longer reach
+      ['/users/profile/', 'profile'],
+    ])('should resolve %s to the static route, as rou3 does', (path, handler) => {
+      // rou3 ignores at most one trailing slash. These routes no longer reach
       // rou3, so the tolerance has to be reproduced here.
       expect(router.match('GET', path)?.data.propertyName).toBe(handler);
     });
 
-    it.each(['/plain///', '/users/profile///', '//plain'])('should not resolve %s, as rou3 did not', (path) => {
+    it.each(['/plain//', '/plain///', '/users/profile//', '//plain'])('should not resolve %s, as rou3 does not', (path) => {
       expect(router.match('GET', path)).toBeUndefined();
     });
 
-    it('should treat the root as accepting one trailing slash less', () => {
-      // The root's own key already ends in a slash, so it stops one earlier
-      // than every other static path.
+    it('should treat the root as accepting no trailing slash', () => {
+      // The root's own key already ends in a slash, so `//` is one too many.
       router.addRoute({ method: 'GET', path: '/', handler: handlerFor('root') });
 
       expect(router.match('GET', '/')?.data.propertyName).toBe('root');
-      expect(router.match('GET', '//')?.data.propertyName).toBe('root');
-      expect(router.match('GET', '///')).toBeUndefined();
+      expect(router.match('GET', '//')).toBeUndefined();
     });
 
-    it('should still tolerate trailing slashes on a parameterised path', () => {
+    it('should tolerate one trailing slash on a parameterised path', () => {
       expect(router.match('GET', '/users/42/')?.params).toEqual({ id: '42' });
-      expect(router.match('GET', '/users/42//')?.params).toEqual({ id: '42' });
+      expect(router.match('GET', '/users/42//')).toBeUndefined();
     });
+
+    it('should hand an empty segment to a parameter', () => {
+      // After the one strip, `/users//` still ends in an empty segment, and
+      // rou3 lets a parameter take it.
+      expect(router.match('GET', '/users//')?.params).toEqual({ id: '' });
+    });
+
+    it.each(['/', '//', '/plain/', '/plain//', '/users/profile/', '/users/profile//', '/users/42//', '/users//', '/opt/'])(
+      'should answer %s the way a plain rou3 router does',
+      (path) => {
+        // Static routes are answered before rou3 is reached, so this pins the
+        // hand-written trailing-slash handling to whatever rou3 itself does.
+        router.addRoute({ method: 'GET', path: '/', handler: handlerFor('root') });
+
+        const reference = createRouter<string>();
+
+        for (const [routePath, name] of [
+          ['/', 'root'],
+          ['/plain', 'plain'],
+          ['/id/:id', 'byId'],
+          ['/users/:id/messages/:messageId', 'message'],
+          ['/users/profile', 'profile'],
+          ['/users/:id', 'user'],
+          ['/files/**', 'files'],
+          ['/opt/:id?', 'optional'],
+        ]) {
+          addRoute(reference, 'GET', routePath, name);
+        }
+
+        const expected = findRoute(reference, 'GET', path);
+        const matched = router.match('GET', path);
+
+        expect(matched?.data.propertyName).toBe(expected?.data);
+        expect(matched?.params).toEqual(expected?.params);
+      },
+    );
 
     it('should agree with a router that keeps every route in one tree', () => {
       // The parameterised router only carries routes with parameters, so this

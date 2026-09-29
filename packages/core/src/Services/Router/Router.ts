@@ -216,31 +216,20 @@ export class Router {
         return staticRoute;
       }
 
-      // rou3 tolerates trailing slashes on a static path: it strips one, then
-      // its generated matcher compares what is left against the `x/` variants
-      // too, so `/users`, `/users/` and `/users//` all resolve while
-      // `/users///` does not. Since static routes no longer reach rou3, that
-      // tolerance has to live here or those paths would stop resolving.
+      // rou3 ignores at most one trailing slash, so `/users` and `/users/`
+      // resolve while `/users//` does not. Since static routes no longer reach
+      // rou3, that tolerance has to live here or `/users/` would stop
+      // resolving.
       //
-      // The root is the exception, because its own key already ends in a
-      // slash: `/` and `//` resolve, `///` does not.
-      let end = pathname.length;
+      // The root's own key already ends in a slash, so it accepts none: `//`
+      // would strip to `/`, and rou3 does not resolve it either.
+      const end = pathname.length - 1;
 
-      while (end > 1 && pathname.codePointAt(end - 1) === 47 /* / */) {
-        end--;
-      }
+      if (end > 0 && pathname.codePointAt(end) === 47 /* / */ && pathname.codePointAt(end - 1) !== 47) {
+        const baseRoute = byPath.get(pathname.slice(0, end));
 
-      const extra = pathname.length - end;
-
-      if (extra > 0) {
-        const base = pathname.slice(0, end);
-
-        if (extra <= (base === '/' ? 1 : 2)) {
-          const baseRoute = byPath.get(base);
-
-          if (baseRoute !== undefined) {
-            return baseRoute;
-          }
+        if (baseRoute !== undefined) {
+          return baseRoute;
         }
       }
     }
