@@ -46,7 +46,7 @@
   },
   "optionalDependencies": {
     "amqplib": "2.1.0",
-    "bullmq": "6.3.9",
+    "bullmq": "6.3.11",
     "kafkajs": "2.2.4"
   },
   "publishConfig": {

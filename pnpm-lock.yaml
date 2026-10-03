@@ -736,8 +736,8 @@ importers:
         specifier: 2.1.0
         version: 2.1.0
       bullmq:
-        specifier: 6.3.9
-        version: 6.3.9
+        specifier: 6.3.11
+        version: 6.3.11
       kafkajs:
         specifier: 2.2.4
         version: 2.2.4
@@ -3128,8 +3128,8 @@ packages:
   buffer-crc32@0.2.13:
     resolution: {integrity: sha512-VO9Ht/+p3SN7SKWqcrgEzjGbRSJYTx+Q1pTQC0wrWqHx0vpJraQ6GtHx8tvcg1rlK1byhU5gccxgOgj7B0TDkQ==}
 
-  bullmq@6.3.9:
-    resolution: {integrity: sha512-wBGk4tHZRFcQayZlC5DPRxg2EFfCqhgkJq0uQ8EvufMgh2hYmPeH8tK+1U4ffimNmnJzTUhwwW1PNUIQMhvSpQ==}
+  bullmq@6.3.11:
+    resolution: {integrity: sha512-ylSY3FYil6E9IjqVtT+WHcZvS1rgTZ0L3Aev62u45NXQFe+H37a1AuC3WDATR7ScNDet1Ah8MnP3lf8XaUbPUw==}
     engines: {node: '>=14.17.0'}
     peerDependencies:
       bullmq-otel: '>=2.0.0'
@@ -6613,7 +6613,7 @@ snapshots:
 
   buffer-crc32@0.2.13: {}
 
-  bullmq@6.3.9:
+  bullmq@6.3.11:
     dependencies:
       cron-parser: 5.10.1
       msgpackr: 2.1.0
