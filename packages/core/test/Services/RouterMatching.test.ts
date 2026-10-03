@@ -235,10 +235,10 @@ describe('Router matching', () => {
       expect(router.match('GET', '/users/42//')).toBeUndefined();
     });
 
-    it('should hand an empty segment to a parameter', () => {
-      // After the one strip, `/users//` still ends in an empty segment, and
-      // rou3 lets a parameter take it.
-      expect(router.match('GET', '/users//')?.params).toEqual({ id: '' });
+    it('should not hand an empty segment to a parameter', () => {
+      // After the one strip, `/users//` still ends in an empty segment. Since
+      // rou3 0.12, a parameter needs a value, so nothing matches.
+      expect(router.match('GET', '/users//')).toBeUndefined();
     });
 
     it.each(['/', '//', '/plain/', '/plain//', '/users/profile/', '/users/profile//', '/users/42//', '/users//', '/opt/'])(
