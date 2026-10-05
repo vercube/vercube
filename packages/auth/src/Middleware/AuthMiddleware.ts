@@ -1,6 +1,5 @@
-import { UnauthorizedError } from '@vercube/core';
-import { Container, Inject, InjectOptional } from '@vercube/di';
-import { Logger } from '@vercube/logger';
+import { InternalServerError, UnauthorizedError } from '@vercube/core';
+import { Container, Inject } from '@vercube/di';
 import { createInstrument, ValueType } from '@vercube/telemetry/instrument';
 import { AuthProvider } from '../Services/AuthProvider';
 import type { AuthTypes } from '../Types/AuthTypes';
@@ -52,12 +51,6 @@ export class AuthMiddleware implements BaseMiddleware<AuthTypes.MiddlewareOption
   @Inject(Container)
   private gContainer!: Container;
 
-  @InjectOptional(Logger)
-  private gLogger!: Logger | null;
-
-  @InjectOptional(AuthProvider)
-  private gAuthProvider!: AuthProvider | null;
-
   /**
    * Middleware function that processes the HTTP event.
    *
@@ -65,22 +58,20 @@ export class AuthMiddleware implements BaseMiddleware<AuthTypes.MiddlewareOption
    * @param {Response} response - The HTTP response to be processed
    * @param {MiddlewareOptions} args - Additional arguments for the middleware
    * @returns {Promise<void>} - A promise that resolves when the processing is complete.
+   * @throws {InternalServerError} - If the auth provider is not registered in the container
+   * @throws {UnauthorizedError} - If authentication fails
    */
   public async onRequest(
     request: Request,
     response: Response,
     args: MiddlewareOptions<AuthTypes.MiddlewareOptions>,
   ): Promise<void> {
-    let provider = this.gAuthProvider;
-
-    if (args?.middlewareArgs?.provider) {
-      provider = this.gContainer.getOptional(args.middlewareArgs.provider);
-    }
+    const providerKey = args?.middlewareArgs?.provider ?? AuthProvider;
+    const provider = this.gContainer.getOptional(providerKey);
 
     if (!provider) {
-      this.gLogger?.warn('AuthMiddleware::AuthProvider is not registered');
       recordOutcome('unconfigured');
-      return;
+      throw new InternalServerError(`AuthMiddleware: auth provider "${providerKey.name}" is not registered in the container`);
     }
 
     const authenticationError = await provider.validate(request, args.middlewareArgs);
