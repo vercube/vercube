@@ -12,6 +12,7 @@ import { TypedRequestContext } from '../Services/TypedRequestContext';
 
 export function useContainer(container: Container): void {
   container.bind(AuthProvider, BasicAuthenticationProvider);
+  container.bind(BasicAuthenticationProvider);
   container.bind(PlaygroundController);
   container.bind(RequestContextController);
   container.bind(QueueController);
