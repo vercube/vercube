@@ -15,6 +15,7 @@ vi.mock('node:fs/promises', () => ({
 }));
 
 vi.mock('node:path', () => ({
+  sep: '/',
   normalize: vi.fn((path: string) => path),
   join: vi.fn((...paths: string[]) => paths.join('/')),
   extname: vi.fn((path: string) => {
