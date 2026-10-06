@@ -1,6 +1,6 @@
 import { createReadStream } from 'node:fs';
 import { stat as statAsync } from 'node:fs/promises';
-import { extname, join, normalize } from 'node:path';
+import { extname, join, normalize, sep } from 'node:path';
 import { mime } from '../../Utils/Mine';
 import type { ConfigTypes } from '../../Types/ConfigTypes';
 
@@ -50,17 +50,38 @@ export class StaticRequestHandler {
       return;
     }
 
-    const url = new URL(request.url);
-    const path = normalize(url.pathname);
+    let path: string;
 
-    // Remove dirnames and join with root
+    try {
+      path = normalize(decodeURIComponent(new URL(request.url).pathname));
+    } catch {
+      // malformed percent-encoding
+      return;
+    }
+
+    if (path.includes('\0')) {
+      return;
+    }
+
+    // Strip the mount prefix, but only when it is a whole leading path segment
     let relativePath = path;
     for (const dir of dirs) {
-      relativePath = relativePath.replace(dir, '');
+      const prefix = `/${dir.replace(/^\/+|\/+$/g, '')}`;
+
+      if (relativePath === prefix || relativePath.startsWith(`${prefix}/`)) {
+        relativePath = relativePath.slice(prefix.length);
+        break;
+      }
     }
 
     for (const dir of dirs) {
-      const fullPath = join(process.cwd(), dir, relativePath);
+      const root = join(process.cwd(), dir);
+      const fullPath = join(root, relativePath);
+
+      // Never serve anything outside the static directory
+      if (fullPath !== root && !fullPath.startsWith(root.endsWith(sep) ? root : root + sep)) {
+        continue;
+      }
 
       try {
         const stats = await statAsync(fullPath);
