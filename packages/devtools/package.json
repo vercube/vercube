@@ -1,6 +1,6 @@
 {
   "name": "@vercube/devtools",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "Zero-config, self-hosted developer tools for Vercube - DI graph, route explorer, request waterfalls, bootstrap profiler and audits",
   "packageManager": "pnpm@12.9.1",
   "repository": {
