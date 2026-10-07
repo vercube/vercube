@@ -110,9 +110,10 @@ export default defineConfig({
 ```
 
 ```ts
+// src/Boot/Setup.ts
+
 import { StorageManager } from '@vercube/storage';
 import { MemoryStorage } from '@vercube/storage/drivers/MemoryStorage';
-// src/Boot/Setup.ts
 import type { App } from '@vercube/core';
 
 export default async function setup(app: App) {
