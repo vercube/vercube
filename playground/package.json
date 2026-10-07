@@ -28,7 +28,7 @@
     "@vercube/telemetry": "workspace:*",
     "@vercube/ws": "workspace:*",
     "serverless": "4.43.0",
-    "serverless-offline": "14.8.2",
+    "serverless-offline": "14.8.3",
     "tslib": "2.8.1",
     "zod": "catalog:"
   }
