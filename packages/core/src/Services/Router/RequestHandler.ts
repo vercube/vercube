@@ -25,6 +25,17 @@ export interface RequestHandlerOptions {
 const DEFAULT_CONTENT_TYPE = 'application/json';
 
 /**
+ * Headers every intermediate response starts with.
+ *
+ * The single source for both {@link RequestHandler.createInitialResponse} and
+ * `mergeResponseHeaders`, which skips a header while it still holds its initial
+ * value - nobody set it on purpose. Keys are lowercase, as `Headers` yields them.
+ */
+const INITIAL_RESPONSE_HEADERS: Readonly<Record<string, string>> = Object.freeze({
+  'content-type': DEFAULT_CONTENT_TYPE,
+});
+
+/**
  * Shared response init for JSON-serialized handler results.
  *
  * Reused across requests: `Response` copies the init when it is constructed and
@@ -468,9 +479,10 @@ export class RequestHandler {
         fakeResponse = afterResult.response;
       }
 
-      // 6. If handlerResponse is already instance of Response, return it
+      // 6. If handlerResponse is already instance of Response, return it with
+      //    the headers middlewares and actions set on the intermediate response
       if (handlerResponse instanceof Response) {
-        return handlerResponse;
+        return mergeResponseHeaders(handlerResponse, fakeResponse);
       }
 
       // 7. Otherwise prepare new response
@@ -521,7 +533,7 @@ export class RequestHandler {
    * @private
    */
   private createInitialResponse(): Response {
-    return new FastResponse(undefined, { headers: { 'Content-Type': DEFAULT_CONTENT_TYPE } });
+    return new FastResponse(undefined, { headers: INITIAL_RESPONSE_HEADERS });
   }
 
   /**
@@ -783,4 +795,79 @@ function toValues(args: MetadataTypes.Arg[]): unknown[] {
   }
 
   return values;
+}
+
+/**
+ * Copies headers set by middlewares and actions on the intermediate response
+ * onto a response built by the handler itself (a stream, a file, a proxied
+ * response), which would otherwise lose them - CORS headers included.
+ *
+ * Only headers something actually set are copied: the initial headers every
+ * intermediate response starts with (`INITIAL_RESPONSE_HEADERS`) are skipped,
+ * so a file or a stream returned without a type does not turn into
+ * `application/json`.
+ *
+ * The handler wins: a header it already set is kept. `Set-Cookie` is merged
+ * per cookie instead, as cookies from both sides are independent: middleware
+ * cookies are appended, except those the handler set under the same name.
+ *
+ * @param {Response} target - The response returned by the handler
+ * @param {Response} source - The intermediate response
+ * @returns {Response} The target with merged headers, or a copy of it when its headers are immutable
+ */
+function mergeResponseHeaders(target: Response, source: Response): Response {
+  const additions: [string, string][] = [];
+
+  for (const [key, value] of source.headers) {
+    const isInitial = INITIAL_RESPONSE_HEADERS[key] === value;
+
+    if (key !== 'set-cookie' && !isInitial && !target.headers.has(key)) {
+      additions.push([key, value]);
+    }
+  }
+
+  // A cookie the handler set itself wins over a middleware cookie of the same name.
+  const handlerCookies = new Set(target.headers.getSetCookie().map(toCookieName));
+  const cookies = source.headers.getSetCookie().filter((cookie) => !handlerCookies.has(toCookieName(cookie)));
+
+  if (additions.length === 0 && cookies.length === 0) {
+    return target;
+  }
+
+  const apply = (response: Response): Response => {
+    for (const [key, value] of additions) {
+      response.headers.set(key, value);
+    }
+
+    for (const cookie of cookies) {
+      response.headers.append('set-cookie', cookie);
+    }
+
+    return response;
+  };
+
+  try {
+    return apply(target);
+  } catch {
+    // Immutable headers (e.g. a response from `fetch()`) throw on the first
+    // write, so nothing was applied yet - re-wrap the same body in a new response.
+    return apply(
+      new FastResponse(target.body, {
+        status: target.status,
+        statusText: target.statusText,
+        headers: target.headers,
+      }),
+    );
+  }
+}
+
+/**
+ * Extracts the name from a `Set-Cookie` header value.
+ *
+ * @param {string} cookie - The header value, e.g. `session=abc; HttpOnly`
+ * @returns {string} The cookie name, e.g. `session`
+ */
+function toCookieName(cookie: string): string {
+  const index = cookie.indexOf('=');
+  return (index === -1 ? cookie : cookie.slice(0, index)).trim();
 }
