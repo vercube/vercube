@@ -4,10 +4,12 @@ import { Logger } from '@vercube/logger';
 import { StorageManager } from '@vercube/storage';
 import { MemoryStorage } from '@vercube/storage/drivers/MemoryStorage';
 import { EmailConsumer } from '../Consumers/EmailConsumer';
+import { EventsController } from '../Controllers/EventsController';
 import PlaygroundController from '../Controllers/PlaygroundController';
 import { QueueController } from '../Controllers/QueueController';
 import { RequestContextController } from '../Controllers/RequestContextController';
 import { BasicAuthenticationProvider } from '../Services/BasicAuthenticationProvider';
+import { EventsService } from '../Services/EventsService';
 import { TypedRequestContext } from '../Services/TypedRequestContext';
 
 export function useContainer(container: Container): void {
@@ -16,6 +18,8 @@ export function useContainer(container: Container): void {
   container.bind(PlaygroundController);
   container.bind(RequestContextController);
   container.bind(QueueController);
+  container.bind(EventsController);
+  container.bind(EventsService);
   container.bind(EmailConsumer);
   container.bindTransient(TypedRequestContext);
 
