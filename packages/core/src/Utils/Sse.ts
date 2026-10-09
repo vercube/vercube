@@ -165,11 +165,29 @@ async function formatFirst(iterator: AsyncIterator<unknown> | Iterator<unknown>)
     return formatSseMessage(value as SseMessage);
   } catch (error) {
     // The source is paused at its first `yield`; close it so `finally` runs.
-    Promise.resolve()
-      .then(() => iterator.return?.())
-      .catch(() => {});
+    closeIterator(iterator);
     throw error;
   }
+}
+
+/**
+ * Closes the source so `finally` blocks in an async generator run.
+ *
+ * Not awaited: an async generator handles return() only once it reaches its
+ * next `yield`, which may never happen (see `req.signal` in the docs), and
+ * nothing should hang on it.
+ *
+ * @param {AsyncIterator<unknown> | Iterator<unknown>} iterator - The source iterator
+ * @param {(error: unknown) => void} [onError] - Called when return() fails with anything but an AbortError
+ */
+function closeIterator(iterator: AsyncIterator<unknown> | Iterator<unknown>, onError?: (error: unknown) => void): void {
+  Promise.resolve()
+    .then(() => iterator.return?.())
+    .catch((error: unknown) => {
+      if (!isAbortError(error)) {
+        onError?.(error);
+      }
+    });
 }
 
 /**
@@ -207,7 +225,7 @@ export async function createSseResponse(source: SseSource, options: SseOptions =
         heartbeat = setInterval(() => {
           // A full queue means the client is not reading; skip the ping rather
           // than piling them up for as long as the connection stays open.
-          if (!closed && (controller.desiredSize ?? 0) > 0) {
+          if ((controller.desiredSize ?? 0) > 0) {
             controller.enqueue(encoder.encode(': ping\n\n'));
           }
         }, options.heartbeat);
@@ -243,6 +261,9 @@ export async function createSseResponse(source: SseSource, options: SseOptions =
         }
 
         stop();
+        // A message that failed to format leaves the source paused at its
+        // `yield`, and an errored stream never calls cancel(); close it here.
+        closeIterator(iterator);
 
         // A generator that bails out through an AbortSignal (e.g. `req.signal`
         // on disconnect) ends the stream on purpose - it is not a failure.
@@ -258,17 +279,7 @@ export async function createSseResponse(source: SseSource, options: SseOptions =
 
     cancel() {
       stop();
-
-      // Not awaited: an async generator handles return() only once it reaches
-      // its next `yield`, which may never happen (see `req.signal` in the docs),
-      // and the cancellation must not hang on it.
-      Promise.resolve()
-        .then(() => iterator.return?.())
-        .catch((error: unknown) => {
-          if (!isAbortError(error)) {
-            options.onError?.(error);
-          }
-        });
+      closeIterator(iterator, options.onError);
     },
   });
 

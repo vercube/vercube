@@ -20,6 +20,7 @@ import type { App, SseMessage } from '../../../src';
 const finalized = vi.fn();
 const signalFinalized = vi.fn();
 const invalidFinalized = vi.fn();
+const invalidLaterFinalized = vi.fn();
 const logError = vi.fn();
 
 @Controller('/sse')
@@ -75,8 +76,12 @@ class SseController {
 
   @Sse('/invalid-later')
   public async *invalidLater(): AsyncGenerator<any> {
-    yield { data: 'ok' };
-    yield [1, 2];
+    try {
+      yield { data: 'ok' };
+      yield [1, 2];
+    } finally {
+      invalidLaterFinalized();
+    }
   }
 
   @Sse('/passthrough')
@@ -112,6 +117,40 @@ class SseController {
   public async *throwsMidStream(): AsyncGenerator<SseMessage> {
     yield { data: 'first' };
     throw new Error('Boom');
+  }
+
+  @Sse('/empty')
+  public empty(): SseMessage[] {
+    return [];
+  }
+
+  @Sse('/fails-on-close')
+  public async *failsOnClose(): AsyncGenerator<SseMessage> {
+    try {
+      yield { data: 'first' };
+      yield { data: 'second' };
+    } finally {
+      // oxlint-disable-next-line no-unsafe-finally
+      throw new Error('Cleanup failed');
+    }
+  }
+
+  @Sse('/aborts-on-close')
+  public async *abortsOnClose(): AsyncGenerator<SseMessage> {
+    try {
+      yield { data: 'first' };
+      yield { data: 'second' };
+    } finally {
+      // oxlint-disable-next-line no-unsafe-finally
+      throw new DOMException('The operation was aborted', 'AbortError');
+    }
+  }
+
+  @Sse('/throws-after-disconnect')
+  public async *throwsAfterDisconnect(): AsyncGenerator<SseMessage> {
+    yield { data: 'first' };
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    throw new Error('Too late');
   }
 
   @Get('/plain')
@@ -240,6 +279,52 @@ describe('Sse Decorator', () => {
     expect(new TextDecoder().decode((await reader.read()).value)).toBe('data: ok\n\n');
     await expect(reader.read()).rejects.toThrow('got an array');
     expect(logError).toHaveBeenCalledWith('SseController::invalidLater: SSE stream failed', expect.any(TypeError));
+    await vi.waitFor(() => expect(invalidLaterFinalized).toHaveBeenCalledOnce());
+  });
+
+  it('should send an empty stream for a source with no messages', async () => {
+    const response = await fetch('/sse/empty');
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toBe('text/event-stream; charset=utf-8');
+    expect(await response.text()).toBe('');
+  });
+
+  it('should log an error thrown while closing the generator on disconnect', async () => {
+    const response = await fetch('/sse/fails-on-close');
+    const reader = response.body!.getReader();
+
+    await reader.read();
+    await reader.cancel();
+
+    await vi.waitFor(() =>
+      expect(logError).toHaveBeenCalledWith(
+        'SseController::failsOnClose: SSE stream failed',
+        expect.objectContaining({ message: 'Cleanup failed' }),
+      ),
+    );
+  });
+
+  it('should not log an AbortError thrown while closing the generator on disconnect', async () => {
+    const response = await fetch('/sse/aborts-on-close');
+    const reader = response.body!.getReader();
+
+    await reader.read();
+    await reader.cancel();
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    expect(logError).not.toHaveBeenCalledWith(expect.stringContaining('abortsOnClose'), expect.anything());
+  });
+
+  it('should not log an error thrown after the client disconnected', async () => {
+    const response = await fetch('/sse/throws-after-disconnect');
+    const reader = response.body!.getReader();
+
+    await reader.read();
+    await reader.cancel();
+    await new Promise((resolve) => setTimeout(resolve, 40));
+
+    expect(logError).not.toHaveBeenCalledWith(expect.stringContaining('throwsAfterDisconnect'), expect.anything());
   });
 
   it('should not affect regular routes', async () => {
