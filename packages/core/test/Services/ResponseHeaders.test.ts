@@ -1,11 +1,15 @@
-import { beforeAll, describe, expect, it } from 'vitest';
-import { BaseMiddleware, Controller, createApp, Get, Middleware, Response as Res, SetHeader } from '../../src';
+import { createServer } from 'node:http';
+import { gzipSync } from 'node:zlib';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { BaseMiddleware, Controller, createApp, Get, Middleware, Response as Res, SetHeader, UnauthorizedError } from '../../src';
 import type { App } from '../../src';
+import type { AddressInfo } from 'node:net';
 
 class CorsMiddleware extends BaseMiddleware {
   public override onRequest(_request: Request, response: Response): void {
     response.headers.set('access-control-allow-origin', '*');
     response.headers.set('cache-control', 'no-store');
+    response.headers.set('vary', 'Origin');
     response.headers.append('set-cookie', 'session=abc');
     response.headers.append('set-cookie', 'csrf=xyz');
   }
@@ -14,6 +18,17 @@ class CorsMiddleware extends BaseMiddleware {
     response.headers.set('x-after', 'yes');
   }
 }
+
+class DenyMiddleware extends BaseMiddleware {
+  public override onRequest(): Response {
+    return new Response('denied', { status: 403 });
+  }
+}
+
+const upstream = createServer((_request, response) => {
+  response.writeHead(200, { 'content-encoding': 'gzip', 'content-type': 'text/plain' });
+  response.end(gzipSync('proxied'));
+});
 
 @Controller('/headers')
 @Middleware(CorsMiddleware)
@@ -60,21 +75,64 @@ class HeadersController {
   public immutable(): Response {
     return Response.redirect('http://localhost/target', 302);
   }
+
+  @Get('/vary')
+  public vary(): Response {
+    return new Response('raw', { headers: { vary: 'Accept-Encoding' } });
+  }
+
+  @Get('/vary-origin')
+  public varyOrigin(): Response {
+    return new Response('raw', { headers: { vary: 'Accept-Encoding, origin' } });
+  }
+
+  @Get('/proxied')
+  public proxied(): Promise<Response> {
+    return globalThis.fetch(`http://127.0.0.1:${(upstream.address() as AddressInfo).port}`);
+  }
+
+  @Get('/network-error')
+  public networkError(): Response {
+    return Response.error();
+  }
+
+  @Get('/throws')
+  @SetHeader('Content-Type', 'application/pdf')
+  public throws(): Response {
+    throw new UnauthorizedError('nope');
+  }
+}
+
+@Controller('/denied')
+@Middleware(CorsMiddleware)
+@Middleware(DenyMiddleware)
+class DeniedController {
+  @Get('/')
+  public denied(): unknown {
+    return { ok: true };
+  }
 }
 
 describe('Headers of handler-built responses', () => {
   let app: App;
 
   beforeAll(async () => {
+    await new Promise<void>((resolve) => upstream.listen(0, '127.0.0.1', resolve));
+
     app = await createApp({
       cfg: { requestLogging: false, requestContext: false },
       setup: (instance) => {
         instance.container.bind(HeadersController);
+        instance.container.bind(DeniedController);
       },
     });
   });
 
-  const fetch = (path: string) => app.fetch(new globalThis.Request(`http://localhost/headers${path}`));
+  afterAll(() => {
+    upstream.close();
+  });
+
+  const fetch = (path: string, prefix = '/headers') => app.fetch(new globalThis.Request(`http://localhost${prefix}${path}`));
 
   it('should copy middleware, action and onResponse headers onto a returned Response', async () => {
     const response = await fetch('/raw');
@@ -143,5 +201,50 @@ describe('Headers of handler-built responses', () => {
     expect(response.headers.get('access-control-allow-origin')).toBe('*');
     expect(response.headers.get('content-type')).toBe('application/json');
     expect(await response.json()).toEqual({ ok: true });
+  });
+
+  it('should merge the Vary header of the handler and of middlewares', async () => {
+    const response = await fetch('/vary');
+
+    expect(response.headers.get('vary')).toBe('Accept-Encoding, Origin');
+  });
+
+  it('should not repeat a Vary token the handler already varies on', async () => {
+    const response = await fetch('/vary-origin');
+
+    expect(response.headers.get('vary')).toBe('Accept-Encoding, origin');
+  });
+
+  it('should drop the stale encoding of a fetched response', async () => {
+    const response = await fetch('/proxied');
+
+    expect(response.headers.get('content-encoding')).toBeNull();
+    expect(response.headers.get('content-length')).toBeNull();
+    expect(response.headers.get('content-type')).toBe('text/plain');
+    expect(response.headers.get('access-control-allow-origin')).toBe('*');
+    expect(await response.text()).toBe('proxied');
+  });
+
+  it('should return a network error response untouched', async () => {
+    const response = await fetch('/network-error');
+
+    expect(response.type).toBe('error');
+  });
+
+  it('should copy middleware headers onto an error response, except those describing the body', async () => {
+    const response = await fetch('/throws');
+
+    expect(response.status).toBe(401);
+    expect(response.headers.get('access-control-allow-origin')).toBe('*');
+    expect(response.headers.getSetCookie()).toEqual(['session=abc', 'csrf=xyz']);
+    expect(response.headers.get('content-type')).not.toBe('application/pdf');
+  });
+
+  it('should copy middleware headers onto a response a middleware ended the request with', async () => {
+    const response = await fetch('/', '/denied');
+
+    expect(response.status).toBe(403);
+    expect(response.headers.get('access-control-allow-origin')).toBe('*');
+    expect(await response.text()).toBe('denied');
   });
 });
