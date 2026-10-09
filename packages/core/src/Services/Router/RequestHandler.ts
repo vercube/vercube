@@ -25,6 +25,32 @@ export interface RequestHandlerOptions {
 const DEFAULT_CONTENT_TYPE = 'application/json';
 
 /**
+ * Headers every intermediate response starts with.
+ *
+ * The single source for both {@link RequestHandler.createInitialResponse} and
+ * `mergeResponseHeaders`, which skips a header while it still holds its initial
+ * value - nobody set it on purpose. Keys are lowercase, as `Headers` yields them.
+ */
+const INITIAL_RESPONSE_HEADERS: Readonly<Record<string, string>> = Object.freeze({
+  'content-type': DEFAULT_CONTENT_TYPE,
+});
+
+/**
+ * Headers describing a response body rather than the response.
+ *
+ * Not copied onto an error response or one a middleware ended the request with:
+ * those carry their own body, which a `Content-Type` set for the handler's one
+ * would mislabel.
+ */
+const REPRESENTATION_HEADERS: ReadonlySet<string> = new Set([
+  'content-type',
+  'content-encoding',
+  'content-length',
+  'content-range',
+  'content-disposition',
+]);
+
+/**
  * Shared response init for JSON-serialized handler results.
  *
  * Reused across requests: `Response` copies the init when it is constructed and
@@ -220,7 +246,7 @@ export class RequestHandler {
       });
 
       if (result.earlyReturn) {
-        return result.earlyReturn;
+        return mergeResponseHeaders(result.earlyReturn, result.response, false);
       }
 
       return this.createFinalResponse(result.response, null, 204, 'No Content');
@@ -399,6 +425,9 @@ export class RequestHandler {
     request: Request,
     route: RouterTypes.RouteMatched<RouterTypes.RouterHandler>,
   ): Promise<Response> {
+    // Outside the try, so an error response still gets the headers set so far.
+    let fakeResponse = this.createInitialResponse();
+
     try {
       const {
         instance,
@@ -408,7 +437,6 @@ export class RequestHandler {
         middlewares = { beforeMiddlewares: [], afterMiddlewares: [] },
         cloneBody = true,
       } = route.data;
-      let fakeResponse = this.createInitialResponse();
 
       // 1. Resolve all args
       const resolvedArgs =
@@ -433,7 +461,7 @@ export class RequestHandler {
           executeResponse: false,
         });
         if (beforeResult.earlyReturn) {
-          return beforeResult.earlyReturn;
+          return mergeResponseHeaders(beforeResult.earlyReturn, beforeResult.response, false);
         }
         fakeResponse = beforeResult.response;
       }
@@ -463,20 +491,21 @@ export class RequestHandler {
           executeResponse: true,
         });
         if (afterResult.earlyReturn) {
-          return afterResult.earlyReturn;
+          return mergeResponseHeaders(afterResult.earlyReturn, afterResult.response, false);
         }
         fakeResponse = afterResult.response;
       }
 
-      // 6. If handlerResponse is already instance of Response, return it
+      // 6. If handlerResponse is already instance of Response, return it with
+      //    the headers middlewares and actions set on the intermediate response
       if (handlerResponse instanceof Response) {
-        return handlerResponse;
+        return mergeResponseHeaders(handlerResponse, fakeResponse);
       }
 
       // 7. Otherwise prepare new response
       return this.createFinalResponse(fakeResponse, handlerResponse, 200, 'OK');
     } catch (error) {
-      return await this.handleError(error);
+      return mergeResponseHeaders(await this.handleError(error), fakeResponse, false);
     }
   }
 
@@ -521,7 +550,7 @@ export class RequestHandler {
    * @private
    */
   private createInitialResponse(): Response {
-    return new FastResponse(undefined, { headers: { 'Content-Type': DEFAULT_CONTENT_TYPE } });
+    return new FastResponse(undefined, { headers: INITIAL_RESPONSE_HEADERS });
   }
 
   /**
@@ -783,4 +812,151 @@ function toValues(args: MetadataTypes.Arg[]): unknown[] {
   }
 
   return values;
+}
+
+/**
+ * Copies headers set by middlewares and actions on the intermediate response
+ * onto a response built elsewhere - by the handler (a stream, a file, a proxied
+ * response), by a middleware that ended the request early, or by the error
+ * handler - which would otherwise lose them, CORS headers included.
+ *
+ * Only headers something actually set are copied: the initial headers every
+ * intermediate response starts with (`INITIAL_RESPONSE_HEADERS`) are skipped,
+ * so a file or a stream returned without a type does not turn into
+ * `application/json`.
+ *
+ * The target wins: a header it already set is kept. Two headers are merged
+ * instead, as both sides contribute independent values to them: `Set-Cookie`
+ * per cookie (except those the target set under the same name) and `Vary` per
+ * token, so a CORS `Vary: Origin` survives a handler that varies on something else.
+ *
+ * @param {Response} target - The response that is going to be sent
+ * @param {Response} source - The intermediate response
+ * @param {boolean} [ownsBody] - Whether the headers describing the body of the intermediate response
+ *   (`REPRESENTATION_HEADERS`) apply to the target; false for responses the framework did not ask for,
+ *   such as an error response, so a `@SetHeader('Content-Type', ...)` meant for the handler does not mislabel them
+ * @returns {Response} The target with merged headers, or a copy of it when its headers are immutable
+ */
+function mergeResponseHeaders(target: Response, source: Response, ownsBody: boolean = true): Response {
+  // `Response.error()` is a network error - it has no headers to merge into.
+  if (target.type === 'error') {
+    return target;
+  }
+
+  const additions: [string, string][] = [];
+
+  for (const [key, value] of source.headers) {
+    if (key === 'set-cookie' || INITIAL_RESPONSE_HEADERS[key] === value) {
+      continue;
+    }
+
+    if (!ownsBody && REPRESENTATION_HEADERS.has(key)) {
+      continue;
+    }
+
+    const current = target.headers.get(key);
+
+    if (current === null) {
+      additions.push([key, value]);
+    } else if (key === 'vary') {
+      const merged = mergeVary(current, value);
+
+      if (merged !== current) {
+        additions.push([key, merged]);
+      }
+    }
+  }
+
+  // A cookie the target set itself wins over a middleware cookie of the same name.
+  const targetCookies = new Set(target.headers.getSetCookie().map(toCookieName));
+  const cookies = source.headers.getSetCookie().filter((cookie) => !targetCookies.has(toCookieName(cookie)));
+
+  // A response from `fetch()` carries an already decoded body, but still the
+  // encoding and length of the original one - sent as is, the client would
+  // try to decode it again.
+  const fetched = target.type === 'basic' || target.type === 'cors';
+  const decoded = fetched && target.headers.has('content-encoding');
+
+  if (additions.length === 0 && cookies.length === 0 && !decoded) {
+    return target;
+  }
+
+  const apply = (response: Response): Response => {
+    for (const [key, value] of additions) {
+      response.headers.set(key, value);
+    }
+
+    for (const cookie of cookies) {
+      response.headers.append('set-cookie', cookie);
+    }
+
+    return response;
+  };
+
+  // Headers of a fetched response are always immutable, so only try to write
+  // to the others.
+  if (!fetched) {
+    try {
+      return apply(target);
+    } catch (error) {
+      // Immutable headers (e.g. `Response.redirect()`) throw a TypeError on the
+      // first write, so nothing was applied yet - anything else is a real error.
+      if (!(error instanceof TypeError)) {
+        throw error;
+      }
+    }
+  }
+
+  // Re-wrap the same body in a new response, whose headers are writable.
+  const headers = new Headers(target.headers);
+
+  if (fetched) {
+    headers.delete('content-encoding');
+    headers.delete('content-length');
+  }
+
+  return apply(
+    new FastResponse(target.body, {
+      status: target.status,
+      statusText: target.statusText,
+      headers,
+    }),
+  );
+}
+
+/**
+ * Merges two `Vary` header values, keeping each token once.
+ *
+ * @param {string} target - The value of the response being sent
+ * @param {string} source - The value set on the intermediate response
+ * @returns {string} The merged value, `*` when either side varies on everything
+ */
+function mergeVary(target: string, source: string): string {
+  const tokens = target
+    .split(',')
+    .map((token) => token.trim())
+    .filter(Boolean);
+  const seen = new Set(tokens.map((token) => token.toLowerCase()));
+
+  for (const raw of source.split(',')) {
+    const token = raw.trim();
+
+    if (token && !seen.has(token.toLowerCase())) {
+      seen.add(token.toLowerCase());
+      tokens.push(token);
+    }
+  }
+
+  return seen.has('*') ? '*' : tokens.join(', ');
+}
+
+/**
+ * Extracts the name from a `Set-Cookie` header value.
+ *
+ * @param {string} cookie - The header value, e.g. `session=abc; HttpOnly`
+ * @returns {string} The cookie name, e.g. `session`
+ */
+function toCookieName(cookie: string): string {
+  const index = cookie.indexOf('=');
+  return (index === -1 ? cookie : cookie.slice(0, index)).trim();
 }
