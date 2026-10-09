@@ -534,7 +534,7 @@ importers:
         version: link:../logger
       c12:
         specifier: 'catalog:'
-        version: 4.0.0-rc.2(dotenv@18.0.6)(giget@3.3.1)(jiti@2.7.0)(magicast@0.5.5)
+        version: 4.0.0-rc.2(dotenv@18.0.7)(giget@3.3.1)(jiti@2.7.0)(magicast@0.5.5)
       citty:
         specifier: 0.2.2
         version: 0.2.2
@@ -576,7 +576,7 @@ importers:
         version: link:../logger
       c12:
         specifier: 'catalog:'
-        version: 4.0.0-rc.2(dotenv@18.0.6)(giget@3.3.1)(jiti@2.7.0)(magicast@0.5.5)
+        version: 4.0.0-rc.2(dotenv@18.0.7)(giget@3.3.1)(jiti@2.7.0)(magicast@0.5.5)
       defu:
         specifier: 'catalog:'
         version: 6.1.7
@@ -613,7 +613,7 @@ importers:
         version: link:../core
       c12:
         specifier: 'catalog:'
-        version: 4.0.0-rc.2(dotenv@18.0.6)(giget@3.3.1)(jiti@2.7.0)(magicast@0.5.5)
+        version: 4.0.0-rc.2(dotenv@18.0.7)(giget@3.3.1)(jiti@2.7.0)(magicast@0.5.5)
       chokidar:
         specifier: 5.0.0
         version: 5.0.0
@@ -624,8 +624,8 @@ importers:
         specifier: 'catalog:'
         version: 6.1.7
       dotenv:
-        specifier: 18.0.6
-        version: 18.0.6
+        specifier: 18.0.7
+        version: 18.0.7
       hookable:
         specifier: 6.1.2
         version: 6.1.2
@@ -3357,8 +3357,8 @@ packages:
     resolution: {integrity: sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==}
     engines: {node: '>=8'}
 
-  dotenv@18.0.6:
-    resolution: {integrity: sha512-ZMVmohV6CvAJtj++pZNyggluUt6hbRdQAxc2+Z635RL6/AG/ruXv5lHnybUFoxMPL/yrTL/tsF4paZu2l7RA6Q==}
+  dotenv@18.0.7:
+    resolution: {integrity: sha512-QEvMEF8ca3GNZJJnAbOgxpj5ULhBvnMcURp+XKrtvqFNPgjBvYoswQ0Jl2cO7JzCjxZjJhr9ZuIEhlrRxMft/Q==}
     engines: {node: '>=12'}
     hasBin: true
 
@@ -6679,7 +6679,7 @@ snapshots:
     dependencies:
       '@types/node': 26.6.2
 
-  c12@4.0.0-rc.2(dotenv@18.0.6)(giget@3.3.1)(jiti@2.7.0)(magicast@0.5.5):
+  c12@4.0.0-rc.2(dotenv@18.0.7)(giget@3.3.1)(jiti@2.7.0)(magicast@0.5.5):
     dependencies:
       confbox: 0.3.1
       defu: 6.1.7
@@ -6688,7 +6688,7 @@ snapshots:
       pkg-types: 2.3.3
       rc9: 3.1.0
     optionalDependencies:
-      dotenv: 18.0.6
+      dotenv: 18.0.7
       giget: 3.3.1
       jiti: 2.7.0
       magicast: 0.5.5
@@ -6810,7 +6810,7 @@ snapshots:
 
   detect-libc@2.1.2: {}
 
-  dotenv@18.0.6: {}
+  dotenv@18.0.7: {}
 
   dts-resolver@3.0.0: {}
 
@@ -8012,7 +8012,7 @@ snapshots:
       esbuild: 0.28.2
       fdir: 6.5.0(picomatch@4.0.7)
       picomatch: 4.0.7
-      postcss: 8.5.28
+      postcss: 8.5.29
       rollup: 4.63.4
       tinyglobby: 0.2.17
     optionalDependencies:
