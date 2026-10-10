@@ -34,7 +34,7 @@
     "@commitlint/cli": "21.2.3",
     "@commitlint/config-conventional": "21.2.3",
     "@oxc-project/runtime": "catalog:",
-    "@types/node": "26.6.4",
+    "@types/node": "26.6.5",
     "@vitest/coverage-v8": "5.0.3",
     "@vitest/ui": "5.0.3",
     "bumpp": "12.3.0",
