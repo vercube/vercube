@@ -238,7 +238,7 @@ describe('RouterParam Resolver', () => {
       expect(result3).toBe('{"tags":["important","urgent"],"priority":"high"}');
     });
 
-    it('should handle parameters with URL-encoded values', () => {
+    it('should decode URL-encoded values', () => {
       const event = createMockEvent({
         query: 'search%20term',
         path: 'users%2F123%2Fprofile',
@@ -249,9 +249,30 @@ describe('RouterParam Resolver', () => {
       const result2 = resolveRouterParam('path', event);
       const result3 = resolveRouterParam('redirect', event);
 
-      expect(result1).toBe('search%20term');
-      expect(result2).toBe('users%2F123%2Fprofile');
-      expect(result3).toBe('https%3A%2F%2Fexample.com%2Fpath%3Fparam%3Dvalue');
+      expect(result1).toBe('search term');
+      expect(result2).toBe('users/123/profile');
+      expect(result3).toBe('https://example.com/path?param=value');
+    });
+
+    it('should decode non-ASCII values', () => {
+      const event = createMockEvent({ city: '%C5%81%C3%B3d%C5%BA' });
+
+      expect(resolveRouterParam('city', event)).toBe('Łódź');
+    });
+
+    it('should keep a plus sign as a literal plus', () => {
+      const event = createMockEvent({ tag: 'c++', encoded: 'a+b%20c' });
+
+      expect(resolveRouterParam('tag', event)).toBe('c++');
+      expect(resolveRouterParam('encoded', event)).toBe('a+b c');
+    });
+
+    it('should keep malformed sequences verbatim', () => {
+      const event = createMockEvent({ percent: '100%', invalid: '%zz', truncated: '%E0%A4%A' });
+
+      expect(resolveRouterParam('percent', event)).toBe('100%');
+      expect(resolveRouterParam('invalid', event)).toBe('%zz');
+      expect(resolveRouterParam('truncated', event)).toBe('%E0%A4%A');
     });
 
     it('should handle parameters with emoji values', () => {

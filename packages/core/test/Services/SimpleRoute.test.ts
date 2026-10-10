@@ -122,6 +122,15 @@ describe('Routes without middlewares', () => {
     await expect(response.json()).resolves.toEqual({ id: '42', name: 'bun' });
   });
 
+  it('should decode route parameters the same way as query parameters', async () => {
+    const response = await app.fetch(
+      new globalThis.Request('http://localhost/simple/sync/promotion%2F%C5%81%C3%B3d%C5%BA?name=%C5%81%C3%B3d%C5%BA'),
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ id: 'promotion/Łódź', name: 'Łódź' });
+  });
+
   it('should resolve a missing query parameter to null', async () => {
     const response = await app.fetch(new globalThis.Request('http://localhost/simple/sync/42'));
 
