@@ -1,3 +1,4 @@
+import { isSameMiddleware } from './MiddlewareUtils';
 import type { MetadataTypes } from '../Types/MetadataTypes';
 
 /**
@@ -62,7 +63,7 @@ export function setMetadataArg(method: MetadataTypes.Method, arg: MetadataTypes.
 
 /**
  * Registers a middleware in the metadata context.
- * Skips duplicates identified by target + middleware class.
+ * Skips duplicates identified by target, middleware class and arguments.
  * @param {MetadataTypes.Ctx} meta - Metadata context to register the middleware in.
  * @param {MetadataTypes.Middleware} middleware - The middleware to register.
  * @param {'first' | 'last'} position - Whether the middleware goes to the front of the list.
@@ -72,9 +73,7 @@ export function addMetadataMiddleware(
   middleware: MetadataTypes.Middleware,
   position: 'first' | 'last' = 'last',
 ): void {
-  const exists = meta.__middlewares.some(
-    (entry) => entry.target === middleware.target && entry.middleware === middleware.middleware,
-  );
+  const exists = meta.__middlewares.some((entry) => entry.target === middleware.target && isSameMiddleware(entry, middleware));
 
   if (exists) {
     return;

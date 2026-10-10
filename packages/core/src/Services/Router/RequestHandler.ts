@@ -1,5 +1,6 @@
 import { Container, Inject } from '@vercube/di';
 import { FastResponse } from '../../Types/CommonTypes';
+import { isSameMiddleware } from '../../Utils/MiddlewareUtils';
 import { skipsGlobalMiddlewares } from '../../Utils/Utils';
 import { ErrorHandlerProvider } from '../ErrorHandler/ErrorHandlerProvider';
 import { MetadataResolver } from '../Metadata/MetadataResolver';
@@ -137,14 +138,15 @@ export class RequestHandler {
     // application-wide middlewares entirely.
     const globalMiddlewares = skipsGlobalMiddlewares(prototype) ? [] : this.gGlobalMiddlewareRegistry.middlewares;
 
+    // The same middleware with different arguments - `@Auth()` on the controller
+    // and `@Auth({ roles: ['admin'] })` on the method - runs once per set of
+    // arguments, so a stricter requirement is never dropped in favour of a looser one.
     const combined = [...middlewares, ...globalMiddlewares];
-    const seen = new Set<MetadataTypes.Middleware['middleware']>();
     const uniqueMiddlewares: MetadataTypes.Middleware[] = [];
     for (const m of combined) {
-      if (seen.has(m.middleware)) {
+      if (uniqueMiddlewares.some((unique) => isSameMiddleware(unique, m))) {
         continue;
       }
-      seen.add(m.middleware);
       uniqueMiddlewares.push(m);
     }
 
