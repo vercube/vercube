@@ -45,6 +45,12 @@ export class ValidationMiddleware implements BaseMiddleware {
       if (result.issues?.length) {
         throw new BadRequestError(`Validation error - ${validator.type}`, result.issues);
       }
+
+      // hand the parsed value to the handler, so coercions, defaults, transforms
+      // and stripped keys take effect - `methodArgs` is a per-request copy
+      if ('value' in result) {
+        validator.resolved = result.value;
+      }
     }
   }
 }
