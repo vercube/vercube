@@ -218,6 +218,44 @@ describe('RequestHandler', () => {
       expect(result.middlewares.beforeMiddlewares).toHaveLength(1); // Should be deduplicated
     });
 
+    it('should keep the same middleware with different args', () => {
+      const method: MetadataTypes.Method = {
+        req: null,
+        res: null,
+        url: '/test',
+        method: 'GET',
+        args: [],
+        actions: [],
+        meta: {},
+      };
+
+      const localMiddlewares: MetadataTypes.Middleware[] = [
+        {
+          target: '__global__',
+          middleware: MockBeforeMiddleware,
+          priority: 1,
+          args: { roles: [] },
+        },
+        {
+          target: 'testMethod',
+          middleware: MockBeforeMiddleware, // Same middleware, stricter args
+          priority: 1,
+          args: { roles: ['admin'] },
+        },
+      ];
+
+      mockMetadataResolver.resolveMethod.mockReturnValue(method);
+      mockMetadataResolver.resolveMiddlewares.mockReturnValue(localMiddlewares);
+      mockGlobalMiddlewareRegistry.middlewares = [];
+
+      const result = requestHandler.prepareHandler({
+        instance: mockInstance,
+        propertyName: 'testMethod',
+      });
+
+      expect(result.middlewares.beforeMiddlewares.map((m) => m.args)).toEqual([{ roles: [] }, { roles: ['admin'] }]);
+    });
+
     it('should sort middlewares by priority', () => {
       const method: MetadataTypes.Method = {
         req: null,
