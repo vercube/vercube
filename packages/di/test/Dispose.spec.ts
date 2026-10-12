@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Container, Destroy, initializeContainer, Inject } from '../src';
+import { Container, Destroy, initializeContainer, Inject, InjectOptional } from '../src';
 
 describe('[Framework][IOC] Container.dispose', () => {
   it('should run @Destroy() hooks last registered first', async () => {
@@ -171,5 +171,65 @@ describe('[Framework][IOC] Container.dispose', () => {
     expect(ran).toBe(true);
     expect(error).toBeInstanceOf(AggregateError);
     expect((error as AggregateError).errors.map((e: Error) => e.message).sort()).toEqual(['async', 'sync']);
+  });
+
+  it('should resolve an optional dependency that was never created as absent during disposal', async () => {
+    let seen: unknown = 'unset';
+
+    class Metrics {}
+
+    class Worker {
+      @InjectOptional(Metrics)
+      metrics!: Metrics | null;
+
+      @Destroy()
+      destroy() {
+        seen = this.metrics;
+      }
+    }
+
+    const container = new Container();
+    container.bind(Worker);
+    initializeContainer(container);
+
+    // bound after the flush, so never constructed
+    container.bind(Metrics);
+
+    await container.dispose();
+
+    expect(seen).toBeNull();
+  });
+
+  it('should refuse a service a hook would construct during disposal, so none is left without its cleanup', async () => {
+    let destroyed = 0;
+
+    class Late {
+      @Destroy()
+      destroy() {
+        destroyed++;
+      }
+    }
+
+    class Early {
+      @Inject(Container)
+      container!: Container;
+
+      @Destroy()
+      destroy() {
+        this.container.get(Late);
+      }
+    }
+
+    const container = new Container();
+    container.bind(Early);
+    initializeContainer(container);
+
+    // bound after the flush, so never constructed
+    container.bind(Late);
+
+    const error = await container.dispose().catch((error_: unknown) => error_);
+
+    expect((error as AggregateError).errors[0].message).toBe('Container - disposed, cannot create [Late]');
+    expect(destroyed).toBe(0);
   });
 });
