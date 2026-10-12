@@ -1,5 +1,5 @@
 import { Pool } from 'pg';
-import { afterAll, describe } from 'vitest';
+import { afterAll, describe, it } from 'vitest';
 import { PostgresStore } from '../../src/Stores/PostgresStore';
 import { runReplicaCheck } from './Replicas';
 import { runStoreContract } from './StoreContract';
@@ -35,6 +35,22 @@ describe.skipIf(!connectionString)('PostgresStore against PostgreSQL', () => {
   const tablePrefix = `vercube_scheduler_test_${crypto.randomUUID().replaceAll('-', '')}`;
 
   runReplicaCheck(async () => ({ store: new PostgresStore(), initOptions: { connectionString, tablePrefix } }));
+
+  it('lets replicas starting together on an empty schema all initialize', async () => {
+    const prefix = `vercube_scheduler_race_${crypto.randomUUID().replaceAll('-', '')}`;
+    const stores = Array.from({ length: 8 }, () => new PostgresStore());
+
+    try {
+      await Promise.all(stores.map((store) => store.initialize({ connectionString, tablePrefix: prefix })));
+    } finally {
+      await Promise.all(stores.map((store) => store.close()));
+
+      const pool = new Pool({ connectionString });
+
+      await pool.query(`DROP TABLE IF EXISTS "${prefix}_locks", "${prefix}_state"`);
+      await pool.end();
+    }
+  });
 
   afterAll(async () => {
     const pool = new Pool({ connectionString });

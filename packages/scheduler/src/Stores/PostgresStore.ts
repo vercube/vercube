@@ -8,9 +8,15 @@ export interface PostgresQueryable {
   /** Runs a parameterized query. */
   query(text: string, values?: unknown[]): Promise<{ rows: any[]; rowCount: number | null }>;
 
+  /** Checks out one connection, used to create the tables under a lock. */
+  connect?(): Promise<PostgresQueryable & { release(): void }>;
+
   /** Closes the pool. */
   end?(): Promise<void>;
 }
+
+/** SQLSTATE codes a concurrent `CREATE TABLE IF NOT EXISTS` can fail with although the table now exists. */
+const ALREADY_CREATED = new Set(['23505', '42P07']);
 
 /** Options of the {@link PostgresStore}. */
 export interface PostgresStoreOptions {
@@ -145,14 +151,46 @@ export class PostgresStore extends SchedulerStore<PostgresStoreOptions | undefin
    * @returns Resolves once both exist
    */
   private async createTables(): Promise<void> {
-    await this.pool.query(
+    // Replicas starting together all try to create the tables, and two
+    // concurrent CREATE TABLE IF NOT EXISTS can still collide in the catalog.
+    // A transaction-scoped advisory lock on one connection lines them up.
+    if (typeof this.pool.connect !== 'function') {
+      await this.createTablesOn(this.pool);
+
+      return;
+    }
+
+    const client = await this.pool.connect();
+
+    try {
+      await client.query('BEGIN');
+      await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [this.fLocks]);
+      await this.createTablesOn(client);
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK').catch(() => undefined);
+
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Creates both tables when they do not exist yet. A pool without `connect()`
+   * cannot be locked, so a collision with another replica creating them at the
+   * same moment is taken for what it is: the table exists.
+   *
+   * @param queryable - Connection or pool to run the statements on
+   * @returns Resolves once both exist
+   */
+  private async createTablesOn(queryable: PostgresQueryable): Promise<void> {
+    const statements = [
       `CREATE TABLE IF NOT EXISTS ${this.fLocks} (
         key        text PRIMARY KEY,
         owner      text NOT NULL,
         expires_at timestamptz NOT NULL
       )`,
-    );
-    await this.pool.query(
       `CREATE TABLE IF NOT EXISTS ${this.fState} (
         job                text PRIMARY KEY,
         last_scheduled_at  timestamptz NOT NULL,
@@ -162,7 +200,17 @@ export class PostgresStore extends SchedulerStore<PostgresStoreOptions | undefin
         last_instance      text NOT NULL,
         last_error         text
       )`,
-    );
+    ];
+
+    for (const statement of statements) {
+      try {
+        await queryable.query(statement);
+      } catch (error) {
+        if (!ALREADY_CREATED.has((error as { code?: string }).code ?? '')) {
+          throw error;
+        }
+      }
+    }
   }
 
   /** @inheritdoc */
