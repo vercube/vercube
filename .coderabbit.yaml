@@ -1,0 +1,7 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+reviews:
+  auto_review:
+    # the default branch is always reviewed, these add stacked pull requests on top of it
+    base_branches:
+      - feat/schedule
+      - feat/scheduler-.*
