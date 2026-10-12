@@ -56,7 +56,7 @@ export class BillingJobs {
 }
 ```
 
-Check out the full [documentation](https://vercube.dev/docs/getting-started)
+Check out the full [documentation](https://vercube.dev/docs/modules/scheduler/overview)
 
 ## 📜 License
 

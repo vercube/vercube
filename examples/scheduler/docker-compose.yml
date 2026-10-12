@@ -1,0 +1,38 @@
+# Two replicas of the same app sharing one Redis.
+#
+#   pnpm build
+#   docker compose up
+#
+# Both replicas log their heartbeat every 30 seconds, but "built the report"
+# shows up once every 10 seconds, from whichever replica claimed the occurrence.
+#
+# The replicas run the app built on the host, with the monorepo mounted so the
+# workspace packages resolve. app-1 is published on localhost:3000, app-2 on
+# localhost:3001.
+services:
+  redis:
+    image: redis:7-alpine
+
+  app-1: &app
+    image: node:24-alpine
+    working_dir: /repo/examples/scheduler
+    command: node dist/index.mjs
+    volumes:
+      - ../..:/repo
+    environment:
+      REDIS_URL: redis://redis:6379
+      HOST: 0.0.0.0
+      HOSTNAME: app-1
+    ports:
+      - '3000:3000'
+    depends_on:
+      - redis
+
+  app-2:
+    <<: *app
+    environment:
+      REDIS_URL: redis://redis:6379
+      HOST: 0.0.0.0
+      HOSTNAME: app-2
+    ports:
+      - '3001:3000'

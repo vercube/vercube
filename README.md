@@ -104,6 +104,7 @@ More examples available in the [examples directory](https://github.com/vercube/v
 | [@vercube/logger](https://www.npmjs.com/package/@vercube/logger)         | Structured wide-event logging via evlog      |
 | [@vercube/storage](https://www.npmjs.com/package/@vercube/storage)       | File storage abstraction layer               |
 | [@vercube/queue](https://www.npmjs.com/package/@vercube/queue)           | Background jobs over BullMQ, RabbitMQ, Kafka |
+| [@vercube/scheduler](https://www.npmjs.com/package/@vercube/scheduler)   | Cron jobs that run once across replicas      |
 | [@vercube/ws](https://www.npmjs.com/package/@vercube/ws)                 | WebSocket support                            |
 | [@vercube/serverless](https://www.npmjs.com/package/@vercube/serverless) | AWS Lambda & Azure Functions adapters        |
 
