@@ -765,6 +765,9 @@ importers:
       '@vercube/logger':
         specifier: workspace:*
         version: link:../logger
+      '@vercube/telemetry':
+        specifier: workspace:*
+        version: link:../telemetry
       croner:
         specifier: 10.0.1
         version: 10.0.1

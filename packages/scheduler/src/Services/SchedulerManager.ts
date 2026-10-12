@@ -1,5 +1,6 @@
 import { Container, Destroy, Init, Inject, InjectOptional } from '@vercube/di';
 import { Logger } from '@vercube/logger';
+import { countRun, recordDuration, recordLag, reportRun, traceRun } from '../Common/Instrument';
 import { SchedulerError } from '../Errors/SchedulerError';
 import { MAX_TIMEOUT, SystemClock } from '../Utils/Clock';
 import { parseDuration } from '../Utils/Duration';
@@ -985,6 +986,49 @@ export class SchedulerManager {
   }
 
   /**
+   * Runs the handler of an occurrence inside its span, and records its
+   * duration and how late it started.
+   *
+   * @param {Registration} registration - Job to run
+   * @param {ResolvedOptions} options - Effective options of the job
+   * @param {object} base - Name, occurrence and schedule of the run
+   * @param {SchedulerTypes.TriggerSource} source - What fired it
+   * @param {Lock | null} lock - Overlap lock held for the run, kept alive by a heartbeat
+   * @param {SchedulerStore<unknown>} [store] - Store to record the state in, for cluster runs
+   * @param {number} [firstAttempt] - Number of the first attempt, which a queue counts itself
+   * @returns {Promise<SchedulerTypes.RunResult>} How the run ended
+   */
+  protected async execute(
+    registration: Registration,
+    options: ResolvedOptions,
+    base: Omit<SchedulerTypes.RunResult, 'outcome'>,
+    source: SchedulerTypes.TriggerSource,
+    lock: Lock | null,
+    store?: SchedulerStore<unknown>,
+    firstAttempt: number = 1,
+  ): Promise<SchedulerTypes.RunResult> {
+    return traceRun(
+      {
+        job: registration.name,
+        scope: options.scope,
+        trigger: source,
+        scheduledAt: base.scheduledAt,
+        instance: this.instanceId,
+      },
+      async (span) => {
+        recordLag(registration.name, this.fClock.now() - base.scheduledAt.getTime());
+
+        const result = await this.runAttempts(registration, options, base, source, lock, store, firstAttempt);
+
+        reportRun(span, result);
+        recordDuration(registration.name, result.outcome, result.durationMs);
+
+        return result;
+      },
+    );
+  }
+
+  /**
    * Runs the handler of an occurrence: timeout, heartbeat, retries, and the
    * state and event recorded afterwards.
    *
@@ -997,7 +1041,7 @@ export class SchedulerManager {
    * @param {number} [firstAttempt] - Number of the first attempt, which a queue counts itself
    * @returns {Promise<SchedulerTypes.RunResult>} How the run ended
    */
-  protected async execute(
+  protected async runAttempts(
     registration: Registration,
     options: ResolvedOptions,
     base: Omit<SchedulerTypes.RunResult, 'outcome'>,
@@ -1355,6 +1399,40 @@ export class SchedulerManager {
     base: Omit<SchedulerTypes.RunResult, 'outcome'>,
     source: SchedulerTypes.TriggerSource,
   ): Promise<SchedulerTypes.RunResult> {
+    // the queue injects the active trace into the job, so the worker's run joins this trace
+    return traceRun(
+      {
+        job: registration.name,
+        scope: this.optionsOf(registration).scope,
+        trigger: source,
+        scheduledAt: base.scheduledAt,
+        instance: this.instanceId,
+      },
+      async (span) => {
+        const result = await this.publishOccurrence(registration, store, base, source);
+
+        reportRun(span, result);
+
+        return result;
+      },
+    );
+  }
+
+  /**
+   * Hands an occurrence to the queue and records how that went.
+   *
+   * @param {Registration} registration - Job to enqueue
+   * @param {SchedulerStore<unknown>} store - Store to record the state in
+   * @param {object} base - Name, occurrence and schedule of the run
+   * @param {SchedulerTypes.TriggerSource} source - What fired it
+   * @returns {Promise<SchedulerTypes.RunResult>} `enqueued`, or `failed` when the queue refused the job
+   */
+  protected async publishOccurrence(
+    registration: Registration,
+    store: SchedulerStore<unknown>,
+    base: Omit<SchedulerTypes.RunResult, 'outcome'>,
+    source: SchedulerTypes.TriggerSource,
+  ): Promise<SchedulerTypes.RunResult> {
     const target = registration.target!;
     const startedAt = this.fClock.now();
     const scheduledAt = base.scheduledAt.getTime();
@@ -1630,6 +1708,8 @@ export class SchedulerManager {
     source: SchedulerTypes.TriggerSource,
   ): T {
     const event: SchedulerTypes.RunEvent = { ...result, trigger: source, instanceId: this.instanceId, at: this.fClock.now() };
+
+    countRun(event.name, event.outcome);
 
     this.fLastRuns.set(event.name, event);
 

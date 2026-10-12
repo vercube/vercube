@@ -15,6 +15,7 @@ import { AuditService } from '../Services/AuditService';
 import { DevtoolsFrameBus } from '../Services/DevtoolsFrameBus';
 import { OverviewCollector } from '../Services/OverviewCollector';
 import { QueueIntrospection } from '../Services/QueueIntrospection';
+import { SchedulerIntrospection } from '../Services/SchedulerIntrospection';
 import { StorageIntrospection } from '../Services/StorageIntrospection';
 import { $DevtoolsAppConfig, $DevtoolsOptions } from '../Symbols/DevtoolsSymbols';
 import { DevtoolsTelemetry, ensureDevtoolsTelemetry } from '../Telemetry/DevtoolsTelemetry';
@@ -148,9 +149,11 @@ export class DevtoolsPlugin extends BasePlugin<DevtoolsTypes.Options> {
     app.container.bind(OverviewCollector);
     app.container.bind(StorageIntrospection);
     app.container.bind(QueueIntrospection);
+    app.container.bind(SchedulerIntrospection);
 
     app.container.get(IntrospectionRegistry).register(app.container.get(StorageIntrospection));
     app.container.get(IntrospectionRegistry).register(app.container.get(QueueIntrospection));
+    app.container.get(IntrospectionRegistry).register(app.container.get(SchedulerIntrospection));
 
     // Both have to happen before the decorators read the metadata: the mount
     // path is baked in at class-definition time, and the middleware chain is

@@ -9,11 +9,12 @@ import OverviewView from './components/OverviewView.vue';
 import QueuesView from './components/QueuesView.vue';
 import RequestsView from './components/RequestsView.vue';
 import RoutesView from './components/RoutesView.vue';
+import SchedulerView from './components/SchedulerView.vue';
 import StorageView from './components/StorageView.vue';
 import VercubeMark from './components/VercubeMark.vue';
 import type { LogEntry, MetricsSample, RequestRecord } from './api';
 
-type TabId = 'overview' | 'requests' | 'logs' | 'storage' | 'queues' | 'routes' | 'graph' | 'config' | 'audit';
+type TabId = 'overview' | 'requests' | 'logs' | 'storage' | 'queues' | 'scheduler' | 'routes' | 'graph' | 'config' | 'audit';
 
 interface Tab {
   id: TabId;
@@ -34,6 +35,7 @@ const groups: { label: string; tabs: Tab[] }[] = [
         icon: 'M4 7c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3Zm0 0v10c0 1.7 3.6 3 8 3s8-1.3 8-3V7M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3',
       },
       { id: 'queues', label: 'Queues', icon: 'M4 6h16M4 12h16M4 18h16M8 3v3m8 12v3' },
+      { id: 'scheduler', label: 'Scheduler', icon: 'M12 4a8 8 0 1 1 0 16 8 8 0 0 1 0-16Zm0 4v4l2.8 2.8' },
     ],
   },
   {
@@ -150,8 +152,9 @@ function onKeydown(event: KeyboardEvent): void {
     return;
   }
 
-  const index = Number.parseInt(event.key, 10) - 1;
-  const tab = flat.value[index];
+  // 1 to 9, then 0 for the tenth tab, like a keyboard's number row
+  const digit = Number.parseInt(event.key, 10);
+  const tab = flat.value[digit === 0 ? 9 : digit - 1];
 
   if (tab) {
     active.value = tab.id;
@@ -159,7 +162,7 @@ function onKeydown(event: KeyboardEvent): void {
 }
 
 function shortcut(id: TabId): number {
-  return flat.value.findIndex((tab) => tab.id === id) + 1;
+  return (flat.value.findIndex((tab) => tab.id === id) + 1) % 10;
 }
 
 const snapshotUrl = computed(() => apiUrl('/api/snapshot'));
@@ -302,6 +305,7 @@ onUnmounted(() => {
       <LogsView v-else-if="active === 'logs'" :live="liveLogs" />
       <StorageView v-else-if="active === 'storage'" />
       <QueuesView v-else-if="active === 'queues'" />
+      <SchedulerView v-else-if="active === 'scheduler'" />
       <ConfigView v-else-if="active === 'config'" :invalidated="invalidated" />
       <RoutesView v-else-if="active === 'routes'" :invalidated="invalidated" />
       <GraphView v-else-if="active === 'graph'" :invalidated="invalidated" />

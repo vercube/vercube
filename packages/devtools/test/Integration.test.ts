@@ -379,4 +379,34 @@ describe('devtools API', () => {
     expect(typeof trace!.seq).toBe('number');
     expect(spansOf(trace!.data).some((span) => span.name === 'GET /demo/ok')).toBe(true);
   });
+
+  it('runs a scheduled job through the scheduler, on POST only', async () => {
+    const triggered: string[] = [];
+
+    class SchedulerManager {
+      public inspect(): unknown {
+        return { started: true, instanceId: 'pod-a', store: null, jobs: [{ name: 'reports.build' }], events: [] };
+      }
+
+      public async trigger(name: string): Promise<unknown> {
+        triggered.push(name);
+
+        return { outcome: 'completed', occurrenceId: `${name}@manual:1`, durationMs: 3 };
+      }
+    }
+
+    const app = await createDevtoolsApp({}, (setup) => {
+      setup.container.bind(SchedulerManager);
+      setup.container.get(SchedulerManager);
+    });
+
+    const response = await devtoolsFetch(app, '/_devtools/api/scheduler/run/reports.build', { method: 'POST' });
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ outcome: 'completed', occurrenceId: 'reports.build@manual:1', durationMs: 3 });
+    expect(triggered).toEqual(['reports.build']);
+
+    expect((await devtoolsFetch(app, '/_devtools/api/scheduler/run/reports.build')).status).toBe(404);
+    expect(triggered).toHaveLength(1);
+  });
 });
