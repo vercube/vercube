@@ -6,6 +6,7 @@ import {
   Middleware,
   NotFoundError,
   Param,
+  Post,
   QueryParam,
   SetHeader,
 } from '@vercube/core';
@@ -18,10 +19,12 @@ import { AuditService } from '../Services/AuditService';
 import { DevtoolsFrameBus } from '../Services/DevtoolsFrameBus';
 import { OverviewCollector } from '../Services/OverviewCollector';
 import { QueueIntrospection } from '../Services/QueueIntrospection';
+import { SchedulerIntrospection } from '../Services/SchedulerIntrospection';
 import { StorageIntrospection } from '../Services/StorageIntrospection';
 import { $DevtoolsOptions } from '../Symbols/DevtoolsSymbols';
 import { DevtoolsTelemetry } from '../Telemetry/DevtoolsTelemetry';
 import type { QueueMessages } from '../Services/QueueIntrospection';
+import type { SchedulerRunResult } from '../Services/SchedulerIntrospection';
 import type { DevtoolsTypes } from '../Types/DevtoolsTypes';
 
 /** Interval between keep-alive frames, in milliseconds. */
@@ -65,6 +68,9 @@ export class DevtoolsController {
 
   @Inject(QueueIntrospection)
   private readonly gQueues!: QueueIntrospection;
+
+  @Inject(SchedulerIntrospection)
+  private readonly gScheduler!: SchedulerIntrospection;
 
   @Inject(DevtoolsFrameBus)
   private readonly gBus!: DevtoolsFrameBus;
@@ -209,6 +215,19 @@ export class DevtoolsController {
     const parsed = Number.isSafeInteger(requested) && requested > 0 ? requested : DEFAULT_MESSAGE_LIMIT;
 
     return this.gQueues.readMessages(queue, strategy || 'default', parsed);
+  }
+
+  /**
+   * Runs a scheduled job now, through the scheduler's normal pipeline, and
+   * answers once it finished. POST, because it changes something.
+   *
+   * @param name - Name of the job
+   * @returns How the run ended, or why it could not start
+   */
+  @Post('/api/scheduler/run/:name')
+  @SetHeader('Cache-Control', 'no-store')
+  public runScheduledJob(@Param('name') name: string): Promise<SchedulerRunResult> {
+    return this.gScheduler.run(name);
   }
 
   /**

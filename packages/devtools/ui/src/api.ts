@@ -2,6 +2,12 @@ import { ref, shallowRef } from 'vue';
 import { decodeLogs, decodeMetrics, decodeSpans, toRequestRecords } from './otlp';
 import type { DevtoolsProtocol } from '../../src/Protocol/Frames';
 import type { QueueDescription, QueueJob, QueueLine, QueueMessages, QueueMount } from '../../src/Services/QueueIntrospection';
+import type {
+  SchedulerDescription,
+  SchedulerJob,
+  SchedulerRun,
+  SchedulerRunResult,
+} from '../../src/Services/SchedulerIntrospection';
 import type { StorageDescription } from '../../src/Services/StorageIntrospection';
 import type { DevtoolsTypes } from '../../src/Types/DevtoolsTypes';
 import type { IntrospectionTypes } from '@vercube/core';
@@ -30,6 +36,10 @@ export type QueueLineInfo = QueueLine;
 export type QueueMountInfo = QueueMount;
 export type QueueJobEvent = QueueJob;
 export type QueueMessageList = QueueMessages;
+export type SchedulerView = SchedulerDescription;
+export type ScheduledJob = SchedulerJob;
+export type ScheduledRun = SchedulerRun;
+export type ScheduledRunResult = SchedulerRunResult;
 
 export const base: string = globalThis.location.pathname.replace(/\/+$/, '') || '/_devtools';
 
@@ -191,6 +201,16 @@ export function queueMessages(queue: string, strategy: string, limit = 20): Prom
   const params = new URLSearchParams({ queue, strategy, limit: String(limit) });
 
   return api<QueueMessageList>(`/api/queues/messages?${params.toString()}`);
+}
+
+/**
+ * Runs a scheduled job now and waits for it to finish.
+ *
+ * @param name - Name of the job
+ * @returns How the run ended, or why it could not start
+ */
+export function runScheduledJob(name: string): Promise<ScheduledRunResult> {
+  return api<ScheduledRunResult>(`/api/scheduler/run/${encodeURIComponent(name)}`, { method: 'POST' });
 }
 
 export interface StreamHandlers {

@@ -43,6 +43,7 @@
     "@vercube/core": "workspace:*",
     "@vercube/di": "workspace:*",
     "@vercube/logger": "workspace:*",
+    "@vercube/telemetry": "workspace:*",
     "croner": "10.0.1"
   },
   "optionalDependencies": {
