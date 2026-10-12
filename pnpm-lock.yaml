@@ -517,6 +517,10 @@ importers:
       '@vercube/telemetry':
         specifier: workspace:*
         version: link:../telemetry
+    devDependencies:
+      '@vercube/testing':
+        specifier: workspace:*
+        version: link:../testing
 
   packages/cache:
     dependencies:
@@ -542,6 +546,9 @@ importers:
       '@vercube/core':
         specifier: workspace:*
         version: link:../core
+      '@vercube/testing':
+        specifier: workspace:*
+        version: link:../testing
 
   packages/cli:
     dependencies:
@@ -759,6 +766,10 @@ importers:
       '@vercube/telemetry':
         specifier: workspace:*
         version: link:../telemetry
+    devDependencies:
+      '@vercube/testing':
+        specifier: workspace:*
+        version: link:../testing
     optionalDependencies:
       amqplib:
         specifier: 2.2.0
@@ -812,6 +823,9 @@ importers:
       '@vercube/queue':
         specifier: workspace:*
         version: link:../queue
+      '@vercube/testing':
+        specifier: workspace:*
+        version: link:../testing
     optionalDependencies:
       ioredis:
         specifier: 6.0.0
@@ -843,6 +857,10 @@ importers:
       zod:
         specifier: 'catalog:'
         version: 4.6.7
+    devDependencies:
+      '@vercube/testing':
+        specifier: workspace:*
+        version: link:../testing
 
   packages/serverless:
     dependencies:
@@ -921,6 +939,9 @@ importers:
 
   packages/testing:
     dependencies:
+      '@vercube/auth':
+        specifier: workspace:^
+        version: link:../auth
       '@vercube/core':
         specifier: workspace:*
         version: link:../core
@@ -931,9 +952,6 @@ importers:
         specifier: workspace:*
         version: link:../logger
     devDependencies:
-      '@vercube/auth':
-        specifier: workspace:*
-        version: link:../auth
       '@vercube/telemetry':
         specifier: workspace:*
         version: link:../telemetry

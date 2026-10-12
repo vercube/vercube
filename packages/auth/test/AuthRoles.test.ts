@@ -1,9 +1,10 @@
-import { Controller, createApp, Get } from '@vercube/core';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { Controller, Get } from '@vercube/core';
+import { createTestApp } from '@vercube/testing';
+import { afterAll, beforeAll, describe, it } from 'vitest';
 import { Auth } from '../src';
 import { AuthProvider } from '../src/Services/AuthProvider';
 import type { AuthTypes } from '../src/Types/AuthTypes';
-import type { App } from '@vercube/core';
+import type { TestApp } from '@vercube/testing';
 
 /**
  * Lets a request through when its `x-role` header is one of the required roles,
@@ -36,27 +37,23 @@ class RolesController {
 }
 
 describe('[auth] roles on the controller and the method', () => {
-  let app: App;
+  let app: TestApp;
 
   beforeAll(async () => {
-    app = await createApp({
-      cfg: { requestLogging: false },
-      setup: (instance) => {
-        instance.container.bind(AuthProvider, RoleAuthProvider);
-        instance.container.bind(RolesController);
-      },
+    app = await createTestApp({
+      controllers: [RolesController],
+      providers: [[AuthProvider, RoleAuthProvider]],
     });
   });
 
-  const status = async (path: string, role: string) =>
-    (await app.fetch(new Request(`http://localhost${path}`, { headers: { 'x-role': role } }))).status;
+  afterAll(() => app.close());
 
   it('should apply the controller-level @Auth()', async () => {
-    expect(await status('/roles/any', 'user')).toBe(200);
+    await app.get('/roles/any').header('x-role', 'user').expect(200);
   });
 
   it('should not drop the roles required by the method-level @Auth()', async () => {
-    expect(await status('/roles/admin', 'user')).toBe(401);
-    expect(await status('/roles/admin', 'admin')).toBe(200);
+    await app.get('/roles/admin').header('x-role', 'user').expect(401);
+    await app.get('/roles/admin').header('x-role', 'admin').expect(200);
   });
 });

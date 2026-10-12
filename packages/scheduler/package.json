@@ -53,7 +53,8 @@
   "peerDependencies": {
     "@vercube/cli": "workspace:^",
     "@vercube/devkit": "workspace:^",
-    "@vercube/queue": "workspace:^"
+    "@vercube/queue": "workspace:^",
+    "@vercube/testing": "workspace:^"
   },
   "peerDependenciesMeta": {
     "@vercube/cli": {
@@ -64,13 +65,17 @@
     },
     "@vercube/queue": {
       "optional": true
+    },
+    "@vercube/testing": {
+      "optional": true
     }
   },
   "devDependencies": {
     "@types/pg": "8.23.1",
     "@vercube/cli": "workspace:*",
     "@vercube/devkit": "workspace:*",
-    "@vercube/queue": "workspace:*"
+    "@vercube/queue": "workspace:*",
+    "@vercube/testing": "workspace:*"
   },
   "publishConfig": {
     "access": "public"

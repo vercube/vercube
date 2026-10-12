@@ -31,6 +31,9 @@
     "@vercube/logger": "workspace:*",
     "@vercube/telemetry": "workspace:*"
   },
+  "devDependencies": {
+    "@vercube/testing": "workspace:*"
+  },
   "publishConfig": {
     "access": "public"
   }

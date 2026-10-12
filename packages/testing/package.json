@@ -52,7 +52,6 @@
     }
   },
   "devDependencies": {
-    "@vercube/auth": "workspace:*",
     "@vercube/telemetry": "workspace:*",
     "zod": "catalog:"
   },

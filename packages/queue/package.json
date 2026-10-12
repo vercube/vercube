@@ -19,6 +19,7 @@
     "./strategies/BullMQStrategy": "./dist/Strategies/BullMQStrategy.mjs",
     "./strategies/RabbitMQStrategy": "./dist/Strategies/RabbitMQStrategy.mjs",
     "./strategies/KafkaStrategy": "./dist/Strategies/KafkaStrategy.mjs",
+    "./testing": "./dist/Testing.mjs",
     "./package.json": "./package.json"
   },
   "types": "./dist/index.d.mts",
@@ -48,6 +49,17 @@
     "amqplib": "2.2.0",
     "bullmq": "6.3.13",
     "kafkajs": "2.2.4"
+  },
+  "devDependencies": {
+    "@vercube/testing": "workspace:*"
+  },
+  "peerDependencies": {
+    "@vercube/testing": "workspace:^"
+  },
+  "peerDependenciesMeta": {
+    "@vercube/testing": {
+      "optional": true
+    }
   },
   "publishConfig": {
     "access": "public"

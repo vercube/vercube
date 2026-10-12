@@ -39,6 +39,9 @@
     "defu": "catalog:",
     "zod": "catalog:"
   },
+  "devDependencies": {
+    "@vercube/testing": "workspace:*"
+  },
   "publishConfig": {
     "access": "public"
   }

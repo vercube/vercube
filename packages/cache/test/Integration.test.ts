@@ -1,10 +1,10 @@
-import { Controller, createApp, Get, Param, QueryParam } from '@vercube/core';
-import { Logger } from '@vercube/logger';
+import { Controller, Get, Param, QueryParam } from '@vercube/core';
 import { StorageManager } from '@vercube/storage';
 import { MemoryStorage } from '@vercube/storage/drivers/MemoryStorage';
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createTestApp } from '@vercube/testing';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Cache, CacheManager } from '../src';
-import type { App } from '@vercube/core';
+import type { TestApp } from '@vercube/testing';
 
 const handler = vi.fn();
 
@@ -26,25 +26,21 @@ class ProductsController {
 }
 
 describe('@Cache in a live request pipeline', () => {
-  let app: App;
+  let app: TestApp;
   let storageManager: StorageManager;
 
-  // the app is built once: binding a controller class into a second container
-  // re-runs its route decorators and prefixes the path again (/products/products/:id)
   beforeAll(async () => {
-    app = await createApp();
-
-    app.container.expand((container) => {
-      container.bindMock(Logger, { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() });
-      container.bind(StorageManager);
-      container.bind(CacheManager);
-      container.bind(ProductsController);
+    app = await createTestApp({
+      controllers: [ProductsController],
+      providers: [StorageManager, CacheManager],
     });
 
-    storageManager = app.container.get(StorageManager);
+    storageManager = app.resolve(StorageManager);
     await storageManager.mount({ name: 'cache', storage: MemoryStorage });
-    app.container.get(CacheManager).configure({ storage: 'cache' });
+    app.resolve(CacheManager).configure({ storage: 'cache' });
   });
+
+  afterAll(() => app.close());
 
   beforeEach(async () => {
     handler.mockClear();
@@ -52,10 +48,9 @@ describe('@Cache in a live request pipeline', () => {
   });
 
   it('should serve a repeated request from the cache', async () => {
-    const first = await app.fetch(new Request('http://localhost/products/1'));
-    const second = await app.fetch(new Request('http://localhost/products/1'));
+    const first = await app.get('/products/1').expect(200);
+    const second = await app.get('/products/1');
 
-    expect(first.status).toBe(200);
     await expect(first.json()).resolves.toEqual({ id: '1', hits: 1 });
     await expect(second.json()).resolves.toEqual({ id: '1', hits: 1 });
 
@@ -63,17 +58,17 @@ describe('@Cache in a live request pipeline', () => {
   });
 
   it('should key the cache by the resolved route parameters', async () => {
-    await app.fetch(new Request('http://localhost/products/1'));
-    await app.fetch(new Request('http://localhost/products/2'));
-    await app.fetch(new Request('http://localhost/products/1'));
+    await app.get('/products/1');
+    await app.get('/products/2');
+    await app.get('/products/1');
 
     expect(handler).toHaveBeenCalledTimes(2);
     expect(handler.mock.calls.map(([id]) => id)).toEqual(['1', '2']);
   });
 
   it('should key the cache by query parameters too', async () => {
-    const first = await app.fetch(new Request('http://localhost/products/search/1?q=red'));
-    const second = await app.fetch(new Request('http://localhost/products/search/1?q=blue'));
+    const first = await app.get('/products/search/1').query({ q: 'red' });
+    const second = await app.get('/products/search/1').query({ q: 'blue' });
 
     await expect(first.json()).resolves.toEqual({ id: '1', query: 'red' });
     await expect(second.json()).resolves.toEqual({ id: '1', query: 'blue' });
@@ -82,12 +77,12 @@ describe('@Cache in a live request pipeline', () => {
   });
 
   it('should keep the cached entries inside the mounted storage', async () => {
-    await app.fetch(new Request('http://localhost/products/1'));
+    await app.get('/products/1');
 
     const keys = await storageManager.getKeys({ storage: 'cache' });
 
-    const expected = await app.container
-      .get(CacheManager)
+    const expected = await app
+      .resolve(CacheManager)
       .resolveKeys({ name: 'ProductsController.getProduct', storage: 'cache' }, '1');
 
     expect(expected).toHaveLength(1);
@@ -96,11 +91,11 @@ describe('@Cache in a live request pipeline', () => {
   });
 
   it('should re-run the handler after the entry is invalidated', async () => {
-    await app.fetch(new Request('http://localhost/products/1'));
+    await app.get('/products/1');
 
-    await app.container.get(CacheManager).invalidate({ name: 'ProductsController.getProduct', storage: 'cache' }, '1');
+    await app.resolve(CacheManager).invalidate({ name: 'ProductsController.getProduct', storage: 'cache' }, '1');
 
-    const response = await app.fetch(new Request('http://localhost/products/1'));
+    const response = await app.get('/products/1');
 
     await expect(response.json()).resolves.toEqual({ id: '1', hits: 2 });
     expect(handler).toHaveBeenCalledTimes(2);
