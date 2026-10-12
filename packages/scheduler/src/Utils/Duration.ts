@@ -63,12 +63,14 @@ export function parseDuration(value: SchedulerTypes.Duration, option: string): n
  * @returns The duration, such as `5m` or `1h30m`
  */
 export function formatDuration(ms: number): string {
-  if (ms === 0) {
+  const rounded = Math.round(ms);
+
+  if (rounded === 0) {
     return '0ms';
   }
 
   const parts: string[] = [];
-  let rest = ms;
+  let rest = rounded;
 
   for (const unit of ['d', 'h', 'm', 's', 'ms']) {
     const size = UNITS[unit];

@@ -112,6 +112,17 @@ describe('Scheduler decorators', () => {
     expect(() => manager.nextRuns('broken')).toThrow(/No job is registered/);
   });
 
+  it('rejects an empty time zone instead of falling back to the default', () => {
+    class EmptyZone {
+      @Cron('0 3 * * *', { name: 'empty-zone', timezone: '', scope: 'instance' })
+      public run(): void {}
+    }
+
+    container.bind(EmptyZone);
+
+    expect(() => initializeContainer(container)).toThrow(/Unknown time zone ""/);
+  });
+
   it('warns when the decorated property is not a method', () => {
     class NotAMethod {
       @Every('1m')

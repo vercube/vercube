@@ -169,9 +169,8 @@ export class ManualClock implements SchedulerTypes.Clock {
    * @returns The skewed clock
    */
   public skewed(offset: SchedulerTypes.Duration): SchedulerTypes.Clock {
-    const text = String(offset).trim();
-    const negative = typeof offset === 'string' && text.startsWith('-');
-    const magnitude = typeof offset === 'number' ? offset : parseDuration(negative ? text.slice(1) : text, 'skewed');
+    const negative = typeof offset === 'number' ? offset < 0 : offset.trim().startsWith('-');
+    const magnitude = parseDuration(typeof offset === 'number' ? Math.abs(offset) : offset.trim().replace(/^-/, ''), 'skewed');
     const shift = negative ? -magnitude : magnitude;
 
     return {

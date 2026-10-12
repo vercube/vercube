@@ -507,6 +507,21 @@ describe('SchedulerManager', () => {
       expect(await run).toMatchObject({ outcome: 'aborted', error: { operation: 'lock-lost' } });
     });
 
+    it('does not start the handler when the run was aborted while its state was saved', async () => {
+      const { manager } = await createReplica({ clock }, store);
+      const handler = vi.fn();
+
+      manager.add({ name: 'job', schedule: { every: '1h' }, timeout: '10s', handler });
+      vi.spyOn(store, 'setState').mockImplementationOnce(() => clock.sleep('20s'));
+
+      const run = manager.trigger('job');
+
+      await clock.advance('20s');
+
+      expect(await run).toMatchObject({ outcome: 'failed', attempts: 1, error: { operation: 'timeout' } });
+      expect(handler).not.toHaveBeenCalled();
+    });
+
     it('reports a handler failing on its own after losing its lock as failed', async () => {
       const { manager } = await createReplica({ clock }, store);
 
@@ -1112,6 +1127,33 @@ describe('SchedulerManager', () => {
     });
   });
   describe('failure handling', () => {
+    it('arms nothing and catches up on nothing when stopped while the store connects', async () => {
+      clock.set('2026-01-01T00:03:20Z');
+      await store.setState('job', {
+        lastScheduledAt: at('2026-01-01T00:00:00Z'),
+        lastStartedAt: at('2026-01-01T00:00:00Z'),
+        lastOutcome: 'completed',
+        lastInstance: 'old-pod',
+      });
+
+      const { manager, events } = await createReplica({ clock }, store);
+      let connected!: () => void;
+
+      vi.spyOn(store, 'initialize').mockImplementation(() => new Promise<void>((resolve) => (connected = resolve)));
+      manager.add({ name: 'job', schedule: { every: '1m' }, misfire: 'run-once', handler: () => {} });
+
+      const starting = manager.start();
+
+      await Promise.resolve();
+      await manager.stop();
+      connected();
+      await starting;
+      await manager.drain();
+
+      expect(events).toEqual([]);
+      expect(clock.pending()).toEqual([]);
+    });
+
     it('connects a store mounted after start', async () => {
       const { manager } = await createReplica({ clock });
       const initialize = vi.spyOn(store, 'initialize');

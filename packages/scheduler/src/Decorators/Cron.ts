@@ -37,7 +37,7 @@ export function Cron(expression: string, options: SchedulerTypes.CronOptions = {
 
   return createDecorator<ScheduleDecoratorOptions, ScheduleDecorator>(ScheduleDecorator, {
     decorator: '@Cron()',
-    schedule: { cron: expression, ...(timezone ? { timezone } : {}) },
+    schedule: { cron: expression, ...(timezone === undefined ? {} : { timezone }) },
     options: rest,
   });
 }
