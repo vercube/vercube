@@ -1,4 +1,5 @@
-import { createApp, vercubePluginFromClass } from '@vercube/core';
+import { vercubePluginFromClass } from '@vercube/core';
+import { createTestApp } from '@vercube/testing';
 import { DevtoolsPlugin } from '../../src/Plugins/DevtoolsPlugin';
 import type { DevtoolsTypes } from '../../src/Types/DevtoolsTypes';
 import type { App } from '@vercube/core';
@@ -8,7 +9,8 @@ import type { App } from '@vercube/core';
  *
  * Devtools is registered through the config rather than `addPlugin`, because
  * only the config phase runs early enough for its metric reader and bootstrap
- * observer to be in place.
+ * observer to be in place. The application keeps its real logger: devtools
+ * reads the logs through it.
  *
  * @param options - Devtools options; `enabled` defaults to true
  * @param setup - Extra container wiring before the app initialises
@@ -18,15 +20,16 @@ export async function createDevtoolsApp(
   options: DevtoolsTypes.Options = {},
   setup?: (app: App) => void | Promise<void>,
 ): Promise<App> {
-  return createApp({
-    cfg: {
-      requestLogging: false,
+  const testApp = await createTestApp({
+    logger: false,
+    config: {
+      logLevel: 'debug',
       plugins: [vercubePluginFromClass(DevtoolsPlugin, { enabled: true, ...options })],
     },
-    setup: async (app) => {
-      await setup?.(app);
-    },
+    setup,
   });
+
+  return testApp.app;
 }
 
 /**

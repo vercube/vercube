@@ -26,7 +26,8 @@
     "build": "tsdown --config ../../tsdown.config.ts --config-loader=unrun"
   },
   "devDependencies": {
-    "@vercube/core": "workspace:*"
+    "@vercube/core": "workspace:*",
+    "@vercube/testing": "workspace:*"
   },
   "dependencies": {
     "@vercube/di": "workspace:*",

@@ -1,21 +1,17 @@
-import { createApp } from '@vercube/core';
+import { createTestApp } from '@vercube/testing';
 import { describe, expect, it } from 'vitest';
 import { SchemaPlugin } from '../../src';
 
 describe('SchemaPlugin', () => {
   it('should register OpenAPI and Scalar HTTP routes', async () => {
-    const app = await createApp({
-      setup: async (app) => {
-        app.addPlugin(SchemaPlugin);
-      },
-    });
+    await using app = await createTestApp({ plugins: [SchemaPlugin] });
 
-    const openApi = await app.fetch(new Request('http://localhost/_schema/'));
-    expect(openApi.status).toBe(200);
+    await app.get('/_schema/').expect(200);
 
-    const docs = await app.fetch(new Request('http://localhost/_schema/docs'));
-    expect(docs.status).toBe(200);
-    expect(docs.headers.get('content-type')).toContain('text/html');
+    const docs = await app
+      .get('/_schema/docs')
+      .expect(200)
+      .expect('content-type', /text\/html/);
 
     const html = await docs.text();
     expect(html).toContain('Scalar API Reference');
@@ -23,14 +19,8 @@ describe('SchemaPlugin', () => {
   });
 
   it('should not serve Scalar when disabled in plugin options', async () => {
-    const app = await createApp({
-      setup: async (app) => {
-        app.addPlugin(SchemaPlugin, { scalar: false });
-      },
-    });
+    await using app = await createTestApp({ plugins: [[SchemaPlugin, { scalar: false }]] });
 
-    const response = await app.fetch(new Request('http://localhost/_schema/docs'));
-
-    expect(response.status).toBe(404);
+    await app.get('/_schema/docs').expect(404);
   });
 });
