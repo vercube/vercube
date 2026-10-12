@@ -19,7 +19,7 @@ $ pnpm build
 $ docker compose up
 ```
 
-Each `reports.build` occurrence is logged once, by either `app-1` or `app-2`. Each heartbeat is logged twice, once per replica. Stop one replica with `docker compose stop app-1` and the other picks up every occurrence on its own.
+The replicas answer on `localhost:3000` (`app-1`) and `localhost:3001` (`app-2`). Each `reports.build` occurrence is logged once, by either `app-1` or `app-2`. Each heartbeat is logged twice, once per replica. Stop one replica with `docker compose stop app-1` and the other picks up every occurrence on its own.
 
 Without Docker, run Redis on `127.0.0.1:6379` and start two processes:
 

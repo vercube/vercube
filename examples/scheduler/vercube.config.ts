@@ -12,6 +12,8 @@ export default defineConfig({
     }),
   ],
   server: {
+    // 0.0.0.0 inside a container, otherwise the published port reaches nothing
+    host: process.env.HOST ?? 'localhost',
     port: Number(process.env.PORT ?? 3000),
   },
 });
