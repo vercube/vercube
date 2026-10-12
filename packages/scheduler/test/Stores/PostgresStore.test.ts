@@ -217,6 +217,59 @@ describe('PostgresStore', () => {
     await store.close();
   });
 
+  it('creates the tables under an advisory lock on one connection', async () => {
+    const queries: string[] = [];
+    const client = {
+      query: vi.fn(async (text: string, _values?: unknown[]) => {
+        queries.push(sql(text));
+
+        return { rows: [], rowCount: 0 };
+      }),
+      release: vi.fn(),
+    };
+    const pool = { ...givenPool(), connect: vi.fn(async () => client) };
+
+    await new PostgresStore().initialize({ pool });
+
+    expect(queries[0]).toBe('BEGIN');
+    expect(queries[1]).toBe('SELECT pg_advisory_xact_lock(hashtext($1))');
+    expect(client.query.mock.calls[1][1]).toEqual(['"vercube_scheduler_locks"']);
+    expect(queries[2]).toContain('CREATE TABLE IF NOT EXISTS "vercube_scheduler_locks"');
+    expect(queries[3]).toContain('CREATE TABLE IF NOT EXISTS "vercube_scheduler_state"');
+    expect(queries[4]).toBe('COMMIT');
+    expect(client.release).toHaveBeenCalled();
+    expect(pool.query).not.toHaveBeenCalled();
+  });
+
+  it('rolls back and releases the connection when creating the tables fails', async () => {
+    const client = {
+      query: vi.fn(async (text: string) => {
+        if (text.includes('CREATE TABLE')) {
+          throw Object.assign(new Error('permission denied'), { code: '42501' });
+        }
+
+        return { rows: [], rowCount: 0 };
+      }),
+      release: vi.fn(),
+    };
+    const pool = { ...givenPool(), connect: vi.fn(async () => client) };
+
+    await expect(new PostgresStore().initialize({ pool })).rejects.toThrow('permission denied');
+    expect(client.query).toHaveBeenLastCalledWith('ROLLBACK');
+    expect(client.release).toHaveBeenCalled();
+  });
+
+  it('takes a table created concurrently by another replica as created', async () => {
+    const pool = givenPool();
+
+    pool.query.mockRejectedValueOnce(
+      Object.assign(new Error('duplicate key value violates unique constraint'), { code: '23505' }),
+    );
+    pool.query.mockRejectedValueOnce(Object.assign(new Error('relation already exists'), { code: '42P07' }));
+
+    await expect(new PostgresStore().initialize({ pool })).resolves.toBeUndefined();
+  });
+
   it('refuses to work before it is initialized', async () => {
     await expect(new PostgresStore().claim('a', 'b', 1)).rejects.toThrow(SchedulerError);
   });
