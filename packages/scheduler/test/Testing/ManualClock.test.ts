@@ -105,4 +105,13 @@ describe('ManualClock', () => {
 
     behind.clearTimeout(handle);
   });
+
+  it('takes numeric skews, and rejects ones that are not finite', () => {
+    const clock = new ManualClock(10_000);
+
+    expect(clock.skewed(-500).now()).toBe(9500);
+    expect(clock.skewed(250).now()).toBe(10_250);
+    expect(() => clock.skewed(Number.NaN)).toThrow(/Invalid duration/);
+    expect(() => clock.skewed(Number.NEGATIVE_INFINITY)).toThrow(/Invalid duration/);
+  });
 });

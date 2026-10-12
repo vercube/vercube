@@ -35,6 +35,9 @@ describe('formatDuration', () => {
     [300_000, '5m'],
     [5_400_000, '1h30m'],
     [90_061_001, '1d1h1m1s1ms'],
+    [0.4, '0ms'],
+    [0.5, '1ms'],
+    [1500.6, '1s501ms'],
   ])('writes %d as %s', (value, expected) => {
     expect(formatDuration(value)).toBe(expected);
   });

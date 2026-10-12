@@ -13,6 +13,8 @@ import type { App } from '@vercube/core';
  *
  * @example
  * ```ts
+ * // a single process: MemoryStore only coordinates the managers of one process,
+ * // replicas need a distributed store such as RedisStore or PostgresStore
  * import { defineConfig } from '@vercube/core';
  * import { SchedulerPlugin } from '@vercube/scheduler';
  * import { MemoryStore } from '@vercube/scheduler/stores/MemoryStore';

@@ -415,6 +415,12 @@ export class SchedulerManager {
       }
     }
 
+    // stopped while the store was connecting
+
+    if (!this.fStarted) {
+      return;
+    }
+
     for (const registration of this.fJobs.values()) {
       this.arm(registration);
     }
@@ -1025,6 +1031,13 @@ export class SchedulerManager {
    */
   protected async runHandler(registration: Registration, context: SchedulerTypes.JobContext): Promise<void> {
     const { signal } = context;
+
+    // aborted before this attempt, while the state was saved or between two
+    // attempts: the signal never fires 'abort' again, so it is checked here
+    if (signal.aborted) {
+      throw signal.reason;
+    }
+
     const run = Promise.resolve().then(() => registration.handler(context));
     const settled = run.then(
       () => ({ error: undefined }),
