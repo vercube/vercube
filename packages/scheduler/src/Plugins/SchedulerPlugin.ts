@@ -1,4 +1,4 @@
-import { BasePlugin, initializeMetadata, skipGlobalMiddlewares } from '@vercube/core';
+import { BasePlugin, MetadataResolver, skipGlobalMiddlewares } from '@vercube/core';
 import { DEFAULT_HTTP_PATH, SchedulerController } from '../Controllers/SchedulerController';
 import { SchedulerError } from '../Errors/SchedulerError';
 import { SchedulerManager } from '../Services/SchedulerManager';
@@ -136,7 +136,7 @@ export class SchedulerPlugin extends BasePlugin<SchedulerTypes.PluginOptions> {
     app.container.bindInstance($SchedulerHttpOptions, { ...http, path: http.path ?? DEFAULT_HTTP_PATH });
 
     // before the routes are registered, which reads the path once
-    initializeMetadata(SchedulerController.prototype).__controller.path = http.path ?? DEFAULT_HTTP_PATH;
+    app.container.get(MetadataResolver).setControllerPath(SchedulerController, http.path ?? DEFAULT_HTTP_PATH);
     skipGlobalMiddlewares(SchedulerController.prototype);
     app.container.bind(SchedulerController);
   }

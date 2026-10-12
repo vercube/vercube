@@ -1,4 +1,4 @@
-import { initializeMetadata, ShutdownRegistry } from '@vercube/core';
+import { MetadataResolver, ShutdownRegistry } from '@vercube/core';
 import { Container, initializeContainer } from '@vercube/di';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SchedulerCommand } from '../../src/Commands/SchedulerCommands';
@@ -30,6 +30,7 @@ describe('SchedulerPlugin', () => {
     runs.length = 0;
     container = new Container();
     container.bindInstance(Container, container);
+    container.bind(MetadataResolver);
 
     shutdown = new ShutdownRegistry();
     app = { container, onClose: (hook: () => Promise<void>) => shutdown.register(hook) } as unknown as App;
@@ -123,11 +124,11 @@ describe('SchedulerPlugin', () => {
     await plugin.use(app, { autoStart: false, http: { secret: 's3cret', path: '/cron' } });
 
     expect(container.get(SchedulerController)).toBeInstanceOf(SchedulerController);
-    expect(initializeMetadata(SchedulerController.prototype).__controller.path).toBe('/cron');
+    expect(container.get(MetadataResolver).getControllerPath(SchedulerController)).toBe('/cron');
 
     // registered twice, the controller stays bound once
     await container.resolve(SchedulerPlugin).use(app, { http: { secret: 's3cret' } });
-    expect(initializeMetadata(SchedulerController.prototype).__controller.path).toBe('/cron');
+    expect(container.get(MetadataResolver).getControllerPath(SchedulerController)).toBe('/cron');
   });
 
   it('should refuse an HTTP trigger without a secret', async () => {

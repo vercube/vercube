@@ -1,4 +1,5 @@
-import { Container, describeContainer, Inject } from '@vercube/di';
+import { Container, describeContainer, Inject, InjectOptional } from '@vercube/di';
+import { MetadataResolver } from '../../Metadata/MetadataResolver';
 import { BasePlugin } from '../../Plugins/BasePlugin';
 import type { IntrospectionTypes } from '../../../Types/IntrospectionTypes';
 import type { MetadataTypes } from '../../../Types/MetadataTypes';
@@ -49,6 +50,9 @@ export class ContainerProvider implements IntrospectionTypes.Provider<Describe.C
   @Inject(Container)
   private readonly gContainer!: Container;
 
+  @InjectOptional(MetadataResolver)
+  private readonly gMetadataResolver!: MetadataResolver | null;
+
   /** @inheritdoc */
   public revision(): number {
     return this.gContainer.revision;
@@ -56,7 +60,11 @@ export class ContainerProvider implements IntrospectionTypes.Provider<Describe.C
 
   /** @inheritdoc */
   public describe(): Describe.ContainerDescription {
-    return describeContainer(this.gContainer, { annotate: annotateService });
+    const resolver = this.gMetadataResolver;
+
+    return describeContainer(this.gContainer, {
+      annotate: (node, context) => annotateService(node, context, resolver),
+    });
   }
 }
 
@@ -65,9 +73,10 @@ export class ContainerProvider implements IntrospectionTypes.Provider<Describe.C
  *
  * @param node - The node being described
  * @param context - The binding it was built from
+ * @param resolver - Knows the paths controllers are mounted under in this application
  */
-function annotateService(node: Describe.ServiceNode, context: Describe.AnnotateContext): void {
-  const basePath = readControllerPath(context.ctor);
+function annotateService(node: Describe.ServiceNode, context: Describe.AnnotateContext, resolver: MetadataResolver | null): void {
+  const basePath = resolver && context.ctor ? resolver.getControllerPath(context.ctor) : readControllerPath(context.ctor);
 
   if (basePath !== undefined) {
     node.role = 'controller';

@@ -12,6 +12,13 @@ export interface LoadVercubeConfigOptions {
   import?: (id: string) => Promise<unknown>;
   /** Active CLI subcommand name, forwarded to `VercubePluginEnv.command` for plugins. */
   command?: string;
+  /**
+   * `false` skips `vercube.config` and `.env` entirely: the result is the
+   * defaults merged with `overrides`. Plugin `config` hooks still run.
+   * Tests use it so a suite run from the project root does not pick up the
+   * project's own config by accident.
+   */
+  configFile?: false;
 }
 
 /**
@@ -26,6 +33,15 @@ export async function loadVercubeConfig(
   options?: LoadVercubeConfigOptions,
 ): Promise<ConfigTypes.Config> {
   const cwd = options?.cwd ?? process.cwd();
+
+  if (options?.configFile === false) {
+    return applyVercubePluginHooks(defu(overrides ?? {}, defaultConfig) as ConfigTypes.Config, {
+      cwd,
+      dev: overrides?.dev ?? defaultConfig.dev,
+      production: overrides?.production ?? defaultConfig.production,
+      command: options?.command,
+    });
+  }
 
   const config = await loadConfig<ConfigTypes.Config>({
     name: 'vercube',

@@ -166,7 +166,9 @@ export class App {
    * connections and waits for the requests in flight, closing the connections
    * still open once `timeout` elapses. Then the callbacks registered with
    * {@link App.onClose} run, last registered first, so modules such as the
-   * scheduler and the queue drain their work in one place.
+   * scheduler and the queue drain their work in one place. Last, the container
+   * is disposed: every `@Destroy()` hook runs and the promises they return are
+   * awaited.
    *
    * Safe to call more than once: later calls return the first close.
    *
@@ -247,8 +249,8 @@ export class App {
   }
 
   /**
-   * Stops the HTTP server, then runs the shutdown hooks. A server that fails to
-   * close does not keep the hooks from running.
+   * Stops the HTTP server, runs the shutdown hooks, then disposes the
+   * container. A step that fails does not keep the next one from running.
    *
    * @param {number} timeout - Milliseconds the HTTP server waits for requests in flight
    * @returns {Promise<void>} Resolves once everything is closed
@@ -265,6 +267,12 @@ export class App {
 
     try {
       await this.gShutdownRegistry.run();
+    } catch (error) {
+      errors.push(...(error instanceof AggregateError ? error.errors : [error]));
+    }
+
+    try {
+      await this.container.dispose();
     } catch (error) {
       errors.push(...(error instanceof AggregateError ? error.errors : [error]));
     }
