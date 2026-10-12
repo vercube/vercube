@@ -421,6 +421,17 @@ export class Container {
       return null;
     }
 
+    // A disposed container constructs nothing, so an optional dependency that
+    // was never created is simply absent: a cleanup hook reading one must not
+    // fail the whole disposal.
+    if (
+      this.fDisposed &&
+      serviceDef.type !== IOC.ServiceFactoryType.INSTANCE &&
+      !this.fSingletonInstances.has(serviceDef.serviceKey)
+    ) {
+      return null;
+    }
+
     return this.internalResolve(serviceDef) as T;
   }
 
@@ -615,6 +626,11 @@ export class Container {
     const errors: unknown[] = [];
     const defs = [...this.fServices.values()].reverse();
 
+    // Before the hooks, not after: a hook constructing a service the loop has
+    // already passed would leave that service without its own cleanup.
+    // Existing instances stay reachable, only new ones are refused.
+    this.fDisposed = true;
+
     for (const def of defs) {
       let instance: IOC.Instance | undefined;
 
@@ -636,7 +652,6 @@ export class Container {
       }
     }
 
-    this.fDisposed = true;
     this.fNewQueue.clear();
     this.fRevision++;
 
