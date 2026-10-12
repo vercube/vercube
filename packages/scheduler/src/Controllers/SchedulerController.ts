@@ -68,7 +68,15 @@ export class SchedulerController {
     }
 
     const scheduledAt = this.gScheduler.currentOccurrence(name) ?? undefined;
-    const result = await this.gScheduler.trigger(name, { source: 'external', ...(scheduledAt ? { scheduledAt } : {}) });
+    let result: SchedulerTypes.RunResult;
+
+    try {
+      result = await this.gScheduler.trigger(name, { source: 'external', ...(scheduledAt ? { scheduledAt } : {}) });
+    } catch (error) {
+      // a cluster job without a store, the caller has to learn why rather than see a bare 500
+      return Response.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
+    }
+
     const failed = result.outcome === 'failed' || result.outcome === 'aborted';
 
     return Response.json(

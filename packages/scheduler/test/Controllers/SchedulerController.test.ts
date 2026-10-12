@@ -1,6 +1,6 @@
 import { Container } from '@vercube/di';
 import { Logger } from '@vercube/logger';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { matchesSecret, SchedulerController } from '../../src/Controllers/SchedulerController';
 import { SchedulerManager } from '../../src/Services/SchedulerManager';
 import { MemoryStore } from '../../src/Stores/MemoryStore';
@@ -72,6 +72,17 @@ describe('SchedulerController', () => {
 
     expect(failed.status).toBe(500);
     expect(await failed.json()).toMatchObject({ outcome: 'failed', error: 'boom' });
+  });
+
+  it('answers 500 with the reason when the job cannot run at all', async () => {
+    vi.spyOn(manager, 'trigger').mockImplementation(() => {
+      throw new Error('Cluster jobs "billing.close-day" need a store');
+    });
+
+    const response = await controller.get('billing.close-day', 'Bearer s3cret');
+
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({ error: 'Cluster jobs "billing.close-day" need a store' });
   });
 
   it('compares secrets without short-circuiting on length', async () => {
