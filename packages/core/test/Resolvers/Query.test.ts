@@ -40,14 +40,14 @@ describe('Query Resolvers', () => {
       expect(result).toBe('javascript');
     });
 
-    it('should return null for non-existent query parameter', () => {
+    it('should return undefined for non-existent query parameter', () => {
       const event = createMockEvent('http://localhost/test?name=John&age=30');
       const result = resolveQueryParam('nonexistent', event);
 
-      expect(result).toBeNull();
+      expect(result).toBeUndefined();
     });
 
-    it('should return null for empty query parameter value', () => {
+    it('should return an empty string for empty query parameter value', () => {
       const event = createMockEvent('http://localhost/test?name=&age=30');
       const result = resolveQueryParam('name', event);
 
@@ -58,14 +58,14 @@ describe('Query Resolvers', () => {
       const event = createMockEvent('http://localhost/test');
       const result = resolveQueryParam('name', event);
 
-      expect(result).toBeNull();
+      expect(result).toBeUndefined();
     });
 
     it('should handle URL with empty query string', () => {
       const event = createMockEvent('http://localhost/test?');
       const result = resolveQueryParam('name', event);
 
-      expect(result).toBeNull();
+      expect(result).toBeUndefined();
     });
 
     it('should handle case-sensitive parameter names', () => {
@@ -173,10 +173,10 @@ describe('Query Resolvers', () => {
       expect(resolveQueryParam('word', event)).toBe('\u0924');
     });
 
-    it('should return null when the query is only a question mark', () => {
+    it('should return undefined when the query is only a question mark', () => {
       const event = createMockEvent('http://localhost/test?');
 
-      expect(resolveQueryParam('name', event)).toBeNull();
+      expect(resolveQueryParam('name', event)).toBeUndefined();
     });
 
     it('should resolve the last parameter when it carries no trailing separator', () => {
@@ -188,7 +188,7 @@ describe('Query Resolvers', () => {
     it('should not match a name that only appears inside another value', () => {
       const event = createMockEvent('http://localhost/test?query=name%3DJohn');
 
-      expect(resolveQueryParam('name', event)).toBeNull();
+      expect(resolveQueryParam('name', event)).toBeUndefined();
     });
   });
 

@@ -32,6 +32,14 @@ class ValidationController {
     return { id, type: typeof id };
   }
 
+  @Get('/optional-query')
+  public optionalQuery(
+    @QueryParam({ name: 'q', validationSchema: z.string().optional() }) q: string | undefined,
+    @QueryParam({ name: 'limit', validationSchema: z.coerce.number().optional() }) limit: number | undefined,
+  ): unknown {
+    return { q: q ?? 'missing', limit: limit ?? 'missing' };
+  }
+
   @Post('/body')
   public body(@Body({ validationSchema: z.object({ name: z.string() }) }) body: unknown): unknown {
     return body;
@@ -219,5 +227,22 @@ describe('ValidationMiddleware', () => {
     const invalid = await app.fetch(new Request('http://localhost/validation/param/abc'));
     expect(invalid.status).toBe(400);
     expect((await invalid.json()).message).toBe('Validation error - param');
+  });
+
+  it('should treat a missing query param as undefined, so .optional() accepts it', async () => {
+    const app = await createApp({
+      cfg: { requestLogging: false },
+      setup: (instance) => {
+        instance.container.bind(ValidationController);
+      },
+    });
+
+    // with `null`, z.string().optional() rejected this with 400 and z.coerce.number() turned it into 0
+    const missing = await app.fetch(new Request('http://localhost/validation/optional-query'));
+    expect(missing.status).toBe(200);
+    expect(await missing.json()).toEqual({ q: 'missing', limit: 'missing' });
+
+    const present = await app.fetch(new Request('http://localhost/validation/optional-query?q=a&limit=5'));
+    expect(await present.json()).toEqual({ q: 'a', limit: 5 });
   });
 });

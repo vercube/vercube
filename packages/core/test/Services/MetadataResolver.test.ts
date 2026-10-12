@@ -576,7 +576,7 @@ describe('MetadataResolver', () => {
     });
 
     it('should default a missing parameter name to an empty string', () => {
-      vi.mocked(resolveQueryParam).mockReturnValue(null);
+      vi.mocked(resolveQueryParam).mockReturnValue(undefined);
 
       compileOne({ type: 'query-param' })(mockEvent);
 
