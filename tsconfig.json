@@ -32,6 +32,8 @@
       "@vercube/telemetry/otlp": ["./packages/telemetry/src/Otlp.ts"],
       "@vercube/telemetry/sdk": ["./packages/telemetry/src/Sdk.ts"],
       "@vercube/telemetry/testing": ["./packages/telemetry/src/Testing.ts"],
+      "@vercube/testing/auth": ["./packages/testing/src/Auth.ts"],
+      "@vercube/testing/telemetry": ["./packages/testing/src/Telemetry.ts"],
       "@vercube/scheduler/cli": ["./packages/scheduler/src/Cli.ts"],
       "@vercube/scheduler/testing": ["./packages/scheduler/src/Testing.ts"],
       "@vercube/scheduler/stores/MemoryStore": ["./packages/scheduler/src/Stores/MemoryStore.ts"],
