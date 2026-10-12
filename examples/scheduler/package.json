@@ -1,0 +1,25 @@
+{
+  "name": "@examples/scheduler",
+  "version": "1.0.0",
+  "description": "Scheduler example for Vercube, two replicas sharing one Redis",
+  "packageManager": "pnpm@12.11.2",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vercube build",
+    "dev": "vercube dev",
+    "start": "node ./dist/index.mjs"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@oxc-project/runtime": "catalog:",
+    "@vercube/core": "workspace:*",
+    "@vercube/di": "workspace:*",
+    "@vercube/logger": "workspace:*",
+    "@vercube/scheduler": "workspace:*",
+    "ioredis": "6.0.0"
+  },
+  "devDependencies": {
+    "@vercube/cli": "workspace:*"
+  }
+}
