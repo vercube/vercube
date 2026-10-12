@@ -5,3 +5,5 @@ reviews:
     base_branches:
       - feat/schedule
       - feat/scheduler-.*
+      - feat/test-boot
+      - feat/testing.*
