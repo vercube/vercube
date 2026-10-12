@@ -41,17 +41,18 @@ function decodeComponent(raw: string): string {
  *
  * Follows `URLSearchParams.get`: the first match wins, a key without `=` yields
  * an empty string, empty segments are skipped, and both sides are decoded with
- * `+` treated as a space.
+ * `+` treated as a space. A missing parameter yields `undefined` rather than
+ * `null`, so validation schemas can mark it with `.optional()`.
  *
  * @param name - The name of the query parameter to resolve
  * @param event - The router event containing the request URL
- * @returns The value of the query parameter if found, null otherwise
+ * @returns The value of the query parameter if found, undefined otherwise
  */
-export function resolveQueryParam(name: string, event: RouterTypes.RouterEvent): string | null {
+export function resolveQueryParam(name: string, event: RouterTypes.RouterEvent): string | undefined {
   const search = getRequestSearch(event.request);
 
   if (search === '' || search === '?') {
-    return null;
+    return undefined;
   }
 
   const length = search.length;
@@ -84,7 +85,7 @@ export function resolveQueryParam(name: string, event: RouterTypes.RouterEvent):
     cursor = end + 1;
   }
 
-  return null;
+  return undefined;
 }
 
 /**

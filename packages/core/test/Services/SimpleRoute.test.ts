@@ -131,11 +131,12 @@ describe('Routes without middlewares', () => {
     await expect(response.json()).resolves.toEqual({ id: 'promotion/Łódź', name: 'Łódź' });
   });
 
-  it('should resolve a missing query parameter to null', async () => {
+  it('should resolve a missing query parameter to undefined', async () => {
     const response = await app.fetch(new globalThis.Request('http://localhost/simple/sync/42'));
 
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ id: '42', name: null });
+    // `name` is undefined, so JSON.stringify drops it
+    await expect(response.json()).resolves.toEqual({ id: '42' });
   });
 
   it('should apply a response mutation made through @Response()', async () => {
