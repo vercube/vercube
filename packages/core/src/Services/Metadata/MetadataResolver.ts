@@ -15,6 +15,9 @@ const ASYNC_ARG_TYPES: ReadonlySet<string> = new Set(['body', 'multipart-form-da
  * Class responsible for resolving metadata for route handlers.
  */
 export class MetadataResolver {
+  /** Controller paths set for this application only, by controller class. */
+  private fControllerPaths: Map<Function, string> = new Map();
+
   /**
    * Tells whether resolving an argument may require awaiting.
    *
@@ -174,6 +177,38 @@ export class MetadataResolver {
   }
 
   /**
+   * Mounts a controller under another path in this application only, in place
+   * of the one its `@Controller()` declares. Call it before the container is
+   * initialised, which is when routes are registered.
+   *
+   * Writing the path into the controller's metadata instead would change it
+   * for every application in the process, since the metadata lives on the
+   * class.
+   *
+   * @param {Function} controller - The controller class.
+   * @param {string} path - The path to mount it under.
+   * @returns {void}
+   */
+  public setControllerPath(controller: Function, path: string): void {
+    this.fControllerPaths.set(controller, path);
+  }
+
+  /**
+   * Returns the path a controller is mounted under in this application: the
+   * one set by {@link MetadataResolver.setControllerPath}, or else the one its
+   * `@Controller()` declares.
+   *
+   * @param {Function} controller - The controller class.
+   * @returns {string | undefined} The path, or undefined when the class is not a controller.
+   */
+  public getControllerPath(controller: Function): string | undefined {
+    return (
+      this.fControllerPaths.get(controller) ??
+      (controller.prototype as { __metadata?: MetadataTypes.Ctx } | undefined)?.__metadata?.__controller?.path
+    );
+  }
+
+  /**
    * Resolves the URL for a given instance and path.
    *
    * @param {MetadataTypes.ResolveUrlParams} params - The parameters for resolving the URL.
@@ -182,7 +217,7 @@ export class MetadataResolver {
   public resolveUrl(params: MetadataTypes.ResolveUrlParams): string {
     const { instance, propertyName, path: rawPath } = params;
     const metadata = instance.__metadata as MetadataTypes.Ctx;
-    const basePath = (metadata?.__controller?.path ?? '').replace(/\/$/, '');
+    const basePath = (this.fControllerPaths.get(instance.constructor) ?? metadata?.__controller?.path ?? '').replace(/\/$/, '');
     const cleanPath = rawPath.replace(/^\//, '');
     const url = `${basePath}/${cleanPath}`;
 

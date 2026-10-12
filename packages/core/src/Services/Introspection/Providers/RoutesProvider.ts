@@ -1,4 +1,5 @@
 import { Inject } from '@vercube/di';
+import { MetadataResolver } from '../../Metadata/MetadataResolver';
 import { Router } from '../../Router/Router';
 import type { IntrospectionTypes } from '../../../Types/IntrospectionTypes';
 import type { MetadataTypes } from '../../../Types/MetadataTypes';
@@ -21,6 +22,9 @@ export class RoutesProvider implements IntrospectionTypes.Provider<Introspection
   @Inject(Router)
   private readonly gRouter!: Router;
 
+  @Inject(MetadataResolver)
+  private readonly gMetadataResolver!: MetadataResolver;
+
   /** @inheritdoc */
   public revision(): number {
     return this.gRouter.revision;
@@ -29,7 +33,10 @@ export class RoutesProvider implements IntrospectionTypes.Provider<Introspection
   /** @inheritdoc */
   public describe(): IntrospectionTypes.RouteDescription[] {
     return this.gRouter.routes
-      .map((route) => describeRoute(route))
+      .map((route) => {
+        const controller = (route.handler.instance as object | undefined)?.constructor;
+        return describeRoute(route, controller ? this.gMetadataResolver.getControllerPath(controller) : undefined);
+      })
       .sort((a, b) => a.path.localeCompare(b.path) || a.method.localeCompare(b.method));
   }
 }
@@ -38,9 +45,10 @@ export class RoutesProvider implements IntrospectionTypes.Provider<Introspection
  * Describes a single route registration.
  *
  * @param route - Raw entry from the router
+ * @param basePath - Path the controller is mounted under, when the application mounted it elsewhere
  * @returns A serialisable description
  */
-export function describeRoute(route: RouterTypes.Route): IntrospectionTypes.RouteDescription {
+export function describeRoute(route: RouterTypes.Route, basePath?: string): IntrospectionTypes.RouteDescription {
   const handler = route.handler;
   const instance = handler.instance as object | undefined;
   const prototype = instance ? (Object.getPrototypeOf(instance) as { __metadata?: MetadataTypes.Ctx }) : undefined;
@@ -51,7 +59,7 @@ export function describeRoute(route: RouterTypes.Route): IntrospectionTypes.Rout
     path: route.path,
     controller: handler.controller ?? instance?.constructor?.name ?? 'Unknown',
     handler: handler.propertyName,
-    basePath: prototype?.__metadata?.__controller?.path,
+    basePath: basePath ?? prototype?.__metadata?.__controller?.path,
     args: (handler.args ?? []).map((arg) => describeArg(arg)),
     middlewares: [
       ...(handler.middlewares?.beforeMiddlewares ?? []).map((definition) => describeMiddleware(definition, 'before')),

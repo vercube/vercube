@@ -1,8 +1,8 @@
 import {
   BasePlugin,
   contributeTelemetryOptions,
-  initializeMetadata,
   IntrospectionRegistry,
+  MetadataResolver,
   skipGlobalMiddlewares,
   TelemetryRegistry,
 } from '@vercube/core';
@@ -155,10 +155,11 @@ export class DevtoolsPlugin extends BasePlugin<DevtoolsTypes.Options> {
     app.container.get(IntrospectionRegistry).register(app.container.get(QueueIntrospection));
     app.container.get(IntrospectionRegistry).register(app.container.get(SchedulerIntrospection));
 
-    // Both have to happen before the decorators read the metadata: the mount
-    // path is baked in at class-definition time, and the middleware chain is
-    // assembled once when the routes are registered.
-    initializeMetadata(DevtoolsController.prototype).__controller.path = resolved.path;
+    // Both have to happen before the routes are registered, which reads the
+    // mount path once and assembles the middleware chain once. The path is set
+    // for this application only, two apps in one process can mount devtools
+    // under different paths.
+    app.container.get(MetadataResolver).setControllerPath(DevtoolsController, resolved.path);
     skipGlobalMiddlewares(DevtoolsController.prototype);
     app.container.bind(DevtoolsController);
 
