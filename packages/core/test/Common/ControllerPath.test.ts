@@ -53,4 +53,13 @@ describe('MetadataResolver.setControllerPath', () => {
     expect(ping?.basePath).toBe('/mounted');
     expect(app.container.get(MetadataResolver).getControllerPath(MountedController)).toBe('/mounted');
   });
+
+  it('should keep the path an application mounts a controller under out of the shared metadata', async () => {
+    await Promise.all([boot('/first'), boot('/second')]);
+
+    const metadata = (MountedController.prototype as unknown as { __metadata: { __methods: Record<string, { url: string }> } })
+      .__metadata;
+
+    expect(metadata.__methods.ping.url).toBe('/declared/ping');
+  });
 });

@@ -15,9 +15,12 @@ export interface CreateAppOptions {
 
   /**
    * Runs after plugins have been applied and before the container is
-   * initialised. This is the last point where a binding can still be replaced
-   * and reach every service: a plugin may bind keys while it is applied, and a
-   * binding replaced after this point no longer reaches instances that exist.
+   * initialised, which is when controllers and the services they inject are
+   * constructed. A binding replaced here reaches those, including keys a
+   * plugin bound while it was applied.
+   *
+   * It does not reach what `App.init()` already constructed: the HTTP server,
+   * the router, the static file handler and the services they hold.
    */
   beforeInitialize?: (app: App) => MaybePromise<void>;
 
