@@ -2,7 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SchedulerError } from '../../src/Errors/SchedulerError';
 import { RedisStore } from '../../src/Stores/RedisStore';
 
-const state = vi.hoisted(() => ({ clients: [] as any[] }));
+const state = vi.hoisted(() => ({
+  clients: [] as any[],
+  failNextConnect: false,
+  onDisconnect: (() => undefined) as () => void,
+}));
 
 /** Minimal in-memory stand-in for an ioredis client, recording every call. */
 const fake = vi.hoisted(() => {
@@ -12,7 +16,15 @@ const fake = vi.hoisted(() => {
     public url?: string;
     public options?: Record<string, unknown>;
 
-    public connect = vi.fn(async () => undefined);
+    public connect = vi.fn(async () => {
+      if (state.failNextConnect) {
+        state.failNextConnect = false;
+
+        throw new Error('ECONNREFUSED');
+      }
+    });
+
+    public disconnect = vi.fn(() => state.onDisconnect());
     public quit = vi.fn(async () => 'OK');
 
     public set = vi.fn(async (key: string, value: string, _px: string, _ttl: number, _nx: string) => {
@@ -81,6 +93,7 @@ vi.mock('ioredis', () => ({
 describe('RedisStore', () => {
   beforeEach(() => {
     state.clients.length = 0;
+    state.failNextConnect = false;
   });
 
   it('is named and distributed', () => {
@@ -190,6 +203,22 @@ describe('RedisStore', () => {
       lastOutcome: 'running',
       lastInstance: 'pod-b',
     });
+  });
+
+  it('disconnects a client that failed to connect, and connects a new one on retry', async () => {
+    const store = new RedisStore();
+    const disconnect = vi.fn();
+
+    state.failNextConnect = true;
+    state.onDisconnect = disconnect;
+
+    await expect(store.initialize(undefined)).rejects.toThrow('ECONNREFUSED');
+    expect(disconnect).toHaveBeenCalledTimes(1);
+    await expect(store.claim('a', 'b', 1)).rejects.toThrow(SchedulerError);
+
+    await store.initialize(undefined);
+    expect(await store.claim('a', 'b', 1000)).toBe(true);
+    expect(state.clients).toHaveLength(2);
   });
 
   it('refuses to work before it is initialized', async () => {
