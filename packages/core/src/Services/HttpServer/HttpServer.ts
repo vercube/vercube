@@ -12,6 +12,9 @@ import type { ConfigTypes } from '../../Types/ConfigTypes';
 import type { TelemetryTypes } from '../../Types/TelemetryTypes';
 import type { Server, ServerPlugin } from 'srvx';
 
+/** How often a closing Node server closes the keep-alive connections that became idle. */
+const IDLE_SWEEP_INTERVAL = 50;
+
 /**
  * Whether the current runtime/platform can bind a socket with `SO_REUSEPORT`.
  *
@@ -67,6 +70,12 @@ export class HttpServer {
    * @private
    */
   private fServer!: Server;
+
+  /**
+   * Whether {@link HttpServer.listen} bound the server
+   * @private
+   */
+  private fListening: boolean = false;
 
   /**
    * List of plugins to be applied to the HTTP server
@@ -146,6 +155,49 @@ export class HttpServer {
   public async listen(): Promise<void> {
     await this.fServer.serve();
     await this.fServer.ready();
+
+    this.fListening = true;
+  }
+
+  /**
+   * Stops accepting connections and waits for the requests in flight. Once
+   * `timeout` elapses, the connections still open are closed. Does nothing
+   * when the server never listened, as with `app.fetch()` alone.
+   *
+   * @param {number} [timeout] - Milliseconds to wait for requests in flight, unbounded when omitted
+   * @returns {Promise<void>} Resolves once the server is closed
+   */
+  public async close(timeout?: number): Promise<void> {
+    if (!this.fListening) {
+      return;
+    }
+
+    this.fListening = false;
+
+    const closing = this.fServer.close();
+
+    // Node waits for idle keep-alive connections to time out, and a connection
+    // only becomes idle once its request is answered: keep closing them until
+    // the server is closed. Bun and Deno close idle connections themselves.
+    const node = this.fServer.node?.server as { closeIdleConnections?: () => void } | undefined;
+    const sweep = node?.closeIdleConnections ? setInterval(() => node.closeIdleConnections?.(), IDLE_SWEEP_INTERVAL) : undefined;
+
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    const expired = new Promise<true>((resolve) => {
+      if (timeout !== undefined) {
+        timer = setTimeout(() => resolve(true), timeout);
+      }
+    });
+
+    try {
+      if ((await Promise.race([closing, expired])) === true) {
+        await this.fServer.close(true);
+      }
+    } finally {
+      clearTimeout(timer);
+      clearInterval(sweep);
+    }
   }
 
   /**
