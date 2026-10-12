@@ -76,6 +76,9 @@ export class SchedulerPlugin extends BasePlugin<SchedulerTypes.PluginOptions> {
   public override async use(app: App, options?: SchedulerTypes.PluginOptions): Promise<void> {
     if (!app.container.getOptional(SchedulerManager)) {
       app.container.bind(SchedulerManager);
+
+      // close with the application, once however many times the plugin is registered
+      app.onClose(() => app.container.get(SchedulerManager).close());
     }
 
     const manager = app.container.get(SchedulerManager);

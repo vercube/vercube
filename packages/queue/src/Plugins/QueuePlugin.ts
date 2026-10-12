@@ -61,6 +61,9 @@ export class QueuePlugin extends BasePlugin<QueueTypes.PluginOptions> {
   public override async use(app: App, options?: QueueTypes.PluginOptions): Promise<void> {
     if (!app.container.getOptional(QueueManager)) {
       app.container.bind(QueueManager);
+
+      // close with the application, once however many times the plugin is registered
+      app.onClose(() => app.container.get(QueueManager).close());
     }
 
     const manager = app.container.get(QueueManager);

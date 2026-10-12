@@ -1,14 +1,23 @@
 import { initializeContainer, Inject } from '@vercube/di';
+import { Logger } from '@vercube/logger';
 import { RuntimeConfig } from '../Services/Config/RuntimeConfig';
 import { HttpServer } from '../Services/HttpServer/HttpServer';
 import { IntrospectionRegistry } from '../Services/Introspection/IntrospectionRegistry';
 import { PluginsRegistry } from '../Services/Plugins/PluginsRegistry';
 import { Router } from '../Services/Router/Router';
 import { StaticRequestHandler } from '../Services/Router/StaticRequestHandler';
+import { ShutdownRegistry } from '../Services/Shutdown/ShutdownRegistry';
 import type { BasePlugin } from '../Services/Plugins/BasePlugin';
+import type { ShutdownHook } from '../Services/Shutdown/ShutdownRegistry';
 import type { ConfigTypes } from '../Types/ConfigTypes';
 import type { VercubePlugin, VercubePluginEnv } from '../Types/Plugin';
 import type { Container } from '@vercube/di';
+
+/** Signals handled when `shutdown.handleSignals` is `true`. */
+const DEFAULT_SHUTDOWN_SIGNALS = ['SIGTERM', 'SIGINT'];
+
+/** How long the HTTP server waits for requests in flight when no timeout is configured. */
+const DEFAULT_SHUTDOWN_TIMEOUT = 25_000;
 
 /**
  * Represents the main application class.
@@ -29,6 +38,9 @@ export class App {
   @Inject(RuntimeConfig)
   private gRuntimeConfig!: RuntimeConfig;
 
+  @Inject(ShutdownRegistry)
+  private gShutdownRegistry!: ShutdownRegistry;
+
   /** Holds the initialization status of the application */
   private fIsInitialized: boolean = false;
 
@@ -37,6 +49,12 @@ export class App {
 
   /** Hold app config */
   private fConfig!: ConfigTypes.Config;
+
+  /** The close in progress, so `close()` runs once */
+  private fClosing: Promise<void> | null = null;
+
+  /** Removes the process signal listeners, set while they are installed */
+  private fSignalCleanup: (() => void) | null = null;
 
   /**
    * Gets the dependency injection container.
@@ -128,6 +146,39 @@ export class App {
     await this.gHttpServer.listen();
 
     this.fIsInitialized = true;
+
+    this.installSignals();
+  }
+
+  /**
+   * Registers a callback run by {@link App.close}. Callbacks run one after
+   * another, last registered first, once the HTTP server has stopped.
+   *
+   * @param {ShutdownHook} hook - The callback to run on close
+   * @returns {() => void} Removes the callback again
+   */
+  public onClose(hook: ShutdownHook): () => void {
+    return this.gShutdownRegistry.register(hook);
+  }
+
+  /**
+   * Closes the application gracefully. The HTTP server stops accepting
+   * connections and waits for the requests in flight, closing the connections
+   * still open once `timeout` elapses. Then the callbacks registered with
+   * {@link App.onClose} run, last registered first, so modules such as the
+   * scheduler and the queue drain their work in one place.
+   *
+   * Safe to call more than once: later calls return the first close.
+   *
+   * @param {object} [options] - How long to wait
+   * @param {number} [options.timeout] - Milliseconds the HTTP server waits for requests in flight, defaults to `shutdown.timeout`
+   * @returns {Promise<void>} Resolves once everything is closed
+   * @throws {AggregateError} When the server or a callback failed to close, after every callback has run
+   */
+  public close(options: { timeout?: number } = {}): Promise<void> {
+    this.fClosing ??= this.shutdown(options.timeout ?? this.fConfig?.shutdown?.timeout ?? DEFAULT_SHUTDOWN_TIMEOUT);
+
+    return this.fClosing;
   }
 
   /**
@@ -193,6 +244,121 @@ export class App {
     }
 
     process.stdout.write(json);
+  }
+
+  /**
+   * Stops the HTTP server, then runs the shutdown hooks. A server that fails to
+   * close does not keep the hooks from running.
+   *
+   * @param {number} timeout - Milliseconds the HTTP server waits for requests in flight
+   * @returns {Promise<void>} Resolves once everything is closed
+   * @private
+   */
+  private async shutdown(timeout: number): Promise<void> {
+    const errors: unknown[] = [];
+
+    try {
+      await this.gHttpServer.close(timeout);
+    } catch (error) {
+      errors.push(error);
+    }
+
+    try {
+      await this.gShutdownRegistry.run();
+    } catch (error) {
+      errors.push(...(error instanceof AggregateError ? error.errors : [error]));
+    }
+
+    this.fSignalCleanup?.();
+    this.fSignalCleanup = null;
+
+    if (errors.length > 0) {
+      throw new AggregateError(errors, 'Failed to close the application');
+    }
+  }
+
+  /**
+   * Installs the process signal listeners `shutdown.handleSignals` asks for:
+   * Node and Bun through `process.on()`, Deno through `Deno.addSignalListener()`.
+   *
+   * The first signal closes the application and exits, with code 1 when
+   * something failed to close. A second signal exits with code 1 right away.
+   *
+   * @returns {void}
+   * @private
+   */
+  private installSignals(): void {
+    const option = this.fConfig?.shutdown?.handleSignals;
+
+    if (!option || this.fSignalCleanup) {
+      return;
+    }
+
+    const signals = option === true ? DEFAULT_SHUTDOWN_SIGNALS : option;
+
+    const runtime = globalThis as {
+      process?: {
+        on?: (signal: string, fn: () => void) => void;
+        off?: (signal: string, fn: () => void) => void;
+        exit?: (code: number) => void;
+      };
+      Deno?: {
+        addSignalListener?: (signal: string, fn: () => void) => void;
+        removeSignalListener?: (signal: string, fn: () => void) => void;
+        exit?: (code: number) => void;
+      };
+    };
+
+    const deno = typeof runtime.Deno?.addSignalListener === 'function' ? runtime.Deno : undefined;
+    const process = runtime.process;
+    // a signal listener replaces the runtime's default exit, so exiting is ours to do
+    // oxlint-disable-next-line unicorn/no-process-exit
+    const exit = (code: number): void => (deno ? deno.exit?.(code) : process?.exit?.(code));
+
+    let received = false;
+
+    const handler = (): void => {
+      if (received) {
+        exit(1);
+        return;
+      }
+
+      received = true;
+
+      this.close().then(
+        () => exit(0),
+        (error) => {
+          this.container.getOptional(Logger)?.error('Vercube/App::Failed to close the application', error);
+          exit(1);
+        },
+      );
+    };
+
+    if (deno) {
+      for (const signal of signals) {
+        deno.addSignalListener?.(signal, handler);
+      }
+
+      this.fSignalCleanup = () => {
+        for (const signal of signals) {
+          deno.removeSignalListener?.(signal, handler);
+        }
+      };
+
+      return;
+    }
+
+    if (typeof process?.on === 'function') {
+      for (const signal of signals) {
+        process.on(signal, handler);
+      }
+
+      this.fSignalCleanup = () => {
+        for (const signal of signals) {
+          process.off?.(signal, handler);
+        }
+      };
+    }
   }
 
   /**

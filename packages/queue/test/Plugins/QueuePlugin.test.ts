@@ -1,5 +1,6 @@
+import { ShutdownRegistry } from '@vercube/core';
 import { Container } from '@vercube/di';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { QueuePlugin } from '../../src/Plugins/QueuePlugin';
 import { QueueManager } from '../../src/Services/QueueManager';
 import { MemoryStrategy } from '../../src/Strategies/MemoryStrategy';
@@ -9,18 +10,33 @@ import type { App } from '@vercube/core';
 describe('QueuePlugin', () => {
   let container: Container;
   let app: App;
+  let shutdown: ShutdownRegistry;
   let plugin: QueuePlugin;
 
   beforeEach(() => {
     container = new Container();
     container.bindInstance(Container, container);
 
-    app = { container } as unknown as App;
+    shutdown = new ShutdownRegistry();
+    app = { container, onClose: (hook: () => Promise<void>) => shutdown.register(hook) } as unknown as App;
     plugin = container.resolve(QueuePlugin);
   });
 
   it('should be named', () => {
     expect(plugin.name).toBe('QueuePlugin');
+  });
+
+  it('should close the queue with the application, once', async () => {
+    await plugin.use(app, { strategies: [{ strategy: MemoryStrategy }] });
+    await container.resolve(QueuePlugin).use(app);
+
+    const close = vi.spyOn(container.get(QueueManager), 'close');
+
+    expect(shutdown.size).toBe(1);
+
+    await shutdown.run();
+
+    expect(close).toHaveBeenCalledOnce();
   });
 
   it('should bind the queue manager', async () => {

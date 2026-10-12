@@ -1,6 +1,6 @@
-import { initializeMetadata } from '@vercube/core';
+import { initializeMetadata, ShutdownRegistry } from '@vercube/core';
 import { Container, initializeContainer } from '@vercube/di';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SchedulerCommand } from '../../src/Commands/SchedulerCommands';
 import { SchedulerController } from '../../src/Controllers/SchedulerController';
 import { Every } from '../../src/Decorators/Every';
@@ -23,6 +23,7 @@ class Jobs {
 describe('SchedulerPlugin', () => {
   let container: Container;
   let app: App;
+  let shutdown: ShutdownRegistry;
   let plugin: SchedulerPlugin;
 
   beforeEach(() => {
@@ -30,12 +31,26 @@ describe('SchedulerPlugin', () => {
     container = new Container();
     container.bindInstance(Container, container);
 
-    app = { container } as unknown as App;
+    shutdown = new ShutdownRegistry();
+    app = { container, onClose: (hook: () => Promise<void>) => shutdown.register(hook) } as unknown as App;
     plugin = container.resolve(SchedulerPlugin);
   });
 
   it('should be named', () => {
     expect(plugin.name).toBe('SchedulerPlugin');
+  });
+
+  it('should close the scheduler with the application, once', async () => {
+    await plugin.use(app, { store: defineSchedulerStore({ store: MemoryStore }), autoStart: false });
+    await container.resolve(SchedulerPlugin).use(app);
+
+    const close = vi.spyOn(container.get(SchedulerManager), 'close');
+
+    expect(shutdown.size).toBe(1);
+
+    await shutdown.run();
+
+    expect(close).toHaveBeenCalledOnce();
   });
 
   it('should bind the scheduler and mount the store', async () => {

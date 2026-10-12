@@ -150,6 +150,27 @@ export namespace ConfigTypes {
   }
 
   /**
+   * Graceful shutdown options, used by `app.close()`.
+   */
+  export interface ShutdownOptions {
+    /**
+     * Close the application on these process signals and exit once it is
+     * closed, `true` meaning `SIGTERM` and `SIGINT`. A second signal exits
+     * right away.
+     * @default false
+     */
+    handleSignals?: boolean | string[];
+
+    /**
+     * Milliseconds the HTTP server waits for requests in flight before closing
+     * the connections still open. Shutdown hooks are not bound by it, modules
+     * such as the scheduler bring their own timeout.
+     * @default 25000
+     */
+    timeout?: number;
+  }
+
+  /**
    * Main configuration interface for the Vercube application.
    */
   export interface Config<RuntimeUserConfig = Record<string, unknown>> {
@@ -205,6 +226,11 @@ export namespace ConfigTypes {
      * Server configuration options.
      */
     server?: ServerOptions;
+
+    /**
+     * Graceful shutdown options.
+     */
+    shutdown?: ShutdownOptions;
 
     /**
      * Runtime configuration for the application.
