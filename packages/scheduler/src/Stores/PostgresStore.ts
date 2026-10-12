@@ -107,6 +107,9 @@ export class PostgresStore extends SchedulerStore<PostgresStoreOptions | undefin
 
   /** @inheritdoc */
   public async initialize(options?: PostgresStoreOptions): Promise<void> {
+    // a retried initialization starts from scratch
+    await this.close();
+
     const prefix = options?.tablePrefix ?? 'vercube_scheduler';
     const qualify = (table: string): string => (options?.schema ? `${quote(options.schema)}.${quote(table)}` : quote(table));
 
@@ -122,28 +125,44 @@ export class PostgresStore extends SchedulerStore<PostgresStoreOptions | undefin
     }
 
     if (options?.createTables ?? true) {
-      await this.pool.query(
-        `CREATE TABLE IF NOT EXISTS ${this.fLocks} (
-          key        text PRIMARY KEY,
-          owner      text NOT NULL,
-          expires_at timestamptz NOT NULL
-        )`,
-      );
-      await this.pool.query(
-        `CREATE TABLE IF NOT EXISTS ${this.fState} (
-          job                text PRIMARY KEY,
-          last_scheduled_at  timestamptz NOT NULL,
-          last_started_at    timestamptz NOT NULL,
-          last_finished_at   timestamptz,
-          last_outcome       text NOT NULL,
-          last_instance      text NOT NULL,
-          last_error         text
-        )`,
-      );
+      try {
+        await this.createTables();
+      } catch (error) {
+        // the manager retries initialization, so a failed pool must not linger
+        await this.close();
+
+        throw error;
+      }
     }
 
     this.fHousekeeping = setInterval(() => void this.housekeeping(), HOUSEKEEPING_INTERVAL);
     this.fHousekeeping.unref?.();
+  }
+
+  /**
+   * Creates both tables when they do not exist yet.
+   *
+   * @returns Resolves once both exist
+   */
+  private async createTables(): Promise<void> {
+    await this.pool.query(
+      `CREATE TABLE IF NOT EXISTS ${this.fLocks} (
+        key        text PRIMARY KEY,
+        owner      text NOT NULL,
+        expires_at timestamptz NOT NULL
+      )`,
+    );
+    await this.pool.query(
+      `CREATE TABLE IF NOT EXISTS ${this.fState} (
+        job                text PRIMARY KEY,
+        last_scheduled_at  timestamptz NOT NULL,
+        last_started_at    timestamptz NOT NULL,
+        last_finished_at   timestamptz,
+        last_outcome       text NOT NULL,
+        last_instance      text NOT NULL,
+        last_error         text
+      )`,
+    );
   }
 
   /** @inheritdoc */

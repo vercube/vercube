@@ -2,12 +2,20 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SchedulerError } from '../../src/Errors/SchedulerError';
 import { PostgresStore } from '../../src/Stores/PostgresStore';
 
-const state = vi.hoisted(() => ({ pools: [] as any[] }));
+const state = vi.hoisted(() => ({ pools: [] as any[], failCreate: false }));
 
 vi.mock('pg', () => ({
   Pool: class {
     public options: unknown;
-    public query = vi.fn(async () => ({ rows: [], rowCount: 0 }));
+    public query = vi.fn(async (text: string) => {
+      if (state.failCreate && text.includes('CREATE TABLE')) {
+        state.failCreate = false;
+
+        throw new Error('permission denied');
+      }
+
+      return { rows: [], rowCount: 0 };
+    });
     public end = vi.fn(async () => undefined);
 
     constructor(options: unknown) {
@@ -33,6 +41,7 @@ const sql = (text: string): string => text.replaceAll(/\s+/g, ' ').trim();
 describe('PostgresStore', () => {
   beforeEach(() => {
     state.pools.length = 0;
+    state.failCreate = false;
   });
 
   afterEach(() => {
@@ -189,6 +198,23 @@ describe('PostgresStore', () => {
     await store.close();
     await vi.advanceTimersByTimeAsync(60 * 60_000);
     expect(pool.query).toHaveBeenCalledTimes(2);
+  });
+
+  it('closes the pool it created when creating the tables fails, and starts over on retry', async () => {
+    const store = new PostgresStore();
+
+    state.failCreate = true;
+    await expect(store.initialize({ connectionString: 'postgres://db/app' })).rejects.toThrow('permission denied');
+
+    expect(state.pools[0].end).toHaveBeenCalledTimes(1);
+    await expect(store.claim('a', 'b', 1)).rejects.toThrow(SchedulerError);
+
+    await store.initialize({ connectionString: 'postgres://db/app' });
+    await store.initialize({ connectionString: 'postgres://db/app' });
+
+    expect(state.pools).toHaveLength(3);
+    expect(state.pools[1].end).toHaveBeenCalledTimes(1);
+    await store.close();
   });
 
   it('refuses to work before it is initialized', async () => {

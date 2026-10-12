@@ -84,10 +84,17 @@ export class RedisStore extends SchedulerStore<RedisStoreOptions | undefined> {
 
     const client = new Redis(options?.url ?? 'redis://127.0.0.1:6379', { lazyConnect: true });
 
+    try {
+      await client.connect();
+    } catch (error) {
+      // the manager retries initialization, so a failed client must not linger
+      client.disconnect();
+
+      throw error;
+    }
+
     this.fClient = client;
     this.fOwnsClient = true;
-
-    await client.connect();
   }
 
   /** @inheritdoc */

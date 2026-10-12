@@ -34,6 +34,8 @@
       "@vercube/telemetry/testing": ["./packages/telemetry/src/Testing.ts"],
       "@vercube/scheduler/testing": ["./packages/scheduler/src/Testing.ts"],
       "@vercube/scheduler/stores/MemoryStore": ["./packages/scheduler/src/Stores/MemoryStore.ts"],
+      "@vercube/scheduler/stores/PostgresStore": ["./packages/scheduler/src/Stores/PostgresStore.ts"],
+      "@vercube/scheduler/stores/RedisStore": ["./packages/scheduler/src/Stores/RedisStore.ts"],
       "@vercube/*": ["./packages/*/src"]
     }
   },
