@@ -6,6 +6,7 @@ import {
   Controller,
   createApp,
   Get,
+  Param,
   Post,
   QueryParam,
   StandardSchemaValidationProvider,
@@ -24,6 +25,11 @@ class ValidationController {
     @QueryParam({ name: 'email', validationSchema: z.string().trim().toLowerCase() }) email: string,
   ): unknown {
     return { page, email };
+  }
+
+  @Get('/param/:id')
+  public param(@Param({ name: 'id', validationSchema: z.coerce.number().int().positive() }) id: number): unknown {
+    return { id, type: typeof id };
   }
 
   @Post('/body')
@@ -196,5 +202,22 @@ describe('ValidationMiddleware', () => {
       }),
     );
     expect(await body.json()).toEqual({ name: 'John' });
+  });
+
+  it('should validate and coerce path params', async () => {
+    const app = await createApp({
+      cfg: { requestLogging: false },
+      setup: (instance) => {
+        instance.container.bind(ValidationController);
+      },
+    });
+
+    const valid = await app.fetch(new Request('http://localhost/validation/param/42'));
+    expect(valid.status).toBe(200);
+    expect(await valid.json()).toEqual({ id: 42, type: 'number' });
+
+    const invalid = await app.fetch(new Request('http://localhost/validation/param/abc'));
+    expect(invalid.status).toBe(400);
+    expect((await invalid.json()).message).toBe('Validation error - param');
   });
 });
