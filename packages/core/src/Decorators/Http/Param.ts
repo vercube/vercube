@@ -1,11 +1,14 @@
 import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
+import { ValidationMiddleware } from '../../Middleware/ValidationMiddleware';
 import { MetadataResolver } from '../../Services/Metadata/MetadataResolver';
-import { initializeMetadata, initializeMetadataMethod, setMetadataArg } from '../../Utils/Utils';
+import { addMetadataMiddleware, initializeMetadata, initializeMetadataMethod, setMetadataArg } from '../../Utils/Utils';
 import type { MetadataTypes } from '../../Types/MetadataTypes';
+import type { ValidationTypes } from '../../Types/ValidationTypes';
 
 interface ParamDecoratorOptions {
   // name of the route parameter
   name: string;
+  validationSchema?: ValidationTypes.Schema;
 }
 
 /**
@@ -28,7 +31,7 @@ class ParamDecorator extends BaseDecorator<ParamDecoratorOptions, MetadataTypes.
    * and then adds the parameter information to the metadata.
    */
   public override created(): void {
-    initializeMetadata(this.prototype);
+    const meta = initializeMetadata(this.prototype);
     const method = initializeMetadataMethod(this.prototype, this.propertyName);
 
     // add parameter to metadata
@@ -38,7 +41,23 @@ class ParamDecorator extends BaseDecorator<ParamDecoratorOptions, MetadataTypes.
       data: {
         name: this.options.name,
       },
+      validate: this.options.validationSchema ? true : false,
+      validationSchema: this.options.validationSchema,
     });
+
+    // the validation middleware only has work to do when a schema was given
+    if (this.options.validationSchema) {
+      addMetadataMiddleware(
+        meta,
+        {
+          target: this.propertyName,
+          priority: -1,
+          args: {},
+          middleware: ValidationMiddleware,
+        },
+        'first',
+      );
+    }
   }
 }
 
@@ -48,11 +67,17 @@ class ParamDecorator extends BaseDecorator<ParamDecoratorOptions, MetadataTypes.
  * This function returns a decorator function that can be used to annotate
  * a method parameter with parameter information.
  *
- * @param {string} name - The name of the parameter.
- * @param {Object} [opts] - Optional settings for the parameter.
- * @param {boolean} [opts.decode=false] - Whether to decode the parameter.
+ * Pass an options object to validate the parameter. The parsed value (after
+ * coercion and transforms) is what the handler receives:
+ *
+ * ```ts
+ * @Get('/:id')
+ * getUser(@Param({ name: 'id', validationSchema: z.coerce.number().int() }) id: number) {}
+ * ```
+ *
+ * @param {string | ParamDecoratorOptions} nameOrOptions - The name of the route parameter, or options with `name` and `validationSchema`.
  * @return {Function} The decorator function.
  */
-export function Param(name: string): Function {
-  return createDecorator(ParamDecorator, { name });
+export function Param(nameOrOptions: string | ParamDecoratorOptions): Function {
+  return createDecorator(ParamDecorator, typeof nameOrOptions === 'string' ? { name: nameOrOptions } : nameOrOptions);
 }

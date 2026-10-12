@@ -99,6 +99,9 @@ export class MockController {
   @Get('/:param')
   public param(@Param('param') param: string): void {}
 
+  @Get('/param-validation/:id')
+  public paramValidation(@Param({ name: 'id', validationSchema: z.coerce.number() }) id: number): void {}
+
   @Get('/header')
   public header(@Header('x-test') header: string): void {}
 
