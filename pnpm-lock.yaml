@@ -772,6 +772,12 @@ importers:
       '@types/pg':
         specifier: 8.23.1
         version: 8.23.1
+      '@vercube/cli':
+        specifier: workspace:*
+        version: link:../cli
+      '@vercube/devkit':
+        specifier: workspace:*
+        version: link:../devkit
       '@vercube/queue':
         specifier: workspace:*
         version: link:../queue
@@ -958,6 +964,9 @@ importers:
       '@vercube/queue':
         specifier: workspace:*
         version: link:../packages/queue
+      '@vercube/scheduler':
+        specifier: workspace:*
+        version: link:../packages/scheduler
       '@vercube/schema':
         specifier: workspace:*
         version: link:../packages/schema

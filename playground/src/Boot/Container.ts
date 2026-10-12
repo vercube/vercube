@@ -8,6 +8,7 @@ import { EventsController } from '../Controllers/EventsController';
 import PlaygroundController from '../Controllers/PlaygroundController';
 import { QueueController } from '../Controllers/QueueController';
 import { RequestContextController } from '../Controllers/RequestContextController';
+import { MaintenanceJobs } from '../Jobs/MaintenanceJobs';
 import { BasicAuthenticationProvider } from '../Services/BasicAuthenticationProvider';
 import { EventsService } from '../Services/EventsService';
 import { TypedRequestContext } from '../Services/TypedRequestContext';
@@ -21,6 +22,7 @@ export function useContainer(container: Container): void {
   container.bind(EventsController);
   container.bind(EventsService);
   container.bind(EmailConsumer);
+  container.bind(MaintenanceJobs);
   container.bindTransient(TypedRequestContext);
 
   container.bind(StorageManager);

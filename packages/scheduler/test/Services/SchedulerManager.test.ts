@@ -1115,6 +1115,40 @@ describe('SchedulerManager', () => {
       expect(manager.inspect().events).toEqual([]);
     });
 
+    it('reports the occurrence its schedule is at', async () => {
+      clock.set('2026-01-01T03:00:02Z');
+
+      const { manager } = await createReplica({ clock });
+
+      manager.add({ name: 'nightly', schedule: { cron: '0 3 * * *' }, scope: 'instance', handler: () => {} });
+      manager.add({ name: 'every', schedule: { every: '1h' }, scope: 'instance', handler: () => {} });
+
+      expect(manager.currentOccurrence('nightly')).toEqual(new Date('2026-01-01T03:00:00Z'));
+      expect(manager.currentOccurrence('every')).toEqual(new Date('2026-01-01T03:00:00Z'));
+    });
+
+    it('registers itself for the CLI and forgets itself once closed', async () => {
+      const { manager, container } = await createReplica({ clock });
+      const { liveManagers } = await import('../../src/Utils/Registry');
+
+      initializeContainer(container);
+      expect(liveManagers()).toContain(manager);
+
+      await manager.close();
+      expect(liveManagers()).not.toContain(manager);
+    });
+
+    it('never starts on its own when the CLI turned timers off', async () => {
+      vi.stubEnv('VERCUBE_SCHEDULER_AUTOSTART', 'false');
+
+      const { manager, container } = await createReplica({ clock, autoStart: true });
+
+      initializeContainer(container);
+      await Promise.resolve();
+
+      expect(manager.started).toBe(false);
+    });
+
     it('stops notifying an unsubscribed listener', async () => {
       const { manager } = await createReplica({ clock });
       const listener = vi.fn();

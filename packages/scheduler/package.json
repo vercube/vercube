@@ -18,6 +18,7 @@
     "./stores/MemoryStore": "./dist/Stores/MemoryStore.mjs",
     "./stores/RedisStore": "./dist/Stores/RedisStore.mjs",
     "./stores/PostgresStore": "./dist/Stores/PostgresStore.mjs",
+    "./cli": "./dist/Cli.mjs",
     "./testing": "./dist/Testing.mjs",
     "./package.json": "./package.json"
   },
@@ -49,15 +50,25 @@
     "pg": "8.23.1"
   },
   "peerDependencies": {
+    "@vercube/cli": "workspace:^",
+    "@vercube/devkit": "workspace:^",
     "@vercube/queue": "workspace:^"
   },
   "peerDependenciesMeta": {
+    "@vercube/cli": {
+      "optional": true
+    },
+    "@vercube/devkit": {
+      "optional": true
+    },
     "@vercube/queue": {
       "optional": true
     }
   },
   "devDependencies": {
     "@types/pg": "8.23.1",
+    "@vercube/cli": "workspace:*",
+    "@vercube/devkit": "workspace:*",
     "@vercube/queue": "workspace:*"
   },
   "publishConfig": {
