@@ -15,6 +15,8 @@
   "module": "./dist/index.mjs",
   "exports": {
     ".": "./dist/index.mjs",
+    "./auth": "./dist/Auth.mjs",
+    "./telemetry": "./dist/Telemetry.mjs",
     "./package.json": "./package.json"
   },
   "types": "./dist/index.d.mts",
@@ -37,7 +39,21 @@
     "@vercube/di": "workspace:*",
     "@vercube/logger": "workspace:*"
   },
+  "peerDependencies": {
+    "@vercube/auth": "workspace:^",
+    "@vercube/telemetry": "workspace:^"
+  },
+  "peerDependenciesMeta": {
+    "@vercube/auth": {
+      "optional": true
+    },
+    "@vercube/telemetry": {
+      "optional": true
+    }
+  },
   "devDependencies": {
+    "@vercube/auth": "workspace:*",
+    "@vercube/telemetry": "workspace:*",
     "zod": "catalog:"
   },
   "publishConfig": {
