@@ -33,6 +33,13 @@
 pnpm add @vercube/scheduler
 ```
 
+Install the client of the store your replicas share, they are all optional:
+
+```bash
+pnpm add ioredis      # RedisStore
+pnpm add pg           # PostgresStore
+```
+
 ## 📖 Usage
 
 ```ts

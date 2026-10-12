@@ -63,6 +63,15 @@ By participating in this project, you agree to abide by our Code of Conduct. Ple
    pnpm test
    ```
 
+   The `@vercube/scheduler` store suites run against real services only when they are configured, and are skipped otherwise:
+
+   ```sh
+   docker run -d --rm -p 6379:6379 redis:7-alpine
+   docker run -d --rm -e POSTGRES_PASSWORD=pg -p 5432:5432 postgres:17-alpine
+
+   REDIS_URL=redis://127.0.0.1:6379 DATABASE_URL=postgres://postgres:pg@127.0.0.1:5432/postgres pnpm test
+   ```
+
 4. Start the playground:
    ```sh
    pnpm playground

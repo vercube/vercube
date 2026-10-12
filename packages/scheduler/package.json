@@ -16,6 +16,8 @@
   "exports": {
     ".": "./dist/index.mjs",
     "./stores/MemoryStore": "./dist/Stores/MemoryStore.mjs",
+    "./stores/RedisStore": "./dist/Stores/RedisStore.mjs",
+    "./stores/PostgresStore": "./dist/Stores/PostgresStore.mjs",
     "./testing": "./dist/Testing.mjs",
     "./package.json": "./package.json"
   },
@@ -29,7 +31,9 @@
     "scheduler",
     "cron",
     "jobs",
-    "distributed"
+    "distributed",
+    "redis",
+    "postgres"
   ],
   "scripts": {
     "build": "tsdown --config tsdown.config.ts --config-loader=unrun"
@@ -42,5 +46,12 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "optionalDependencies": {
+    "ioredis": "6.0.0",
+    "pg": "8.23.1"
+  },
+  "devDependencies": {
+    "@types/pg": "8.23.1"
   }
 }
