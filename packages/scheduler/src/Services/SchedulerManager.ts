@@ -50,6 +50,12 @@ interface Registration {
   /** Whether the name was derived from the class and method rather than given. */
   generatedName: boolean;
 
+  /** Queue the work is enqueued on, null to run it inline. */
+  target: ParsedTarget | null;
+
+  /** Consumer registered with the queue for a queue target. */
+  consumer?: QueueRegistration;
+
   /** Computed schedule, rebuilt when the default time zone changes. */
   schedule?: Schedule;
 
@@ -62,6 +68,33 @@ interface Registration {
   /** Runs of this job in flight here. */
   running: number;
 }
+
+/** What the scheduler needs from the `QueueManager` of `@vercube/queue`. */
+interface QueueManagerLike {
+  add(request: {
+    queue: string;
+    job: string;
+    payload: SchedulerTypes.QueuePayload;
+    strategy?: string;
+    options?: { jobId?: string };
+  }): Promise<unknown>;
+  registerConsumer(registration: QueueRegistration): void;
+  unregisterConsumer(registration: Pick<QueueRegistration, 'strategy' | 'queue' | 'job'>): void;
+}
+
+/** A consumer registration, as `QueueManager.registerConsumer()` takes it. */
+interface QueueRegistration {
+  strategy: string;
+  queue: string;
+  job: string;
+  handler: (payload: SchedulerTypes.QueuePayload, context: { attempt: number }) => Promise<void>;
+  options: Pick<SchedulerTypes.QueueTarget, 'attempts' | 'backoff'>;
+  source: string;
+}
+
+/** A queue target with its defaults applied. */
+type ParsedTarget = Required<Pick<SchedulerTypes.QueueTarget, 'queue' | 'strategy'>> &
+  Pick<SchedulerTypes.QueueTarget, 'attempts' | 'backoff'>;
 
 /** A claim held in the store for the duration of a run. */
 interface Lock {
@@ -168,6 +201,9 @@ export class SchedulerManager {
   /** Whether the timers are armed */
   protected fStarted: boolean = false;
 
+  /** Counts `stop()` calls, so a `start()` waiting on I/O notices one happened meanwhile */
+  protected fStops: number = 0;
+
   /** Shutdown in progress */
   protected fStopping: Promise<void> | null = null;
 
@@ -188,6 +224,9 @@ export class SchedulerManager {
 
   /** Installed process signal listeners, removed on close */
   protected fSignalCleanup: (() => void) | null = null;
+
+  /** Queue manager of `@vercube/queue`, resolved when a job targets a queue */
+  protected fQueue: QueueManagerLike | null = null;
 
   /** Whether the local-store warning was already logged */
   protected fWarnedLocal: boolean = false;
@@ -298,7 +337,7 @@ export class SchedulerManager {
    * ```
    */
   public add(definition: SchedulerTypes.JobDefinition): void {
-    const { name, schedule, handler, source, external, paused, ...options } = definition;
+    const { name, schedule, handler, source, external, paused, target, ...options } = definition;
 
     if (typeof name !== 'string' || name.trim() === '') {
       throw new SchedulerError('A job needs a name', 'register', undefined, { source }, false);
@@ -329,6 +368,7 @@ export class SchedulerManager {
       external: external ?? false,
       paused: paused ?? false,
       generatedName: hasGeneratedName(definition),
+      target: this.parseTarget(target, name),
       lastFired: null,
       running: 0,
     };
@@ -341,6 +381,15 @@ export class SchedulerManager {
     }
 
     this.fJobs.set(name, registration);
+
+    if (registration.target && this.fStarted && !this.fQueue) {
+      // added at runtime: the queue is resolved in the background, enqueueing waits for it
+      void this.track(
+        this.connectQueue().catch((error) => this.gLogger?.error(`Vercube/SchedulerManager::${(error as Error).message}`)),
+      );
+    }
+
+    this.registerConsumer(registration);
     this.arm(registration);
   }
 
@@ -358,6 +407,7 @@ export class SchedulerManager {
     }
 
     this.disarm(registration);
+    this.unregisterConsumer(registration);
     this.fJobs.delete(name);
   }
 
@@ -402,7 +452,18 @@ export class SchedulerManager {
       return;
     }
 
+    const stops = this.fStops;
+
     this.assertRunnable([...this.fJobs.values()]);
+
+    if ([...this.fJobs.values()].some((registration) => registration.target)) {
+      await this.connectQueue();
+
+      // stopped while the queue was resolved
+      if (this.fStops !== stops) {
+        return;
+      }
+    }
 
     this.fStarted = true;
     this.installSignals();
@@ -416,8 +477,7 @@ export class SchedulerManager {
     }
 
     // stopped while the store was connecting
-
-    if (!this.fStarted) {
+    if (this.fStops !== stops) {
       return;
     }
 
@@ -442,6 +502,7 @@ export class SchedulerManager {
    */
   public stop(options: { timeout?: number } = {}): Promise<void> {
     this.fStarted = false;
+    this.fStops++;
 
     for (const registration of this.fJobs.values()) {
       this.disarm(registration);
@@ -464,6 +525,10 @@ export class SchedulerManager {
 
     this.fSignalCleanup?.();
     this.fSignalCleanup = null;
+
+    for (const registration of this.fJobs.values()) {
+      this.unregisterConsumer(registration);
+    }
 
     const mounted = this.fStore;
 
@@ -877,6 +942,11 @@ export class SchedulerManager {
         return this.record({ ...result, outcome: 'skipped-claimed' }, source);
       }
 
+      // a queue target enforces overlap where the work runs, on the worker
+      if (registration.target) {
+        return this.enqueue(registration, store, result, source);
+      }
+
       if (options.overlap === 'skip') {
         lock = { store, key: `active:${registration.name}`, owner };
 
@@ -906,6 +976,7 @@ export class SchedulerManager {
    * @param {SchedulerTypes.TriggerSource} source - What fired it
    * @param {Lock | null} lock - Overlap lock held for the run, kept alive by a heartbeat
    * @param {SchedulerStore<unknown>} [store] - Store to record the state in, for cluster runs
+   * @param {number} [firstAttempt] - Number of the first attempt, which a queue counts itself
    * @returns {Promise<SchedulerTypes.RunResult>} How the run ended
    */
   protected async execute(
@@ -915,6 +986,7 @@ export class SchedulerManager {
     source: SchedulerTypes.TriggerSource,
     lock: Lock | null,
     store?: SchedulerStore<unknown>,
+    firstAttempt: number = 1,
   ): Promise<SchedulerTypes.RunResult> {
     const controller = new AbortController();
     const startedAt = this.fClock.now();
@@ -946,7 +1018,7 @@ export class SchedulerManager {
     let attempt = 0;
 
     try {
-      for (attempt = 1; ; attempt++) {
+      for (attempt = firstAttempt; ; attempt++) {
         try {
           await this.runHandler(
             registration,
@@ -968,7 +1040,7 @@ export class SchedulerManager {
 
           outcome = 'failed';
 
-          if (attempt > options.retries) {
+          if (attempt - firstAttempt >= options.retries) {
             break;
           }
 
@@ -1182,6 +1254,21 @@ export class SchedulerManager {
    * @throws {SchedulerError} When a cluster job cannot be coordinated
    */
   protected assertRunnable(registrations: Registration[]): void {
+    const localQueued = registrations
+      .filter((job) => job.target && this.optionsOf(job).scope === 'instance')
+      .map((job) => job.name);
+
+    if (localQueued.length > 0) {
+      throw new SchedulerError(
+        `Jobs ${localQueued.map((name) => `"${name}"`).join(', ')} target a queue with scope: 'instance', ` +
+          'so every replica would enqueue every occurrence. A queue target needs cluster scope.',
+        'start',
+        undefined,
+        { jobs: localQueued },
+        false,
+      );
+    }
+
     const clusterJobs = registrations.filter((registration) => this.optionsOf(registration).scope === 'cluster');
     const cluster = clusterJobs.map((job) => job.name);
     const unnamed = clusterJobs.filter((job) => job.generatedName).map((job) => job.name);
@@ -1229,6 +1316,233 @@ export class SchedulerManager {
       this.fWarnedLocal = true;
       this.warn(`${message} Fine for development, refused in production.`);
     }
+  }
+
+  /**
+   * Enqueues an occurrence a queue target claimed. The work itself runs on
+   * whichever worker consumes the queue, see {@link SchedulerManager.consume}.
+   *
+   * The occurrence was claimed first anyway: only some transports deduplicate
+   * on the job id, BullMQ does, RabbitMQ and Kafka do not.
+   *
+   * @param {Registration} registration - Job to enqueue
+   * @param {SchedulerStore<unknown>} store - Store to record the state in
+   * @param {object} base - Name, occurrence and schedule of the run
+   * @param {SchedulerTypes.TriggerSource} source - What fired it
+   * @returns {Promise<SchedulerTypes.RunResult>} `enqueued`, or `failed` when the queue refused the job
+   */
+  protected async enqueue(
+    registration: Registration,
+    store: SchedulerStore<unknown>,
+    base: Omit<SchedulerTypes.RunResult, 'outcome'>,
+    source: SchedulerTypes.TriggerSource,
+  ): Promise<SchedulerTypes.RunResult> {
+    const target = registration.target!;
+    const startedAt = this.fClock.now();
+    const scheduledAt = base.scheduledAt.getTime();
+
+    try {
+      await this.connectQueue();
+
+      await this.fQueue!.add({
+        queue: target.queue,
+        strategy: target.strategy,
+        job: registration.name,
+        payload: { name: registration.name, scheduledAt: base.scheduledAt.toISOString(), occurrenceId: base.occurrenceId },
+        // BullMQ refuses ids containing a colon, which every ISO instant has
+        options: { jobId: base.occurrenceId.replaceAll(':', '_') },
+      });
+    } catch (error) {
+      const failure = toSchedulerError(error, `Failed to enqueue "${base.occurrenceId}"`, 'enqueue', { job: registration.name });
+
+      this.gLogger?.error(`Vercube/SchedulerManager::Failed to enqueue "${base.occurrenceId}"`, error);
+      await this.saveState(store, registration.name, {
+        lastScheduledAt: scheduledAt,
+        lastStartedAt: startedAt,
+        lastFinishedAt: this.fClock.now(),
+        lastOutcome: 'failed',
+        lastInstance: this.instanceId,
+        lastError: failure.message.slice(0, MAX_ERROR_LENGTH),
+      });
+
+      return this.record({ ...base, outcome: 'failed', error: this.describeError(failure) }, source);
+    }
+
+    await this.saveState(store, registration.name, {
+      lastScheduledAt: scheduledAt,
+      lastStartedAt: startedAt,
+      lastFinishedAt: this.fClock.now(),
+      lastOutcome: 'enqueued',
+      lastInstance: this.instanceId,
+    });
+
+    return this.record({ ...base, outcome: 'enqueued', durationMs: this.fClock.now() - startedAt }, source);
+  }
+
+  /**
+   * Runs an occurrence a worker took off the queue. Overlap is enforced here,
+   * across every worker, with the same lock an inline run takes. A failed or
+   * aborted run is rethrown, so the queue applies its own retries and backoff.
+   *
+   * @param {Registration} registration - Job to run
+   * @param {SchedulerTypes.QueuePayload} payload - What the scheduler enqueued
+   * @param {number} attempt - Attempt number the queue counts
+   * @returns {Promise<void>} Resolves once the run completed or was skipped
+   * @throws {SchedulerError} When the run failed or was aborted
+   */
+  protected async consume(registration: Registration, payload: SchedulerTypes.QueuePayload, attempt: number): Promise<void> {
+    const options = this.optionsOf(registration);
+    const base = {
+      name: registration.name,
+      occurrenceId: payload.occurrenceId,
+      scheduledAt: new Date(payload.scheduledAt),
+      attempts: 0,
+      durationMs: 0,
+    };
+    const store = await this.readyStore('consume');
+    let lock: Lock | null = null;
+
+    if (options.overlap === 'skip') {
+      lock = { store, key: `active:${registration.name}`, owner: `${this.instanceId}:${randomHex(4)}` };
+
+      if (!(await store.claim(lock.key, lock.owner, options.lockTtl))) {
+        this.record({ ...base, outcome: 'skipped-overlap' }, 'queue');
+
+        return;
+      }
+    }
+
+    // the queue retries with backoff, in-place retries would multiply its attempts
+    const result = await this.execute(registration, { ...options, retries: 0 }, base, 'queue', lock, store, attempt);
+
+    if (result.outcome === 'failed' || result.outcome === 'aborted') {
+      throw new SchedulerError(
+        result.error?.message ?? `Job "${registration.name}" ${result.outcome}`,
+        result.error?.operation ?? 'run',
+        undefined,
+        {
+          job: registration.name,
+          occurrenceId: payload.occurrenceId,
+        },
+      );
+    }
+  }
+
+  /**
+   * Resolves the `QueueManager` of `@vercube/queue`. The package is an optional
+   * peer, so it is imported only here, and only a job targeting a queue makes
+   * its absence an error.
+   *
+   * @returns {Promise<void>} Resolves once the queue is known, or known to be absent
+   * @throws {SchedulerError} When a job targets a queue and no queue manager is bound
+   */
+  protected async connectQueue(): Promise<void> {
+    if (!this.fQueue) {
+      let manager: QueueManagerLike | null = null;
+
+      try {
+        const { QueueManager } = await import('@vercube/queue');
+
+        manager = this.gContainer.getOptional(QueueManager) as QueueManagerLike | null;
+      } catch {
+        // not installed, which is fine until a job targets a queue
+      }
+
+      this.fQueue = manager;
+    }
+
+    const targeted = [...this.fJobs.values()].filter((registration) => registration.target);
+
+    if (!this.fQueue && targeted.length > 0) {
+      throw this.missingQueueError(targeted.map((registration) => registration.name));
+    }
+
+    for (const registration of targeted) {
+      this.registerConsumer(registration);
+    }
+  }
+
+  /**
+   * Registers the queue consumer that runs a queue target's occurrences, once
+   * the queue manager is known.
+   *
+   * @param {Registration} registration - Job to register a consumer for
+   * @returns {void}
+   */
+  protected registerConsumer(registration: Registration): void {
+    if (!registration.target || !this.fQueue || registration.consumer) {
+      return;
+    }
+
+    registration.consumer = {
+      strategy: registration.target.strategy,
+      queue: registration.target.queue,
+      job: registration.name,
+      handler: (payload, context) => this.track(this.consume(registration, payload, context.attempt)),
+      options: {
+        ...(registration.target.attempts === undefined ? {} : { attempts: registration.target.attempts }),
+        ...(registration.target.backoff === undefined ? {} : { backoff: registration.target.backoff }),
+      },
+      source: registration.source,
+    };
+
+    this.fQueue.registerConsumer(registration.consumer);
+  }
+
+  /**
+   * Removes the queue consumer of a job, if it has one.
+   *
+   * @param {Registration} registration - Job whose consumer is removed
+   * @returns {void}
+   */
+  protected unregisterConsumer(registration: Registration): void {
+    if (registration.consumer) {
+      this.fQueue?.unregisterConsumer(registration.consumer);
+      registration.consumer = undefined;
+    }
+  }
+
+  /**
+   * Builds the error of queue targets without a queue manager.
+   *
+   * @param {string[]} jobs - Names of the jobs targeting a queue
+   * @returns {SchedulerError} The error to throw
+   */
+  protected missingQueueError(jobs: string[]): SchedulerError {
+    return new SchedulerError(
+      `Jobs ${jobs.map((name) => `"${name}"`).join(', ')} target a queue, but no QueueManager is bound. ` +
+        "Install @vercube/queue and add QueuePlugin, or remove the job's target.",
+      'start',
+      undefined,
+      { jobs },
+      false,
+    );
+  }
+
+  /**
+   * Reads the target of a job.
+   *
+   * @param {SchedulerTypes.Target | undefined} target - Target as the user wrote it
+   * @param {string} name - Name of the job, reported in the error
+   * @returns {ParsedTarget | null} The queue to enqueue on, null to run inline
+   * @throws {SchedulerError} When the target is neither `inline` nor a queue
+   */
+  protected parseTarget(target: SchedulerTypes.Target | undefined, name: string): ParsedTarget | null {
+    if (target === undefined || target === 'inline') {
+      return null;
+    }
+
+    if (typeof target === 'object' && target !== null && typeof target.queue === 'string' && target.queue !== '') {
+      return { ...target, strategy: target.strategy ?? 'default' };
+    }
+
+    throw new SchedulerError(
+      `Invalid target ${JSON.stringify(target)} for "${name}", expected 'inline' or { queue: 'name' }`,
+      'register',
+      undefined,
+      { job: name },
+      false,
+    );
   }
 
   /**
@@ -1358,6 +1672,7 @@ export class SchedulerManager {
       scope: options.scope,
       overlap: options.overlap,
       misfire: options.misfire,
+      target: registration.target ? { ...registration.target } : 'inline',
       external: registration.external,
       paused: registration.paused,
       running: registration.running,

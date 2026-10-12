@@ -47,6 +47,49 @@ export namespace SchedulerTypes {
   /** What happens to an occurrence that was missed. */
   export type Misfire = 'skip' | 'run-once';
 
+  /**
+   * Where the work of an occurrence runs. `inline` runs it on the replica that
+   * claimed it. A queue target only enqueues it, through `@vercube/queue`, and
+   * a worker consuming that queue runs it, with the queue's retries and backoff.
+   */
+  export type Target = 'inline' | QueueTarget;
+
+  /** A queue the work of an occurrence is enqueued on. */
+  export interface QueueTarget {
+    /** Queue to enqueue on. */
+    queue: string;
+
+    /**
+     * Mount name of the queue strategy.
+     * @default 'default'
+     */
+    strategy?: string;
+
+    /**
+     * Total attempts the worker may take, the first one included.
+     * @default 1
+     */
+    attempts?: number;
+
+    /**
+     * Delay between attempts, a number of milliseconds or an exponential backoff.
+     * @default 0
+     */
+    backoff?: number | { type: 'fixed' | 'exponential'; delay: number };
+  }
+
+  /** Payload of the job a queue target enqueues. */
+  export interface QueuePayload {
+    /** Name of the scheduled job. */
+    name: string;
+
+    /** The occurrence, as an ISO instant. */
+    scheduledAt: string;
+
+    /** Id of the occurrence. */
+    occurrenceId: string;
+  }
+
   /** What started a run. */
   export type TriggerSource = 'timer' | 'misfire' | 'manual' | 'external' | 'queue';
 
@@ -119,6 +162,13 @@ export namespace SchedulerTypes {
      * @default 0
      */
     retries?: number;
+
+    /**
+     * Where the work runs. A queue target needs `@vercube/queue` with its plugin,
+     * and cluster scope.
+     * @default 'inline'
+     */
+    target?: Target;
 
     /**
      * Fired only by external triggers (CLI, HTTP, `trigger()`), never by an in-process timer.
@@ -298,6 +348,9 @@ export namespace SchedulerTypes {
     /** Effective misfire policy. */
     misfire: Misfire;
 
+    /** Where the work runs, `inline` or the queue it is enqueued on. */
+    target: Target;
+
     /** Whether only external triggers fire it. */
     external: boolean;
 
@@ -391,7 +444,7 @@ export namespace SchedulerTypes {
   }
 
   /** Job options applied to every job that does not set them. */
-  export interface Defaults extends Omit<JobOptions, 'name' | 'paused' | 'external'> {
+  export interface Defaults extends Omit<JobOptions, 'name' | 'paused' | 'external' | 'target'> {
     /**
      * Time zone of cron jobs.
      * @default 'UTC'
