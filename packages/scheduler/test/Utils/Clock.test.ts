@@ -4,7 +4,6 @@ import { MAX_TIMEOUT, sleep, SystemClock } from '../../src/Utils/Clock';
 describe('SystemClock', () => {
   afterEach(() => {
     vi.useRealTimers();
-    vi.unstubAllGlobals();
   });
 
   it('reads the system time', () => {
@@ -32,22 +31,11 @@ describe('SystemClock', () => {
     expect(capped).toHaveBeenCalledTimes(1);
   });
 
-  it('unreferences its timers so they never keep the process alive', () => {
+  it('keeps its timers referenced, so a scheduler-only process stays alive until the next occurrence', () => {
     const handle = SystemClock.setTimeout(() => {}, 1000) as ReturnType<typeof setTimeout>;
 
-    expect(handle.hasRef()).toBe(false);
+    expect(handle.hasRef()).toBe(true);
     SystemClock.clearTimeout(handle);
-  });
-
-  it('unreferences numeric timers through Deno', () => {
-    const unrefTimer = vi.fn();
-
-    vi.stubGlobal('Deno', { unrefTimer });
-    vi.stubGlobal('setTimeout', () => 42);
-
-    SystemClock.setTimeout(() => {}, 1000);
-
-    expect(unrefTimer).toHaveBeenCalledWith(42);
   });
 
   it('sleeps on a clock', async () => {

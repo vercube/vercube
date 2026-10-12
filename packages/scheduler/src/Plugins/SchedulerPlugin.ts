@@ -13,20 +13,25 @@ import type { App } from '@vercube/core';
  *
  * @example
  * ```ts
- * // a single process: MemoryStore only coordinates the managers of one process,
- * // replicas need a distributed store such as RedisStore or PostgresStore
+ * // any number of replicas: they share their claims through Redis
  * import { defineConfig } from '@vercube/core';
  * import { SchedulerPlugin } from '@vercube/scheduler';
- * import { MemoryStore } from '@vercube/scheduler/stores/MemoryStore';
+ * import { RedisStore } from '@vercube/scheduler/stores/RedisStore';
  *
  * export default defineConfig({
  *   plugins: [
  *     [SchedulerPlugin, {
- *       store: { store: MemoryStore },
+ *       store: { store: RedisStore, initOptions: { url: process.env.REDIS_URL } },
  *       defaults: { timezone: 'Europe/Warsaw' },
  *     }],
  *   ],
  * });
+ * ```
+ *
+ * @example
+ * ```ts
+ * // a single process: MemoryStore only coordinates the managers of one process
+ * app.addPlugin(SchedulerPlugin, { store: { store: MemoryStore } });
  * ```
  *
  * @example
