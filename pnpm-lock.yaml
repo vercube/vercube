@@ -772,6 +772,9 @@ importers:
       '@types/pg':
         specifier: 8.23.1
         version: 8.23.1
+      '@vercube/queue':
+        specifier: workspace:*
+        version: link:../queue
     optionalDependencies:
       ioredis:
         specifier: 6.0.0

@@ -44,14 +44,23 @@
     "@vercube/logger": "workspace:*",
     "croner": "10.0.1"
   },
-  "publishConfig": {
-    "access": "public"
-  },
   "optionalDependencies": {
     "ioredis": "6.0.0",
     "pg": "8.23.1"
   },
+  "peerDependencies": {
+    "@vercube/queue": "workspace:^"
+  },
+  "peerDependenciesMeta": {
+    "@vercube/queue": {
+      "optional": true
+    }
+  },
   "devDependencies": {
-    "@types/pg": "8.23.1"
+    "@types/pg": "8.23.1",
+    "@vercube/queue": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
