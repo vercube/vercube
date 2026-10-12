@@ -5,5 +5,5 @@ import defaultConfig from '../../tsdown.config.ts';
 // return config for tsdown
 export default defineConfig({
   ...defaultConfig,
-  entry: ['./src/index.ts', './src/Testing.ts', './src/Stores/**/*.ts'],
+  entry: ['./src/index.ts', './src/Cli.ts', './src/Testing.ts', './src/Stores/**/*.ts'],
 });

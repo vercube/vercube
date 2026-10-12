@@ -5,7 +5,8 @@ import { MAX_TIMEOUT, SystemClock } from '../Utils/Clock';
 import { parseDuration } from '../Utils/Duration';
 import { asError, toSchedulerError } from '../Utils/Errors';
 import { hasGeneratedName } from '../Utils/Metadata';
-import { createInstanceId, isProduction, randomHex } from '../Utils/Runtime';
+import { AUTOSTART_ENV, registerManager, unregisterManager } from '../Utils/Registry';
+import { createInstanceId, isProduction, randomHex, readEnv } from '../Utils/Runtime';
 import { assertTimezone, cronSchedule, everySchedule } from '../Utils/Schedule';
 import type { SchedulerTypes } from '../Types/SchedulerTypes';
 import type { Schedule } from '../Utils/Schedule';
@@ -523,6 +524,8 @@ export class SchedulerManager {
   public async close(): Promise<void> {
     await this.stop();
 
+    unregisterManager(this);
+
     this.fSignalCleanup?.();
     this.fSignalCleanup = null;
 
@@ -600,6 +603,21 @@ export class SchedulerManager {
         manual: scheduledAt === undefined,
       }),
     );
+  }
+
+  /**
+   * The occurrence a job's schedule is at right now: its latest occurrence at or
+   * before the current time. External triggers claim it, so a Kubernetes CronJob
+   * firing twice for 03:00 runs the job once.
+   *
+   * @param {SchedulerTypes.JobName} name - Job to look at
+   * @returns {Date | null} The occurrence, or null when the schedule has none yet
+   * @throws {SchedulerError} When no job has that name
+   */
+  public currentOccurrence(name: SchedulerTypes.JobName): Date | null {
+    const occurrence = this.scheduleOf(this.require(name, 'currentOccurrence')).previous(this.fClock.now());
+
+    return occurrence === null ? null : new Date(occurrence);
   }
 
   /**
@@ -2021,12 +2039,16 @@ export class SchedulerManager {
    */
   @Init()
   protected init(): void {
+    // so the CLI finds this manager in an application it imported
+    registerManager(this);
+
     // decorators register their jobs while the container is being flushed,
     // a microtask lands right after that
     queueMicrotask(() => {
       // read here rather than above: the plugin configures the manager after
       // the container built it, so `autoStart: false` is not known yet there
-      if (!this.fOptions.autoStart) {
+      // the CLI imports the application to run one job, without any timer
+      if (!this.fOptions.autoStart || readEnv(AUTOSTART_ENV) === 'false') {
         return;
       }
 

@@ -1,5 +1,8 @@
+import { initializeMetadata } from '@vercube/core';
 import { Container, initializeContainer } from '@vercube/di';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { SchedulerCommand } from '../../src/Commands/SchedulerCommands';
+import { SchedulerController } from '../../src/Controllers/SchedulerController';
 import { Every } from '../../src/Decorators/Every';
 import { SchedulerPlugin } from '../../src/Plugins/SchedulerPlugin';
 import { SchedulerManager } from '../../src/Services/SchedulerManager';
@@ -99,5 +102,34 @@ describe('SchedulerPlugin', () => {
 
     expect(container.get(SchedulerManager).started).toBe(false);
     expect(runs).toEqual([]);
+  });
+
+  it('should mount the HTTP trigger at the configured path', async () => {
+    await plugin.use(app, { autoStart: false, http: { secret: 's3cret', path: '/cron' } });
+
+    expect(container.get(SchedulerController)).toBeInstanceOf(SchedulerController);
+    expect(initializeMetadata(SchedulerController.prototype).__controller.path).toBe('/cron');
+
+    // registered twice, the controller stays bound once
+    await container.resolve(SchedulerPlugin).use(app, { http: { secret: 's3cret' } });
+    expect(initializeMetadata(SchedulerController.prototype).__controller.path).toBe('/cron');
+  });
+
+  it('should refuse an HTTP trigger without a secret', async () => {
+    await expect(plugin.use(app, { http: { secret: '' } })).rejects.toThrow(/needs a secret/);
+    await expect(plugin.use(app, { http: {} as never })).rejects.toThrow(/needs a secret/);
+  });
+
+  it('should register the scheduler commands with the CLI', async () => {
+    const registered: unknown[] = [];
+
+    await plugin.setupCLI({
+      cwd: process.cwd(),
+      command: 'scheduler',
+      config: {},
+      register: (...commands: unknown[]) => registered.push(...commands),
+    } as never);
+
+    expect(registered).toEqual([SchedulerCommand]);
   });
 });

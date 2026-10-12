@@ -22,6 +22,7 @@
     "@vercube/di": "workspace:*",
     "@vercube/logger": "workspace:*",
     "@vercube/queue": "workspace:*",
+    "@vercube/scheduler": "workspace:*",
     "@vercube/schema": "workspace:*",
     "@vercube/serverless": "workspace:*",
     "@vercube/storage": "workspace:*",

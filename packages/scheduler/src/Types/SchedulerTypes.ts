@@ -502,10 +502,28 @@ export namespace SchedulerTypes {
     clock?: Clock;
   }
 
+  /** Options of the HTTP trigger. */
+  export interface HttpOptions {
+    /**
+     * Path the trigger is mounted at, jobs run at `<path>/run/<name>`.
+     * @default '/_scheduler'
+     */
+    path?: string;
+
+    /** Secret every request has to send as `Authorization: Bearer <secret>`. Required. */
+    secret: string;
+  }
+
   /** Options accepted by the scheduler plugin. */
   export interface PluginOptions extends Options {
     /** Store holding the claims of cluster jobs. */
     store?: AnyMount;
+
+    /**
+     * Mounts an HTTP endpoint external schedulers call to run a job, such as
+     * Vercel Cron. Off unless set, and refused without a secret.
+     */
+    http?: HttpOptions;
   }
 
   /** A mounted store together with the options it is initialized with. */
