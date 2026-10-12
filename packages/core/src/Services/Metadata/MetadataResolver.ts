@@ -217,12 +217,15 @@ export class MetadataResolver {
   public resolveUrl(params: MetadataTypes.ResolveUrlParams): string {
     const { instance, propertyName, path: rawPath } = params;
     const metadata = instance.__metadata as MetadataTypes.Ctx;
-    const basePath = (this.fControllerPaths.get(instance.constructor) ?? metadata?.__controller?.path ?? '').replace(/\/$/, '');
-    const cleanPath = rawPath.replace(/^\//, '');
-    const url = `${basePath}/${cleanPath}`;
+    const declared = metadata?.__controller?.path ?? '';
+    const join = (base: string): string => `${base.replace(/\/$/, '')}/${rawPath.replace(/^\//, '')}`;
 
-    metadata.__methods[propertyName].url = url;
-    return url;
+    // The metadata lives on the class and is shared by every application in the
+    // process, so it only ever records the path `@Controller()` declares. A path
+    // set for this application with `setControllerPath()` stays in this resolver.
+    metadata.__methods[propertyName].url = join(declared);
+
+    return join(this.fControllerPaths.get(instance.constructor) ?? declared);
   }
 
   public resolveMethod(ctx: MetadataTypes.Metadata, propertyName: string): MetadataTypes.Method {
