@@ -41,6 +41,16 @@ export class Container {
   // can cache a description and know exactly when it went stale
   protected fRevision: number = 0;
 
+  // settles once dispose() has torn everything down, set by the first call
+  protected fDisposing: Promise<void> | null = null;
+
+  // set once the instances have been torn down; nothing new is constructed after that
+  protected fDisposed: boolean = false;
+
+  // work started by @Destroy() hooks, awaited by dispose(); each settles to the
+  // error it failed with, or null, so nothing surfaces as an unhandled rejection
+  protected fDisposals: Set<Promise<unknown>> = new Set();
+
   /**
    * Constructor for container.
    * @param params initial params for container
@@ -81,6 +91,14 @@ export class Container {
    */
   public hasInstance(key: IOC.ServiceKey): boolean {
     return this.fSingletonInstances.has(key);
+  }
+
+  /**
+   * Whether {@link Container.dispose} has torn the container down.
+   * @returns {boolean} true once the container is disposed
+   */
+  public get disposed(): boolean {
+    return this.fDisposed;
   }
 
   /**
@@ -335,6 +353,44 @@ export class Container {
     this.fNewQueue.clear();
   }
 
+  /**
+   * Registers async work started while a service is torn down, so
+   * {@link Container.dispose} can wait for it. `@Destroy()` methods returning a
+   * promise are tracked automatically.
+   *
+   * @param promise work to wait for
+   */
+  public trackDisposal(promise: Promise<unknown>): void {
+    const tracked: Promise<unknown> = promise.then(
+      () => {
+        this.fDisposals.delete(tracked);
+        return null;
+      },
+      (error: unknown) => error ?? new Error('Container - disposal rejected'),
+    );
+
+    this.fDisposals.add(tracked);
+  }
+
+  /**
+   * Tears the container down: runs the `@Destroy()` hooks and decorator
+   * cleanups of every instance it holds, last registered first, then waits for
+   * the work those hooks tracked.
+   *
+   * Afterwards the container still hands out what it already holds, because
+   * the work a hook started may read an injected dependency long after the
+   * hook returned, but it refuses to construct anything new.
+   *
+   * Safe to call more than once: later calls return the first one.
+   *
+   * @returns {Promise<void>} resolves once every tracked disposal has settled
+   * @throws {AggregateError} when a hook threw or a tracked disposal rejected, after everything has settled
+   */
+  public dispose(): Promise<void> {
+    this.fDisposing ??= this.internalDisposeAll();
+    return this.fDisposing;
+  }
+
   /* eslint-disable @typescript-eslint/no-unused-vars */
   /**
    * Internally retrieve dependency from container.
@@ -405,6 +461,10 @@ export class Container {
    * @returns newly created class instance
    */
   protected internalConstruct(serviceDef: IOC.ServiceDef, singleton: boolean): IOC.Instance {
+    if (this.fDisposed) {
+      throw new Error(`Container - disposed, cannot create [${this.getKeyDescription(serviceDef.serviceKey)}]`);
+    }
+
     const onResolved = getIOCDevtoolsHook()?.onResolved;
     const start = onResolved ? performance.now() : 0;
 
@@ -541,6 +601,59 @@ export class Container {
       default: {
         throw new Error(`Container::internalDispose() - invalid def type: ${def.type}`);
       }
+    }
+  }
+
+  /**
+   * Runs the decorator cleanups of every instance, last registered first, then
+   * waits for the tracked disposals. Everything up to the first await runs
+   * synchronously, so the container is torn down by the time
+   * {@link Container.dispose} returns.
+   * @returns {Promise<void>} resolves once every tracked disposal has settled
+   */
+  protected async internalDisposeAll(): Promise<void> {
+    const errors: unknown[] = [];
+    const defs = [...this.fServices.values()].reverse();
+
+    for (const def of defs) {
+      let instance: IOC.Instance | undefined;
+
+      if (def.type === IOC.ServiceFactoryType.INSTANCE) {
+        instance = def.serviceValue;
+      } else if (def.type === IOC.ServiceFactoryType.CLASS_SINGLETON) {
+        instance = this.fSingletonInstances.get(def.serviceKey);
+      }
+
+      // the container binds itself, and transient instances are not kept
+      if (!instance || instance === this) {
+        continue;
+      }
+
+      try {
+        destroyDecorators(instance as IDecoratedInstance, this);
+      } catch (error) {
+        errors.push(error);
+      }
+    }
+
+    this.fDisposed = true;
+    this.fNewQueue.clear();
+    this.fRevision++;
+
+    // a disposal may track further work while it runs
+    while (this.fDisposals.size > 0) {
+      const pending = [...this.fDisposals];
+      this.fDisposals.clear();
+
+      for (const error of await Promise.all(pending)) {
+        if (error !== null) {
+          errors.push(error);
+        }
+      }
+    }
+
+    if (errors.length > 0) {
+      throw new AggregateError(errors, 'Container - failed to dispose');
     }
   }
 

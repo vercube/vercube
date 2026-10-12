@@ -1374,10 +1374,10 @@ export class QueueManager {
   /**
    * Closes every connection when the container is torn down.
    *
-   * @returns {void}
+   * @returns {Promise<void>} Resolves once closed, awaited by `container.dispose()`
    */
   @Destroy()
-  protected destroy(): void {
-    void this.close().catch((error) => this.gLogger?.error('Vercube/QueueManager::Failed to close', error));
+  protected destroy(): Promise<void> {
+    return this.close().catch((error) => this.gLogger?.error('Vercube/QueueManager::Failed to close', error));
   }
 }
