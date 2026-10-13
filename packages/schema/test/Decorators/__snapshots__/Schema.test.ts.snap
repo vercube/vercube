@@ -12,6 +12,54 @@ exports[`SchemaDecorator > should generate schema correctly 1`] = `
   },
   "openapi": "3.0.0",
   "paths": {
+    "/mock-params/pages/{pageId}/comments/{id}": {
+      "get": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pageId",
+            "required": true,
+            "schema": {
+              "type": "string",
+            },
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+            },
+          },
+        ],
+        "responses": {
+          "200": {
+            "description": "Comment",
+          },
+        },
+      },
+    },
+    "/mock-params/users/{id}": {
+      "get": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "exclusiveMinimum": true,
+              "minimum": 0,
+              "type": "integer",
+            },
+          },
+        ],
+        "responses": {
+          "200": {
+            "description": "User",
+          },
+        },
+      },
+    },
     "/mock/": {
       "get": {
         "responses": {

@@ -1,7 +1,9 @@
 import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
 import { SchemaBodyResolver } from '../Resolvers/SchemaBodyResolver';
+import { SchemaPathParamsResolver } from '../Resolvers/SchemaPathParamsResolver';
 import { SchemaQueryParamsResolver } from '../Resolvers/SchemaQueryParamsResolver';
 import { SchemaRegistry } from '../Services/SchemaRegistry';
+import { toOpenApiPath } from '../Utils/OpenApiPath';
 import type { RouteConfig } from '@asteasolutions/zod-to-openapi';
 import type { DeepPartial, MetadataTypes } from '@vercube/core';
 
@@ -28,13 +30,17 @@ class SchemaDecorator extends BaseDecorator<SchemaDecoratorOptions> {
     // get method metadata object
     const _methodMeta = this.prototype.__metadata.__methods[this.propertyName] as MetadataTypes.Method;
 
+    // convert router syntax (`:id`) to OpenAPI templating (`{id}`)
+    const { path, params } = toOpenApiPath(_methodMeta.url!);
+
     const _schema: DeepPartial<RouteConfig> = {
       method: _methodMeta.method!.toLowerCase() as any,
-      path: _methodMeta.url!,
+      path,
       ...(this.options as any),
     };
 
     // Use resolvers
+    SchemaPathParamsResolver(params, _methodMeta, _schema);
     SchemaBodyResolver(_methodMeta, _schema);
     SchemaQueryParamsResolver(_methodMeta, _schema);
 

@@ -1,4 +1,4 @@
-import { Controller, Get } from '@vercube/core';
+import { Controller, Get, Param } from '@vercube/core';
 import { Schema, z } from '../../src';
 
 @Controller('/mock')
@@ -22,5 +22,20 @@ export class MockController {
     return {
       message: 'Hello, world!',
     };
+  }
+}
+
+@Controller('/mock-params')
+export class MockParamsController {
+  @Get('/pages/:pageId/comments/:id')
+  @Schema({ responses: { 200: { description: 'Comment' } } })
+  public getComment(@Param('pageId') pageId: string, @Param('id') id: string) {
+    return { pageId, id };
+  }
+
+  @Get('/users/:id')
+  @Schema({ responses: { 200: { description: 'User' } } })
+  public getUser(@Param({ name: 'id', validationSchema: z.coerce.number().int().positive() }) id: number) {
+    return { id };
   }
 }

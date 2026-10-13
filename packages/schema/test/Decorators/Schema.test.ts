@@ -2,7 +2,7 @@ import { createApp } from '@vercube/core';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { SchemaPlugin } from '../../src';
 import { SchemaRegistry } from '../../src/Services/SchemaRegistry';
-import { MockController } from '../Utils/Schema.mock';
+import { MockController, MockParamsController } from '../Utils/Schema.mock';
 import type { App } from '@vercube/core';
 
 describe('SchemaDecorator', () => {
@@ -17,6 +17,7 @@ describe('SchemaDecorator', () => {
 
     app.container.expand((container) => {
       container.bind(MockController);
+      container.bind(MockParamsController);
     });
 
     await new Promise((resolve) => setTimeout(resolve, 0));
@@ -34,6 +35,28 @@ describe('SchemaDecorator', () => {
     expect(path?.get?.responses['200']?.content['application/json']?.schema).toBeDefined();
     expect(path?.get?.responses['200']?.content['application/json']?.schema?.properties.message).toBeDefined();
     expect(path?.get?.responses['200']?.content['application/json']?.schema?.properties.message.type).toBe('string');
+  });
+
+  it('should convert path params to OpenAPI syntax and declare them', async () => {
+    const registry = app.container.get(SchemaRegistry);
+    const schema = await registry.generateSchema();
+
+    expect(schema.paths['/mock-params/pages/:pageId/comments/:id']).toBeUndefined();
+
+    const path = schema.paths['/mock-params/pages/{pageId}/comments/{id}'];
+    expect(path?.get?.parameters).toEqual([
+      { schema: { type: 'string' }, required: true, name: 'pageId', in: 'path' },
+      { schema: { type: 'string' }, required: true, name: 'id', in: 'path' },
+    ]);
+  });
+
+  it('should document a path param with the validationSchema of @Param', async () => {
+    const registry = app.container.get(SchemaRegistry);
+    const schema = await registry.generateSchema();
+
+    expect(schema.paths['/mock-params/users/{id}']?.get?.parameters).toEqual([
+      { schema: { type: 'integer', exclusiveMinimum: true, minimum: 0 }, required: true, name: 'id', in: 'path' },
+    ]);
   });
 
   it('should generate schema correctly', async () => {
