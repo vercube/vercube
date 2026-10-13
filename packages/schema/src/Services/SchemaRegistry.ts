@@ -1,4 +1,7 @@
 import { OpenApiGeneratorV3, OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
+import { InjectOptional } from '@vercube/di';
+import { $SchemaPluginOptions } from '../Symbols/SchemaSymbols';
+import type { SchemaPluginOptions } from '../Types/SchemaPluginOptions';
 import type { RouteConfig } from '@asteasolutions/zod-to-openapi';
 
 /**
@@ -9,11 +12,14 @@ import type { RouteConfig } from '@asteasolutions/zod-to-openapi';
  * schema definitions for API documentation and validation purposes.
  */
 export class SchemaRegistry {
+  @InjectOptional($SchemaPluginOptions)
+  private readonly gSchemaPluginOptions?: SchemaPluginOptions;
+
   /**
-   * Internal registry instance for storing OpenAPI schema definitions.
+   * Registered route configurations.
    * @private
    */
-  private fRegistry: OpenAPIRegistry = new OpenAPIRegistry();
+  private fRoutes: RouteConfig[] = [];
 
   /**
    * Bumped on every registration, so introspection can cache the generated
@@ -35,22 +41,40 @@ export class SchemaRegistry {
    * @param cfg - The route configuration to register.
    */
   public register(cfg: RouteConfig): void {
-    this.fRegistry.registerPath(cfg);
+    this.fRoutes.push(cfg);
     this.fRevision++;
   }
 
   /**
-   * Generates OpenAPI components from the registered schemas.
+   * Generates the OpenAPI document. A fresh zod-to-openapi registry is built
+   * on every call, so components from the plugin options are never
+   * registered twice.
    *
    * @async
    * @returns {Promise<unknown>} A promise that resolves to the generated OpenAPI components object.
    */
   public async generateSchema(): Promise<ReturnType<OpenApiGeneratorV3['generateDocument']>> {
-    return new OpenApiGeneratorV3(this.fRegistry.definitions).generateDocument({
+    const { document, components } = this.gSchemaPluginOptions ?? {};
+
+    const registry = new OpenAPIRegistry();
+
+    for (const [type, entries] of Object.entries(components ?? {})) {
+      for (const [name, component] of Object.entries(entries ?? {})) {
+        registry.registerComponent(type as any, name, component as any);
+      }
+    }
+
+    for (const route of this.fRoutes) {
+      registry.registerPath(route);
+    }
+
+    return new OpenApiGeneratorV3(registry.definitions).generateDocument({
+      ...document,
       openapi: '3.0.0',
       info: {
         title: 'API',
         version: '1.0.0',
+        ...document?.info,
       },
     });
   }

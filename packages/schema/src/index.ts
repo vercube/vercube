@@ -8,7 +8,12 @@ export * from './Decorators/Schema';
 export * from './Plugins/SchemaPlugin';
 
 // Types
-export type { SchemaPluginOptions, SchemaScalarOptions } from './Types/SchemaPluginOptions';
+export type {
+  SchemaComponentsOptions,
+  SchemaDocumentOptions,
+  SchemaPluginOptions,
+  SchemaScalarOptions,
+} from './Types/SchemaPluginOptions';
 
 // extends ZOD schema
 extendZodWithOpenApi(z);
