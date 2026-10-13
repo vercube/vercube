@@ -45,7 +45,7 @@
     "@vercube/testing": "workspace:*",
     "@vitejs/plugin-vue": "6.0.10",
     "vite": "catalog:",
-    "vue": "3.5.43"
+    "vue": "3.5.44"
   },
   "publishConfig": {
     "access": "public"
