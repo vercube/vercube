@@ -12,6 +12,26 @@ exports[`SchemaDecorator > should generate schema correctly 1`] = `
   },
   "openapi": "3.0.0",
   "paths": {
+    "/mock-params/files/{name}": {
+      "get": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "default": "index",
+              "type": "string",
+            },
+          },
+        ],
+        "responses": {
+          "200": {
+            "description": "File",
+          },
+        },
+      },
+    },
     "/mock-params/pages/{pageId}/comments/{id}": {
       "get": {
         "parameters": [

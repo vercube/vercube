@@ -36,7 +36,7 @@ describe('SchemaPathParamsResolver', () => {
     );
 
     const params = schema.request?.params as unknown as z.ZodObject;
-    expect(params.shape.id).toBe(id);
+    expect(params.shape.id.parse('5')).toBe(5);
     expect(params.shape.pageId).toBeInstanceOf(z.ZodString);
   });
 

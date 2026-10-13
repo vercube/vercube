@@ -39,6 +39,12 @@ export class MockParamsController {
     return { id };
   }
 
+  @Get('/files/:name')
+  @Schema({ responses: { 200: { description: 'File' } } })
+  public getFile(@Param({ name: 'name', validationSchema: z.string().default('index') }) name: string) {
+    return { name };
+  }
+
   @Get('/search')
   @Schema({ responses: { 200: { description: 'Results' } } })
   public search(

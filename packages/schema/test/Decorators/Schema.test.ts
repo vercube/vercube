@@ -57,6 +57,15 @@ describe('SchemaDecorator', () => {
     ]);
   });
 
+  it('should keep a path param required when its @Param schema is optional', async () => {
+    const registry = app.container.get(SchemaRegistry);
+    const schema = await registry.generateSchema();
+
+    expect(schema.paths['/mock-params/files/{name}']?.get?.parameters).toEqual([
+      { schema: { type: 'string', default: 'index' }, required: true, name: 'name', in: 'path' },
+    ]);
+  });
+
   it('should document single @QueryParam and @Header args', async () => {
     const registry = app.container.get(SchemaRegistry);
     const schema = await registry.generateSchema();

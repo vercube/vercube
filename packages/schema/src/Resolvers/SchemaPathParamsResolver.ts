@@ -28,7 +28,9 @@ export function SchemaPathParamsResolver(
   const validated = new Map(
     metadata.args
       .filter((arg) => arg.type === 'param' && arg.validationSchema instanceof z.ZodType)
-      .map((arg) => [arg.data?.name, arg.validationSchema as z.ZodType]),
+      // a path param is always required in OpenAPI, even when the schema
+      // is optional or has a default, which zod-to-openapi documents as optional
+      .map((arg) => [arg.data?.name, (arg.validationSchema as z.ZodType).openapi({ param: { required: true } })]),
   );
 
   schema.request = {
