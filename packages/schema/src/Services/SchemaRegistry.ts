@@ -1,5 +1,22 @@
 import { OpenApiGeneratorV3, OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
-import type { RouteConfig } from '@asteasolutions/zod-to-openapi';
+import { InjectOptional } from '@vercube/di';
+import { $SchemaPluginOptions } from '../Symbols/SchemaSymbols';
+import { createRouteConfig } from '../Utils/RouteConfig';
+import type { SchemaPluginOptions } from '../Types/SchemaPluginOptions';
+import type { SchemaRouteOptions } from '../Utils/RouteConfig';
+import type { MetadataTypes } from '@vercube/core';
+
+/**
+ * A controller method documented with `@Schema`.
+ */
+export interface SchemaEntry {
+  /** Prototype of the controller that holds the method metadata. */
+  prototype: object;
+  /** Name of the method. */
+  propertyName: string;
+  /** Options passed to `@Schema`. */
+  options: SchemaRouteOptions;
+}
 
 /**
  * Manages the OpenAPI schema registry and provides utilities to generate OpenAPI components
@@ -9,11 +26,15 @@ import type { RouteConfig } from '@asteasolutions/zod-to-openapi';
  * schema definitions for API documentation and validation purposes.
  */
 export class SchemaRegistry {
+  @InjectOptional($SchemaPluginOptions)
+  private readonly gSchemaPluginOptions?: SchemaPluginOptions;
+
   /**
-   * Internal registry instance for storing OpenAPI schema definitions.
+   * Documented methods, keyed by prototype and method name, so a controller
+   * initialized again replaces its entries instead of duplicating them.
    * @private
    */
-  private fRegistry: OpenAPIRegistry = new OpenAPIRegistry();
+  private fEntries: Map<object, Map<string, SchemaRouteOptions>> = new Map();
 
   /**
    * Bumped on every registration, so introspection can cache the generated
@@ -31,26 +52,55 @@ export class SchemaRegistry {
   }
 
   /**
-   * Registers a route configuration with the registry.
-   * @param cfg - The route configuration to register.
+   * Adds a documented method. The route config is not built here: the route
+   * decorator of the same method may not have filled its metadata yet.
+   * @param entry - The documented method.
    */
-  public register(cfg: RouteConfig): void {
-    this.fRegistry.registerPath(cfg);
+  public add(entry: SchemaEntry): void {
+    const methods = this.fEntries.get(entry.prototype) ?? new Map<string, SchemaRouteOptions>();
+
+    methods.set(entry.propertyName, entry.options);
+    this.fEntries.set(entry.prototype, methods);
     this.fRevision++;
   }
 
   /**
-   * Generates OpenAPI components from the registered schemas.
+   * Generates the OpenAPI document. Route configs are built from the method
+   * metadata at this point, when every decorator has already run.
    *
    * @async
    * @returns {Promise<unknown>} A promise that resolves to the generated OpenAPI components object.
    */
   public async generateSchema(): Promise<ReturnType<OpenApiGeneratorV3['generateDocument']>> {
-    return new OpenApiGeneratorV3(this.fRegistry.definitions).generateDocument({
+    const { document, components } = this.gSchemaPluginOptions ?? {};
+
+    const registry = new OpenAPIRegistry();
+
+    for (const [type, entries] of Object.entries(components ?? {})) {
+      for (const [name, component] of Object.entries(entries ?? {})) {
+        registry.registerComponent(type as any, name, component as any);
+      }
+    }
+
+    for (const [prototype, methods] of this.fEntries) {
+      const metadata = (prototype as { __metadata?: MetadataTypes.Ctx }).__metadata;
+
+      for (const [propertyName, options] of methods) {
+        const route = createRouteConfig(metadata?.__methods?.[propertyName], options);
+
+        if (route) {
+          registry.registerPath(route);
+        }
+      }
+    }
+
+    return new OpenApiGeneratorV3(registry.definitions).generateDocument({
+      ...document,
       openapi: '3.0.0',
       info: {
         title: 'API',
         version: '1.0.0',
+        ...document?.info,
       },
     });
   }

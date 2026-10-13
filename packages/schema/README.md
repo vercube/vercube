@@ -22,7 +22,7 @@
 
 - **Zod-based** - define schemas once, use for validation AND docs
 - **Decorator API** - `@Schema` on routes to add OpenAPI metadata
-- **Auto-resolution** - picks up `@Body`, `@Param`, `@QueryParams` automatically
+- **Auto-resolution** - picks up `@Body`, `@QueryParams`, `@QueryParam`, `@Header` and `@Param` (path params) automatically
 - **Runtime endpoint** - OpenAPI JSON available at `/_schema`
 - **Scalar UI** - Interactive API docs at `/_schema/docs` ([Scalar](https://github.com/scalar/scalar))
 
