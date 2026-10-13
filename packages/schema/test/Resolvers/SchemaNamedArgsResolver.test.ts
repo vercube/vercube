@@ -40,6 +40,18 @@ describe('SchemaQueryParamResolver', () => {
     expect(documented.parse('5')).toBe(5);
   });
 
+  it('should keep a schema with an async refinement as-is', () => {
+    // zod cannot run an async refinement in a synchronous parse and throws
+    const code = z
+      .string()
+      .optional()
+      .refine(async () => true);
+    const schema: DeepPartial<RouteConfig> = {};
+    SchemaQueryParamResolver(method([{ idx: 0, type: 'query-param', data: { name: 'code' }, validationSchema: code }]), schema);
+
+    expect(shapeOf(schema.request?.query).code).toBe(code);
+  });
+
   it('should document a @QueryParam without schema as an optional string', () => {
     const schema: DeepPartial<RouteConfig> = {};
     SchemaQueryParamResolver(method([{ idx: 0, type: 'query-param', data: { name: 'q' } }]), schema);
