@@ -775,8 +775,8 @@ importers:
         specifier: 2.2.0
         version: 2.2.0
       bullmq:
-        specifier: 6.3.13
-        version: 6.3.13(ioredis@6.0.0)(pg@8.23.1)
+        specifier: 6.3.14
+        version: 6.3.14(ioredis@6.0.0)(pg@8.23.1)
       kafkajs:
         specifier: 2.2.4
         version: 2.2.4
@@ -2962,8 +2962,8 @@ packages:
   buffer-crc32@0.2.13:
     resolution: {integrity: sha512-VO9Ht/+p3SN7SKWqcrgEzjGbRSJYTx+Q1pTQC0wrWqHx0vpJraQ6GtHx8tvcg1rlK1byhU5gccxgOgj7B0TDkQ==}
 
-  bullmq@6.3.13:
-    resolution: {integrity: sha512-OG5moMkm6e+3mOH4/MpQQ1O8tdh41ybHUJq3+b1br4WTp4pDR8OMGQ1ij4py0xZplVXdcxK2dLS+h1kuASnCFA==}
+  bullmq@6.3.14:
+    resolution: {integrity: sha512-iXpDyX45fonQugWAHw+FNPH/YIjqzmzi/xxs31dzWGNP7j6b4jAVN0oNWU5cz0mVi1RofEkrlRwRbLqhqNkjHw==}
     engines: {node: '>=14.17.0'}
     peerDependencies:
       bullmq-otel: '>=2.0.0'
@@ -3108,8 +3108,8 @@ packages:
     engines: {node: '>=12.0.0'}
     deprecated: v4 is no longer maintained, upgrade to v5
 
-  cron-parser@5.10.1:
-    resolution: {integrity: sha512-pKRrRagItwk9rGIStcUyMxFX34x56zoX3KDf9HJ4ttwkXIK1qxK63EvXvEDmlxI9AdPJ+Y7TEKRftRlW5eSS7A==}
+  cron-parser@5.10.2:
+    resolution: {integrity: sha512-JfAYMY0LZaWQTuict8PhtF/ksSnq8xefSDmQUnnoqvkPYkU/y3UP0DTWzJKFBz0P1IXsDG8q0vY3zHkoFZOhvw==}
     engines: {node: '>=18'}
 
   croner@10.0.1:
@@ -6330,9 +6330,9 @@ snapshots:
 
   buffer-crc32@0.2.13: {}
 
-  bullmq@6.3.13(ioredis@6.0.0)(pg@8.23.1):
+  bullmq@6.3.14(ioredis@6.0.0)(pg@8.23.1):
     dependencies:
-      cron-parser: 5.10.1
+      cron-parser: 5.10.2
       msgpackr: 2.1.0
       node-abort-controller: 3.1.1
       semver: 7.8.5
@@ -6452,7 +6452,7 @@ snapshots:
     dependencies:
       luxon: 3.7.2
 
-  cron-parser@5.10.1:
+  cron-parser@5.10.2:
     dependencies:
       luxon: 3.7.2
     optional: true
