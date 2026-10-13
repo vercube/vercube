@@ -59,6 +59,20 @@ describe('SchemaDecorator', () => {
     ]);
   });
 
+  it('should document single @QueryParam and @Header args', async () => {
+    const registry = app.container.get(SchemaRegistry);
+    const schema = await registry.generateSchema();
+
+    expect(schema.paths['/mock-params/search']?.get?.parameters).toEqual([
+      { schema: { type: 'string', format: 'uuid' }, required: true, name: 'producerId', in: 'query' },
+      { schema: { type: 'string' }, required: false, name: 'q', in: 'query' },
+      // a missing value is undefined, which z.coerce.number() rejects, so it is required
+      { schema: { type: 'number', nullable: true }, required: true, name: 'limit', in: 'query' },
+      { schema: { type: 'number', nullable: true }, required: false, name: 'page', in: 'query' },
+      { schema: { type: 'string' }, required: false, name: 'x-tenant', in: 'header' },
+    ]);
+  });
+
   it('should generate schema correctly', async () => {
     const registry = app.container.get(SchemaRegistry);
     const schema = await registry.generateSchema();

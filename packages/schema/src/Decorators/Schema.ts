@@ -1,5 +1,6 @@
 import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
 import { SchemaBodyResolver } from '../Resolvers/SchemaBodyResolver';
+import { SchemaHeaderResolver, SchemaQueryParamResolver } from '../Resolvers/SchemaNamedArgsResolver';
 import { SchemaPathParamsResolver } from '../Resolvers/SchemaPathParamsResolver';
 import { SchemaQueryParamsResolver } from '../Resolvers/SchemaQueryParamsResolver';
 import { SchemaRegistry } from '../Services/SchemaRegistry';
@@ -43,6 +44,8 @@ class SchemaDecorator extends BaseDecorator<SchemaDecoratorOptions> {
     SchemaPathParamsResolver(params, _methodMeta, _schema);
     SchemaBodyResolver(_methodMeta, _schema);
     SchemaQueryParamsResolver(_methodMeta, _schema);
+    SchemaQueryParamResolver(_methodMeta, _schema);
+    SchemaHeaderResolver(_methodMeta, _schema);
 
     // register schema
     this.gSchemaRegistry.register(_schema as RouteConfig);

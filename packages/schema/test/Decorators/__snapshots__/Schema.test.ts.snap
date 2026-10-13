@@ -39,6 +39,60 @@ exports[`SchemaDecorator > should generate schema correctly 1`] = `
         },
       },
     },
+    "/mock-params/search": {
+      "get": {
+        "parameters": [
+          {
+            "in": "query",
+            "name": "producerId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string",
+            },
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "type": "string",
+            },
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": true,
+            "schema": {
+              "nullable": true,
+              "type": "number",
+            },
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "nullable": true,
+              "type": "number",
+            },
+          },
+          {
+            "in": "header",
+            "name": "x-tenant",
+            "required": false,
+            "schema": {
+              "type": "string",
+            },
+          },
+        ],
+        "responses": {
+          "200": {
+            "description": "Results",
+          },
+        },
+      },
+    },
     "/mock-params/users/{id}": {
       "get": {
         "parameters": [
