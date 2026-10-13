@@ -1,22 +1,16 @@
 import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
-import { SchemaBodyResolver } from '../Resolvers/SchemaBodyResolver';
-import { SchemaHeaderResolver, SchemaQueryParamResolver } from '../Resolvers/SchemaNamedArgsResolver';
-import { SchemaPathParamsResolver } from '../Resolvers/SchemaPathParamsResolver';
-import { SchemaQueryParamsResolver } from '../Resolvers/SchemaQueryParamsResolver';
 import { SchemaRegistry } from '../Services/SchemaRegistry';
-import { toOpenApiPath } from '../Utils/OpenApiPath';
-import type { RouteConfig } from '@asteasolutions/zod-to-openapi';
-import type { DeepPartial, MetadataTypes } from '@vercube/core';
+import type { SchemaRouteOptions } from '../Utils/RouteConfig';
 
 // oxlint-disable-next-line no-empty-object-type
-interface SchemaDecoratorOptions extends Omit<RouteConfig, 'method' | 'path'> {}
+interface SchemaDecoratorOptions extends SchemaRouteOptions {}
 
 /**
  * A decorator class for handling OpenAPI schema registration for routes.
  *
- * This class extends BaseDecorator and is used to register route schemas
- * with the SchemaRegistry. It also applies schema resolvers for responses,
- * body, and query parameters.
+ * It only records which method is documented. The route config is built when
+ * the document is generated, because the route decorator (`@Get`, `@Post`, ...)
+ * may run after this one and fill the method metadata only then.
  *
  * @extends {BaseDecorator<SchemaDecoratorOptions>}
  */
@@ -24,31 +18,12 @@ class SchemaDecorator extends BaseDecorator<SchemaDecoratorOptions> {
   @Inject(SchemaRegistry)
   private readonly gSchemaRegistry!: SchemaRegistry;
 
-  public override async created(): Promise<void> {
-    // move to the end of the event loop
-    await new Promise((resolve) => setTimeout(resolve, 0));
-
-    // get method metadata object
-    const _methodMeta = this.prototype.__metadata.__methods[this.propertyName] as MetadataTypes.Method;
-
-    // convert router syntax (`:id`) to OpenAPI templating (`{id}`)
-    const { path, params } = toOpenApiPath(_methodMeta.url!);
-
-    const _schema: DeepPartial<RouteConfig> = {
-      method: _methodMeta.method!.toLowerCase() as any,
-      path,
-      ...(this.options as any),
-    };
-
-    // Use resolvers
-    SchemaPathParamsResolver(params, _methodMeta, _schema);
-    SchemaBodyResolver(_methodMeta, _schema);
-    SchemaQueryParamsResolver(_methodMeta, _schema);
-    SchemaQueryParamResolver(_methodMeta, _schema);
-    SchemaHeaderResolver(_methodMeta, _schema);
-
-    // register schema
-    this.gSchemaRegistry.register(_schema as RouteConfig);
+  public override created(): void {
+    this.gSchemaRegistry.add({
+      prototype: this.prototype,
+      propertyName: this.propertyName,
+      options: this.options,
+    });
   }
 }
 

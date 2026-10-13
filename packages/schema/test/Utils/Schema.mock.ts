@@ -51,3 +51,23 @@ export class MockParamsController {
     return { producerId, q, limit, page, tenant };
   }
 }
+
+@Controller('/mock-order')
+export class MockOrderController {
+  @Get('/schema-below')
+  @Schema({ responses: { 200: { description: 'OK' } } })
+  public schemaBelow() {
+    return {};
+  }
+
+  @Schema({ responses: { 200: { description: 'OK' } } })
+  @Get('/schema-above')
+  public schemaAbove() {
+    return {};
+  }
+
+  @Schema({ responses: { 200: { description: 'OK' } } })
+  public notARoute() {
+    return {};
+  }
+}
