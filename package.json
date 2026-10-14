@@ -30,7 +30,7 @@
     ]
   },
   "devDependencies": {
-    "@codspeed/vitest-plugin": "6.0.0",
+    "@codspeed/vitest-plugin": "6.0.1",
     "@commitlint/cli": "21.2.3",
     "@commitlint/config-conventional": "21.2.3",
     "@oxc-project/runtime": "catalog:",
