@@ -218,8 +218,8 @@ importers:
   .:
     devDependencies:
       '@codspeed/vitest-plugin':
-        specifier: 6.0.0
-        version: 6.0.0(debug@4.4.3)(tinybench@6.2.2)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))(vitest@5.0.4)
+        specifier: 6.0.1
+        version: 6.0.1(debug@4.4.3)(tinybench@6.2.2)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))(vitest@5.0.4)
       '@commitlint/cli':
         specifier: 21.2.3
         version: 21.2.3(@types/node@26.6.5)(conventional-commits-parser@7.1.3)(typescript@7.0.2)
@@ -1234,11 +1234,11 @@ packages:
     resolution: {integrity: sha512-6zABk/ECA/QYSCQ1NGiVwwbQerUCZ+TQbp64Q3AgmfNvurHH0j8TtXa1qbShXA6qqkpAj4V5W8pP6mLe1mcMqA==}
     engines: {node: '>=18'}
 
-  '@codspeed/core@6.0.0':
-    resolution: {integrity: sha512-lkBE0sPmrpwi2I1qdHT5NAUbw4uReeE31GQrPTMW7SRzTYS4cLOjB/AdErDxGYaRXLTJR0+D56pfCCAEauezIA==}
+  '@codspeed/core@6.0.1':
+    resolution: {integrity: sha512-p6yrZIoz/Bf5vW/QfGhiPOCKccGPES3jQ8NA+03qGcUYR3/U0tZ9h6ZkxVg2zLN10YaHrABEY4GtmTEEE5xF5Q==}
 
-  '@codspeed/vitest-plugin@6.0.0':
-    resolution: {integrity: sha512-t6RTYOMjO5dDeb6G7qCtgWZOBIlKfTgstfLYGNoE5zGHA4m3k2j2PZoiJ94IFgGAm3MqH3rZIn5A/Md4iFOmYw==}
+  '@codspeed/vitest-plugin@6.0.1':
+    resolution: {integrity: sha512-QEIkp3UtXwbT3eB7NZ49+Jz5xpzHopSFMscASF4lpbjTgbOt/Xax6vIPShDSPKB5JErexyJBze7AwCOPgkoNqQ==}
     peerDependencies:
       tinybench: '>=2.9.0'
       vite: ^4.2.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0
@@ -4911,7 +4911,7 @@ snapshots:
 
   '@bcoe/v8-coverage@1.0.2': {}
 
-  '@codspeed/core@6.0.0(debug@4.4.3)':
+  '@codspeed/core@6.0.1(debug@4.4.3)':
     dependencies:
       axios: 1.20.0(debug@4.4.3)
       form-data: 4.0.6
@@ -4921,9 +4921,9 @@ snapshots:
       - debug
       - supports-color
 
-  '@codspeed/vitest-plugin@6.0.0(debug@4.4.3)(tinybench@6.2.2)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))(vitest@5.0.4)':
+  '@codspeed/vitest-plugin@6.0.1(debug@4.4.3)(tinybench@6.2.2)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))(vitest@5.0.4)':
     dependencies:
-      '@codspeed/core': 6.0.0(debug@4.4.3)
+      '@codspeed/core': 6.0.1(debug@4.4.3)
       tinybench: 6.2.2
       vite: 8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)
       vitest: 5.0.4(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/coverage-v8@5.0.4)(@vitest/ui@5.0.4)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
