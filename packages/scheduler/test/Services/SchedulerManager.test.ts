@@ -308,6 +308,81 @@ describe('SchedulerManager', () => {
       expect(outcomes(b.events)).toEqual({ 'skipped-claimed': 5 });
     });
 
+    it('keeps the occurrence claimed for the whole jitter window', async () => {
+      store.initialize({ clock });
+
+      // replica a draws no jitter, replica b nearly the whole 10 minutes
+      const draws = [0, 0.99];
+      vi.spyOn(Math, 'random').mockImplementation(() => draws.shift() ?? 0.5);
+
+      const a = await createReplica({ clock, instanceId: 'a' }, store);
+      const b = await createReplica({ clock, instanceId: 'b' }, store);
+      const runs: string[] = [];
+
+      for (const replica of [a, b]) {
+        replica.manager.add({
+          name: 'hourly',
+          schedule: { cron: '0 * * * *' },
+          jitter: '10m',
+          handler: (ctx) => void runs.push(`${ctx.instanceId}:${ctx.occurrenceId}`),
+        });
+        await replica.manager.start();
+      }
+
+      await clock.advance('1h');
+      await clock.advance('15m');
+
+      expect(runs).toEqual(['a:hourly@2026-01-01T01:00:00.000Z']);
+      expect(outcomes(b.events)).toEqual({ 'skipped-claimed': 1 });
+    });
+
+    it('does not run an occurrence another replica completed when a late replica misfires', async () => {
+      store.initialize({ clock });
+
+      const a = await createReplica({ clock, instanceId: 'a' }, store);
+      const b = await createReplica({ clock, instanceId: 'b' }, store);
+      const runs: string[] = [];
+
+      for (const replica of [a, b]) {
+        replica.manager.add({
+          name: 'hourly',
+          schedule: { cron: '0 * * * *' },
+          misfireGrace: '10s',
+          misfire: 'run-once',
+          handler: (ctx) => void runs.push(`${ctx.instanceId}:${ctx.occurrenceId}`),
+        });
+      }
+
+      await a.manager.start();
+      await clock.advance('1h');
+      expect(runs).toEqual(['a:hourly@2026-01-01T01:00:00.000Z']);
+
+      // b was frozen through the occurrence and wakes once its claim has expired
+      clock.set('2026-01-01T01:20:00Z');
+      await b.manager.start();
+      const manager = b.manager as any;
+      await manager.misfire(manager.fJobs.get('hourly'), at('2026-01-01T01:00:00Z'));
+
+      expect(runs).toEqual(['a:hourly@2026-01-01T01:00:00.000Z']);
+      expect(b.events).toEqual([expect.objectContaining({ outcome: 'skipped-claimed', trigger: 'misfire' })]);
+    });
+
+    it('leaves a late misfire to the occurrence claim when the state cannot be read', async () => {
+      const { manager, events, logger } = await createReplica({ clock }, store);
+      const handler = vi.fn();
+
+      manager.add({ name: 'hourly', schedule: { cron: '0 * * * *' }, misfire: 'run-once', handler });
+      await manager.start();
+      vi.spyOn(store, 'getState').mockRejectedValue(new Error('connection refused'));
+
+      const internal = manager as any;
+      await internal.misfire(internal.fJobs.get('hourly'), at('2026-01-01T01:00:00Z'));
+
+      expect(handler).toHaveBeenCalledTimes(1);
+      expect(events).toEqual([expect.objectContaining({ outcome: 'completed', trigger: 'misfire' })]);
+      expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Failed to read the state'), expect.any(Error));
+    });
+
     it('records the state of a run in the store, including runs of other replicas', async () => {
       const a = await createReplica({ clock, instanceId: 'a' }, store);
       const b = await createReplica({ clock, instanceId: 'b' }, store);

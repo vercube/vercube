@@ -831,7 +831,25 @@ export class SchedulerManager {
    * @returns {Promise<SchedulerTypes.RunResult | undefined>} The run, when the policy runs it
    */
   protected async misfire(registration: Registration, occurrence: number): Promise<SchedulerTypes.RunResult | undefined> {
-    if (this.optionsOf(registration).misfire === 'run-once') {
+    const options = this.optionsOf(registration);
+
+    if (options.misfire === 'run-once') {
+      // A replica that was paused or frozen can wake long after the occurrence
+      // claim expired, when another replica has already run it.
+      if (options.scope === 'cluster' && (await this.alreadyRan(registration, occurrence))) {
+        return this.record(
+          {
+            name: registration.name,
+            occurrenceId: this.occurrenceId(registration.name, occurrence),
+            scheduledAt: new Date(occurrence),
+            outcome: 'skipped-claimed',
+            attempts: 0,
+            durationMs: 0,
+          },
+          'misfire',
+        );
+      }
+
       return this.fire(registration, occurrence, 'misfire');
     }
 
@@ -849,6 +867,27 @@ export class SchedulerManager {
     );
 
     return undefined;
+  }
+
+  /**
+   * Whether a replica already ran an occurrence of a cluster job, or a later one.
+   * When the state cannot be read the occurrence claim still decides.
+   *
+   * @param {Registration} registration - Job to look up
+   * @param {number} occurrence - The occurrence
+   * @returns {Promise<boolean>} True when the stored state is at or past the occurrence
+   */
+  protected async alreadyRan(registration: Registration, occurrence: number): Promise<boolean> {
+    try {
+      const store = await this.readyStore('claim');
+      const state = await store.getState(registration.name);
+
+      return !!state && occurrence <= state.lastScheduledAt;
+    } catch (error) {
+      this.gLogger?.warn(`Vercube/SchedulerManager::Failed to read the state of "${registration.name}"`, error);
+
+      return false;
+    }
   }
 
   /**
@@ -953,7 +992,9 @@ export class SchedulerManager {
       store = await this.readyStore('claim');
 
       const occurrenceKey = manual ? `occ:${registration.name}:manual:${scheduledAt}` : `occ:${registration.name}:${scheduledAt}`;
-      const occurrenceTtl = Math.max(options.misfireGrace, options.lockTtl) + OCCURRENCE_MARGIN;
+      // the jitter is slept before the claim, so a replica that drew a longer
+      // one claims later: the claim has to outlive the whole jitter window
+      const occurrenceTtl = Math.max(options.misfireGrace, options.lockTtl) + options.jitter + OCCURRENCE_MARGIN;
 
       // never released: a replica whose clock is behind must not run the
       // occurrence again after the winner already finished it
