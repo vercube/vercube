@@ -266,7 +266,7 @@ describe('StaticRequestHandler', () => {
         on: vi.fn(),
       });
 
-      const result = await (staticHandler as any).serveFile('/public/test.html', mockStats);
+      const result = await (staticHandler as any).serveFile(new Request('http://localhost/'), '/public/test.html', mockStats);
 
       expect(result).toBeInstanceOf(Response);
       expect(result.headers.get('Content-Type')).toBe('text/html');
@@ -288,7 +288,7 @@ describe('StaticRequestHandler', () => {
         on: vi.fn(),
       });
 
-      const result = await (staticHandler as any).serveFile('/public/style.css', mockStats);
+      const result = await (staticHandler as any).serveFile(new Request('http://localhost/'), '/public/style.css', mockStats);
 
       expect(result).toBeInstanceOf(Response);
       expect(result.headers.get('Content-Type')).toBe('text/css');
@@ -308,7 +308,7 @@ describe('StaticRequestHandler', () => {
         on: vi.fn(),
       });
 
-      const result = await (staticHandler as any).serveFile('/public/script.js', mockStats);
+      const result = await (staticHandler as any).serveFile(new Request('http://localhost/'), '/public/script.js', mockStats);
 
       expect(result).toBeInstanceOf(Response);
       expect(result.headers.get('Content-Type')).toBe('application/javascript');
@@ -328,7 +328,7 @@ describe('StaticRequestHandler', () => {
         on: vi.fn(),
       });
 
-      const result = await (staticHandler as any).serveFile('/public/image.png', mockStats);
+      const result = await (staticHandler as any).serveFile(new Request('http://localhost/'), '/public/image.png', mockStats);
 
       expect(result).toBeInstanceOf(Response);
       expect(result.headers.get('Content-Type')).toBe('image/png');
@@ -354,7 +354,7 @@ describe('StaticRequestHandler', () => {
         on: vi.fn(),
       });
 
-      const result = await (staticHandler as any).serveFile('/public/test.html', mockStats);
+      const result = await (staticHandler as any).serveFile(new Request('http://localhost/'), '/public/test.html', mockStats);
 
       expect(result).toBeInstanceOf(Response);
       expect(result.headers.get('Cache-Control')).toBeNull();
@@ -379,7 +379,7 @@ describe('StaticRequestHandler', () => {
         on: vi.fn(),
       });
 
-      const result = await (staticHandler as any).serveFile('/public/test.html', mockStats);
+      const result = await (staticHandler as any).serveFile(new Request('http://localhost/'), '/public/test.html', mockStats);
 
       expect(result).toBeInstanceOf(Response);
       expect(result.headers.get('ETag')).toBeNull();
@@ -398,7 +398,7 @@ describe('StaticRequestHandler', () => {
         on: vi.fn(),
       });
 
-      const result = await (staticHandler as any).serveFile('/public/test.unknown', mockStats);
+      const result = await (staticHandler as any).serveFile(new Request('http://localhost/'), '/public/test.unknown', mockStats);
 
       expect(result).toBeInstanceOf(Response);
       expect(result.headers.get('Content-Type')).toBe('application/octet-stream');

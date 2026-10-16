@@ -175,11 +175,12 @@ describe('Sse Decorator', () => {
 
   const fetch = (path: string) => app.fetch(new globalThis.Request(`http://localhost${path}`));
 
-  it('should register only a GET route', () => {
+  it('should register a GET and a HEAD route, like @Get', () => {
     const router = app.container.get(Router);
 
     expect(router.resolve({ method: 'GET', path: '/sse/finite' })).toBeDefined();
-    expect(router.resolve({ method: 'HEAD', path: '/sse/finite' })).toBeUndefined();
+    expect(router.resolve({ method: 'HEAD', path: '/sse/finite' })).toBeDefined();
+    expect(router.resolve({ method: 'POST', path: '/sse/finite' })).toBeUndefined();
   });
 
   it('should stream an async generator as text/event-stream', async () => {

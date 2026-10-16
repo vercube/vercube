@@ -67,14 +67,17 @@ class SseDecorator extends BaseDecorator<SseDecoratorOptions> {
       propertyName: this.propertyName,
     });
 
-    this.gRouter.addRoute({
-      path,
-      method: 'GET',
-      handler: this.gRequestHandler.prepareHandler({
-        instance: this.instance,
-        propertyName: this.propertyName,
-      }),
-    });
+    // HEAD alongside GET, like `@Get`
+    for (const method of ['GET', 'HEAD'] as const) {
+      this.gRouter.addRoute({
+        path,
+        method,
+        handler: this.gRequestHandler.prepareHandler({
+          instance: this.instance,
+          propertyName: this.propertyName,
+        }),
+      });
+    }
   }
 }
 

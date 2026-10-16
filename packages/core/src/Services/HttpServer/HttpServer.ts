@@ -1,6 +1,7 @@
 import { Container, Inject } from '@vercube/di';
 import { serve } from 'srvx';
 import { tryServeSpaIndex } from '../../Common/ServeStatic';
+import { MethodNotAllowedError } from '../../Errors/Http/MethodNotAllowedError';
 import { NotFoundError } from '../../Errors/Http/NotFoundError';
 import { getRequestPathname } from '../../Utils/Url';
 import { ErrorHandlerProvider } from '../ErrorHandler/ErrorHandlerProvider';
@@ -244,29 +245,37 @@ export class HttpServer {
 
   /**
    * Handles a request that did not match any route by trying the static file
-   * handler and the SPA `index.html` fallback before giving up with a 404.
+   * handler, then answering 405 for a path routed under other methods, then
+   * the SPA `index.html` fallback, before giving up with a 404. All of it runs
+   * through the global middlewares, like a routed request.
    *
    * @param {Request} request - The incoming HTTP request
    * @returns {Promise<Response>} The HTTP response
    * @private
    */
-  private async handleUnmatchedRequest(request: Request): Promise<Response> {
-    try {
-      const response = await this.gStaticRequestHandler.handleRequest(request);
+  private handleUnmatchedRequest(request: Request): Promise<Response> {
+    return this.gRequestHandler.handleUnmatched(request, async (response) => {
+      const staticResponse = await this.gStaticRequestHandler.handleRequest(request);
 
-      if (response) {
-        return response;
+      if (staticResponse) {
+        return staticResponse;
+      }
+
+      const allowed = this.gRouter.allowedMethods(getRequestPathname(request));
+
+      if (allowed.length > 0) {
+        response.headers.set('allow', allowed.join(', '));
+        throw new MethodNotAllowedError('Method not allowed');
       }
 
       const spaResponse = await tryServeSpaIndex(request, this.fSpaPublicDir);
+
       if (spaResponse) {
         return spaResponse;
       }
 
       throw new NotFoundError('Route not found');
-    } catch (error) {
-      return this.handleError(error);
-    }
+    });
   }
 
   /**

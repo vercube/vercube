@@ -121,8 +121,11 @@ export class RequestHandler {
   /** Cached request context provider (`null` when the app does not bind one). */
   private fRequestContext: RequestContext | null | undefined;
 
-  /** Lazily resolved global middlewares used for CORS preflight responses. */
-  private fPreflightMiddlewares: RouterTypes.MiddlewareDefinition[] | undefined;
+  /**
+   * Global middlewares for requests no route handles (preflight, static files,
+   * 404, 405), rebuilt when the registry hands out a new list.
+   */
+  private fGlobalChain: { source: MetadataTypes.Middleware[]; chain: RouterTypes.RouterHandler['middlewares'] } | undefined;
 
   /** Cached telemetry hooks (`null` when no telemetry package is installed). */
   private fTelemetry: TelemetryTypes.Hooks | null | undefined;
@@ -164,37 +167,7 @@ export class RequestHandler {
     // application-wide middlewares entirely.
     const globalMiddlewares = skipsGlobalMiddlewares(prototype) ? [] : this.gGlobalMiddlewareRegistry.middlewares;
 
-    // The same middleware with different arguments - `@Auth()` on the controller
-    // and `@Auth({ roles: ['admin'] })` on the method - runs once per set of
-    // arguments, so a stricter requirement is never dropped in favour of a looser one.
-    const combined = [...middlewares, ...globalMiddlewares];
-    const uniqueMiddlewares: MetadataTypes.Middleware[] = [];
-    for (const m of combined) {
-      if (uniqueMiddlewares.some((unique) => isSameMiddleware(unique, m))) {
-        continue;
-      }
-      uniqueMiddlewares.push(m);
-    }
-
-    // resolve middlewares
-    const resolvedMiddlewares = uniqueMiddlewares.map((m) => ({
-      ...m,
-      middleware: this.gContainer.resolve(m.middleware),
-    }));
-
-    // get middleware types
-    const beforeMiddlewares = resolvedMiddlewares.filter((m) => !!m.middleware.onRequest);
-    const afterMiddlewares = resolvedMiddlewares.filter((m) => !!m.middleware.onResponse);
-
-    // sort middlewares by priority, validation always runs last: it needs the
-    // resolved arguments, and they are only resolved once auth, CORS and the
-    // rest of the before middlewares let the request through
-    beforeMiddlewares.sort(
-      (a, b) =>
-        Number(a.middleware instanceof ValidationMiddleware) - Number(b.middleware instanceof ValidationMiddleware) ||
-        (a?.priority ?? 999) - (b?.priority ?? 999),
-    );
-    afterMiddlewares.sort((a, b) => (a?.priority ?? 999) - (b?.priority ?? 999));
+    const { beforeMiddlewares, afterMiddlewares } = this.buildMiddlewareChain([...middlewares, ...globalMiddlewares]);
 
     const args = method.args.length <= 1 ? method.args : [...method.args].sort((a, b) => a.idx - b.idx);
     const actions = method.actions;
@@ -268,27 +241,125 @@ export class RequestHandler {
    */
   private async internalHandlePreflight(request: Request): Promise<Response> {
     try {
-      const fakeResponse = this.createInitialResponse();
+      const { beforeMiddlewares, afterMiddlewares } = this.globalChain();
 
-      this.fPreflightMiddlewares ??= this.resolveMiddlewares(this.gGlobalMiddlewareRegistry.middlewares);
-
-      // Execute both onRequest and onResponse for each middleware (preflight pattern)
-      const result = await this.executeMiddlewares(this.fPreflightMiddlewares, {
+      // the same order a route runs them in: every onRequest, then every onResponse
+      const before = await this.executeMiddlewares(beforeMiddlewares, {
         request,
-        response: fakeResponse,
-        methodArgs: [],
+        response: new FastResponse(undefined, { status: 204, statusText: 'No Content' }),
+        methodArgs: undefined,
         handlerResponse: undefined,
         executeRequest: true,
+        executeResponse: false,
+      });
+
+      if (before.earlyReturn) {
+        return mergeResponseHeaders(before.earlyReturn, before.response, false);
+      }
+
+      const after = await this.executeMiddlewares(afterMiddlewares, {
+        request,
+        response: before.response,
+        methodArgs: undefined,
+        handlerResponse: undefined,
+        executeRequest: false,
         executeResponse: true,
       });
 
-      if (result.earlyReturn) {
-        return mergeResponseHeaders(result.earlyReturn, result.response, false);
+      if (after.earlyReturn) {
+        return mergeResponseHeaders(after.earlyReturn, after.response, false);
       }
 
-      return this.createFinalResponse(result.response, null, 204, 'No Content');
+      // no body, so no content type either
+      return new FastResponse(null, {
+        status: after.response.status,
+        statusText: after.response.statusText,
+        headers: after.response.headers,
+      });
     } catch (error) {
       return await this.handleError(error);
+    }
+  }
+
+  /**
+   * Handles a request no route matched - a static file, the SPA fallback, a
+   * 404 or a 405 - through the global middlewares, so CORS and security
+   * headers reach it like any routed response.
+   *
+   * @param {Request} request - The incoming HTTP request
+   * @param {(response: Response) => Promise<Response>} produce - Builds the response; may set headers
+   *   on the intermediate response it receives, and throws for an error response
+   * @returns {Promise<Response>} The HTTP response
+   */
+  public handleUnmatched(request: Request, produce: (response: Response) => Promise<Response>): Promise<Response> {
+    const context = this.requestContext;
+
+    return context
+      ? context.run(() => this.internalHandleUnmatched(request, produce))
+      : this.internalHandleUnmatched(request, produce);
+  }
+
+  /**
+   * Internal method behind {@link RequestHandler.handleUnmatched}.
+   *
+   * @param {Request} request - The incoming HTTP request
+   * @param {(response: Response) => Promise<Response>} produce - Builds the response
+   * @returns {Promise<Response>} The HTTP response
+   * @private
+   */
+  private async internalHandleUnmatched(request: Request, produce: (response: Response) => Promise<Response>): Promise<Response> {
+    let fakeResponse = this.createInitialResponse();
+
+    try {
+      const { beforeMiddlewares, afterMiddlewares } = this.globalChain();
+
+      if (beforeMiddlewares.length > 0) {
+        const before = await this.executeMiddlewares(beforeMiddlewares, {
+          request,
+          response: fakeResponse,
+          methodArgs: undefined,
+          handlerResponse: undefined,
+          executeRequest: true,
+          executeResponse: false,
+        });
+
+        if (before.earlyReturn) {
+          return mergeResponseHeaders(before.earlyReturn, before.response, false);
+        }
+
+        fakeResponse = before.response;
+      }
+
+      let response: Response;
+      let ownsBody = true;
+
+      try {
+        response = await produce(fakeResponse);
+      } catch (error) {
+        response = await this.handleError(error);
+        ownsBody = false;
+      }
+
+      if (afterMiddlewares.length > 0) {
+        const after = await this.executeMiddlewares(afterMiddlewares, {
+          request,
+          response: fakeResponse,
+          methodArgs: undefined,
+          handlerResponse: undefined,
+          executeRequest: false,
+          executeResponse: true,
+        });
+
+        if (after.earlyReturn) {
+          return mergeResponseHeaders(after.earlyReturn, after.response, false);
+        }
+
+        fakeResponse = after.response;
+      }
+
+      return mergeResponseHeaders(response, fakeResponse, ownsBody);
+    } catch (error) {
+      return mergeResponseHeaders(await this.handleError(error), fakeResponse, false);
     }
   }
 
@@ -650,17 +721,66 @@ export class RequestHandler {
   }
 
   /**
-   * Resolves middleware instances from middleware definitions
+   * Dedupes, resolves and sorts middlewares into a before and an after chain.
    *
-   * @param middlewares - Array of middleware definitions
-   * @returns Array of resolved middleware definitions
+   * The same middleware with different arguments - `@Auth()` on the controller
+   * and `@Auth({ roles: ['admin'] })` on the method - runs once per set of
+   * arguments, so a stricter requirement is never dropped in favour of a looser one.
+   *
+   * @param {MetadataTypes.Middleware[]} middlewares - Middleware definitions, route ones first
+   * @returns The before and after chains
    * @private
    */
-  private resolveMiddlewares(middlewares: MetadataTypes.Middleware[]): RouterTypes.MiddlewareDefinition[] {
-    return middlewares.map((m) => ({
+  private buildMiddlewareChain(middlewares: MetadataTypes.Middleware[]): {
+    beforeMiddlewares: RouterTypes.MiddlewareDefinition[];
+    afterMiddlewares: RouterTypes.MiddlewareDefinition[];
+  } {
+    const uniqueMiddlewares: MetadataTypes.Middleware[] = [];
+    for (const m of middlewares) {
+      if (uniqueMiddlewares.some((unique) => isSameMiddleware(unique, m))) {
+        continue;
+      }
+      uniqueMiddlewares.push(m);
+    }
+
+    // resolve middlewares
+    const resolvedMiddlewares = uniqueMiddlewares.map((m) => ({
       ...m,
       middleware: this.gContainer.resolve(m.middleware),
     }));
+
+    // get middleware types
+    const beforeMiddlewares = resolvedMiddlewares.filter((m) => !!m.middleware.onRequest);
+    const afterMiddlewares = resolvedMiddlewares.filter((m) => !!m.middleware.onResponse);
+
+    // sort middlewares by priority, validation always runs last: it needs the
+    // resolved arguments, and they are only resolved once auth, CORS and the
+    // rest of the before middlewares let the request through
+    beforeMiddlewares.sort(
+      (a, b) =>
+        Number(a.middleware instanceof ValidationMiddleware) - Number(b.middleware instanceof ValidationMiddleware) ||
+        (a?.priority ?? 999) - (b?.priority ?? 999),
+    );
+    afterMiddlewares.sort((a, b) => (a?.priority ?? 999) - (b?.priority ?? 999));
+
+    return { beforeMiddlewares, afterMiddlewares };
+  }
+
+  /**
+   * The global middleware chain, rebuilt whenever a global middleware is
+   * registered: the registry hands out a new list then.
+   *
+   * @returns The before and after chains of the global middlewares
+   * @private
+   */
+  private globalChain(): RouterTypes.RouterHandler['middlewares'] {
+    const source = this.gGlobalMiddlewareRegistry.middlewares;
+
+    if (this.fGlobalChain?.source !== source) {
+      this.fGlobalChain = { source, chain: this.buildMiddlewareChain(source) };
+    }
+
+    return this.fGlobalChain.chain;
   }
 
   /**
