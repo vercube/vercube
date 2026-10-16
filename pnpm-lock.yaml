@@ -566,7 +566,7 @@ importers:
         version: link:../logger
       c12:
         specifier: 'catalog:'
-        version: 4.0.0-rc.2(dotenv@18.0.7)(giget@3.3.1)(jiti@2.7.0)(magicast@0.5.5)
+        version: 4.0.0-rc.2(dotenv@18.0.8)(giget@3.3.1)(jiti@2.7.0)(magicast@0.5.5)
       citty:
         specifier: 0.2.2
         version: 0.2.2
@@ -608,7 +608,7 @@ importers:
         version: link:../logger
       c12:
         specifier: 'catalog:'
-        version: 4.0.0-rc.2(dotenv@18.0.7)(giget@3.3.1)(jiti@2.7.0)(magicast@0.5.5)
+        version: 4.0.0-rc.2(dotenv@18.0.8)(giget@3.3.1)(jiti@2.7.0)(magicast@0.5.5)
       defu:
         specifier: 'catalog:'
         version: 6.1.7
@@ -645,7 +645,7 @@ importers:
         version: link:../core
       c12:
         specifier: 'catalog:'
-        version: 4.0.0-rc.2(dotenv@18.0.7)(giget@3.3.1)(jiti@2.7.0)(magicast@0.5.5)
+        version: 4.0.0-rc.2(dotenv@18.0.8)(giget@3.3.1)(jiti@2.7.0)(magicast@0.5.5)
       chokidar:
         specifier: 5.0.0
         version: 5.0.0
@@ -656,8 +656,8 @@ importers:
         specifier: 'catalog:'
         version: 6.1.7
       dotenv:
-        specifier: 18.0.7
-        version: 18.0.7
+        specifier: 18.0.8
+        version: 18.0.8
       hookable:
         specifier: 6.1.2
         version: 6.1.2
@@ -1057,11 +1057,11 @@ importers:
         specifier: workspace:*
         version: link:../packages/ws
       serverless:
-        specifier: 4.43.0
-        version: 4.43.0
+        specifier: 4.44.0
+        version: 4.44.0
       serverless-offline:
         specifier: 14.8.3
-        version: 14.8.3(serverless@4.43.0)
+        version: 14.8.3(serverless@4.44.0)
       tslib:
         specifier: 2.8.1
         version: 2.8.1
@@ -3171,8 +3171,8 @@ packages:
     resolution: {integrity: sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==}
     engines: {node: '>=8'}
 
-  dotenv@18.0.7:
-    resolution: {integrity: sha512-QEvMEF8ca3GNZJJnAbOgxpj5ULhBvnMcURp+XKrtvqFNPgjBvYoswQ0Jl2cO7JzCjxZjJhr9ZuIEhlrRxMft/Q==}
+  dotenv@18.0.8:
+    resolution: {integrity: sha512-2KDeoFoK/zRtcnbunCDlLG5VWVMcyqeQc6iK65o231nfNAcuGrKoqUQfJFUtBI+QlShk5HKIHxwebBtUl3rEfA==}
     engines: {node: '>=12'}
     hasBin: true
 
@@ -4095,8 +4095,8 @@ packages:
     engines: {node: '>=18.17.0'}
     hasBin: true
 
-  serverless@4.43.0:
-    resolution: {integrity: sha512-ukk3LARQ89Cn2phMyIrwabfy3rx3IoENWKvDY3Cyj4tGJOMv9XAkxgnx8n71jDaG+ijOxBXyPBL72jTkPPju0w==}
+  serverless@4.44.0:
+    resolution: {integrity: sha512-yIC37VA9jKBiZgOOYY2Ewqzg5ix8qjlt0Hf7JwJg/nEqXzUWijVnivCKU82K6PFWvqNqFcABGE6Z0oeTl1wJsQ==}
     engines: {node: '>=18.17.0'}
     hasBin: true
 
@@ -4295,8 +4295,8 @@ packages:
     resolution: {integrity: sha512-LIY910g9TI13YS95lrMFrs8Rm/u/irgHeTWoKCoteeJ04CUJ92eEfj0rVn+7VKMPBpUPiUoBKfhNyLI23EE/KA==}
     engines: {node: '>=18.17'}
 
-  undici@6.28.1:
-    resolution: {integrity: sha512-zWpdTVD54H48CIybL0rWQ3ukpb9d23wM7eH5RtfdmeP70cWHNjtfo7P4vZX+5CoDcO53J4Pu5uXp7lNfjc6DRA==}
+  undici@6.29.0:
+    resolution: {integrity: sha512-R+RODBqp6i2pPflGdq+xIOUkl+RNfGgHwoinecKu/JCuf2uO06cOKoDbI2P7Dn6KcswdKwrczbU6IYJ6K8X+wg==}
     engines: {node: '>=18.17'}
 
   unenv@2.0.0-rc.24:
@@ -6299,7 +6299,7 @@ snapshots:
     dependencies:
       '@types/node': 26.6.5
 
-  c12@4.0.0-rc.2(dotenv@18.0.7)(giget@3.3.1)(jiti@2.7.0)(magicast@0.5.5):
+  c12@4.0.0-rc.2(dotenv@18.0.8)(giget@3.3.1)(jiti@2.7.0)(magicast@0.5.5):
     dependencies:
       confbox: 0.3.1
       defu: 6.1.7
@@ -6308,7 +6308,7 @@ snapshots:
       pkg-types: 2.3.3
       rc9: 3.1.0
     optionalDependencies:
-      dotenv: 18.0.7
+      dotenv: 18.0.8
       giget: 3.3.1
       jiti: 2.7.0
       magicast: 0.5.5
@@ -6432,7 +6432,7 @@ snapshots:
 
   detect-libc@2.1.2: {}
 
-  dotenv@18.0.7: {}
+  dotenv@18.0.8: {}
 
   dts-resolver@3.0.0: {}
 
@@ -7340,7 +7340,7 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  serverless-offline@14.8.3(serverless@4.43.0):
+  serverless-offline@14.8.3(serverless@4.44.0):
     dependencies:
       '@aws-sdk/client-lambda': 3.1149.0
       '@hapi/boom': 10.0.1
@@ -7363,7 +7363,7 @@ snapshots:
       node-fetch: 3.3.2
       node-schedule: 2.1.1
       p-memoize: 7.1.1
-      serverless: 4.43.0
+      serverless: 4.44.0
       tree-kill: 1.2.2
       tsx: 4.23.15
       velocityjs: 2.1.7
@@ -7377,9 +7377,9 @@ snapshots:
     dependencies:
       undici: 6.28.0
 
-  serverless@4.43.0:
+  serverless@4.44.0:
     dependencies:
-      undici: 6.28.1
+      undici: 6.29.0
 
   setimmediate@1.0.5: {}
 
@@ -7566,7 +7566,7 @@ snapshots:
 
   undici@6.28.0: {}
 
-  undici@6.28.1: {}
+  undici@6.29.0: {}
 
   unenv@2.0.0-rc.24:
     dependencies:
