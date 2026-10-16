@@ -17,9 +17,9 @@ describe('Redirect Decorator', () => {
     const response = meta.__methods['redirect'].actions[0].handler(
       new Request('http://localhost/redirect'),
       new Response(),
-    ) as Response;
+    ) as ResponseInit;
 
     expect(response.status).toBe(301);
-    expect(response.headers.get('Location')).toBe('/redirect');
+    expect(response.headers).toEqual({ Location: '/redirect' });
   });
 });

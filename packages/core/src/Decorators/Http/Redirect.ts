@@ -1,5 +1,4 @@
 import { BaseDecorator, createDecorator } from '@vercube/di';
-import { FastResponse } from '../../Types/CommonTypes';
 import { HTTPStatus } from '../../Types/HttpTypes';
 import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
 import type { MetadataTypes } from '../../Types/MetadataTypes';
@@ -26,15 +25,14 @@ class RedirectDecorator extends BaseDecorator<RedirectDecoratorOptions, Metadata
     initializeMetadata(this.prototype);
     const method = initializeMetadataMethod(this.prototype, this.propertyName);
 
+    // A ResponseInit rather than a Response, so the status and `Location` are
+    // merged into the response built so far and headers set by middlewares and
+    // `@SetHeader` survive.
     method.actions.push({
-      handler: () => {
-        return new FastResponse(undefined, {
-          status: this.options.code,
-          headers: {
-            Location: this.options.location,
-          },
-        });
-      },
+      handler: () => ({
+        status: this.options.code,
+        headers: { Location: this.options.location },
+      }),
     });
   }
 }
