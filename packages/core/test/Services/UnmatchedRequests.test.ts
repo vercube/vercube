@@ -27,6 +27,22 @@ class LateMiddleware extends BaseMiddleware {
   }
 }
 
+class GateMiddleware extends BaseMiddleware {
+  public override onRequest(request: Request): Response | void {
+    if (request.headers.has('x-block')) {
+      return new Response('blocked', { status: 401 });
+    }
+  }
+
+  public override onResponse(request: Request, response: Response): Response | void {
+    response.headers.set('x-after', 'yes');
+
+    if (request.headers.has('x-block-after')) {
+      return new Response('blocked after', { status: 403 });
+    }
+  }
+}
+
 @Controller('/t')
 class UnmatchedController {
   @Get('/ok')
@@ -47,6 +63,7 @@ async function boot(): Promise<App> {
       const registry = app.container.get(GlobalMiddlewareRegistry);
       registry.registerGlobalMiddleware(CorsMiddleware, { target: '__global__', priority: 10 });
       registry.registerGlobalMiddleware(FirstMiddleware, { target: '__global__', priority: 1 });
+      registry.registerGlobalMiddleware(GateMiddleware, { target: '__global__', priority: 20 });
       app.container.bind(UnmatchedController);
     },
   });
@@ -128,5 +145,27 @@ describe('requests no route handles', () => {
     expect(stale.status).toBe(200);
     // read the body, so the file is not opened after the directory is gone
     expect(await stale.text()).toBe('hello');
+  });
+
+  it('should let a global middleware end an unmatched request or a preflight', async () => {
+    const app = await boot();
+
+    for (const method of ['GET', 'OPTIONS']) {
+      const before = await app.fetch(new Request('http://localhost/nope', { method, headers: { 'x-block': '1' } }));
+      expect(before.status).toBe(401);
+      expect(before.headers.get('access-control-allow-origin')).toBe('*');
+
+      const after = await app.fetch(new Request('http://localhost/nope', { method, headers: { 'x-block-after': '1' } }));
+      expect(after.status).toBe(403);
+      expect(after.headers.get('x-after')).toBe('yes');
+    }
+  });
+
+  it('should run onResponse hooks on an unmatched request', async () => {
+    const app = await boot();
+
+    const response = await app.fetch(new Request('http://localhost/nope'));
+
+    expect(response.headers.get('x-after')).toBe('yes');
   });
 });
