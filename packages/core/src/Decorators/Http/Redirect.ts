@@ -1,6 +1,6 @@
 import { BaseDecorator, createDecorator } from '@vercube/di';
 import { HTTPStatus } from '../../Types/HttpTypes';
-import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
+import { initializeMetadata, initializeMetadataMethod, setMetadataAction } from '../../Utils/Utils';
 import type { MetadataTypes } from '../../Types/MetadataTypes';
 
 /**
@@ -28,7 +28,8 @@ class RedirectDecorator extends BaseDecorator<RedirectDecoratorOptions, Metadata
     // A ResponseInit rather than a Response, so the status and `Location` are
     // merged into the response built so far and headers set by middlewares and
     // `@SetHeader` survive.
-    method.actions.push({
+    setMetadataAction(method, {
+      key: this.options,
       handler: () => ({
         status: this.options.code,
         headers: { Location: this.options.location },

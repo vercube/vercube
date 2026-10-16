@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { createMetadataCtx, createMetadataMethod, initializeMetadata, initializeMetadataMethod } from '../../src/Utils/Utils';
+import {
+  createMetadataCtx,
+  createMetadataMethod,
+  initializeMetadata,
+  initializeMetadataMethod,
+  setMetadataAction,
+} from '../../src/Utils/Utils';
 
 describe('Utils', () => {
   describe('createMetadataCtx', () => {
@@ -167,6 +173,54 @@ describe('Utils', () => {
       const result = initializeMetadata(target);
 
       expect((result as any).__middlewares).toBe(existingMiddlewares);
+    });
+  });
+
+  describe('inherited metadata', () => {
+    it('should give a subclass its own copy of the parent metadata', () => {
+      class Parent {}
+      class Child extends Parent {}
+
+      const parent = initializeMetadata(Parent.prototype);
+      const method = initializeMetadataMethod(Parent.prototype, 'list');
+      method.url = '/list';
+      method.args.push({ idx: 0, type: 'body' });
+      (parent as unknown as Record<string, unknown>).__flag = true;
+
+      const child = initializeMetadata(Child.prototype);
+      initializeMetadataMethod(Child.prototype, 'list').args.push({ idx: 1, type: 'request' });
+      initializeMetadataMethod(Child.prototype, 'own');
+      child.__controller.path = '/child';
+
+      expect(child).not.toBe(parent);
+      expect(child.__methods.list.url).toBe('/list');
+      expect((child as unknown as Record<string, unknown>).__flag).toBe(true);
+      expect(parent.__methods.list.args).toHaveLength(1);
+      expect(parent.__methods.own).toBeUndefined();
+      expect(parent.__controller.path).toBe('');
+    });
+
+    it('should copy a parent context without methods', () => {
+      class Parent {}
+      class Child extends Parent {}
+      (Parent.prototype as unknown as Record<string, unknown>).__metadata = { __controller: { path: '/p' } };
+
+      expect(initializeMetadata(Child.prototype).__methods).toEqual({});
+    });
+  });
+
+  describe('setMetadataAction', () => {
+    it('should replace an action of the same key and append the rest', () => {
+      const method = createMetadataMethod();
+      const key = {};
+
+      setMetadataAction(method, { key, handler: () => ({ status: 201 }) });
+      setMetadataAction(method, { key, handler: () => ({ status: 202 }) });
+      setMetadataAction(method, { handler: () => undefined });
+      setMetadataAction(method, { handler: () => undefined });
+
+      expect(method.actions).toHaveLength(3);
+      expect(method.actions[0].handler(new Request('http://localhost'), new Response())).toEqual({ status: 202 });
     });
   });
 });

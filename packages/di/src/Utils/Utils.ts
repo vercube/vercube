@@ -59,13 +59,15 @@ export interface IDecoratedInstance {
 export function createDecorator<P, T extends BaseDecorator<P>>(decoratorClass: IClassType<T>, params: P): Function {
   // standaard ES6 decorator code...
   return function internalDecorator(target: IDecoratedPrototype, propertyName: string, descriptor: PropertyDescriptor): any {
-    // if target instance does not have __decorators magic array, create it
-    if (!target.__decorators) {
-      target.__decorators = [];
+    // if target instance does not have its own __decorators magic array, create
+    // it - a subclass starts from a copy of its parent's, as pushing to the
+    // inherited one would apply its decorators to the parent and every sibling
+    if (!Object.hasOwn(target, '__decorators')) {
+      target.__decorators = [...(target.__decorators ?? [])];
     }
 
     // push decorator information to magic array
-    target.__decorators.push({
+    target.__decorators!.push({
       classType: decoratorClass,
       params,
       target,

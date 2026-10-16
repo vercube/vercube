@@ -1,5 +1,5 @@
 import { BaseDecorator, createDecorator } from '@vercube/di';
-import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
+import { initializeMetadata, initializeMetadataMethod, setMetadataAction } from '../../Utils/Utils';
 import type { MetadataTypes } from '../../Types/MetadataTypes';
 
 /**
@@ -27,7 +27,8 @@ class SetHeaderDecorator extends BaseDecorator<SetHeaderDecoratorOptions, Metada
     initializeMetadata(this.prototype);
     const method = initializeMetadataMethod(this.prototype, this.propertyName);
 
-    method.actions.push({
+    setMetadataAction(method, {
+      key: this.options,
       handler: (req: Request, res: Response) => {
         res.headers.delete(this.options.key);
         res.headers.append(this.options.key, this.options.value);
