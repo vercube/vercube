@@ -6,6 +6,11 @@ import type { ValidationTypes } from '../../Types/ValidationTypes';
 
 interface QueryParamDecoratorOptions {
   name: string;
+  /**
+   * Resolve every value of a repeated parameter as an array (`?tag=a&tag=b`
+   * gives `['a', 'b']`, a missing one `[]`) instead of only the first one.
+   */
+  array?: boolean;
   validationSchema?: ValidationTypes.Schema;
 }
 
@@ -34,6 +39,7 @@ class QueryParamDecorator extends BaseDecorator<QueryParamDecoratorOptions, Meta
       type: 'query-param',
       data: {
         name: this.options.name,
+        array: this.options.array === true,
       },
       validate: this.options?.validationSchema ? true : false,
       validationSchema: this.options?.validationSchema,

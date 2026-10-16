@@ -5,6 +5,11 @@ import type { MetadataTypes } from '../../Types/MetadataTypes';
 import type { ValidationTypes } from '../../Types/ValidationTypes';
 
 interface QueryParamsDecoratorOptions {
+  /**
+   * Keys resolved as arrays of every value they carry (`?tag=a&tag=b` gives
+   * `{ tag: ['a', 'b'] }`). Every other key resolves to its first value.
+   */
+  arrays?: string[];
   validationSchema?: ValidationTypes.Schema;
 }
 
@@ -32,7 +37,7 @@ class QueryParamsDecorator extends BaseDecorator<QueryParamsDecoratorOptions, Me
     setMetadataArg(method, {
       idx: this.propertyIndex,
       type: 'query-params',
-      data: {},
+      data: { arrays: this.options?.arrays ?? [] },
       validate: this.options?.validationSchema ? true : false,
       validationSchema: this.options?.validationSchema,
     });

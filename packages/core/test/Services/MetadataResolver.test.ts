@@ -292,7 +292,7 @@ describe('MetadataResolver', () => {
       const result = await resolver.resolveArgs(args, mockEvent);
 
       expect(result[0].resolved).toEqual({ page: '1', limit: '10' });
-      expect(resolveQueryParams).toHaveBeenCalledWith(mockEvent);
+      expect(resolveQueryParams).toHaveBeenCalledWith(mockEvent, new Set());
     });
 
     it('should resolve header type', async () => {
@@ -561,7 +561,10 @@ describe('MetadataResolver', () => {
       vi.mocked(resolveQueryParams).mockReturnValue({ name: 'bun' });
 
       expect(compileOne({ type: 'query-params' })(mockEvent)).toEqual({ name: 'bun' });
-      expect(resolveQueryParams).toHaveBeenCalledWith(mockEvent);
+      expect(resolveQueryParams).toHaveBeenCalledWith(mockEvent, new Set());
+
+      compileOne({ type: 'query-params', data: { arrays: ['tag'] } })(mockEvent);
+      expect(resolveQueryParams).toHaveBeenLastCalledWith(mockEvent, new Set(['tag']));
     });
 
     it('should compile a header resolver', () => {

@@ -1,3 +1,4 @@
+import { isSafeProperty } from '../Utils/Security';
 import { getRequestSearch } from '../Utils/Url';
 import type { RouterTypes } from '../Types/RouterTypes';
 
@@ -89,12 +90,33 @@ export function resolveQueryParam(name: string, event: RouterTypes.RouterEvent):
 }
 
 /**
- * Resolves all query parameters from the URL of a router event
+ * Resolves every value of a query parameter, in the order they appear.
+ *
+ * @param name - The name of the query parameter to resolve
  * @param event - The router event containing the request URL
- * @returns An object containing all query parameters as key-value pairs
+ * @returns The values, empty when the parameter is missing
  */
-export function resolveQueryParams(event: RouterTypes.RouterEvent): Record<string, string> {
-  const params: Record<string, string> = {};
+export function resolveQueryParamAll(name: string, event: RouterTypes.RouterEvent): string[] {
+  const search = getRequestSearch(event.request);
+
+  return search === '' || search === '?' ? [] : new URLSearchParams(search).getAll(name);
+}
+
+/**
+ * Resolves all query parameters from the URL of a router event.
+ *
+ * Like {@link resolveQueryParam}, a repeated key resolves to its first value,
+ * unless it is listed in `arrays`: those resolve to every value they carry.
+ *
+ * @param event - The router event containing the request URL
+ * @param arrays - Keys resolved as arrays of all their values
+ * @returns An object containing all query parameters
+ */
+export function resolveQueryParams(
+  event: RouterTypes.RouterEvent,
+  arrays: ReadonlySet<string> = new Set(),
+): Record<string, string | string[]> {
+  const params: Record<string, string | string[]> = {};
   const search = getRequestSearch(event.request);
 
   if (search === '') {
@@ -102,7 +124,22 @@ export function resolveQueryParams(event: RouterTypes.RouterEvent): Record<strin
   }
 
   for (const [key, value] of new URLSearchParams(search)) {
-    params[key] = value;
+    // the query is attacker-controlled: `__proto__` must not reach the prototype
+    if (!isSafeProperty(key)) {
+      continue;
+    }
+
+    if (arrays.has(key)) {
+      const current = Object.hasOwn(params, key) ? params[key] : undefined;
+
+      if (Array.isArray(current)) {
+        current.push(value);
+      } else {
+        params[key] = [value];
+      }
+    } else if (!Object.hasOwn(params, key)) {
+      params[key] = value;
+    }
   }
 
   return params;
