@@ -1,5 +1,5 @@
 import defu from 'defu';
-import { isOpenApiZod, toJsonSchema } from '../Utils/StandardSchema';
+import { isOpenApiZod, rejectsUndefined, toJsonSchema } from '../Utils/StandardSchema';
 import type { SchemaWarn } from '../Utils/StandardSchema';
 import type { RouteConfig } from '@asteasolutions/zod-to-openapi';
 import type { DeepPartial, MetadataTypes } from '@vercube/core';
@@ -33,6 +33,8 @@ export function SchemaBodyResolver(metadata: MetadataTypes.Method, schema: DeepP
 
   schema.request = defu(schema?.request ?? {}, {
     body: {
+      // a request without a body fails validation, unless the schema accepts `undefined`
+      required: rejectsUndefined(body.validationSchema),
       content: {
         'application/json': {
           schema: bodySchema as any,

@@ -123,6 +123,28 @@ export class SchemaRegistry {
       }
     }
 
-    return new OpenApiGeneratorV3(registry.definitions).generateDocument(config);
+    return withoutNullableParameters(new OpenApiGeneratorV3(registry.definitions).generateDocument(config));
   }
+}
+
+/**
+ * Drops `nullable` from parameter schemas. zod-to-openapi marks every
+ * `z.coerce.*` schema nullable, as its input is `unknown`, but a query, path or
+ * header parameter is a string or absent, never `null`.
+ *
+ * @param document - The generated document.
+ * @returns The same document.
+ */
+function withoutNullableParameters<T extends { paths?: Record<string, Record<string, any>> }>(document: T): T {
+  for (const operations of Object.values(document.paths ?? {})) {
+    for (const operation of Object.values(operations ?? {})) {
+      for (const parameter of operation?.parameters ?? []) {
+        if (parameter?.schema && 'nullable' in parameter.schema) {
+          delete parameter.schema.nullable;
+        }
+      }
+    }
+  }
+
+  return document;
 }

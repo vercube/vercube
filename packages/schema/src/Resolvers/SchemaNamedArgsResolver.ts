@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { isOpenApiZod, toOpenApiSchema } from '../Utils/StandardSchema';
+import { isOpenApiZod, toOpenApiSchema, withRequired } from '../Utils/StandardSchema';
 import type { SchemaWarn } from '../Utils/StandardSchema';
 import type { RouteConfig } from '@asteasolutions/zod-to-openapi';
 import type { DeepPartial, MetadataTypes } from '@vercube/core';
@@ -54,24 +54,6 @@ function documentArg(arg: MetadataTypes.Arg, warn?: SchemaWarn): z.ZodType {
   }
 
   return converted ?? z.string().optional();
-}
-
-/**
- * A missing value reaches validation as `undefined`, so a schema that rejects
- * `undefined` makes the parameter required. zod-to-openapi documents bare
- * `z.coerce.*` schemas as optional, since their input is `unknown`, so the
- * parameter is marked required explicitly when validation would reject it.
- *
- * @param schema - The validation schema of the argument.
- * @returns The schema, marked required when it rejects `undefined`.
- */
-function withRequired(schema: z.ZodType): z.ZodType {
-  try {
-    return schema.safeParse(undefined).success ? schema : schema.openapi({ param: { required: true } });
-  } catch {
-    // async refinements cannot be checked synchronously
-    return schema;
-  }
 }
 
 /**

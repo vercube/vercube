@@ -98,8 +98,13 @@ export function toOpenApiSchema(schema: unknown): z.ZodType | undefined {
  * @returns The zod object, or undefined when the schema cannot be documented as one.
  */
 export function toOpenApiObject(schema: unknown): z.ZodObject | undefined {
+  // every field is a parameter of its own, required when validation rejects it missing
   if (schema instanceof z.ZodObject) {
-    return schema;
+    return schema.extend(
+      Object.fromEntries(
+        Object.entries(schema.shape as Record<string, z.ZodType>).map(([name, field]) => [name, withRequired(field)]),
+      ),
+    );
   }
 
   const json = toJsonSchema(schema);
@@ -132,4 +137,22 @@ export function toOpenApiObject(schema: unknown): z.ZodObject | undefined {
 function withoutDialect(json: Record<string, unknown>): Record<string, unknown> {
   const { $schema: _, ...rest } = json;
   return rest;
+}
+
+/**
+ * A missing value reaches validation as `undefined`, so a schema that rejects
+ * `undefined` makes the parameter required. zod-to-openapi documents bare
+ * `z.coerce.*` schemas as optional, since their input is `unknown`, so the
+ * parameter is marked required explicitly when validation would reject it.
+ *
+ * @param schema - The validation schema of the argument.
+ * @returns The schema, marked required when it rejects `undefined`.
+ */
+export function withRequired(schema: z.ZodType): z.ZodType {
+  try {
+    return schema.safeParse(undefined).success ? schema : schema.openapi({ param: { required: true } });
+  } catch {
+    // async refinements cannot be checked synchronously
+    return schema;
+  }
 }
