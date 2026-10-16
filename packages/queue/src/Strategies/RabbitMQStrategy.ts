@@ -317,6 +317,11 @@ export class RabbitMQStrategy extends QueueStrategy<RabbitMQStrategyOptions> {
       await this.assertQueue(channel, request.queue);
       await channel.prefetch(options.prefetch ?? Math.max(1, request.concurrency));
 
+      // Created before consuming and handed to every delivery: the backlog can
+      // arrive before `consume()` resolves, and a message nobody could ack would
+      // hold its prefetch slot forever.
+      const consumer: RabbitConsumer = { channel, tag: '', active: 0, stopping: false };
+
       const reply = await channel.consume(request.queue, (message: ConsumeMessage | null) => {
         if (!message) {
           this.gLogger?.warn(`Vercube/RabbitMQStrategy::Consumer of "${request.queue}" was cancelled by the broker`);
@@ -324,8 +329,10 @@ export class RabbitMQStrategy extends QueueStrategy<RabbitMQStrategyOptions> {
           return;
         }
 
-        void this.handle(request, message);
+        void this.handle(request, message, consumer);
       });
+
+      consumer.tag = reply.consumerTag;
 
       // The queue may have been stopped, or the connection replaced again, while
       // the broker was answering. Installing this consumer now would revive a
@@ -338,7 +345,7 @@ export class RabbitMQStrategy extends QueueStrategy<RabbitMQStrategyOptions> {
         return false;
       }
 
-      this.fConsumers.set(request.queue, { channel, tag: reply.consumerTag, active: 0, stopping: false });
+      this.fConsumers.set(request.queue, consumer);
 
       return true;
     } catch (error) {
@@ -431,15 +438,13 @@ export class RabbitMQStrategy extends QueueStrategy<RabbitMQStrategyOptions> {
    *
    * @param {QueueTypes.ConsumeRequest} request - The consumer the message belongs to
    * @param {ConsumeMessage} message - The delivery
+   * @param {RabbitConsumer} consumer - Consumer the delivery came from, used to settle it
    * @returns {Promise<void>} Resolves once the message has been settled
    */
-  private async handle(request: QueueTypes.ConsumeRequest, message: ConsumeMessage): Promise<void> {
-    const consumer = this.fConsumers.get(request.queue);
+  private async handle(request: QueueTypes.ConsumeRequest, message: ConsumeMessage, consumer: RabbitConsumer): Promise<void> {
     const headers = normalizeHeaders(message.properties.headers);
 
-    if (consumer) {
-      consumer.active++;
-    }
+    consumer.active++;
 
     try {
       await request.dispatch({
@@ -451,14 +456,12 @@ export class RabbitMQStrategy extends QueueStrategy<RabbitMQStrategyOptions> {
         raw: message,
       });
 
-      consumer?.channel.ack(message);
+      consumer.channel.ack(message);
     } catch {
       // the manager owns the retry policy, so requeueing here would only loop
-      consumer?.channel.nack(message, false, false);
+      consumer.channel.nack(message, false, false);
     } finally {
-      if (consumer) {
-        consumer.active--;
-      }
+      consumer.active--;
     }
   }
 

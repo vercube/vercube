@@ -18,6 +18,7 @@ import {
   resolveBackoff,
   WILDCARD_JOB,
 } from '../Utils/Job';
+import { getConsumerOptions } from '../Utils/Metadata';
 import { previewPayload, redactHeaders } from '../Utils/Redact';
 import type { QueueTypes } from '../Types/QueueTypes';
 import type { QueueStrategy } from './QueueStrategy';
@@ -148,6 +149,13 @@ export class QueueManager {
    */
   public async mount<T extends QueueStrategy<unknown>>({ name, strategy, initOptions }: QueueTypes.Mount<T>): Promise<void> {
     const mountName = name ?? DEFAULT_STRATEGY;
+
+    // A mount replacing another one under the same name: the old strategy is
+    // stopped and closed first, or its consumers would keep running on a leaked
+    // connection and the new one would never start consuming those queues.
+    if (this.fStrategies.has(mountName)) {
+      await this.unmount(mountName);
+    }
 
     this.fStrategies.set(mountName, {
       name: mountName,
@@ -347,6 +355,7 @@ export class QueueManager {
    */
   public async start(): Promise<void> {
     this.fStarted = true;
+    this.warnTransientConsumers();
 
     return this.enqueue(async () => {
       const mounted = [...this.fStrategies.keys()];
@@ -355,6 +364,27 @@ export class QueueManager {
         await this.startMount(name);
       }
     });
+  }
+
+  /**
+   * Warns about `@Consumer()` classes bound as transient. Their `@Job()`
+   * handlers only register when the container creates the instance, which the
+   * flush does for singletons alone, so their jobs would arrive unhandled.
+   *
+   * @returns {void}
+   */
+  protected warnTransientConsumers(): void {
+    for (const definition of this.gContainer.services.values()) {
+      const value: unknown = definition.serviceValue;
+
+      if (definition.type !== 'CLASS' || typeof value !== 'function' || !getConsumerOptions(value.prototype ?? null)) {
+        continue;
+      }
+
+      this.gLogger?.warn(
+        `Vercube/QueueManager::Consumer "${value.name}" is bound as transient, so its @Job() handlers never register. Bind it with container.bind().`,
+      );
+    }
   }
 
   /**

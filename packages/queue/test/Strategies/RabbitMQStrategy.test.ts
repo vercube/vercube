@@ -14,6 +14,7 @@ const state = vi.hoisted(() => ({
   checkError: null as Error | null,
   consumeError: null as Error | null,
   consumeErrorOnce: null as Error | null,
+  deliverOnConsume: null as unknown,
   closeError: null as Error | null,
 }));
 
@@ -55,6 +56,12 @@ vi.mock('amqplib', () => {
       }
 
       this.deliveries.push(onMessage);
+
+      if (state.deliverOnConsume) {
+        const message = state.deliverOnConsume;
+        state.deliverOnConsume = null;
+        onMessage(message);
+      }
 
       return { consumerTag: `tag-${state.channels.indexOf(this)}` };
     });
@@ -176,6 +183,7 @@ describe('RabbitMQStrategy', () => {
     state.checkError = null;
     state.consumeError = null;
     state.consumeErrorOnce = null;
+    state.deliverOnConsume = null;
     state.sendResult = true;
 
     container = new Container();
@@ -529,6 +537,17 @@ describe('RabbitMQStrategy', () => {
           attempt: 2,
         }),
       );
+    });
+
+    it('should acknowledge a backlog message delivered before consume() resolves', async () => {
+      const dispatch = vi.fn().mockResolvedValue(undefined);
+      // the broker pushes the backlog while it is still answering basic.consume
+      state.deliverOnConsume = delivery();
+
+      await strategy.consume({ queue: 'emails', concurrency: 1, dispatch });
+
+      await vi.waitFor(() => expect(state.channels[0].ack).toHaveBeenCalled());
+      expect(dispatch).toHaveBeenCalledTimes(1);
     });
 
     it('should read the job name from the headers when the message has no type', async () => {
