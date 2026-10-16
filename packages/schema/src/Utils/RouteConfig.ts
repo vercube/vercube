@@ -19,18 +19,28 @@ export type SchemaRouteOptions = Omit<RouteConfig, 'method' | 'path'>;
  * @param metadata - The metadata of the method.
  * @param options - Options passed to `@Schema`.
  * @param warn - Reports a validation schema that cannot be documented.
+ * @param controllerPath - Path the controller is served at in this application, when it is known.
  * @returns The route config, or undefined when the method has no route decorator.
  */
 export function createRouteConfig(
   metadata: MetadataTypes.Method | undefined,
   options: SchemaRouteOptions,
   warn?: SchemaWarn,
+  controllerPath?: string,
 ): RouteConfig | undefined {
   if (!metadata?.method || !metadata.url) {
     return undefined;
   }
 
-  const { path, params } = toOpenApiPath(metadata.url);
+  // The metadata only knows the path `@Controller()` declares; an application
+  // may serve the controller elsewhere with `setControllerPath()`.
+  const url =
+    controllerPath !== undefined && metadata.path !== undefined
+      ? `${controllerPath.replace(/\/$/, '')}/${metadata.path.replace(/^\//, '')}`
+      : metadata.url;
+
+  const openApiPath = toOpenApiPath(url);
+  const path = openApiPath.path;
 
   const schema: DeepPartial<RouteConfig> = {
     method: metadata.method.toLowerCase() as any,
@@ -40,7 +50,7 @@ export function createRouteConfig(
     responses: options?.responses ?? { 200: { description: 'OK' } },
   };
 
-  SchemaPathParamsResolver(params, metadata, schema);
+  SchemaPathParamsResolver(openApiPath, metadata, schema);
   SchemaBodyResolver(metadata, schema, warn);
   SchemaQueryParamsResolver(metadata, schema, warn);
   SchemaQueryParamResolver(metadata, schema, warn);

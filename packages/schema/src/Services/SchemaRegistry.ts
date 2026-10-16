@@ -1,4 +1,5 @@
 import { OpenApiGeneratorV3, OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
+import { MetadataResolver } from '@vercube/core';
 import { InjectOptional } from '@vercube/di';
 import { Logger } from '@vercube/logger';
 import { $SchemaPluginOptions } from '../Symbols/SchemaSymbols';
@@ -32,6 +33,9 @@ export class SchemaRegistry {
 
   @InjectOptional(Logger)
   private readonly gLogger?: Logger | null;
+
+  @InjectOptional(MetadataResolver)
+  private readonly gMetadataResolver?: MetadataResolver | null;
 
   /**
    * Documented methods, keyed by prototype and method name, so a controller
@@ -109,7 +113,9 @@ export class SchemaRegistry {
         // One broken route must not take the whole document down with it, so
         // every route is generated on its own first and skipped if that fails.
         try {
-          const route = createRouteConfig(metadata?.__methods?.[propertyName], options, warn);
+          const controller = (prototype as { constructor?: Function }).constructor;
+          const controllerPath = controller ? this.gMetadataResolver?.getControllerPath(controller) : undefined;
+          const route = createRouteConfig(metadata?.__methods?.[propertyName], options, warn, controllerPath);
 
           if (!route) {
             continue;

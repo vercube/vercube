@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { isOpenApiZod, toOpenApiSchema } from '../Utils/StandardSchema';
+import type { OpenApiPath } from '../Utils/OpenApiPath';
 import type { RouteConfig } from '@asteasolutions/zod-to-openapi';
 import type { DeepPartial, MetadataTypes } from '@vercube/core';
 
@@ -19,10 +20,12 @@ import type { DeepPartial, MetadataTypes } from '@vercube/core';
  * @returns void
  */
 export function SchemaPathParamsResolver(
-  params: string[],
+  openApiPath: Pick<OpenApiPath, 'params' | 'optional' | 'patterns'>,
   metadata: MetadataTypes.Method,
   schema: DeepPartial<RouteConfig>,
 ): void {
+  const { params, optional, patterns } = openApiPath;
+
   if (params.length === 0 || schema.request?.params) {
     return;
   }
@@ -37,14 +40,27 @@ export function SchemaPathParamsResolver(
     const documented = isOpenApiZod(arg.validationSchema) ? arg.validationSchema : toOpenApiSchema(arg.validationSchema);
 
     if (documented) {
-      // a path param is always required in OpenAPI, even when the schema
-      // is optional or has a default, which zod-to-openapi documents as optional
-      validated.set(arg.data?.name, documented.openapi({ param: { required: true } }));
+      // a path param is required in OpenAPI, even when the schema is optional
+      // or has a default, which zod-to-openapi documents as optional
+      validated.set(arg.data?.name, documented.openapi({ param: { required: !optional.includes(arg.data?.name) } }));
     }
   }
 
   schema.request = {
     ...schema.request,
-    params: z.object(Object.fromEntries(params.map((name) => [name, validated.get(name) ?? z.string()]))) as any,
+    params: z.object(
+      Object.fromEntries(
+        params.map((name) => {
+          const documented =
+            validated.get(name) ??
+            // `:id?` may be left out, and `:id(\d+)` only matches what its expression does
+            z
+              .string()
+              .openapi({ param: { required: !optional.includes(name) }, ...(patterns[name] ? { pattern: patterns[name] } : {}) });
+
+          return [name, documented];
+        }),
+      ),
+    ) as any,
   };
 }
