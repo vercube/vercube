@@ -2158,30 +2158,42 @@ export class SchedulerManager {
    *
    * @returns {void}
    */
+  /** The autostart in progress or done, shared by the init microtask and `app.onStart()`. */
+  private fAutoStart: Promise<void> | undefined;
+
   @Init()
   protected init(): void {
     // so the CLI finds this manager in an application it imported
     registerManager(this);
 
     // decorators register their jobs while the container is being flushed,
-    // a microtask lands right after that
+    // a microtask lands right after that. An application that listens awaits
+    // the same start from `app.onStart()`, so a failure fails `listen()`; here
+    // it is only logged, as nothing could catch a rethrow.
     queueMicrotask(() => {
-      // read here rather than above: the plugin configures the manager after
-      // the container built it, so `autoStart: false` is not known yet there
-      // the CLI imports the application to run one job, without any timer
-      if (!this.fOptions.autoStart || readEnv(AUTOSTART_ENV) === 'false') {
-        return;
-      }
-
-      void this.start().catch((error) => {
-        this.gLogger?.error('Vercube/SchedulerManager::Failed to start', error);
-
-        // a cluster job without a usable store must stop the boot, not just log
-        if (error instanceof SchedulerError && error.operation === 'start') {
-          throw error;
-        }
-      });
+      this.autoStart().catch((error: unknown) => this.gLogger?.error('Vercube/SchedulerManager::Failed to start', error));
     });
+  }
+
+  /**
+   * Starts the scheduler unless autostart is off, once however often it is
+   * called. `SchedulerPlugin` awaits it from `app.onStart()`, so a cluster job
+   * without a usable store fails the boot before the server binds its port.
+   *
+   * @returns {Promise<void>} Resolves once started, or right away when autostart is off
+   * @throws {SchedulerError} When the scheduler cannot start
+   */
+  public autoStart(): Promise<void> {
+    // read here rather than in init(): the plugin configures the manager after
+    // the container built it, so `autoStart: false` is not known yet there. The
+    // CLI imports the application to run one job, without any timer.
+    if (!this.fOptions.autoStart || readEnv(AUTOSTART_ENV) === 'false') {
+      return Promise.resolve();
+    }
+
+    this.fAutoStart ??= this.start();
+
+    return this.fAutoStart;
   }
 
   /**

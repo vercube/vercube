@@ -79,6 +79,9 @@ export class SchedulerPlugin extends BasePlugin<SchedulerTypes.PluginOptions> {
 
       // close with the application, once however many times the plugin is registered
       app.onClose(() => app.container.get(SchedulerManager).close());
+
+      // start before the server binds its port, so a scheduler that cannot start fails the boot
+      app.onStart(() => app.container.get(SchedulerManager).autoStart());
     }
 
     const manager = app.container.get(SchedulerManager);

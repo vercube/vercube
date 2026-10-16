@@ -1,4 +1,4 @@
-import { MetadataResolver, ShutdownRegistry } from '@vercube/core';
+import { MetadataResolver, ShutdownRegistry, StartupRegistry } from '@vercube/core';
 import { Container, initializeContainer } from '@vercube/di';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SchedulerCommand } from '../../src/Commands/SchedulerCommands';
@@ -24,6 +24,7 @@ describe('SchedulerPlugin', () => {
   let container: Container;
   let app: App;
   let shutdown: ShutdownRegistry;
+  let startup: StartupRegistry;
   let plugin: SchedulerPlugin;
 
   beforeEach(() => {
@@ -33,7 +34,12 @@ describe('SchedulerPlugin', () => {
     container.bind(MetadataResolver);
 
     shutdown = new ShutdownRegistry();
-    app = { container, onClose: (hook: () => Promise<void>) => shutdown.register(hook) } as unknown as App;
+    startup = new StartupRegistry();
+    app = {
+      container,
+      onClose: (hook: () => Promise<void>) => shutdown.register(hook),
+      onStart: (hook: () => Promise<void>) => startup.register(hook),
+    } as unknown as App;
     plugin = container.resolve(SchedulerPlugin);
   });
 
@@ -103,6 +109,34 @@ describe('SchedulerPlugin', () => {
 
     await clock.advance('1m');
     expect(runs).toEqual(['tick']);
+
+    await manager.close();
+  });
+
+  it('should fail the boot when the scheduler cannot start', async () => {
+    // a cluster job without a store cannot start
+    await plugin.use(app, {});
+    container.get(SchedulerManager).add({ name: 'report', schedule: { every: '1m' }, handler: () => {} });
+    initializeContainer(container);
+
+    await expect(startup.run()).rejects.toMatchObject({ name: 'SchedulerError' });
+  });
+
+  it('should start once, from the microtask and from the start hook', async () => {
+    const clock = new ManualClock('2026-01-01T00:00:00Z');
+
+    await plugin.use(app, { clock });
+    container.bind(Jobs);
+    initializeContainer(container);
+
+    const manager = container.get(SchedulerManager);
+    const start = vi.spyOn(manager, 'start');
+
+    await startup.run();
+    await Promise.resolve();
+
+    expect(manager.started).toBe(true);
+    expect(start).toHaveBeenCalledOnce();
 
     await manager.close();
   });

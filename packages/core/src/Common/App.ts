@@ -8,9 +8,11 @@ import { RequestHandler } from '../Services/Router/RequestHandler';
 import { Router } from '../Services/Router/Router';
 import { StaticRequestHandler } from '../Services/Router/StaticRequestHandler';
 import { ShutdownRegistry } from '../Services/Shutdown/ShutdownRegistry';
+import { StartupRegistry } from '../Services/Startup/StartupRegistry';
 import { LISTEN_ENV, shouldListen } from '../Utils/Listen';
 import type { BasePlugin } from '../Services/Plugins/BasePlugin';
 import type { ShutdownHook } from '../Services/Shutdown/ShutdownRegistry';
+import type { StartupHook } from '../Services/Startup/StartupRegistry';
 import type { ConfigTypes } from '../Types/ConfigTypes';
 import type { VercubePlugin, VercubePluginEnv } from '../Types/Plugin';
 import type { Container } from '@vercube/di';
@@ -45,6 +47,9 @@ export class App {
 
   @Inject(ShutdownRegistry)
   private gShutdownRegistry!: ShutdownRegistry;
+
+  @Inject(StartupRegistry)
+  private gStartupRegistry!: StartupRegistry;
 
   /** Holds the initialization status of the application */
   private fIsInitialized: boolean = false;
@@ -152,6 +157,11 @@ export class App {
       return;
     }
 
+    // Services that start with the application, such as the scheduler. Before
+    // the port is bound, so a failure stops the boot instead of surfacing once
+    // the server is already serving.
+    await this.gStartupRegistry.run();
+
     // Imported by a tool that only needs the app (the scheduler CLI, the Vite
     // dev worker) or driven by a serverless platform through `fetch`.
     if (!shouldListen()) {
@@ -165,6 +175,18 @@ export class App {
     this.fIsInitialized = true;
 
     this.installSignals();
+  }
+
+  /**
+   * Registers a callback run by {@link App.listen} once the container is
+   * initialized and before the server binds its port. Callbacks run one after
+   * another, in registration order, and a failing one fails `listen()`.
+   *
+   * @param {StartupHook} hook - The callback to run on start
+   * @returns {() => void} Removes the callback again
+   */
+  public onStart(hook: StartupHook): () => void {
+    return this.gStartupRegistry.register(hook);
   }
 
   /**

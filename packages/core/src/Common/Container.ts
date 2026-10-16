@@ -20,6 +20,7 @@ import { RequestHandler } from '../Services/Router/RequestHandler';
 import { Router } from '../Services/Router/Router';
 import { StaticRequestHandler } from '../Services/Router/StaticRequestHandler';
 import { ShutdownRegistry } from '../Services/Shutdown/ShutdownRegistry';
+import { StartupRegistry } from '../Services/Startup/StartupRegistry';
 import { TelemetryRegistry } from '../Services/Telemetry/TelemetryRegistry';
 import { StandardSchemaValidationProvider } from '../Services/Validation/StandardSchemaValidationProvider';
 import { ValidationProvider } from '../Services/Validation/ValidationProvider';
@@ -54,6 +55,7 @@ export function createContainer(config: ConfigTypes.Config): Container {
   container.bind(RuntimeConfig);
   container.bind(GlobalMiddlewareRegistry);
   container.bind(ShutdownRegistry);
+  container.bind(StartupRegistry);
 
   // Always bound, always empty until `@vercube/telemetry` installs itself.
   // Core reads it once per service and short-circuits on `hooks === null`.
