@@ -1,6 +1,7 @@
 import { Container, Init, Inject, InjectOptional } from '@vercube/di';
 import { Logger } from '@vercube/logger';
 import { traceOperation } from '../Common/Instrument';
+import { StorageError } from '../Errors/StorageError';
 import { Storage } from './Storage';
 import type { StorageTypes } from '../Types/StorageTypes';
 
@@ -24,17 +25,35 @@ export class StorageManager {
   protected fStorages: Map<string, StorageTypes.Storages> = new Map();
 
   /**
+   * Mounts whose storage failed to initialize, with the error every operation on them rethrows
+   */
+  protected fFailed: Map<string, StorageError> = new Map();
+
+  /**
+   * Whether the mounts present at container flush have been initialized; later
+   * mounts are initialized as they are mounted
+   */
+  protected fInitialized: boolean = false;
+
+  /**
    * Mounts a new storage instance with the specified name
    * @param {StorageTypes.Mount} params - Mount parameters containing name and storage implementation
    * @param {string} [params.name] - Optional name for the storage instance, defaults to 'default'
    * @param {IOC.Newable<Storage>} params.storage - Storage implementation to mount
    * @returns {Promise<void>} A promise that resolves when mounting is complete
+   * @throws {StorageError} When mounted after startup and the storage fails to initialize
    */
   public async mount<T extends Storage<unknown>>({ name, storage, initOptions }: StorageTypes.Mount<T>): Promise<void> {
-    this.fStorages.set(name ?? 'default', {
-      storage: this.gContainer.resolve(storage),
-      initOptions,
-    });
+    const mountName = name ?? 'default';
+    const instance = this.gContainer.resolve(storage);
+
+    this.fStorages.set(mountName, { storage: instance, initOptions });
+    this.fFailed.delete(mountName);
+
+    // the storages present at startup are initialized by init(), a later one here
+    if (this.fInitialized) {
+      await this.initializeMount(mountName, instance, initOptions);
+    }
   }
 
   /**
@@ -101,8 +120,8 @@ export class StorageManager {
    */
   public async getItem<T = unknown>({ storage, key }: StorageTypes.GetItem): Promise<T | null> {
     return this.trace('getItem', storage, key, async () => {
-      const storageInstance = this.getStorage(storage);
-      return (await storageInstance?.getItem<T>(key)) ?? null;
+      const storageInstance = this.requireStorage(storage, 'getItem');
+      return (await storageInstance.getItem<T>(key)) ?? null;
     });
   }
 
@@ -116,8 +135,8 @@ export class StorageManager {
    */
   public async getItems<T = unknown>({ storage, keys }: StorageTypes.GetItems): Promise<T[]> {
     return this.trace('getItems', storage, undefined, async () => {
-      const storageInstance = this.getStorage(storage);
-      return (await storageInstance?.getItems<T>(keys)) ?? [];
+      const storageInstance = this.requireStorage(storage, 'getItems');
+      return (await storageInstance.getItems<T>(keys)) ?? [];
     });
   }
 
@@ -132,8 +151,8 @@ export class StorageManager {
    */
   public async setItem<T = unknown, U = unknown>({ storage, key, value, options }: StorageTypes.SetItem<T, U>): Promise<void> {
     await this.trace('setItem', storage, key, async () => {
-      const storageInstance = this.getStorage(storage);
-      await storageInstance?.setItem<T, U>(key, value, options);
+      const storageInstance = this.requireStorage(storage, 'setItem');
+      await storageInstance.setItem<T, U>(key, value, options);
     });
   }
 
@@ -146,8 +165,8 @@ export class StorageManager {
    */
   public async deleteItem({ storage, key }: StorageTypes.DeleteItem): Promise<void> {
     await this.trace('deleteItem', storage, key, async () => {
-      const storageInstance = this.getStorage(storage);
-      await storageInstance?.deleteItem(key);
+      const storageInstance = this.requireStorage(storage, 'deleteItem');
+      await storageInstance.deleteItem(key);
     });
   }
 
@@ -159,8 +178,7 @@ export class StorageManager {
    * @returns {Promise<boolean>} A promise that resolves to true if the item exists, false otherwise
    */
   public async hasItem({ storage, key }: StorageTypes.HasItem): Promise<boolean> {
-    const storageInstance = this.getStorage(storage);
-    return storageInstance?.hasItem(key) ?? false;
+    return this.requireStorage(storage, 'hasItem').hasItem(key);
   }
 
   /**
@@ -170,8 +188,7 @@ export class StorageManager {
    * @returns {Promise<string[]>} A promise that resolves with an array of all keys
    */
   public async getKeys({ storage }: StorageTypes.GetKeys): Promise<string[]> {
-    const storageInstance = this.getStorage(storage);
-    return storageInstance?.getKeys() ?? [];
+    return this.requireStorage(storage, 'getKeys').getKeys();
   }
 
   /**
@@ -181,8 +198,7 @@ export class StorageManager {
    * @returns {Promise<void>} A promise that resolves when the storage is cleared
    */
   public async clear({ storage }: StorageTypes.Clear): Promise<void> {
-    const storageInstance = this.getStorage(storage);
-    storageInstance?.clear();
+    await this.requireStorage(storage, 'clear').clear();
   }
 
   /**
@@ -192,8 +208,7 @@ export class StorageManager {
    * @returns {Promise<number>} A promise that resolves with the number of items
    */
   public async size({ storage }: StorageTypes.Size): Promise<number> {
-    const storageInstance = this.getStorage(storage);
-    return storageInstance?.size() ?? 0;
+    return this.requireStorage(storage, 'size').size();
   }
 
   /**
@@ -203,13 +218,63 @@ export class StorageManager {
    */
   @Init()
   protected async init(): Promise<void> {
-    for (const { storage, initOptions } of this.fStorages.values()) {
+    this.fInitialized = true;
+
+    for (const [name, { storage, initOptions }] of this.fStorages) {
       try {
-        await storage?.initialize(initOptions);
-      } catch (error) {
-        this.gLogger?.error('Vercube/StorageManager::init', error);
+        await this.initializeMount(name, storage, initOptions);
+      } catch {
+        // already logged and recorded: every operation on this mount throws it
       }
     }
+  }
+
+  /**
+   * Initializes a mounted storage. A failure is logged and recorded, so every
+   * later operation on the mount fails with it instead of hitting a broken driver.
+   * @param {string} name - Name of the mount
+   * @param {Storage} storage - The storage to initialize
+   * @param {unknown} initOptions - Options to initialize it with
+   * @returns {Promise<void>} Resolves once initialized
+   * @throws {StorageError} When the storage fails to initialize
+   * @protected
+   */
+  protected async initializeMount(name: string, storage: Storage | undefined, initOptions: unknown): Promise<void> {
+    try {
+      await storage?.initialize(initOptions as never);
+    } catch (error) {
+      const failure = new StorageError(`Failed to initialize storage "${name}"`, 'initialize', error as Error, { mount: name });
+
+      this.fFailed.set(name, failure);
+      this.gLogger?.error('Vercube/StorageManager::init', failure);
+
+      throw failure;
+    }
+  }
+
+  /**
+   * Returns a mounted storage, failing loudly for a name that is not mounted
+   * or a storage that failed to initialize, so a typo never silently drops data.
+   * @param {string} [name] - Name of the mount, `default` when omitted
+   * @param {string} operation - The operation asking for it
+   * @returns {Storage} The storage
+   * @throws {StorageError} When the mount does not exist or failed to initialize
+   * @protected
+   */
+  protected requireStorage(name: string = 'default', operation: string): Storage {
+    const failure = this.fFailed.get(name);
+
+    if (failure) {
+      throw failure;
+    }
+
+    const storage = this.getStorage(name);
+
+    if (!storage) {
+      throw new StorageError(`Storage "${name}" is not mounted`, operation, undefined, { mount: name });
+    }
+
+    return storage;
   }
   /**
    * Wraps a storage operation in a span.

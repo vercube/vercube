@@ -1,4 +1,11 @@
-import { DeleteObjectCommand, GetObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  HeadObjectCommand,
+  ListObjectsV2Command,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
 import { StorageError } from '../Errors/StorageError';
 import type { Storage } from '../Service/Storage';
 import type { ListObjectsV2CommandOutput, S3ClientConfig } from '@aws-sdk/client-s3';
@@ -237,15 +244,18 @@ export class S3Storage implements Storage<S3BaseOptions> {
    */
   public async hasItem(key: string): Promise<boolean> {
     try {
+      // HEAD rather than GET: a GET response body left unread holds its socket
+      // until it is consumed, and repeated checks would exhaust the pool
       await this.s3.send(
-        new GetObjectCommand({
+        new HeadObjectCommand({
           Bucket: this.bucket,
           Key: key,
         }),
       );
       return true;
     } catch (error: any) {
-      if (error.name === 'NoSuchKey') {
+      // a HEAD response has no body, so a missing key surfaces as NotFound
+      if (error.name === 'NotFound' || error.name === 'NoSuchKey' || error.$metadata?.httpStatusCode === 404) {
         return false;
       }
 

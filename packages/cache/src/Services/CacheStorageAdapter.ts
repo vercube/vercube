@@ -164,7 +164,8 @@ export class CacheStorageAdapter implements StorageInterface {
         throw new CacheError('Unable to mount a fallback cache storage', 'mountFallback', undefined, { storage: name });
       }
 
-      // mount() does not initialize, that only happens for storages present at container flush
+      // mount() only initializes once the manager has started, so a fallback
+      // mounted before that would otherwise stay uninitialized
       await storage.initialize(undefined);
 
       this.gLogger?.warn(

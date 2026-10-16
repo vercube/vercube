@@ -1,5 +1,5 @@
 import { Readable } from 'node:stream';
-import { DeleteObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, HeadObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { S3Storage } from '../src/Drivers/S3Storage';
 import { StorageError } from '../src/Errors/StorageError';
@@ -194,10 +194,20 @@ describe('S3Storage', () => {
   });
 
   describe('hasItem', () => {
-    it('should return true if GetObjectCommand succeeds', async () => {
+    it('should return true if HeadObjectCommand succeeds', async () => {
       mockSend.mockResolvedValueOnce({});
       const result = await storage.hasItem('key');
       expect(result).toBe(true);
+      // HEAD has no body to leave unread and hold a socket with
+      expect(mockSend.mock.calls[0][0]).toBeInstanceOf(HeadObjectCommand);
+    });
+
+    it('should return false when HEAD reports NotFound', async () => {
+      mockSend.mockRejectedValueOnce({ name: 'NotFound', $metadata: { httpStatusCode: 404 } });
+      expect(await storage.hasItem('missing')).toBe(false);
+
+      mockSend.mockRejectedValueOnce({ name: 'Unknown', $metadata: { httpStatusCode: 404 } });
+      expect(await storage.hasItem('missing')).toBe(false);
     });
 
     it('should return false if NoSuchKey error', async () => {
