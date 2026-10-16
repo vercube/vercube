@@ -12,6 +12,11 @@ import type { UpgradeContext } from 'env-runner';
  * and forwards WebSocket upgrades via {@link upgrade}.
  */
 
+// The worker imports the entry to reach its `fetch`, the dev server owns the port.
+if (typeof process !== 'undefined' && process.env) {
+  process.env.VERCUBE_LISTEN = '0';
+}
+
 type NodeUpgradeHandler = (req: unknown, socket: unknown, head: unknown) => void | Promise<void>;
 
 interface ViteEntry {

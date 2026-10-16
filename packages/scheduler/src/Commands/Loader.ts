@@ -21,9 +21,9 @@ export interface LoadOptions {
  * Boots the application without starting its server or its scheduler timers,
  * and returns its scheduler.
  *
- * The built entry is imported as a module rather than run, so the
- * `import.meta.main` guard around `app.listen()` keeps the server down, and the
- * scheduler sees `VERCUBE_SCHEDULER_AUTOSTART=false` and never arms a timer.
+ * The built entry is imported with `VERCUBE_LISTEN=0`, so `app.listen()` keeps
+ * the server down, and the scheduler sees `VERCUBE_SCHEDULER_AUTOSTART=false`
+ * and never arms a timer.
  *
  * @param options - Where the application is, and whether to build it first
  * @returns The scheduler of the application
@@ -50,6 +50,7 @@ export async function loadScheduler(options: LoadOptions): Promise<SchedulerMana
   }
 
   process.env[AUTOSTART_ENV] = 'false';
+  process.env.VERCUBE_LISTEN = '0';
 
   const before = new Set(liveManagers());
 

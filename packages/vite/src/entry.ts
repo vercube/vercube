@@ -33,7 +33,7 @@ export function generateServerEntry(ctx: VercubePluginContext): string {
 
   const lines: string[] = [
     ctx.hasClient
-      ? `import { createApp, HttpServer, serveStaticFiles } from '@vercube/core';`
+      ? `import { createApp, HttpServer, serveStaticFiles, shouldListen } from '@vercube/core';`
       : `import { createApp } from '@vercube/core';`,
   ];
 
@@ -58,7 +58,7 @@ export function generateServerEntry(ctx: VercubePluginContext): string {
   if (ctx.hasClient) {
     // Plugins must be registered before `app.init()` wires the srvx server.
     setupBody.push(
-      '  if (import.meta.main) {',
+      '  if (shouldListen()) {',
       "    const dir = fileURLToPath(new URL('./public', import.meta.url));",
       '    app.container.get(HttpServer).addPlugin(serveStaticFiles(dir));',
       '  }',
@@ -77,12 +77,12 @@ export function generateServerEntry(ctx: VercubePluginContext): string {
   lines.push(...[...imports.keys()].map((name) => `app.container.bind(${name});`), '');
 
   lines.push('app.container.flushQueue();', '');
-  // Run-directly support: `node dist/index.mjs` starts listening. In dev the
-  // worker imports this module (not the entrypoint), so `import.meta.main` is
-  // false and only the exported `fetch` is used.
+  // `node dist/index.mjs` (or PM2, which imports the file) starts listening. In
+  // dev the worker imports this module with `VERCUBE_LISTEN=0`, so `listen()`
+  // binds nothing and only the exported `fetch` is used.
   if (ctx.hasClient) {
     lines.push(
-      'if (import.meta.main) {',
+      'if (shouldListen()) {',
       "  const dir = fileURLToPath(new URL('./public', import.meta.url));",
       '  app.container.get(HttpServer).enableSpaFallback(dir);',
       '  await app.listen();',
@@ -90,7 +90,7 @@ export function generateServerEntry(ctx: VercubePluginContext): string {
       '',
     );
   } else {
-    lines.push('if (import.meta.main) {', '  await app.listen();', '}', '');
+    lines.push('await app.listen();', '');
   }
   lines.push('export const fetch = app.fetch.bind(app);', '');
   // WebSocket upgrades in dev: the worker forwards raw Node upgrade events here.

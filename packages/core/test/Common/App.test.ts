@@ -66,6 +66,21 @@ describe('App', () => {
       expect(httpServer.listen).toHaveBeenCalled();
     });
 
+    it('should not bind a port when VERCUBE_LISTEN=0', async () => {
+      const httpServer = container.get(HttpServer);
+
+      vi.spyOn(httpServer, 'listen');
+      vi.stubEnv('VERCUBE_LISTEN', '0');
+
+      try {
+        await app.listen();
+      } finally {
+        vi.unstubAllEnvs();
+      }
+
+      expect(httpServer.listen).not.toHaveBeenCalled();
+    });
+
     it('should throw an error if the app is already initialized', async () => {
       await app.listen();
 

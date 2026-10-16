@@ -23,7 +23,7 @@ function writeEntry(registers: boolean): { cwd: string; entry: string } {
   const body = registers
     ? `const key = Symbol.for('vercube.scheduler.managers');
 globalThis[key] ??= new Set();
-globalThis[key].add({ label: 'from-entry', autostart: process.env.${AUTOSTART_ENV} });`
+globalThis[key].add({ label: 'from-entry', autostart: process.env.${AUTOSTART_ENV}, listen: process.env.VERCUBE_LISTEN });`
     : 'export default {};';
 
   writeFileSync(join(cwd, 'index.mjs'), body);
@@ -39,12 +39,13 @@ describe('loadScheduler', () => {
 
   afterEach(() => {
     delete process.env[AUTOSTART_ENV];
+    delete process.env.VERCUBE_LISTEN;
   });
 
-  it('imports the built entry with timers off and returns the scheduler it created', async () => {
+  it('imports the built entry with timers and the server off and returns the scheduler it created', async () => {
     const manager = await loadScheduler({ ...writeEntry(true), build: false });
 
-    expect(manager).toEqual({ label: 'from-entry', autostart: 'false' });
+    expect(manager).toEqual({ label: 'from-entry', autostart: 'false', listen: '0' });
     expect(devkit.build).not.toHaveBeenCalled();
   });
 

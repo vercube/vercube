@@ -8,6 +8,7 @@ import { RequestHandler } from '../Services/Router/RequestHandler';
 import { Router } from '../Services/Router/Router';
 import { StaticRequestHandler } from '../Services/Router/StaticRequestHandler';
 import { ShutdownRegistry } from '../Services/Shutdown/ShutdownRegistry';
+import { LISTEN_ENV, shouldListen } from '../Utils/Listen';
 import type { BasePlugin } from '../Services/Plugins/BasePlugin';
 import type { ShutdownHook } from '../Services/Shutdown/ShutdownRegistry';
 import type { ConfigTypes } from '../Types/ConfigTypes';
@@ -129,6 +130,9 @@ export class App {
   /**
    * Starts the application and begins listening for incoming requests.
    *
+   * The port is not bound when `VERCUBE_LISTEN=0` is set, which tools that import
+   * the entry only to reach the app do, or on a serverless platform. See {@link shouldListen}.
+   *
    * @returns {Promise<void>} A promise that resolves when the application starts listening.
    * @throws {Error} If the application is already initialized.
    */
@@ -145,6 +149,13 @@ export class App {
     // and stops it right before it would bind a port.
     if (process.env.VERCUBE_INSPECT) {
       await this.printInspection(process.env.VERCUBE_INSPECT);
+      return;
+    }
+
+    // Imported by a tool that only needs the app (the scheduler CLI, the Vite
+    // dev worker) or driven by a serverless platform through `fetch`.
+    if (!shouldListen()) {
+      this.container.getOptional(Logger)?.debug(`Vercube/App::Not listening, set ${LISTEN_ENV}=1 to force it`);
       return;
     }
 
