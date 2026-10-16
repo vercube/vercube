@@ -301,8 +301,13 @@ export class MetadataResolver {
     const middlewares =
       ctx?.__metadata?.__middlewares?.filter((m) => m.target === '__global__' || m.target === propertyName) ?? [];
 
-    // return middlewares sorted by global first
-    return middlewares.sort((a) => (a.target === '__global__' ? -1 : 1));
+    // Class-level middlewares first, then method-level ones, each level in the
+    // order it is written. Decorators apply bottom-up, so registration order is
+    // reversed to get there - the same way at both levels.
+    return [
+      ...middlewares.filter((m) => m.target === '__global__').toReversed(),
+      ...middlewares.filter((m) => m.target !== '__global__').toReversed(),
+    ];
   }
 }
 

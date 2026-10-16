@@ -400,6 +400,26 @@ describe('MetadataResolver', () => {
       expect(result[1]).toBe(methodMiddleware);
     });
 
+    it('should order each level as written, class level first', () => {
+      const g = (n: number): MetadataTypes.Middleware => ({ target: '__global__', middleware: { n } as any });
+      const m = (n: number): MetadataTypes.Middleware => ({ target: 'testMethod', middleware: { n } as any });
+      const middlewares = [m(1), g(1), g(2), m(2), g(3)];
+
+      const result = resolver.resolveMiddlewares(
+        { __metadata: { __controller: { path: '' }, __middlewares: middlewares, __methods: {} } },
+        'testMethod',
+      );
+
+      // registered bottom-up, so written top to bottom as g3, g2, g1 and m2, m1
+      expect(result.map((entry) => `${entry.target === '__global__' ? 'g' : 'm'}${(entry.middleware as any).n}`)).toEqual([
+        'g3',
+        'g2',
+        'g1',
+        'm2',
+        'm1',
+      ]);
+    });
+
     it('should resolve only global middlewares', () => {
       const globalMiddleware: MetadataTypes.Middleware = {
         target: '__global__',

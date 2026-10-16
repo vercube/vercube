@@ -293,6 +293,30 @@ describe('RequestHandler', () => {
       expect(result.middlewares.afterMiddlewares[0].priority).toBe(1);
     });
 
+    it('should run a middleware registered twice once, at its earliest priority', () => {
+      const method: MetadataTypes.Method = {
+        req: null,
+        res: null,
+        url: '/test',
+        method: 'GET',
+        args: [],
+        actions: [],
+        meta: {},
+      };
+
+      mockMetadataResolver.resolveMethod.mockReturnValue(method);
+      // `@Middleware(MockBeforeMiddleware)` on the controller, at the default priority
+      mockMetadataResolver.resolveMiddlewares.mockReturnValue([
+        { target: '__global__', middleware: MockBeforeMiddleware, priority: 999 },
+      ]);
+      // and registered globally at priority 1
+      mockGlobalMiddlewareRegistry.middlewares = [{ target: '__global__', middleware: MockBeforeMiddleware, priority: 1 }];
+
+      const result = requestHandler.prepareHandler({ instance: mockInstance, propertyName: 'testMethod' });
+
+      expect(result.middlewares.beforeMiddlewares.map((m) => m.priority)).toEqual([1]);
+    });
+
     it('should sort validation middlewares after every other before middleware', () => {
       const method: MetadataTypes.Method = {
         req: null,

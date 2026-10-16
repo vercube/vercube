@@ -738,10 +738,18 @@ export class RequestHandler {
   } {
     const uniqueMiddlewares: MetadataTypes.Middleware[] = [];
     for (const m of middlewares) {
-      if (uniqueMiddlewares.some((unique) => isSameMiddleware(unique, m))) {
+      const index = uniqueMiddlewares.findIndex((unique) => isSameMiddleware(unique, m));
+
+      if (index === -1) {
+        uniqueMiddlewares.push(m);
         continue;
       }
-      uniqueMiddlewares.push(m);
+
+      // registered twice - globally at priority 1 and by `@Middleware()` at the
+      // default - it runs once, at the earliest priority it was asked for
+      if ((m.priority ?? 999) < (uniqueMiddlewares[index].priority ?? 999)) {
+        uniqueMiddlewares[index] = { ...uniqueMiddlewares[index], priority: m.priority };
+      }
     }
 
     // resolve middlewares
