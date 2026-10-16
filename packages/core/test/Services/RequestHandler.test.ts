@@ -317,6 +317,30 @@ describe('RequestHandler', () => {
       expect(result.middlewares.beforeMiddlewares.map((m) => m.priority)).toEqual([1]);
     });
 
+    it('should run app-wide middlewares before route ones at equal priority', () => {
+      class AppWide extends BaseMiddleware {
+        public override onRequest(): void {}
+      }
+
+      mockMetadataResolver.resolveMethod.mockReturnValue({
+        req: null,
+        res: null,
+        url: '/test',
+        method: 'GET',
+        args: [],
+        actions: [],
+        meta: {},
+      });
+      mockMetadataResolver.resolveMiddlewares.mockReturnValue([
+        { target: 'testMethod', middleware: MockBeforeMiddleware, priority: 5 },
+      ]);
+      mockGlobalMiddlewareRegistry.middlewares = [{ target: '__global__', middleware: AppWide, priority: 5 }];
+
+      const result = requestHandler.prepareHandler({ instance: mockInstance, propertyName: 'testMethod' });
+
+      expect(result.middlewares.beforeMiddlewares.map((m) => m.middleware.constructor)).toEqual([AppWide, MockBeforeMiddleware]);
+    });
+
     it('should sort validation middlewares after every other before middleware', () => {
       const method: MetadataTypes.Method = {
         req: null,

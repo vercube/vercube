@@ -167,7 +167,9 @@ export class RequestHandler {
     // application-wide middlewares entirely.
     const globalMiddlewares = skipsGlobalMiddlewares(prototype) ? [] : this.gGlobalMiddlewareRegistry.middlewares;
 
-    const { beforeMiddlewares, afterMiddlewares } = this.buildMiddlewareChain([...middlewares, ...globalMiddlewares]);
+    // app-wide first, then the controller's, then the method's: sorting by
+    // priority is stable, so this is the order at equal priority
+    const { beforeMiddlewares, afterMiddlewares } = this.buildMiddlewareChain([...globalMiddlewares, ...middlewares]);
 
     const args = method.args.length <= 1 ? method.args : [...method.args].sort((a, b) => a.idx - b.idx);
     // a copy, so actions another application registers later never reach this route
