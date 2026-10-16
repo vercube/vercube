@@ -336,19 +336,88 @@ describe('WebsocketService', () => {
     expect(service['fNamespaces']['/room']).toEqual([]);
   });
 
-  it('warns when schema validation is configured but ValidationProvider is missing', async () => {
-    const warn = vi.spyOn(container.get(Logger), 'warn').mockImplementation(() => {});
+  it('refuses a message handler with a schema when no ValidationProvider is registered', () => {
     Object.defineProperty(service, 'gValidationProvider', { value: null });
 
+    expect(() =>
+      service.registerHandler(WebsocketTypes.HandlerAction.MESSAGE, '/room', {
+        callback: vi.fn(),
+        event: 'create',
+        schema: { '~standard': { version: 1, vendor: 'test', validate: () => ({ issues: [] }) } } as any,
+      }),
+    ).toThrow(/no ValidationProvider is registered/);
+  });
+
+  it('hands the parsed value to the handler', async () => {
+    vi.spyOn(container.get(ValidationProvider), 'validate').mockResolvedValue({ value: { n: 2 } });
+    const callback = vi.fn();
+
     service.registerHandler(WebsocketTypes.HandlerAction.MESSAGE, '/room', {
-      callback: vi.fn(),
-      event: 'create',
-      schema: { '~standard': { version: 1, vendor: 'test', validate: () => ({ issues: [] }) } } as any,
+      callback,
+      event: 'n',
+      schema: { '~standard': { version: 1, vendor: 'test', validate: () => ({ value: { n: 2 } }) } } as any,
     });
 
-    await service['handleMessage'](createMockPeer('1', '/room'), createMockMessage({ event: 'create', data: {} }));
+    const peer = createMockPeer('1', '/room');
+    await service['handleMessage'](peer, createMockMessage({ event: 'n', data: { n: '2' } }));
 
-    expect(warn).toHaveBeenCalledWith('WebsocketService::handleMessage', 'ValidationProvider is not registered');
+    expect(callback).toHaveBeenCalledWith({ n: 2 }, peer);
+  });
+
+  it('sends the validation issues to the peer', async () => {
+    const issues = [{ message: 'Expected number', path: ['n'] }];
+    vi.spyOn(container.get(ValidationProvider), 'validate').mockResolvedValue({ issues });
+    const callback = vi.fn();
+
+    service.registerHandler(WebsocketTypes.HandlerAction.MESSAGE, '/room', {
+      callback,
+      event: 'n',
+      schema: { '~standard': { version: 1, vendor: 'test', validate: () => ({ issues }) } } as any,
+    });
+
+    const peer = createMockPeer('1', '/room');
+    await service['handleMessage'](peer, createMockMessage({ event: 'n', data: { n: 'x' } }));
+
+    expect(callback).not.toHaveBeenCalled();
+    expect(peer.send).toHaveBeenCalledWith({
+      event: 'error',
+      data: { event: 'n', status: 400, message: 'Websocket message validation error', issues },
+    });
+  });
+
+  it('tells the peer a handler failed without leaking the error', async () => {
+    service.registerHandler(WebsocketTypes.HandlerAction.MESSAGE, '/room', {
+      callback: () => {
+        throw new Error('database password is hunter2');
+      },
+      event: 'boom',
+    });
+
+    const peer = createMockPeer('1', '/room');
+    await service['handleMessage'](peer, createMockMessage({ event: 'boom', data: {} }));
+
+    expect(peer.send).toHaveBeenCalledWith({
+      event: 'error',
+      data: { event: 'boom', status: 500, message: 'Failed to process message' },
+    });
+  });
+
+  it('logs when the error frame cannot be sent', async () => {
+    const warn = vi.spyOn(container.get(Logger), 'warn').mockImplementation(() => {});
+    service.registerHandler(WebsocketTypes.HandlerAction.MESSAGE, '/room', {
+      callback: () => {
+        throw new Error('boom');
+      },
+      event: 'boom',
+    });
+
+    const peer = createMockPeer('1', '/room');
+    (peer.send as any).mockImplementation(() => {
+      throw new Error('closed');
+    });
+    await service['handleMessage'](peer, createMockMessage({ event: 'boom', data: {} }));
+
+    expect(warn).toHaveBeenCalledWith('WebsocketService::handleMessage', expect.stringContaining('Failed to send the error'));
   });
 
   it('validates message data when a schema is configured', async () => {

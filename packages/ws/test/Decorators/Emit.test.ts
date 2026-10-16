@@ -24,6 +24,15 @@ class EmitTestService {
   }
 }
 
+@Namespace('/emit-above')
+class EmitAboveMessageService {
+  @Emit('echoed')
+  @Message({ event: 'echo' })
+  public echoMessage(data: any) {
+    return { echoed: data };
+  }
+}
+
 describe('@Emit() decorator', () => {
   let container: Container;
   let app: App;
@@ -42,6 +51,7 @@ describe('@Emit() decorator', () => {
 
     container.bind($WebsocketService, WebsocketService);
     container.bind(EmitTestService);
+    container.bind(EmitAboveMessageService);
 
     websocketService = container.get($WebsocketService);
 
@@ -64,5 +74,14 @@ describe('@Emit() decorator', () => {
       event: 'echoed',
       data: { echoed: message },
     });
+  });
+
+  it('should emit when written above @Message', async () => {
+    container.get(EmitAboveMessageService);
+    const peer = { id: 'peer-1', namespace: '/emit-above', send: vi.fn() };
+
+    await websocketService['handleMessage'](peer as any, { text: () => JSON.stringify({ event: 'echo', data: 'hi' }) } as any);
+
+    expect(broadcastSpy).toHaveBeenCalledWith(peer, { event: 'echoed', data: { echoed: 'hi' } });
   });
 });
