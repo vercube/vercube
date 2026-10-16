@@ -58,6 +58,14 @@ const REPRESENTATION_HEADERS: ReadonlySet<string> = new Set([
 ]);
 
 /**
+ * Headers that only describe a successful response: caching, validators and
+ * the redirect target. An error response, or one a middleware ends the request
+ * with, must not inherit them, or a CDN would cache a 404 for as long as the
+ * page it replaced.
+ */
+const SUCCESS_ONLY_HEADERS: ReadonlySet<string> = new Set(['cache-control', 'etag', 'last-modified', 'expires', 'location']);
+
+/**
  * Shared response init for JSON-serialized handler results.
  *
  * Reused across requests: `Response` copies the init when it is constructed and
@@ -872,6 +880,16 @@ function toValues(args: MetadataTypes.Arg[]): unknown[] {
 }
 
 /**
+ * Whether a `Location` header means something on a response with this status.
+ *
+ * @param {number} status - The response status
+ * @returns {boolean} True for a redirect or `201 Created`
+ */
+function isRedirectOrCreated(status: number): boolean {
+  return status === 201 || (status >= 300 && status < 400);
+}
+
+/**
  * Copies headers set by middlewares and actions on the intermediate response
  * onto a response built elsewhere - by the handler (a stream, a file, a proxied
  * response), by a middleware that ended the request early, or by the error
@@ -891,7 +909,8 @@ function toValues(args: MetadataTypes.Arg[]): unknown[] {
  * @param {Response} source - The intermediate response
  * @param {boolean} [ownsBody] - Whether the headers describing the body of the intermediate response
  *   (`REPRESENTATION_HEADERS`) apply to the target; false for responses the framework did not ask for,
- *   such as an error response, so a `@SetHeader('Content-Type', ...)` meant for the handler does not mislabel them
+ *   such as an error response, so a `@SetHeader('Content-Type', ...)` meant for the handler does not mislabel them.
+ *   Those responses do not get `SUCCESS_ONLY_HEADERS` either
  * @returns {Response} The target with merged headers, or a copy of it when its headers are immutable
  */
 function mergeResponseHeaders(target: Response, source: Response, ownsBody: boolean = true): Response {
@@ -907,7 +926,12 @@ function mergeResponseHeaders(target: Response, source: Response, ownsBody: bool
       continue;
     }
 
-    if (!ownsBody && REPRESENTATION_HEADERS.has(key)) {
+    if (!ownsBody && (REPRESENTATION_HEADERS.has(key) || SUCCESS_ONLY_HEADERS.has(key))) {
+      continue;
+    }
+
+    // `@Redirect` on a handler that returns its own non-redirect response
+    if (key === 'location' && !isRedirectOrCreated(target.status)) {
       continue;
     }
 
