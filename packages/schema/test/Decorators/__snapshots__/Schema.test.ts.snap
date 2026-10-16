@@ -84,7 +84,6 @@ exports[`SchemaDecorator > should generate schema correctly 1`] = `
             "name": "limit",
             "required": true,
             "schema": {
-              "nullable": true,
               "type": "number",
             },
           },
@@ -93,7 +92,6 @@ exports[`SchemaDecorator > should generate schema correctly 1`] = `
             "name": "page",
             "required": false,
             "schema": {
-              "nullable": true,
               "type": "number",
             },
           },
