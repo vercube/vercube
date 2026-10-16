@@ -12,6 +12,8 @@ import {
   KEY_HEADER,
   MAX_ATTEMPTS,
   PRIORITY_HEADER,
+  BACKOFF_HEADER,
+  readBackoffHeader,
   readNumericHeader,
   resolveBackoff,
   WILDCARD_JOB,
@@ -206,9 +208,11 @@ export class QueueManager {
     const queue = request.queue as string;
     const job = request.job as string;
 
+    const options = this.resolveJobOptions(mount, queue, job, request.options, 'add');
+
     return tracePublish({ strategy: mount.name, queue, job }, 1, async () => {
       try {
-        const ref = await mount.strategy.publish(this.createPublishRequest(queue, job, request.payload, request.options));
+        const ref = await mount.strategy.publish(this.createPublishRequest(queue, job, request.payload, options));
 
         this.metricsFor(mount.name, queue).published++;
 
@@ -240,10 +244,12 @@ export class QueueManager {
     const queue = request.queue as string;
     const job = request.job as string;
 
+    const options = this.resolveJobOptions(mount, queue, job, request.options, 'addMany');
+
     return tracePublish({ strategy: mount.name, queue, job }, request.payloads.length, async () => {
       try {
         const refs = await mount.strategy.publishMany(
-          request.payloads.map((payload) => this.createPublishRequest(queue, job, payload, request.options)),
+          request.payloads.map((payload) => this.createPublishRequest(queue, job, payload, options)),
         );
 
         this.metricsFor(mount.name, queue).published += refs.length;
@@ -707,7 +713,11 @@ export class QueueManager {
    * @throws {Error} When the retry could be published right away and the transport refused it
    */
   protected scheduleRetry(registration: QueueTypes.Registration, context: QueueTypes.JobContext, error: Error): Promise<void> {
-    const wait = resolveBackoff(registration.options.backoff, context.attempt);
+    // the backoff the job was published with wins over the handler's
+    const wait = resolveBackoff(
+      readBackoffHeader(context.headers[BACKOFF_HEADER]) ?? registration.options.backoff,
+      context.attempt,
+    );
     const native = this.fStrategies.get(registration.strategy)?.strategy.capabilities.delay ?? false;
 
     const headers: Record<string, string> = {
@@ -1132,6 +1142,52 @@ export class QueueManager {
   }
 
   /**
+   * Completes the options of a job about to be published: attempts and backoff
+   * fall back to the ones its handler registered with, as a broker retrying on
+   * its own (BullMQ) only knows what the job was published with.
+   *
+   * @param {Mount} mount - Strategy the job is published to
+   * @param {string} queue - Queue the job goes to
+   * @param {string} job - Name of the job
+   * @param {QueueTypes.JobOptions} [options] - Per-job options
+   * @param {string} operation - Operation publishing it, reported in errors
+   * @returns {QueueTypes.JobOptions} The options to publish with
+   * @throws {QueueError} When the job asks for a delay the transport cannot honour
+   */
+  protected resolveJobOptions(
+    mount: { name: string; strategy: QueueStrategy<unknown> },
+    queue: string,
+    job: string,
+    options: QueueTypes.JobOptions = {},
+    operation: string,
+  ): QueueTypes.JobOptions {
+    // Delaying in this process would lose the job on a restart, so it is refused instead.
+    if (options.delay !== undefined && options.delay > 0 && !mount.strategy.capabilities.delay) {
+      throw new QueueError(
+        `The "${mount.strategy.transport}" transport cannot delay jobs`,
+        operation,
+        undefined,
+        { strategy: mount.name, queue, job },
+        false,
+      );
+    }
+
+    const handler = (
+      this.fRegistrations.get(this.consumerKey(mount.name, queue, job)) ??
+      this.fRegistrations.get(this.consumerKey(mount.name, queue, WILDCARD_JOB))
+    )?.options;
+
+    const attempts = options.attempts ?? handler?.attempts;
+    const backoff = options.backoff ?? handler?.backoff;
+
+    return {
+      ...options,
+      ...(attempts === undefined ? {} : { attempts }),
+      ...(backoff === undefined ? {} : { backoff }),
+    };
+  }
+
+  /**
    * Builds the transport-facing shape of a job, adding the headers the module
    * needs to route and retry it.
    *
@@ -1166,6 +1222,12 @@ export class QueueManager {
 
     if (options.priority !== undefined) {
       headers[PRIORITY_HEADER] = String(options.priority);
+    }
+
+    // Transports without native retries republish a failed job, and only the
+    // headers survive that: the backoff it was published with has to travel too.
+    if (options.backoff !== undefined) {
+      headers[BACKOFF_HEADER] = JSON.stringify(options.backoff);
     }
 
     // Carries the publishing trace into the consumer, wherever it runs. Retries
