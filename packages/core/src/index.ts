@@ -87,6 +87,8 @@ export * from './Errors/Http/ForbiddenError';
 export * from './Errors/Http/InternalServerError';
 export * from './Errors/Http/MethodNotAllowedError';
 export * from './Errors/Http/NotAcceptableError';
+export * from './Errors/Http/PayloadTooLargeError';
+export * from './Errors/Http/UnsupportedMediaTypeError';
 export * from './Errors/Http/NotFoundError';
 export * from './Errors/Http/UnauthorizedError';
 
