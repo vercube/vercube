@@ -43,10 +43,13 @@ class MessageDecorator extends BaseDecorator<MessageDecoratorOptions> {
       event: this.options.event,
     };
 
-    const originalMethod = this.instance[this.propertyName].bind(this.instance);
+    // Looked up when a message arrives rather than now, so decorators such as
+    // `@Emit` that wrap the method still apply when written above `@Message`.
+    const instance = this.instance;
+    const propertyName = this.propertyName;
 
     this.gWebsocketService.registerHandler(WebsocketTypes.HandlerAction.MESSAGE, namespace, {
-      callback: originalMethod,
+      callback: (data: unknown, peer: unknown) => instance[propertyName](data, peer),
       event: this.options.event,
       schema: this.options.validationSchema,
     });

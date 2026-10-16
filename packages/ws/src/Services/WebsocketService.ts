@@ -1,4 +1,4 @@
-import { BadRequestError, HttpServer, ValidationProvider, safeJsonParse, sanitizeObject } from '@vercube/core';
+import { BadRequestError, HttpError, HttpServer, ValidationProvider, safeJsonParse, sanitizeObject } from '@vercube/core';
 import { Inject, InjectOptional } from '@vercube/di';
 import { Logger } from '@vercube/logger';
 import { createInstrument, SpanKind, ValueType } from '@vercube/telemetry/instrument';
@@ -136,6 +136,13 @@ export class WebsocketService {
           `Cannot register message handler without an event name for namespace "${normalizedNamespace}".`,
         );
         return;
+      }
+
+      // without a provider every message would be dropped, so fail at boot instead
+      if (handler.schema && !this.gValidationProvider) {
+        throw new Error(
+          `Message handler for event "${event}" in namespace "${normalizedNamespace}" has a validationSchema, but no ValidationProvider is registered.`,
+        );
       }
 
       if (!this.fHandlers[action][normalizedNamespace]) {
@@ -309,16 +316,18 @@ export class WebsocketService {
    * @private
    */
   private async internalHandleMessage(peer: WSPeer, rawMessage: WSMessage, span: Span): Promise<void> {
+    let event: unknown;
+
     try {
       const msg = safeJsonParse(rawMessage.text()) as any;
       const namespace = peer.namespace?.toLowerCase();
-      const event = msg.event;
-      const data = msg.data;
+      event = msg.event;
+      let data = msg.data;
 
       span.updateName(`ws.message ${String(event)}`);
       span.setAttribute('vercube.ws.event', String(event));
 
-      const handler = this.fHandlers[WebsocketTypes.HandlerAction.MESSAGE]?.[namespace]?.[event];
+      const handler = this.fHandlers[WebsocketTypes.HandlerAction.MESSAGE]?.[namespace]?.[event as string];
 
       if (!handler) {
         this.gLogger?.warn(
@@ -330,8 +339,7 @@ export class WebsocketService {
 
       if (handler.schema) {
         if (!this.gValidationProvider) {
-          this.gLogger?.warn('WebsocketService::handleMessage', 'ValidationProvider is not registered');
-          return;
+          throw new Error('ValidationProvider is not registered');
         }
 
         const result = await this.gValidationProvider.validate(handler.schema, data);
@@ -339,11 +347,48 @@ export class WebsocketService {
         if (result?.issues?.length) {
           throw new BadRequestError('Websocket message validation error', result.issues);
         }
+
+        // hand the parsed value to the handler, so coercions, defaults, transforms
+        // and stripped keys take effect
+        if (result && 'value' in result) {
+          data = result.value;
+        }
       }
 
       await handler.callback(data, peer);
     } catch (error) {
       this.gLogger?.error('WebsocketService::handleMessage', `Failed to process message: ${error}`);
+      this.emitError(peer, event, error);
+    }
+  }
+
+  /**
+   * Tells the peer a message failed, with an `error` frame. An HTTP error such
+   * as a validation error carries its message and issues; anything else is
+   * reported without details, which stay in the server log.
+   *
+   * @param {WSPeer} peer - The peer the message came from
+   * @param {unknown} event - The event of the failed message
+   * @param {unknown} error - What went wrong
+   * @returns {void}
+   * @private
+   */
+  private emitError(peer: WSPeer, event: unknown, error: unknown): void {
+    const known = error instanceof HttpError;
+    const issues = known ? (error as { errors?: unknown }).errors : undefined;
+
+    try {
+      this.emit(peer, {
+        event: 'error',
+        data: {
+          event: typeof event === 'string' ? event : undefined,
+          status: known ? error.status : 500,
+          message: known ? error.message : 'Failed to process message',
+          ...(issues === undefined ? {} : { issues }),
+        },
+      });
+    } catch (sendError) {
+      this.gLogger?.warn('WebsocketService::handleMessage', `Failed to send the error to the peer: ${sendError}`);
     }
   }
 }
