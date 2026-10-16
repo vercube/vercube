@@ -61,9 +61,9 @@ async function boot(): Promise<App> {
     cfg: { requestLogging: false, server: { static: { dirs: [relative(process.cwd(), dir)], etag: true } } },
     setup: (app) => {
       const registry = app.container.get(GlobalMiddlewareRegistry);
-      registry.registerGlobalMiddleware(CorsMiddleware, { target: '__global__', priority: 10 });
-      registry.registerGlobalMiddleware(FirstMiddleware, { target: '__global__', priority: 1 });
-      registry.registerGlobalMiddleware(GateMiddleware, { target: '__global__', priority: 20 });
+      registry.registerGlobalMiddleware(CorsMiddleware, { priority: 10 });
+      registry.registerGlobalMiddleware(FirstMiddleware, { priority: 1 });
+      registry.registerGlobalMiddleware(GateMiddleware, { priority: 20 });
       app.container.bind(UnmatchedController);
     },
   });

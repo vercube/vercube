@@ -1,8 +1,11 @@
-/* eslint-disable @typescript-eslint/no-empty-object-type */
 import { BaseMiddleware } from './BaseMiddleware';
 import type { MetadataTypes } from '../../Types/MetadataTypes';
 
-interface GlobalMiddlewareParams<T> extends Omit<MetadataTypes.Middleware<T>, 'middleware'> {}
+/**
+ * Options of a global middleware: the target is always every route, and the
+ * arguments are typed after the middleware, like `@Middleware()`'s.
+ */
+type GlobalMiddlewareParams<T> = Omit<MetadataTypes.Middleware<T>, 'middleware' | 'target' | 'args'> & { args?: T };
 
 interface GlobalMiddlewareStorageItem<T = unknown, U = unknown> {
   middleware: typeof BaseMiddleware<T, U>;

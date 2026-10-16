@@ -167,7 +167,9 @@ export class RequestHandler {
     // application-wide middlewares entirely.
     const globalMiddlewares = skipsGlobalMiddlewares(prototype) ? [] : this.gGlobalMiddlewareRegistry.middlewares;
 
-    const { beforeMiddlewares, afterMiddlewares } = this.buildMiddlewareChain([...middlewares, ...globalMiddlewares]);
+    // app-wide first, then the controller's, then the method's: sorting by
+    // priority is stable, so this is the order at equal priority
+    const { beforeMiddlewares, afterMiddlewares } = this.buildMiddlewareChain([...globalMiddlewares, ...middlewares]);
 
     const args = method.args.length <= 1 ? method.args : [...method.args].sort((a, b) => a.idx - b.idx);
     // a copy, so actions another application registers later never reach this route
@@ -738,10 +740,18 @@ export class RequestHandler {
   } {
     const uniqueMiddlewares: MetadataTypes.Middleware[] = [];
     for (const m of middlewares) {
-      if (uniqueMiddlewares.some((unique) => isSameMiddleware(unique, m))) {
+      const index = uniqueMiddlewares.findIndex((unique) => isSameMiddleware(unique, m));
+
+      if (index === -1) {
+        uniqueMiddlewares.push(m);
         continue;
       }
-      uniqueMiddlewares.push(m);
+
+      // registered twice - globally at priority 1 and by `@Middleware()` at the
+      // default - it runs once, at the earliest priority it was asked for
+      if ((m.priority ?? 999) < (uniqueMiddlewares[index].priority ?? 999)) {
+        uniqueMiddlewares[index] = { ...uniqueMiddlewares[index], priority: m.priority };
+      }
     }
 
     // resolve middlewares
