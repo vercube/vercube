@@ -44,3 +44,15 @@ describe('documented paths', () => {
     ]);
   });
 });
+
+describe('@Schema without SchemaPlugin', () => {
+  it('should do nothing instead of failing the boot', async () => {
+    const app = await createApp({
+      cfg: { requestLogging: false },
+      setup: (app) => app.container.bind(MovedController),
+    });
+
+    expect((await app.fetch(new Request('http://localhost/moved/x'))).status).toBe(200);
+    expect(app.container.getOptional(SchemaRegistry)).toBeNull();
+  });
+});

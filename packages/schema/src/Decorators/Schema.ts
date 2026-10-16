@@ -1,4 +1,4 @@
-import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
+import { BaseDecorator, createDecorator, InjectOptional } from '@vercube/di';
 import { SchemaRegistry } from '../Services/SchemaRegistry';
 import type { SchemaRouteOptions } from '../Utils/RouteConfig';
 
@@ -10,16 +10,18 @@ interface SchemaDecoratorOptions extends SchemaRouteOptions {}
  *
  * It only records which method is documented. The route config is built when
  * the document is generated, because the route decorator (`@Get`, `@Post`, ...)
- * may run after this one and fill the method metadata only then.
+ * may run after this one and fill the method metadata only then. Without
+ * `SchemaPlugin` installed it does nothing.
  *
  * @extends {BaseDecorator<SchemaDecoratorOptions>}
  */
 class SchemaDecorator extends BaseDecorator<SchemaDecoratorOptions> {
-  @Inject(SchemaRegistry)
-  private readonly gSchemaRegistry!: SchemaRegistry;
+  @InjectOptional(SchemaRegistry)
+  private readonly gSchemaRegistry!: SchemaRegistry | null;
 
   public override created(): void {
-    this.gSchemaRegistry.add({
+    // without SchemaPlugin nothing is documented, and the route still serves
+    this.gSchemaRegistry?.add({
       prototype: this.prototype,
       propertyName: this.propertyName,
       options: this.options,
