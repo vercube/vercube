@@ -84,9 +84,10 @@ describe('generateServerEntry', () => {
   it('serves the built frontend in production when the project has a client', () => {
     const code = generateServerEntry(ctx({ hasClient: true, controllers: [cls('HelloController', true)] }));
 
-    expect(code).toContain(`import { createApp, HttpServer, serveStaticFiles } from '@vercube/core';`);
-    // static is only registered when run directly (production)
-    expect(code).toContain('if (import.meta.main) {');
+    expect(code).toContain(`import { createApp, HttpServer, serveStaticFiles, shouldListen } from '@vercube/core';`);
+    // static is only registered when the app serves (production), not in the dev worker
+    expect(code).toContain('if (shouldListen()) {');
+    expect(code).not.toContain('import.meta.main');
     expect(code).toContain('app.container.get(HttpServer).addPlugin(serveStaticFiles(dir));');
     expect(code).toContain('app.container.get(HttpServer).enableSpaFallback(dir);');
     expect(code).toContain("new URL('./public', import.meta.url)");
@@ -96,6 +97,9 @@ describe('generateServerEntry', () => {
     const code = generateServerEntry(ctx({ hasClient: false, controllers: [cls('HelloController', true)] }));
 
     expect(code).toContain(`import { createApp } from '@vercube/core';`);
+    // listens unconditionally, `VERCUBE_LISTEN=0` keeps the dev worker from binding
+    expect(code).toContain('await app.listen();');
+    expect(code).not.toContain('import.meta.main');
     expect(code).not.toContain('serveStaticFiles');
     expect(code).not.toContain('HttpServer');
   });
