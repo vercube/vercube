@@ -528,10 +528,83 @@ describe('RequestHandler', () => {
         },
       ];
 
+      const handlerSpy = vi.spyOn(mockInstance, 'testMethod');
+
       const result = await requestHandler.handleRequest(mockRequest, mockRoute);
 
       expect(result.status).toBe(202);
       expect(result.statusText).toBe('Accepted');
+      // A ResponseInit is not an early return, the handler still runs
+      expect(handlerSpy).toHaveBeenCalled();
+      expect(await result.text()).not.toBe('');
+    });
+
+    it('should merge ResponseInit headers with headers set by previous middlewares', async () => {
+      const corsMiddleware = {
+        onRequest: vi.fn((_req: Request, res: Response) => {
+          res.headers.set('access-control-allow-origin', '*');
+        }),
+      };
+      const tweakMiddleware = {
+        onRequest: vi.fn().mockResolvedValue({ status: 202, headers: { 'x-tweak': '1' } }),
+      };
+
+      const handlerSpy = vi.spyOn(mockInstance, 'testMethod');
+
+      mockRoute.data.middlewares.beforeMiddlewares = [
+        { middleware: corsMiddleware, priority: 1, target: 'testMethod' },
+        { middleware: tweakMiddleware, priority: 2, target: 'testMethod' },
+      ];
+
+      const result = await requestHandler.handleRequest(mockRequest, mockRoute);
+
+      expect(handlerSpy).toHaveBeenCalled();
+      expect(result.status).toBe(202);
+      expect(result.headers.get('access-control-allow-origin')).toBe('*');
+      expect(result.headers.get('x-tweak')).toBe('1');
+    });
+
+    it('should append cookies and merge Vary from a ResponseInit', async () => {
+      const first = {
+        onRequest: vi.fn((_req: Request, res: Response) => {
+          res.headers.set('vary', 'Origin');
+          res.headers.append('set-cookie', 'a=1');
+        }),
+      };
+      const second = {
+        onRequest: vi.fn().mockResolvedValue({
+          headers: [
+            ['vary', 'Accept-Encoding'],
+            ['set-cookie', 'b=2'],
+          ],
+        }),
+      };
+
+      mockRoute.data.middlewares.beforeMiddlewares = [
+        { middleware: first, priority: 1, target: 'testMethod' },
+        { middleware: second, priority: 2, target: 'testMethod' },
+      ];
+
+      const result = await requestHandler.handleRequest(mockRequest, mockRoute);
+
+      expect(result.headers.get('vary')).toBe('Origin, Accept-Encoding');
+      expect(result.headers.getSetCookie()).toEqual(['a=1', 'b=2']);
+    });
+
+    it('should not end the request when an after middleware returns ResponseInit', async () => {
+      const first = { onResponse: vi.fn().mockResolvedValue({ status: 201 }) };
+      const second = { onResponse: vi.fn() };
+
+      mockRoute.data.middlewares.afterMiddlewares = [
+        { middleware: first, priority: 1, target: 'testMethod' },
+        { middleware: second, priority: 2, target: 'testMethod' },
+      ];
+
+      const result = await requestHandler.handleRequest(mockRequest, mockRoute);
+
+      expect(second.onResponse).toHaveBeenCalled();
+      expect(result.status).toBe(201);
+      expect(await result.text()).not.toBe('');
     });
 
     it('should handle before middleware returning Response object as early return', async () => {
