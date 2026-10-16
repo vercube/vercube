@@ -2,6 +2,8 @@ import { ValidationProvider } from '@vercube/core';
 import { Container, initializeContainer } from '@vercube/di';
 import { Logger } from '@vercube/logger';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { Consumer } from '../../src/Decorators/Consumer';
+import { Job } from '../../src/Decorators/Job';
 import { QueueError } from '../../src/Errors/QueueError';
 import { QueueManager } from '../../src/Services/QueueManager';
 import { MemoryStrategy } from '../../src/Strategies/MemoryStrategy';
@@ -144,6 +146,40 @@ describe('QueueManager', () => {
       const strategy = await mountRecording();
 
       expect(strategy.consumers.has('emails')).toBe(true);
+    });
+  });
+
+  describe('replacing a mount', () => {
+    it('should close the strategy a new mount under the same name replaces', async () => {
+      const first = await mountRecording();
+      manager.registerConsumer(registration());
+      await manager.start();
+
+      expect(first.consumers.has('emails')).toBe(true);
+
+      await manager.mount({ strategy: RecordingStrategy, initOptions: { label: 'second' } });
+      const second = manager.getStrategy() as RecordingStrategy;
+
+      expect(second).not.toBe(first);
+      expect(first.stopped).toContain('emails');
+      expect(first.closed).toBe(1);
+      expect(second.consumers.has('emails')).toBe(true);
+    });
+  });
+
+  describe('transient consumers', () => {
+    it('should warn about a @Consumer class bound as transient', async () => {
+      @Consumer({ queue: 'emails' })
+      class TransientConsumer {
+        @Job('welcome')
+        public welcome(): void {}
+      }
+
+      container.bindTransient(TransientConsumer);
+      await mountRecording();
+      await manager.start();
+
+      expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Consumer "TransientConsumer" is bound as transient'));
     });
   });
 
