@@ -29,6 +29,11 @@ export namespace MetadataTypes {
     method: string | null;
     args: Arg[];
     actions: Action[];
+    /**
+     * Declarative facts about the route, for tools that describe it rather
+     * than run it: `status` (`@Status`), `redirect` (`@Redirect`, as
+     * `{ location, code }`), `headers` (`@SetHeader`) and `sse` (`@Sse`).
+     */
     meta: Record<string, unknown>;
   }
 

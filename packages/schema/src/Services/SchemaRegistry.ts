@@ -1,9 +1,10 @@
 import { OpenApiGeneratorV3, OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
-import { MetadataResolver } from '@vercube/core';
+import { GlobalMiddlewareRegistry, MetadataResolver, Router, skipsGlobalMiddlewares } from '@vercube/core';
 import { InjectOptional } from '@vercube/di';
 import { Logger } from '@vercube/logger';
 import { $SchemaPluginOptions } from '../Symbols/SchemaSymbols';
 import { createRouteConfig } from '../Utils/RouteConfig';
+import type { RouteContext, SecurityRequirement } from '../Resolvers/SchemaDefaultsResolver';
 import type { SchemaPluginOptions } from '../Types/SchemaPluginOptions';
 import type { SchemaRouteOptions } from '../Utils/RouteConfig';
 import type { MetadataTypes } from '@vercube/core';
@@ -37,6 +38,12 @@ export class SchemaRegistry {
   @InjectOptional(MetadataResolver)
   private readonly gMetadataResolver?: MetadataResolver | null;
 
+  @InjectOptional(Router)
+  private readonly gRouter?: Router | null;
+
+  @InjectOptional(GlobalMiddlewareRegistry)
+  private readonly gGlobalMiddlewares?: GlobalMiddlewareRegistry | null;
+
   /**
    * Documented methods, keyed by prototype and method name, so a controller
    * initialized again replaces its entries instead of duplicating them.
@@ -57,6 +64,21 @@ export class SchemaRegistry {
    */
   public get revision(): number {
     return this.fRevision;
+  }
+
+  /**
+   * Controllers left out of `includeAllRoutes`.
+   * @private
+   */
+  private fExcluded: Set<Function> = new Set();
+
+  /**
+   * Leaves a controller out of the routes `includeAllRoutes` documents.
+   * @param controller - The controller class
+   */
+  public exclude(controller: Function): void {
+    this.fExcluded.add(controller);
+    this.fRevision++;
   }
 
   /**
@@ -106,7 +128,10 @@ export class SchemaRegistry {
     // operations already documented, so a second controller on the same path and method is reported
     const operations = new Map<string, string>();
 
-    for (const [prototype, methods] of this.fEntries) {
+    const security = this.securityRequirement();
+    const globalSecurity = (document?.security?.length ?? 0) > 0;
+
+    for (const [prototype, methods] of this.documentedRoutes()) {
       const metadata = (prototype as { __metadata?: MetadataTypes.Ctx }).__metadata;
 
       for (const [propertyName, options] of methods) {
@@ -118,7 +143,14 @@ export class SchemaRegistry {
         try {
           const controller = (prototype as { constructor?: Function }).constructor;
           const controllerPath = controller ? this.gMetadataResolver?.getControllerPath(controller) : undefined;
-          const route = createRouteConfig(metadata?.__methods?.[propertyName], options, warn, controllerPath);
+          const context: RouteContext = {
+            controller: controller?.name ?? 'Controller',
+            propertyName,
+            secured: this.isSecured(prototype, propertyName),
+            security,
+            globalSecurity,
+          };
+          const route = createRouteConfig(metadata?.__methods?.[propertyName], options, warn, controllerPath, context);
 
           if (!route) {
             continue;
@@ -144,6 +176,87 @@ export class SchemaRegistry {
     }
 
     return withoutNullableParameters(new OpenApiGeneratorV3(registry.definitions).generateDocument(config));
+  }
+
+  /**
+   * The methods to document: every `@Schema` one, and with `includeAllRoutes`
+   * every other routed one too, except infrastructure controllers that opt out
+   * of application-wide middlewares (the schema and devtools endpoints).
+   *
+   * @returns Options per method, keyed by prototype
+   */
+  private documentedRoutes(): Map<object, Map<string, SchemaRouteOptions>> {
+    if (!this.gSchemaPluginOptions?.includeAllRoutes || !this.gRouter) {
+      return this.fEntries;
+    }
+
+    const routes = new Map<object, Map<string, SchemaRouteOptions>>();
+
+    for (const [prototype, methods] of this.fEntries) {
+      routes.set(prototype, new Map(methods));
+    }
+
+    for (const route of this.gRouter.routes) {
+      const instance = route.handler?.instance as object | undefined;
+      const prototype = instance ? Object.getPrototypeOf(instance) : undefined;
+
+      if (!prototype || skipsGlobalMiddlewares(prototype) || this.fExcluded.has(prototype.constructor)) {
+        continue;
+      }
+
+      const methods = routes.get(prototype) ?? new Map<string, SchemaRouteOptions>();
+
+      if (!methods.has(route.handler.propertyName)) {
+        methods.set(route.handler.propertyName, {});
+      }
+
+      routes.set(prototype, methods);
+    }
+
+    return routes;
+  }
+
+  /**
+   * The requirement documented for a route guarded by `@Auth()`: the plugin's
+   * `security` option, else the document's own, else every security scheme
+   * the components declare, any one of them sufficing.
+   *
+   * @returns The requirement, empty when there is nothing to reference
+   */
+  private securityRequirement(): SecurityRequirement[] {
+    const { security, document, components } = this.gSchemaPluginOptions ?? {};
+
+    if (security) {
+      return security;
+    }
+
+    if (document?.security?.length) {
+      return document.security as SecurityRequirement[];
+    }
+
+    return Object.keys(components?.securitySchemes ?? {}).map((name) => ({ [name]: [] }));
+  }
+
+  /**
+   * Whether an authentication middleware guards the route: one marked as such
+   * on the controller, the method, or registered for the whole application.
+   *
+   * @param prototype - Prototype of the controller
+   * @param propertyName - Name of the handler method
+   * @returns True when the route requires authentication
+   */
+  private isSecured(prototype: object, propertyName: string): boolean {
+    const marker = Symbol.for('vercube.auth.middleware');
+    const isAuth = (entry: MetadataTypes.Middleware): boolean =>
+      (entry.middleware as unknown as Record<symbol, unknown>)?.[marker] === true;
+
+    const own = (prototype as { __metadata?: MetadataTypes.Ctx }).__metadata?.__middlewares ?? [];
+
+    if (own.some((entry) => (entry.target === '__global__' || entry.target === propertyName) && isAuth(entry))) {
+      return true;
+    }
+
+    return !skipsGlobalMiddlewares(prototype) && (this.gGlobalMiddlewares?.middlewares ?? []).some(isAuth);
   }
 }
 

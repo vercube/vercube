@@ -84,3 +84,7 @@ export class AuthMiddleware implements BaseMiddleware<AuthTypes.MiddlewareOption
     recordOutcome('allowed');
   }
 }
+
+// Marks the middleware as an authentication requirement, so tools that
+// describe routes (the OpenAPI generator) find it without importing this package.
+Object.defineProperty(AuthMiddleware, Symbol.for('vercube.auth.middleware'), { value: true });

@@ -35,6 +35,9 @@ class RedirectDecorator extends BaseDecorator<RedirectDecoratorOptions, Metadata
         headers: { Location: this.options.location },
       }),
     });
+
+    // declarative copy, for tools such as the OpenAPI generator
+    method.meta.redirect = { location: this.options.location, code: this.options.code };
   }
 }
 
