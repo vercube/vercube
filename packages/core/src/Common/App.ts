@@ -122,7 +122,7 @@ export class App {
       this.gRuntimeConfig.runtimeConfig = this.fConfig.runtime;
     }
 
-    this.gRouter.initialize();
+    await this.gRouter.initialize();
   }
 
   /**

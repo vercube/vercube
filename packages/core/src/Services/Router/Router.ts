@@ -159,14 +159,18 @@ export class Router {
   }
 
   /**
-   * Initializes the router and triggers related hooks
+   * Initializes the router and triggers `RouterBeforeInitHook`.
    *
-   * This method creates a new router context and triggers
-   * the before and after initialization hooks.
+   * The router is usable as soon as this returns; the promise settles once the
+   * hook listeners have finished, and rejects when one of them fails.
+   * `RouterAfterInitHook` fires from {@link Router.notifyInitialized}, once the
+   * routes are registered.
+   *
+   * @returns {Promise<void>} Resolves once the before-init listeners have run
    */
-  public initialize(): void {
-    // trigger before init hook
-    this.gHooksService.trigger(RouterBeforeInitHook);
+  public initialize(): Promise<void> {
+    // listeners run up to their first await before the router is reset
+    const before = Promise.resolve(this.gHooksService.trigger(RouterBeforeInitHook));
 
     this.fRouterContext = createRouter<RouterTypes.RouterHandler>();
     this.fDynamicContext = createRouter<RouterTypes.RouterHandler>();
@@ -174,8 +178,18 @@ export class Router {
     this.fStaticRoutes.clear();
     this.fRevision++;
 
-    // trigger after init hook
-    this.gHooksService.trigger(RouterAfterInitHook);
+    return before.then(() => undefined);
+  }
+
+  /**
+   * Triggers `RouterAfterInitHook`. Called once the container is initialized,
+   * so listeners see every route the controllers registered.
+   *
+   * @returns {Promise<void>} Resolves once the listeners have run
+   * @throws {Error} When a listener fails
+   */
+  public async notifyInitialized(): Promise<void> {
+    await this.gHooksService.trigger(RouterAfterInitHook);
   }
 
   /**

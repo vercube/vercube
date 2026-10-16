@@ -1,5 +1,7 @@
 import { Container } from '@vercube/di';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { RouterAfterInitHook } from '../../src/Hooks/Router/RouterAfterInitHook';
+import { RouterBeforeInitHook } from '../../src/Hooks/Router/RouterBeforeInitHook';
 import { HooksService } from '../../src/Services/Hooks/HooksService';
 import { Router } from '../../src/Services/Router/Router';
 import type { RouterTypes } from '../../src/Types/RouterTypes';
@@ -31,12 +33,23 @@ describe('Router', () => {
   });
 
   describe('initialize', () => {
-    it('should initialize router and trigger hooks', () => {
-      expect(() => {
-        router.initialize();
-      }).not.toThrow();
+    it('should initialize router and trigger the before-init hook', async () => {
+      await router.initialize();
 
-      expect(mockHooksService.trigger).toHaveBeenCalledTimes(2);
+      expect(mockHooksService.trigger).toHaveBeenCalledTimes(1);
+      expect(mockHooksService.trigger).toHaveBeenCalledWith(RouterBeforeInitHook);
+    });
+
+    it('should trigger the after-init hook when notified', async () => {
+      await router.notifyInitialized();
+
+      expect(mockHooksService.trigger).toHaveBeenCalledWith(RouterAfterInitHook);
+    });
+
+    it('should reject when a before-init listener fails', async () => {
+      mockHooksService.trigger.mockRejectedValueOnce(new Error('listener failed'));
+
+      await expect(router.initialize()).rejects.toThrow('listener failed');
     });
   });
 
