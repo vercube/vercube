@@ -103,6 +103,9 @@ export class SchemaRegistry {
     // the components alone, so a route can be generated in isolation against them
     const componentDefinitions = [...registry.definitions];
 
+    // operations already documented, so a second controller on the same path and method is reported
+    const operations = new Map<string, string>();
+
     for (const [prototype, methods] of this.fEntries) {
       const metadata = (prototype as { __metadata?: MetadataTypes.Ctx }).__metadata;
 
@@ -121,8 +124,19 @@ export class SchemaRegistry {
             continue;
           }
 
+          const operation = `${route.method.toUpperCase()} ${route.path}`;
+          const documented = operations.get(operation);
+
+          if (documented) {
+            warn(`${operation} is already documented by ${documented}, the route is left out of the schema`);
+            continue;
+          }
+
           new OpenApiGeneratorV3([...componentDefinitions, { type: 'route', route }]).generateDocument(config);
           registry.registerPath(route);
+
+          // only once it is in the document, so a route that failed does not block another one
+          operations.set(operation, name);
         } catch (error) {
           warn(`the route is left out of the schema, ${error instanceof Error ? error.message : String(error)}`);
         }

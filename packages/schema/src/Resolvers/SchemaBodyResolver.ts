@@ -20,7 +20,8 @@ export function SchemaBodyResolver(metadata: MetadataTypes.Method, schema: DeepP
   // check if method has body
   const body = metadata.args.find((arg) => arg.type === 'body');
 
-  if (!body || !body.validationSchema) {
+  // a body described in `@Schema()` is the whole description, nothing is merged into it
+  if (!body || !body.validationSchema || schema.request?.body) {
     return;
   }
 
