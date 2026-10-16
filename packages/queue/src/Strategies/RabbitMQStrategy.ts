@@ -219,7 +219,7 @@ export class RabbitMQStrategy extends QueueStrategy<RabbitMQStrategyOptions> {
         headers: request.headers,
         type: request.job,
         messageId: id,
-        priority: request.options.priority,
+        priority: toAmqpPriority(request.options.priority, options.queueOptions),
         correlationId: request.options.key,
       });
 
@@ -559,4 +559,23 @@ export class RabbitMQStrategy extends QueueStrategy<RabbitMQStrategyOptions> {
 
     return this.fConnection;
   }
+}
+
+/**
+ * Maps a job priority, lower first, to an AMQP one, higher first. A queue only
+ * honours priorities when it was declared with a maximum, so without one the
+ * priority is dropped.
+ *
+ * @param {number | undefined} priority - Job priority, lower values first
+ * @param {Options.AssertQueue | undefined} queueOptions - Options the queues are declared with
+ * @returns {number | undefined} The AMQP priority, between 0 and the queue maximum
+ */
+export function toAmqpPriority(priority: number | undefined, queueOptions: Options.AssertQueue | undefined): number | undefined {
+  const max = queueOptions?.maxPriority ?? Number(queueOptions?.arguments?.['x-max-priority'] ?? Number.NaN);
+
+  if (priority === undefined || !Number.isFinite(max)) {
+    return undefined;
+  }
+
+  return Math.min(max, Math.max(0, max - priority));
 }

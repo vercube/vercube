@@ -8,6 +8,7 @@ import {
   MAX_BACKOFF_MS,
   normalizeHeaders,
   prune,
+  readBackoffHeader,
   readNumericHeader,
   resolveBackoff,
 } from '../../src/Utils/Job';
@@ -151,6 +152,21 @@ describe('Job utils', () => {
       await delay(15);
 
       expect(Date.now() - started).toBeGreaterThanOrEqual(10);
+    });
+  });
+
+  describe('readBackoffHeader', () => {
+    it('should read a fixed or an exponential backoff', () => {
+      expect(readBackoffHeader('250')).toBe(250);
+      expect(readBackoffHeader('{"type":"exponential","delay":100}')).toEqual({ type: 'exponential', delay: 100 });
+    });
+
+    it('should ignore anything that is not a backoff', () => {
+      expect(readBackoffHeader(undefined)).toBeUndefined();
+      expect(readBackoffHeader('nope')).toBeUndefined();
+      expect(readBackoffHeader('{"type":"linear","delay":1}')).toBeUndefined();
+      expect(readBackoffHeader('{"type":"fixed","delay":"x"}')).toBeUndefined();
+      expect(readBackoffHeader('null')).toBeUndefined();
     });
   });
 });

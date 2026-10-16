@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { QueueError } from '../../src/Errors/QueueError';
 import { QueueManager } from '../../src/Services/QueueManager';
 import { MemoryStrategy } from '../../src/Strategies/MemoryStrategy';
-import { ATTEMPT_HEADER, ATTEMPTS_HEADER, JOB_HEADER, WILDCARD_JOB } from '../../src/Utils/Job';
+import { ATTEMPT_HEADER, ATTEMPTS_HEADER, BACKOFF_HEADER, JOB_HEADER, WILDCARD_JOB } from '../../src/Utils/Job';
 import { idSchema, RecordingStrategy, registration } from '../Utils/Mock.mock';
 import type { QueueTypes } from '../../src/Types/QueueTypes';
 
@@ -179,6 +179,39 @@ describe('QueueManager', () => {
         [ATTEMPT_HEADER]: '1',
         [ATTEMPTS_HEADER]: '3',
       });
+    });
+
+    it('should publish with the attempts and backoff of the registered handler', async () => {
+      const strategy = await mountRecording();
+      manager.registerConsumer(registration({ options: { attempts: 4, backoff: { type: 'exponential', delay: 50 } } }));
+
+      await manager.add({ queue: 'emails', job: 'welcome', payload: {} });
+      await manager.add({ queue: 'emails', job: 'welcome', payload: {}, options: { attempts: 2, backoff: 10 } });
+
+      expect(strategy.published[0].options).toEqual({ attempts: 4, backoff: { type: 'exponential', delay: 50 } });
+      expect(strategy.published[0].headers).toMatchObject({
+        [ATTEMPTS_HEADER]: '4',
+        [BACKOFF_HEADER]: JSON.stringify({ type: 'exponential', delay: 50 }),
+      });
+      // what the job asks for wins
+      expect(strategy.published[1].options).toEqual({ attempts: 2, backoff: 10 });
+    });
+
+    it('should refuse a delay the transport cannot honour', async () => {
+      const strategy = await mountRecording();
+
+      await expect(manager.add({ queue: 'emails', job: 'welcome', payload: {}, options: { delay: 1000 } })).rejects.toThrow(
+        'The "recording" transport cannot delay jobs',
+      );
+      await expect(
+        manager.addMany({ queue: 'emails', job: 'welcome', payloads: [{}], options: { delay: 1000 } }),
+      ).rejects.toMatchObject({
+        operation: 'addMany',
+      });
+
+      strategy.reported = { ...strategy.reported, delay: true };
+      await manager.add({ queue: 'emails', job: 'welcome', payload: {}, options: { delay: 1000 } });
+      expect(strategy.published[0].options).toEqual({ delay: 1000 });
     });
 
     it('should count published jobs', async () => {
@@ -786,6 +819,22 @@ describe('QueueManager', () => {
       await manager.drain();
 
       expect(strategy.published[0].options).toEqual({ delay: 200 });
+    });
+
+    it('should retry with the backoff the job was published with', async () => {
+      const strategy = await mountRecording();
+      strategy.reported = { ...strategy.reported, delay: true };
+
+      manager.registerConsumer(
+        registration({ handler: vi.fn().mockRejectedValue(new Error('boom')), options: { attempts: 3, backoff: 999 } }),
+      );
+      await manager.start();
+
+      await strategy.deliver('emails', { job: 'welcome', headers: { [BACKOFF_HEADER]: JSON.stringify(25) } });
+      await strategy.deliver('emails', { job: 'welcome', headers: { [BACKOFF_HEADER]: 'not json' } });
+      await manager.drain();
+
+      expect(strategy.published.map((request) => request.options)).toEqual([{ delay: 25 }, { delay: 999 }]);
     });
 
     it('should wait for the backoff itself when the transport cannot delay', async () => {

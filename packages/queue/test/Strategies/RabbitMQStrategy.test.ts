@@ -1,7 +1,7 @@
 import { Container } from '@vercube/di';
 import { Logger } from '@vercube/logger';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { RabbitMQStrategy } from '../../src/Strategies/RabbitMQStrategy';
+import { RabbitMQStrategy, toAmqpPriority } from '../../src/Strategies/RabbitMQStrategy';
 import { ATTEMPT_HEADER, JOB_HEADER } from '../../src/Utils/Job';
 import type { QueueTypes } from '../../src/Types/QueueTypes';
 
@@ -385,11 +385,30 @@ describe('RabbitMQStrategy', () => {
           persistent: true,
           type: 'welcome',
           messageId: 'fixed',
-          priority: 3,
+          // the queues declare no maximum priority, so AMQP would ignore it
+          priority: undefined,
           correlationId: 'tenant-1',
           headers: { [JOB_HEADER]: 'welcome', [ATTEMPT_HEADER]: '1' },
         }),
       );
+    });
+
+    it('should map lower priorities first onto AMQP priorities, higher first', async () => {
+      const prioritized = container.resolve(RabbitMQStrategy);
+      await prioritized.initialize({ url: 'amqp://localhost', queueOptions: { maxPriority: 10 } });
+
+      await prioritized.publish(request({ options: { priority: 1 } }));
+      await prioritized.publish(request({ options: { priority: 9 } }));
+      await prioritized.publish(request({ options: { priority: 50 } }));
+
+      const priorities = state.channels.at(-1).sendToQueue.mock.calls.map((call: any[]) => call[2].priority);
+      expect(priorities).toEqual([9, 1, 0]);
+    });
+
+    it('should read the maximum priority from the queue arguments too', () => {
+      expect(toAmqpPriority(2, { arguments: { 'x-max-priority': 5 } })).toBe(3);
+      expect(toAmqpPriority(-3, { maxPriority: 5 })).toBe(5);
+      expect(toAmqpPriority(undefined, { maxPriority: 5 })).toBeUndefined();
     });
 
     it('should generate an id when the job has none', async () => {

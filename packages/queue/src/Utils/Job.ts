@@ -22,6 +22,9 @@ export const KEY_HEADER = 'x-key';
 /** Header carrying the priority a job was published with. */
 export const PRIORITY_HEADER = 'x-priority';
 
+/** Header carrying the backoff a job was published with, as JSON. */
+export const BACKOFF_HEADER = 'x-backoff';
+
 /**
  * Most attempts a job may ever take.
  *
@@ -101,6 +104,40 @@ export function resolveBackoff(backoff: QueueTypes.Backoff | undefined, attempt:
   const resolved = backoff.type === 'exponential' ? delay * 2 ** Math.max(0, attempt - 1) : delay;
 
   return Math.min(resolved, MAX_BACKOFF_MS);
+}
+
+/**
+ * Reads a backoff carried in a header. Anything that is not a usable backoff is
+ * ignored, as the value comes off the wire.
+ *
+ * @param raw - Header value as received from the transport.
+ * @returns The backoff, or undefined when the header is absent or unusable.
+ */
+export function readBackoffHeader(raw: string | undefined): QueueTypes.Backoff | undefined {
+  if (raw === undefined) {
+    return undefined;
+  }
+
+  try {
+    const value: unknown = JSON.parse(raw);
+
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value;
+    }
+
+    if (
+      value &&
+      typeof value === 'object' &&
+      ((value as { type?: unknown }).type === 'fixed' || (value as { type?: unknown }).type === 'exponential') &&
+      Number.isFinite((value as { delay?: unknown }).delay)
+    ) {
+      return { type: (value as { type: 'fixed' | 'exponential' }).type, delay: (value as { delay: number }).delay };
+    }
+  } catch {
+    // not JSON
+  }
+
+  return undefined;
 }
 
 /**
