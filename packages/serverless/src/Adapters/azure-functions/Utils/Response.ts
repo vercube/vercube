@@ -26,6 +26,12 @@ export function convertResponseToAzureFunctionsResponse(response: Response): Htt
   const headers = headersToObject(response.headers);
   const cookies = cookiesFromHeaders(response.headers);
 
+  // Azure sends `cookies` on its own, a `set-cookie` header next to them would
+  // emit (the last) cookie a second time
+  if (cookies) {
+    delete headers['set-cookie'];
+  }
+
   return {
     cookies,
     headers,

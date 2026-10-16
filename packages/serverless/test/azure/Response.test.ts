@@ -71,7 +71,7 @@ describe('[Azure Functions] Response Utils', () => {
       expect(azureResponse.status).toBe(200);
       expect(azureResponse.cookies).toHaveLength(2);
       expect(azureResponse.cookies![0]).toEqual({
-        name: 'sessionid',
+        name: 'sessionId',
         value: 'abc123',
         httpOnly: true,
         secure: true,
@@ -87,6 +87,18 @@ describe('[Azure Functions] Response Utils', () => {
         sameSite: undefined,
         secure: false,
       });
+    });
+
+    it('should not send cookies a second time as a set-cookie header', () => {
+      const headers = new Headers({ 'Content-Type': 'application/json' });
+      headers.append('Set-Cookie', 'SessionID=abc; Path=/');
+      headers.append('Set-Cookie', 'theme=dark; Path=/');
+
+      const azureResponse = convertResponseToAzureFunctionsResponse(new Response('{}', { headers }));
+
+      expect(azureResponse.cookies?.map((cookie) => cookie.name)).toEqual(['SessionID', 'theme']);
+      expect(azureResponse.headers).not.toHaveProperty('set-cookie');
+      expect(azureResponse.headers).toHaveProperty('content-type', 'application/json');
     });
 
     it('should handle response without cookies', () => {
@@ -582,7 +594,7 @@ describe('[Azure Functions] Response Utils', () => {
       expect(azureResponse.cookies).toHaveLength(3);
 
       expect(azureResponse.cookies![0]).toEqual({
-        name: 'sessionid',
+        name: 'sessionId',
         value: 'abc123',
         httpOnly: true,
         secure: true,
