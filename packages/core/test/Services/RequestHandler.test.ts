@@ -1,6 +1,7 @@
 // oxlint-disable no-unused-vars
 import { Container } from '@vercube/di';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ValidationMiddleware } from '../../src/Middleware/ValidationMiddleware';
 import { ErrorHandlerProvider } from '../../src/Services/ErrorHandler/ErrorHandlerProvider';
 import { MetadataResolver } from '../../src/Services/Metadata/MetadataResolver';
 import { BaseMiddleware } from '../../src/Services/Middleware/BaseMiddleware';
@@ -292,6 +293,29 @@ describe('RequestHandler', () => {
       expect(result.middlewares.afterMiddlewares[0].priority).toBe(1);
     });
 
+    it('should sort validation middlewares after every other before middleware', () => {
+      const method: MetadataTypes.Method = {
+        req: null,
+        res: null,
+        url: '/test',
+        method: 'POST',
+        args: [],
+        actions: [],
+        meta: {},
+      };
+
+      mockMetadataResolver.resolveMethod.mockReturnValue(method);
+      mockMetadataResolver.resolveMiddlewares.mockReturnValue([
+        { target: 'testMethod', middleware: ValidationMiddleware, priority: -1 },
+        { target: 'testMethod', middleware: MockBeforeMiddleware, priority: 10 },
+      ]);
+
+      const result = requestHandler.prepareHandler({ instance: mockInstance, propertyName: 'testMethod' });
+
+      expect(result.middlewares.beforeMiddlewares.map((m) => m.priority)).toEqual([10, -1]);
+      expect(result.middlewares.beforeMiddlewares[1].middleware).toBeInstanceOf(ValidationMiddleware);
+    });
+
     it('should handle middlewares without priority', () => {
       const method: MetadataTypes.Method = {
         req: null,
@@ -537,6 +561,71 @@ describe('RequestHandler', () => {
       // A ResponseInit is not an early return, the handler still runs
       expect(handlerSpy).toHaveBeenCalled();
       expect(await result.text()).not.toBe('');
+    });
+
+    it('should run before middlewares before resolving args', async () => {
+      const authError = new Response('Unauthorized', { status: 401 });
+      const auth = { onRequest: vi.fn().mockRejectedValue(new Error('unauthorized')) };
+      mockErrorHandler.handleError.mockReturnValue(authError);
+
+      mockRoute.data.args = [{ idx: 0, type: 'body' }] as MetadataTypes.Arg[];
+      mockRoute.data.middlewares.beforeMiddlewares = [{ middleware: auth, priority: 1, target: 'testMethod' }];
+
+      const result = await requestHandler.handleRequest(mockRequest, mockRoute);
+
+      expect(result.status).toBe(401);
+      expect(auth.onRequest).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.anything(),
+        expect.objectContaining({ methodArgs: undefined }),
+      );
+      expect(mockMetadataResolver.resolveArgs).not.toHaveBeenCalled();
+    });
+
+    it('should resolve args between the before middlewares and the validation middlewares', async () => {
+      const order: string[] = [];
+      const resolved = [{ idx: 0, type: 'body', resolved: { a: 1 } }];
+      mockMetadataResolver.resolveArgs.mockImplementation(async () => {
+        order.push('resolve');
+        return resolved;
+      });
+
+      const validation = Object.create(ValidationMiddleware.prototype) as ValidationMiddleware;
+      validation.onRequest = vi.fn(async () => {
+        order.push('validate');
+      });
+      const auth = { onRequest: vi.fn(() => void order.push('auth')) };
+
+      mockRoute.data.args = [{ idx: 0, type: 'body' }] as MetadataTypes.Arg[];
+      mockRoute.data.middlewares.beforeMiddlewares = [
+        { middleware: auth, priority: 1, target: 'testMethod' },
+        { middleware: validation, priority: 2, target: 'testMethod' },
+      ];
+
+      await requestHandler.handleRequest(mockRequest, mockRoute);
+
+      expect(order).toEqual(['auth', 'resolve', 'validate']);
+      expect(validation.onRequest).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.anything(),
+        expect.objectContaining({ methodArgs: resolved }),
+      );
+    });
+
+    it('should pass the body limit to the arg resolver', async () => {
+      mockMetadataResolver.resolveArgs.mockResolvedValue([]);
+      mockRoute.data.args = [{ idx: 0, type: 'body' }] as MetadataTypes.Arg[];
+      mockRoute.data.middlewares.beforeMiddlewares = [{ middleware: { onRequest: vi.fn() }, target: 'testMethod' }];
+
+      requestHandler.setBodyLimit(10);
+      await requestHandler.handleRequest(mockRequest, mockRoute);
+      requestHandler.setBodyLimit(false);
+      await requestHandler.handleRequest(mockRequest, mockRoute);
+      requestHandler.setBodyLimit(undefined);
+      await requestHandler.handleRequest(mockRequest, mockRoute);
+
+      const limits = mockMetadataResolver.resolveArgs.mock.calls.map((call: any[]) => call[1].bodyLimit);
+      expect(limits).toEqual([10, undefined, 1024 * 1024]);
     });
 
     it('should merge ResponseInit headers with headers set by previous middlewares', async () => {

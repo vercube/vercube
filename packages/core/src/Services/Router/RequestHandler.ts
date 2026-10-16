@@ -1,4 +1,5 @@
 import { Container, Inject } from '@vercube/di';
+import { ValidationMiddleware } from '../../Middleware/ValidationMiddleware';
 import { FastResponse } from '../../Types/CommonTypes';
 import { isSameMiddleware } from '../../Utils/MiddlewareUtils';
 import { skipsGlobalMiddlewares } from '../../Utils/Utils';
@@ -24,6 +25,11 @@ export interface RequestHandlerOptions {
 
 /** Default response `Content-Type` used when the request does not carry one. */
 const DEFAULT_CONTENT_TYPE = 'application/json';
+
+/**
+ * Default maximum request body size read by `@Body()`: 1 MiB.
+ */
+const DEFAULT_BODY_LIMIT = 1024 * 1024;
 
 /**
  * Headers every intermediate response starts with.
@@ -113,8 +119,20 @@ export class RequestHandler {
   /** Cached telemetry hooks (`null` when no telemetry package is installed). */
   private fTelemetry: TelemetryTypes.Hooks | null | undefined;
 
+  /** Maximum request body size in bytes, `undefined` when unlimited. */
+  private fBodyLimit: number | undefined = DEFAULT_BODY_LIMIT;
+
   /** Which of the three dispatch shapes this application needs. */
   private fMode: number = MODE_UNRESOLVED;
+
+  /**
+   * Sets the maximum request body size read by `@Body()`.
+   *
+   * @param {number | false | undefined} limit - The limit in bytes, `false` to disable it, `undefined` for the default
+   */
+  public setBodyLimit(limit: number | false | undefined): void {
+    this.fBodyLimit = limit === false ? undefined : (limit ?? DEFAULT_BODY_LIMIT);
+  }
 
   /**
    * Prepares a route handler by resolving its metadata and middlewares
@@ -160,8 +178,14 @@ export class RequestHandler {
     const beforeMiddlewares = resolvedMiddlewares.filter((m) => !!m.middleware.onRequest);
     const afterMiddlewares = resolvedMiddlewares.filter((m) => !!m.middleware.onResponse);
 
-    // sort middlewares by priority
-    beforeMiddlewares.sort((a, b) => (a?.priority ?? 999) - (b?.priority ?? 999));
+    // sort middlewares by priority, validation always runs last: it needs the
+    // resolved arguments, and they are only resolved once auth, CORS and the
+    // rest of the before middlewares let the request through
+    beforeMiddlewares.sort(
+      (a, b) =>
+        Number(a.middleware instanceof ValidationMiddleware) - Number(b.middleware instanceof ValidationMiddleware) ||
+        (a?.priority ?? 999) - (b?.priority ?? 999),
+    );
     afterMiddlewares.sort((a, b) => (a?.priority ?? 999) - (b?.priority ?? 999));
 
     const args = method.args.length <= 1 ? method.args : [...method.args].sort((a, b) => a.idx - b.idx);
@@ -380,6 +404,7 @@ export class RequestHandler {
         // intermediate one never has to be allocated - see prepareHandler.
         response: undefined as unknown as Response,
         cloneBody,
+        bodyLimit: this.fBodyLimit,
       };
 
       if (asyncArgs) {
@@ -440,7 +465,33 @@ export class RequestHandler {
         cloneBody = true,
       } = route.data;
 
-      // 1. Resolve all args
+      // Validation middlewares are sorted last, see prepareHandler.
+      const before = middlewares.beforeMiddlewares;
+      let validationStart = before.findIndex((m) => m.middleware instanceof ValidationMiddleware);
+      if (validationStart === -1) {
+        validationStart = before.length;
+      }
+
+      // 1. Call before route middlewares, so auth and CORS run before the body is read
+      if (validationStart > 0) {
+        const beforeResult = await this.executeMiddlewares(
+          validationStart === before.length ? before : before.slice(0, validationStart),
+          {
+            request,
+            response: fakeResponse,
+            methodArgs: undefined,
+            handlerResponse: undefined,
+            executeRequest: true,
+            executeResponse: false,
+          },
+        );
+        if (beforeResult.earlyReturn) {
+          return mergeResponseHeaders(beforeResult.earlyReturn, beforeResult.response, false);
+        }
+        fakeResponse = beforeResult.response;
+      }
+
+      // 2. Resolve all args
       const resolvedArgs =
         args.length > 0
           ? await this.gMetadataResolver.resolveArgs(args, {
@@ -449,12 +500,13 @@ export class RequestHandler {
               request,
               response: fakeResponse,
               cloneBody,
+              bodyLimit: this.fBodyLimit,
             })
           : [];
 
-      // 2. Call before route middlewares
-      if (middlewares.beforeMiddlewares.length > 0) {
-        const beforeResult = await this.executeMiddlewares(middlewares.beforeMiddlewares, {
+      // 2b. Validate the resolved args
+      if (validationStart < before.length) {
+        const validationResult = await this.executeMiddlewares(before.slice(validationStart), {
           request,
           response: fakeResponse,
           methodArgs: resolvedArgs,
@@ -462,10 +514,10 @@ export class RequestHandler {
           executeRequest: true,
           executeResponse: false,
         });
-        if (beforeResult.earlyReturn) {
-          return mergeResponseHeaders(beforeResult.earlyReturn, beforeResult.response, false);
+        if (validationResult.earlyReturn) {
+          return mergeResponseHeaders(validationResult.earlyReturn, validationResult.response, false);
         }
-        fakeResponse = beforeResult.response;
+        fakeResponse = validationResult.response;
       }
 
       // 3. Call every actions
@@ -614,7 +666,7 @@ export class RequestHandler {
     hook: RouterTypes.MiddlewareDefinition,
     request: Request,
     response: Response,
-    methodArgs: MetadataTypes.Arg[],
+    methodArgs: MetadataTypes.Arg[] | undefined,
   ): Promise<Response | ResponseInit | null> {
     const hookResponse = await hook.middleware.onRequest?.(request, response, {
       middlewareArgs: hook.args,
@@ -658,7 +710,7 @@ export class RequestHandler {
     options: {
       request: Request;
       response: Response;
-      methodArgs: MetadataTypes.Arg[];
+      methodArgs: MetadataTypes.Arg[] | undefined;
       handlerResponse: unknown;
       executeRequest: boolean;
       executeResponse: boolean;

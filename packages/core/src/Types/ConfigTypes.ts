@@ -139,6 +139,13 @@ export namespace ConfigTypes {
         };
 
     /**
+     * Maximum request body size in bytes read by `@Body()`. Larger bodies are
+     * rejected with 413 Payload Too Large. `false` disables the limit.
+     * @default 1048576 (1 MiB)
+     */
+    bodyLimit?: number | false;
+
+    /**
      * Static server options
      */
     static?: {

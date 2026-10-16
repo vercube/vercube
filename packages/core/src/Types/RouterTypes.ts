@@ -72,5 +72,9 @@ export namespace RouterTypes {
      * Set by the request handler; defaults to cloning when absent.
      */
     cloneBody?: boolean;
+    /**
+     * Maximum request body size in bytes. No limit when absent.
+     */
+    bodyLimit?: number;
   };
 }

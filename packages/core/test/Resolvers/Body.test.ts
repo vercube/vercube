@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { PayloadTooLargeError } from '../../src/Errors/Http/PayloadTooLargeError';
+import { UnsupportedMediaTypeError } from '../../src/Errors/Http/UnsupportedMediaTypeError';
 import { resolveRequestBody } from '../../src/Resolvers/Body';
 import type { RouterTypes } from '../../src/Types/RouterTypes';
 
@@ -450,6 +452,110 @@ describe('resolveRequestBody', () => {
       expect(threw).toBe(false);
       expect(result).toBeInstanceOf(Promise);
       await expect(result).rejects.toThrow();
+    });
+  });
+
+  describe('content types', () => {
+    const post = (body: BodyInit, contentType?: string, headers: Record<string, string> = {}): Request =>
+      new Request('http://localhost/test', {
+        method: 'POST',
+        body,
+        headers: contentType ? { 'Content-Type': contentType, ...headers } : headers,
+      });
+
+    it('should parse urlencoded bodies, repeated keys become arrays', async () => {
+      const result = await resolveRequestBody(
+        createMockEvent(post('a=1&b=2&b=3&__proto__=x', 'application/x-www-form-urlencoded')),
+      );
+
+      expect(result).toEqual({ a: '1', b: ['2', '3'] });
+      expect(Object.getPrototypeOf(result)).toBe(Object.prototype);
+    });
+
+    it('should not treat Object.prototype members as existing urlencoded fields', async () => {
+      const result = await resolveRequestBody(createMockEvent(post('toString=1', 'application/x-www-form-urlencoded')));
+
+      expect(result).toEqual({ toString: '1' });
+    });
+
+    it('should return text bodies as is', async () => {
+      const result = await resolveRequestBody(createMockEvent(post('{not json', 'text/plain; charset=utf-8')));
+
+      expect(result).toBe('{not json');
+    });
+
+    it('should parse +json media types as JSON', async () => {
+      const result = await resolveRequestBody(createMockEvent(post('{"a":1}', 'application/merge-patch+json')));
+
+      expect(result).toEqual({ a: 1 });
+    });
+
+    it('should reject unsupported media types with 415', async () => {
+      await expect(resolveRequestBody(createMockEvent(post('<a/>', 'application/xml')))).rejects.toBeInstanceOf(
+        UnsupportedMediaTypeError,
+      );
+    });
+
+    it('should resolve undefined for an unsupported media type without a body', async () => {
+      const request = new Request('http://localhost/test', { method: 'GET', headers: { 'Content-Type': 'application/xml' } });
+
+      await expect(resolveRequestBody(createMockEvent(request))).resolves.toBeUndefined();
+    });
+  });
+
+  describe('body limit', () => {
+    const withLimit = (request: Request, bodyLimit: number): RouterTypes.RouterEvent => ({
+      ...createMockEvent(request),
+      bodyLimit,
+    });
+
+    it('should reject a declared Content-Length over the limit without reading', async () => {
+      const request = new Request('http://localhost/test', {
+        method: 'POST',
+        body: '{"a":1}',
+        headers: { 'Content-Type': 'application/json', 'Content-Length': '100' },
+      });
+
+      await expect(resolveRequestBody(withLimit(request, 10))).rejects.toBeInstanceOf(PayloadTooLargeError);
+    });
+
+    it('should reject a streamed body once it crosses the limit', async () => {
+      const chunk = new TextEncoder().encode('"' + 'a'.repeat(8) + '"');
+      const stream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(chunk);
+          controller.enqueue(chunk);
+          controller.close();
+        },
+      });
+      const request = new Request('http://localhost/test', {
+        method: 'POST',
+        body: stream,
+        headers: { 'Content-Type': 'application/json' },
+        duplex: 'half',
+      } as RequestInit);
+
+      await expect(resolveRequestBody(withLimit(request, 15))).rejects.toBeInstanceOf(PayloadTooLargeError);
+    });
+
+    it('should read a body within the limit', async () => {
+      const request = new Request('http://localhost/test', {
+        method: 'POST',
+        body: '{"a":1}',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      await expect(resolveRequestBody(withLimit(request, 100))).resolves.toEqual({ a: 1 });
+    });
+
+    it('should read a body with a declared length within the limit', async () => {
+      const request = new Request('http://localhost/test', {
+        method: 'POST',
+        body: '{"a":1}',
+        headers: { 'Content-Type': 'application/json', 'Content-Length': '7' },
+      });
+
+      await expect(resolveRequestBody(withLimit(request, 100))).resolves.toEqual({ a: 1 });
     });
   });
 });

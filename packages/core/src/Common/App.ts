@@ -4,6 +4,7 @@ import { RuntimeConfig } from '../Services/Config/RuntimeConfig';
 import { HttpServer } from '../Services/HttpServer/HttpServer';
 import { IntrospectionRegistry } from '../Services/Introspection/IntrospectionRegistry';
 import { PluginsRegistry } from '../Services/Plugins/PluginsRegistry';
+import { RequestHandler } from '../Services/Router/RequestHandler';
 import { Router } from '../Services/Router/Router';
 import { StaticRequestHandler } from '../Services/Router/StaticRequestHandler';
 import { ShutdownRegistry } from '../Services/Shutdown/ShutdownRegistry';
@@ -34,6 +35,9 @@ export class App {
 
   @Inject(StaticRequestHandler)
   private gStaticRequestHandler!: StaticRequestHandler;
+
+  @Inject(RequestHandler)
+  private gRequestHandler!: RequestHandler;
 
   @Inject(RuntimeConfig)
   private gRuntimeConfig!: RuntimeConfig;
@@ -98,6 +102,8 @@ export class App {
     await this.resolvePlugins();
 
     await this.gHttpServer.initialize(this.fConfig);
+
+    this.gRequestHandler.setBodyLimit(this.fConfig.server?.bodyLimit);
 
     if (this.fConfig.server?.static) {
       this.gStaticRequestHandler.initialize(this.fConfig.server?.static);
