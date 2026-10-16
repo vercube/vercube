@@ -79,6 +79,7 @@ export * from './Services/Introspection/Providers/RoutesProvider';
 export * from './Services/Telemetry/TelemetryRegistry';
 export * from './Services/Telemetry/TelemetryOptions';
 export * from './Services/Shutdown/ShutdownRegistry';
+export * from './Services/Startup/StartupRegistry';
 
 // Errors
 export * from './Errors/HttpError';

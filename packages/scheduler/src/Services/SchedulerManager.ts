@@ -2158,30 +2158,65 @@ export class SchedulerManager {
    *
    * @returns {void}
    */
+  /** The autostart in progress, shared by the init microtask and `app.onStart()`. */
+  private fAutoStart: Promise<void> | undefined;
+
+  /** Whether the application starts the scheduler from `app.onStart()`. */
+  private fStartsWithApp: boolean = false;
+
   @Init()
   protected init(): void {
     // so the CLI finds this manager in an application it imported
     registerManager(this);
 
     // decorators register their jobs while the container is being flushed,
-    // a microtask lands right after that
+    // a microtask lands right after that. An application that listens awaits
+    // the same start from `app.onStart()`, so a failure fails `listen()`; here
+    // it is only logged, as nothing could catch a rethrow.
     queueMicrotask(() => {
-      // read here rather than above: the plugin configures the manager after
-      // the container built it, so `autoStart: false` is not known yet there
-      // the CLI imports the application to run one job, without any timer
-      if (!this.fOptions.autoStart || readEnv(AUTOSTART_ENV) === 'false') {
+      // started by `app.onStart()` instead, in order with the other startup hooks
+      if (this.fStartsWithApp) {
         return;
       }
 
-      void this.start().catch((error) => {
-        this.gLogger?.error('Vercube/SchedulerManager::Failed to start', error);
-
-        // a cluster job without a usable store must stop the boot, not just log
-        if (error instanceof SchedulerError && error.operation === 'start') {
-          throw error;
-        }
-      });
+      this.autoStart().catch((error: unknown) => this.gLogger?.error('Vercube/SchedulerManager::Failed to start', error));
     });
+  }
+
+  /**
+   * Starts the scheduler unless autostart is off, once however often it is
+   * called. `SchedulerPlugin` awaits it from `app.onStart()`, so a cluster job
+   * without a usable store fails the boot before the server binds its port.
+   *
+   * @returns {Promise<void>} Resolves once started, or right away when autostart is off
+   * @throws {SchedulerError} When the scheduler cannot start
+   */
+  public autoStart(): Promise<void> {
+    // read here rather than in init(): the plugin configures the manager after
+    // the container built it, so `autoStart: false` is not known yet there. The
+    // CLI imports the application to run one job, without any timer.
+    if (!this.fOptions.autoStart || readEnv(AUTOSTART_ENV) === 'false') {
+      return Promise.resolve();
+    }
+
+    // shared while it runs, so the microtask and `app.onStart()` start once; a
+    // settled one is not kept, so a later call after `stop()` or a failure starts again
+    this.fAutoStart ??= this.start().finally(() => {
+      this.fAutoStart = undefined;
+    });
+
+    return this.fAutoStart;
+  }
+
+  /**
+   * Leaves the autostart to the application: `SchedulerPlugin` starts the
+   * scheduler from `app.onStart()`, in order with the other startup hooks,
+   * instead of from a microtask after the container flush.
+   *
+   * @returns {void}
+   */
+  public startWithApp(): void {
+    this.fStartsWithApp = true;
   }
 
   /**

@@ -66,6 +66,45 @@ describe('App', () => {
       expect(httpServer.listen).toHaveBeenCalled();
     });
 
+    it('should run start hooks before binding the port', async () => {
+      const httpServer = container.get(HttpServer);
+      const order: string[] = [];
+      vi.spyOn(httpServer, 'listen').mockImplementation(async () => void order.push('listen'));
+
+      app.onStart(() => void order.push('first'));
+      const remove = app.onStart(() => void order.push('removed'));
+      app.onStart(async () => void order.push('second'));
+      remove();
+
+      await app.listen();
+
+      expect(order).toEqual(['first', 'second', 'listen']);
+    });
+
+    it('should run the start hooks once, from start() and listen()', async () => {
+      vi.spyOn(container.get(HttpServer), 'listen').mockResolvedValue(undefined);
+      const hook = vi.fn();
+      app.onStart(hook);
+
+      await app.start();
+      await app.start();
+      await app.listen();
+
+      expect(hook).toHaveBeenCalledOnce();
+    });
+
+    it('should fail listen() and not bind the port when a start hook fails', async () => {
+      const httpServer = container.get(HttpServer);
+      vi.spyOn(httpServer, 'listen');
+
+      app.onStart(() => {
+        throw new Error('no store');
+      });
+
+      await expect(app.listen()).rejects.toThrow('no store');
+      expect(httpServer.listen).not.toHaveBeenCalled();
+    });
+
     it('should not bind a port when VERCUBE_LISTEN=0', async () => {
       const httpServer = container.get(HttpServer);
 
