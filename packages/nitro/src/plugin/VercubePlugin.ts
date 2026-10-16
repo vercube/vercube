@@ -83,6 +83,9 @@ export function vercubeNitro(options?: PluginOptions): NitroModule {
 
           app.container.flushQueue();
 
+          // Nitro serves the app without listen(), so the startup hooks run here
+          await app.start();
+
         });
       `;
 

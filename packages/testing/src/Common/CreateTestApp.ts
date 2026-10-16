@@ -109,6 +109,9 @@ export async function createTestApp(options: TestingTypes.TestAppOptions = {}): 
       },
     });
 
+    // a test app is driven without listen(), so the startup hooks run here
+    await booted.start();
+
     const testApp = new TestApp(booted, {
       logs,
       baseUrl: options.baseUrl ?? 'http://localhost',

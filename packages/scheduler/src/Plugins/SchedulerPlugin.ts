@@ -81,6 +81,7 @@ export class SchedulerPlugin extends BasePlugin<SchedulerTypes.PluginOptions> {
       app.onClose(() => app.container.get(SchedulerManager).close());
 
       // start before the server binds its port, so a scheduler that cannot start fails the boot
+      app.container.get(SchedulerManager).startWithApp();
       app.onStart(() => app.container.get(SchedulerManager).autoStart());
     }
 

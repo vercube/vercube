@@ -81,6 +81,18 @@ describe('App', () => {
       expect(order).toEqual(['first', 'second', 'listen']);
     });
 
+    it('should run the start hooks once, from start() and listen()', async () => {
+      vi.spyOn(container.get(HttpServer), 'listen').mockResolvedValue(undefined);
+      const hook = vi.fn();
+      app.onStart(hook);
+
+      await app.start();
+      await app.start();
+      await app.listen();
+
+      expect(hook).toHaveBeenCalledOnce();
+    });
+
     it('should fail listen() and not bind the port when a start hook fails', async () => {
       const httpServer = container.get(HttpServer);
       vi.spyOn(httpServer, 'listen');

@@ -1364,16 +1364,39 @@ describe('SchedulerManager', () => {
       expect(close).toHaveBeenCalled();
     });
 
+    it('starts again through autoStart() after a stop', async () => {
+      const { manager } = await createReplica({ clock });
+      manager.configure({ autoStart: true });
+
+      await manager.autoStart();
+      expect(manager.started).toBe(true);
+
+      await manager.stop();
+      await manager.autoStart();
+      expect(manager.started).toBe(true);
+    });
+
+    it('leaves the start to the application when it starts with the app', async () => {
+      const { manager } = await createReplica({ clock });
+      manager.configure({ autoStart: true });
+      manager.startWithApp();
+
+      (manager as unknown as { init: () => void }).init();
+      await Promise.resolve();
+
+      expect(manager.started).toBe(false);
+    });
+
     it('logs a failed automatic start', async () => {
       const { manager, logger } = await createReplica({ clock });
 
       vi.spyOn(manager, 'start').mockRejectedValue(new Error('boom'));
       manager.configure({ autoStart: true });
       (manager as unknown as { init: () => void }).init();
-      await Promise.resolve();
-      await Promise.resolve();
 
-      expect(logger.error).toHaveBeenCalledWith('Vercube/SchedulerManager::Failed to start', expect.any(Error));
+      await vi.waitFor(() =>
+        expect(logger.error).toHaveBeenCalledWith('Vercube/SchedulerManager::Failed to start', expect.any(Error)),
+      );
     });
 
     it('stops on Deno signals', async () => {

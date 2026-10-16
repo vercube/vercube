@@ -2158,8 +2158,11 @@ export class SchedulerManager {
    *
    * @returns {void}
    */
-  /** The autostart in progress or done, shared by the init microtask and `app.onStart()`. */
+  /** The autostart in progress, shared by the init microtask and `app.onStart()`. */
   private fAutoStart: Promise<void> | undefined;
+
+  /** Whether the application starts the scheduler from `app.onStart()`. */
+  private fStartsWithApp: boolean = false;
 
   @Init()
   protected init(): void {
@@ -2171,6 +2174,11 @@ export class SchedulerManager {
     // the same start from `app.onStart()`, so a failure fails `listen()`; here
     // it is only logged, as nothing could catch a rethrow.
     queueMicrotask(() => {
+      // started by `app.onStart()` instead, in order with the other startup hooks
+      if (this.fStartsWithApp) {
+        return;
+      }
+
       this.autoStart().catch((error: unknown) => this.gLogger?.error('Vercube/SchedulerManager::Failed to start', error));
     });
   }
@@ -2191,9 +2199,24 @@ export class SchedulerManager {
       return Promise.resolve();
     }
 
-    this.fAutoStart ??= this.start();
+    // shared while it runs, so the microtask and `app.onStart()` start once; a
+    // settled one is not kept, so a later call after `stop()` or a failure starts again
+    this.fAutoStart ??= this.start().finally(() => {
+      this.fAutoStart = undefined;
+    });
 
     return this.fAutoStart;
+  }
+
+  /**
+   * Leaves the autostart to the application: `SchedulerPlugin` starts the
+   * scheduler from `app.onStart()`, in order with the other startup hooks,
+   * instead of from a microtask after the container flush.
+   *
+   * @returns {void}
+   */
+  public startWithApp(): void {
+    this.fStartsWithApp = true;
   }
 
   /**

@@ -100,10 +100,13 @@ describe('SchedulerPlugin', () => {
     container.bind(Jobs);
     initializeContainer(container);
 
-    // the start lands in a microtask after the container flush
-    await Promise.resolve();
-
     const manager = container.get(SchedulerManager);
+
+    // the application starts it, not the microtask after the flush
+    await Promise.resolve();
+    expect(manager.started).toBe(false);
+
+    await startup.run();
 
     expect(manager.started).toBe(true);
 

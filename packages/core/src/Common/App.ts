@@ -51,6 +51,9 @@ export class App {
   @Inject(StartupRegistry)
   private gStartupRegistry!: StartupRegistry;
 
+  /** The run of the startup hooks, shared by `start()` and `listen()`. */
+  private fStarting: Promise<void> | undefined;
+
   /** Holds the initialization status of the application */
   private fIsInitialized: boolean = false;
 
@@ -160,7 +163,7 @@ export class App {
     // Services that start with the application, such as the scheduler. Before
     // the port is bound, so a failure stops the boot instead of surfacing once
     // the server is already serving.
-    await this.gStartupRegistry.run();
+    await this.start();
 
     // Imported by a tool that only needs the app (the scheduler CLI, the Vite
     // dev worker) or driven by a serverless platform through `fetch`.
@@ -175,6 +178,21 @@ export class App {
     this.fIsInitialized = true;
 
     this.installSignals();
+  }
+
+  /**
+   * Runs the startup hooks registered with {@link App.onStart}, once however
+   * often it is called. `listen()` calls it; an application driven without
+   * `listen()`, such as one embedded in Nitro, calls it after the container
+   * is initialized.
+   *
+   * @returns {Promise<void>} Resolves once every startup hook has run
+   * @throws {Error} The first hook failure
+   */
+  public start(): Promise<void> {
+    this.fStarting ??= this.gStartupRegistry.run();
+
+    return this.fStarting;
   }
 
   /**
