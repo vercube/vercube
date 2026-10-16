@@ -1,6 +1,6 @@
 import { BaseDecorator, createDecorator } from '@vercube/di';
 import { HTTPStatus } from '../../Types/HttpTypes';
-import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
+import { initializeMetadata, initializeMetadataMethod, setMetadataAction } from '../../Utils/Utils';
 import type { MetadataTypes } from '../../Types/MetadataTypes';
 
 /**
@@ -26,7 +26,8 @@ class StatusDecorator extends BaseDecorator<StatusDecoratorOptions, MetadataType
     initializeMetadata(this.prototype);
     const method = initializeMetadataMethod(this.prototype, this.propertyName);
 
-    method.actions.push({
+    setMetadataAction(method, {
+      key: this.options,
       handler: () => ({
         status: this.options.code,
       }),

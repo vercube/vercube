@@ -170,7 +170,8 @@ export class RequestHandler {
     const { beforeMiddlewares, afterMiddlewares } = this.buildMiddlewareChain([...middlewares, ...globalMiddlewares]);
 
     const args = method.args.length <= 1 ? method.args : [...method.args].sort((a, b) => a.idx - b.idx);
-    const actions = method.actions;
+    // a copy, so actions another application registers later never reach this route
+    const actions = [...method.actions];
 
     // `@Res()` hands the intermediate response to the handler and a custom
     // resolver receives the whole event, so both can mutate the response and

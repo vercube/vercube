@@ -47,6 +47,11 @@ export namespace MetadataTypes {
 
   export interface Action {
     handler: (req: Request, res: Response) => void | Response | ResponseInit;
+    /**
+     * Identifies the decorator application that added the action, so a second
+     * container initializing the same class replaces it instead of adding it again.
+     */
+    key?: unknown;
   }
 
   export interface Middleware<T = unknown, U = unknown> {

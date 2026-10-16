@@ -62,6 +62,24 @@ export function setMetadataArg(method: MetadataTypes.Method, arg: MetadataTypes.
 }
 
 /**
+ * Registers a response action in the method metadata.
+ * Replaces the action added by the same decorator application, identified by
+ * `action.key`, so decorators running once per container stay idempotent.
+ * @param {MetadataTypes.Method} method - Method metadata to register the action in.
+ * @param {MetadataTypes.Action} action - The action to register.
+ */
+export function setMetadataAction(method: MetadataTypes.Method, action: MetadataTypes.Action): void {
+  const index = action.key === undefined ? -1 : method.actions.findIndex((entry) => entry.key === action.key);
+
+  if (index === -1) {
+    method.actions.push(action);
+    return;
+  }
+
+  method.actions[index] = action;
+}
+
+/**
  * Registers a middleware in the metadata context.
  * Skips duplicates identified by target, middleware class and arguments.
  * @param {MetadataTypes.Ctx} meta - Metadata context to register the middleware in.
@@ -92,8 +110,12 @@ export function addMetadataMiddleware(
  * @param {any} target - The target to initialize metadata for.
  */
 export function initializeMetadata(target: any): MetadataTypes.Ctx {
-  if (!target.__metadata) {
-    target.__metadata = createMetadataCtx();
+  // A subclass sees its parent's metadata through the prototype chain: writing
+  // to it would leak the subclass decorators into the parent and every sibling.
+  // It gets a copy of its own instead, so it still inherits the parent's routes,
+  // middlewares and controller path.
+  if (!Object.hasOwn(target, '__metadata')) {
+    target.__metadata = target.__metadata ? copyMetadataCtx(target.__metadata) : createMetadataCtx();
   }
 
   if (!target.__metadata.__methods) {
@@ -105,6 +127,41 @@ export function initializeMetadata(target: any): MetadataTypes.Ctx {
   }
 
   return target.__metadata;
+}
+
+/**
+ * Copies a metadata context deep enough that changes to the copy never reach
+ * the original: every array and plain object is copied, one level into methods.
+ * @param {MetadataTypes.Ctx} ctx - The context to copy.
+ * @returns {MetadataTypes.Ctx} The copy.
+ */
+function copyMetadataCtx(ctx: MetadataTypes.Ctx): MetadataTypes.Ctx {
+  const copy = (value: unknown): unknown => {
+    if (Array.isArray(value)) {
+      return [...value];
+    }
+
+    if (value && typeof value === 'object' && Object.getPrototypeOf(value) === Object.prototype) {
+      return { ...value };
+    }
+
+    return value;
+  };
+
+  const result: Record<string, unknown> = {};
+
+  for (const [key, value] of Object.entries(ctx)) {
+    result[key] = copy(value);
+  }
+
+  result.__methods = Object.fromEntries(
+    Object.entries(ctx.__methods ?? {}).map(([name, method]) => [
+      name,
+      Object.fromEntries(Object.entries(method).map(([field, value]) => [field, copy(value)])),
+    ]),
+  );
+
+  return result as unknown as MetadataTypes.Ctx;
 }
 
 /**

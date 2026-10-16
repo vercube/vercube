@@ -1,11 +1,60 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { BaseDecorator, Container, Destroy, destroyContainer, Init, initializeContainer, Inject, InjectOptional } from '../src';
+import {
+  BaseDecorator,
+  Container,
+  createDecorator,
+  Destroy,
+  destroyContainer,
+  Init,
+  initializeContainer,
+  Inject,
+  InjectOptional,
+} from '../src';
 
 describe('[Framework][IOC] Decorators', () => {
   let container: Container;
 
   beforeEach(() => {
     container = new Container();
+  });
+
+  describe('inheritance', () => {
+    class Recorder extends BaseDecorator<{ calls: string[] }> {
+      public override created(): void {
+        this.options.calls.push(`${this.instance.constructor.name}.${this.propertyName}`);
+      }
+    }
+
+    const calls: string[] = [];
+    const Record = (): Function => createDecorator(Recorder, { calls });
+
+    class Parent {
+      @Record()
+      parent() {}
+    }
+
+    class ChildA extends Parent {
+      @Record()
+      a() {}
+    }
+
+    class ChildB extends Parent {
+      @Record()
+      b() {}
+    }
+
+    it('should keep subclass decorators out of the parent and its siblings', () => {
+      container.bind(Parent);
+      container.bind(ChildA);
+      container.bind(ChildB);
+      initializeContainer(container);
+
+      container.get(Parent);
+      container.get(ChildA);
+      container.get(ChildB);
+
+      expect(calls).toEqual(['Parent.parent', 'ChildA.parent', 'ChildA.a', 'ChildB.parent', 'ChildB.b']);
+    });
   });
 
   describe('@Init decorator', () => {
