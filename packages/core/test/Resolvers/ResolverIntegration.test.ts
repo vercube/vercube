@@ -1,5 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { Controller, createApp, Get, Header, Headers, MultipartFormData, Param, Post } from '../../src';
+import { z } from 'zod';
+import {
+  Controller,
+  createApp,
+  Get,
+  Header,
+  Headers,
+  MultipartFormData,
+  Param,
+  Post,
+  QueryParam,
+  QueryParams,
+  StandardSchemaValidationProvider,
+  ValidationProvider,
+} from '../../src';
 
 @Controller('/resolvers')
 class ResolverController {
@@ -16,6 +30,22 @@ class ResolverController {
   @Post('/upload')
   public upload(@MultipartFormData() form: { title: string; file: File }) {
     return { title: form.title, file: form.file.name };
+  }
+}
+
+@Controller('/query')
+class QueryController {
+  @Get('/one')
+  public one(@QueryParam({ name: 'tag', array: true, validationSchema: z.array(z.string()).min(1) }) tags: string[]) {
+    return { tags };
+  }
+
+  @Get('/all')
+  public all(
+    @QueryParams({ arrays: ['tag'], validationSchema: z.object({ tag: z.array(z.string()), page: z.coerce.number() }) })
+    query: unknown,
+  ) {
+    return query;
   }
 }
 
@@ -63,5 +93,23 @@ describe('resolvers in an application', () => {
         app.container.flushQueue(),
       ),
     ).rejects.toThrow("@Param('nmae') on TypoController.get is not a parameter of the route path /typo/:id");
+  });
+
+  it('should resolve repeated query parameters as validated arrays', async () => {
+    const app = await createApp({
+      cfg: { requestLogging: false },
+      setup: (app) => {
+        app.container.bind(ValidationProvider, StandardSchemaValidationProvider);
+        app.container.bind(QueryController);
+      },
+    });
+
+    const one = await app.fetch(new Request('http://localhost/query/one?tag=a&tag=b'));
+    expect(await one.json()).toEqual({ tags: ['a', 'b'] });
+
+    const all = await app.fetch(new Request('http://localhost/query/all?tag=a&page=2&tag=b&page=3'));
+    expect(await all.json()).toEqual({ tag: ['a', 'b'], page: 2 });
+
+    expect((await app.fetch(new Request('http://localhost/query/one'))).status).toBe(400);
   });
 });

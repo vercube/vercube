@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveQueryParam, resolveQueryParams } from '../../src/Resolvers/Query';
+import { resolveQueryParam, resolveQueryParamAll, resolveQueryParams } from '../../src/Resolvers/Query';
 import type { RouterTypes } from '../../src/Types/RouterTypes';
 
 describe('Query Resolvers', () => {
@@ -228,13 +228,35 @@ describe('Query Resolvers', () => {
       });
     });
 
-    it('should handle multiple values for the same parameter (keeps last)', () => {
+    it('should keep the first value of a repeated parameter, like @QueryParam', () => {
       const event = createMockEvent('http://localhost/test?tags=javascript&tags=typescript&tags=node');
+
+      expect(resolveQueryParams(event)).toEqual({ tags: 'javascript' });
+      expect(resolveQueryParam('tags', event)).toBe('javascript');
+    });
+
+    it('should collect the listed keys into arrays', () => {
+      const event = createMockEvent('http://localhost/test?tags=javascript&page=1&tags=node&page=2&one=x');
+
+      expect(resolveQueryParams(event, new Set(['tags', 'one']))).toEqual({
+        tags: ['javascript', 'node'],
+        page: '1',
+        one: ['x'],
+      });
+    });
+
+    it('should never write to the prototype', () => {
+      const event = createMockEvent('http://localhost/test?__proto__=x&constructor=y&a=1');
       const result = resolveQueryParams(event);
 
-      expect(result).toEqual({
-        tags: 'node',
-      });
+      expect(result).toEqual({ a: '1' });
+      expect(Object.getPrototypeOf(result)).toBe(Object.prototype);
+    });
+
+    it('should resolve every value of a parameter', () => {
+      expect(resolveQueryParamAll('tag', createMockEvent('http://localhost/test?tag=a&x=1&tag=b'))).toEqual(['a', 'b']);
+      expect(resolveQueryParamAll('tag', createMockEvent('http://localhost/test'))).toEqual([]);
+      expect(resolveQueryParamAll('tag', createMockEvent('http://localhost/test?x=1'))).toEqual([]);
     });
 
     it('should handle empty query parameter values', () => {

@@ -1,7 +1,7 @@
 import { resolveRequestBody } from '../../Resolvers/Body';
 import { getRequestHeader, getRequestHeaders } from '../../Resolvers/Headers';
 import { resolveMultipartFormData } from '../../Resolvers/MultipartFormData';
-import { resolveQueryParam, resolveQueryParams } from '../../Resolvers/Query';
+import { resolveQueryParam, resolveQueryParamAll, resolveQueryParams } from '../../Resolvers/Query';
 import { resolveRouterParam } from '../../Resolvers/RouterParam';
 import type { MetadataTypes } from '../../Types/MetadataTypes';
 import type { RouterTypes } from '../../Types/RouterTypes';
@@ -67,10 +67,16 @@ export class MetadataResolver {
       }
       case 'query-param': {
         const name = arg.data?.name ?? '';
+
+        if (arg.data?.array) {
+          return (event) => resolveQueryParamAll(name, event);
+        }
+
         return (event) => resolveQueryParam(name, event);
       }
       case 'query-params': {
-        return (event) => resolveQueryParams(event);
+        const arrays: ReadonlySet<string> = new Set((arg.data?.arrays as string[] | undefined) ?? []);
+        return (event) => resolveQueryParams(event, arrays);
       }
       case 'header': {
         const name = arg.data?.name ?? '';
