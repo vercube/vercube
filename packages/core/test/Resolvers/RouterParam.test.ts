@@ -80,7 +80,7 @@ describe('RouterParam Resolver', () => {
       expect(result).toBe('José María');
     });
 
-    it('should return null for non-existent parameter', () => {
+    it('should return undefined for non-existent parameter', () => {
       const event = createMockEvent({
         id: '123',
         name: 'John',
@@ -88,23 +88,23 @@ describe('RouterParam Resolver', () => {
 
       const result = resolveRouterParam('nonexistent', event);
 
-      expect(result).toBeNull();
+      expect(result).toBeUndefined();
     });
 
-    it('should return null when params object is undefined', () => {
+    it('should return undefined when params object is undefined', () => {
       const event = createMockEvent();
 
       const result = resolveRouterParam('id', event);
 
-      expect(result).toBeNull();
+      expect(result).toBeUndefined();
     });
 
-    it('should return null when params object is empty', () => {
+    it('should return undefined when params object is empty', () => {
       const event = createMockEvent({});
 
       const result = resolveRouterParam('id', event);
 
-      expect(result).toBeNull();
+      expect(result).toBeUndefined();
     });
 
     it('should handle empty string parameter values', () => {

@@ -28,14 +28,17 @@ class MultipartFormDataDecorator extends BaseDecorator<{}, MetadataTypes.Metadat
 
 /**
  * Decorator function that marks a parameter as multipart/form-data request body.
- * This decorator will automatically parse incoming multipart form data
+ * The body is parsed into an object of its fields: text fields are strings,
+ * uploads are `File`s and a repeated field becomes an array. A request with
+ * another content type is rejected with 415, a body over `server.bodyLimit`
+ * with 413.
  *
  * @decorator
  * @returns {Function} A decorator function that can be applied to method parameters
  *
  * @example
  * class UserController {
- *   uploadFile(@MultipartFormData() formData: MyData) {
+ *   uploadFile(@MultipartFormData() form: { title: string; file: File }) {
  *     // Handle multipart form data
  *   }
  * }

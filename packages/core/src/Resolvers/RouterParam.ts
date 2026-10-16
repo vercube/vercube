@@ -10,18 +10,18 @@ import type { RouterTypes } from '../Types/RouterTypes';
  *
  * @param param - The parameter name to resolve from the router event
  * @param event - The router event object containing parameters
- * @returns The decoded parameter value if it exists, null otherwise
+ * @returns The decoded parameter value if it exists, undefined otherwise
  * @example
  * ```typescript
  * const value = resolveRouterParam('id', routerEvent);
- * // Returns the 'id' parameter value from routerEvent.params or null
+ * // Returns the 'id' parameter value from routerEvent.params or undefined
  * ```
  */
-export function resolveRouterParam(param: string, event: RouterTypes.RouterEvent): string | null {
+export function resolveRouterParam(param: string, event: RouterTypes.RouterEvent): string | undefined {
   const value = event.params?.[param];
 
   if (value === undefined) {
-    return null;
+    return undefined;
   }
 
   if (!value.includes('%')) {

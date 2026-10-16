@@ -218,7 +218,10 @@ export class RequestHandler {
       // It is only skipped where nothing else can possibly read the body: a
       // route with no middlewares that reads the body exactly once and does not
       // receive the raw request.
-      cloneBody: !simple || args.some((arg) => arg.type === 'request') || args.filter((arg) => arg.type === 'body').length > 1,
+      cloneBody:
+        !simple ||
+        args.some((arg) => arg.type === 'request') ||
+        args.filter((arg) => arg.type === 'body' || arg.type === 'multipart-form-data').length > 1,
     };
   }
 

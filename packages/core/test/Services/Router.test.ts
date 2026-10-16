@@ -55,6 +55,31 @@ describe('Router', () => {
       }).not.toThrow();
     });
 
+    it('should reject a @Param that is not a parameter of the path', () => {
+      router.initialize();
+
+      const route = (path: string, ...names: string[]): RouterTypes.Route => ({
+        method: 'GET',
+        path,
+        handler: {
+          controller: 'UserController',
+          propertyName: 'get',
+          args: names.map((name, idx) => ({ idx, type: 'param', data: { name } })),
+        } as unknown as RouterTypes.RouterHandler,
+      });
+
+      expect(() => router.addRoute(route('/p/:id', 'nope'))).toThrow(
+        "@Param('nope') on UserController.get is not a parameter of the route path /p/:id",
+      );
+      expect(() => router.addRoute(route('/p/:id/c/:commentId', 'id', 'commentId'))).not.toThrow();
+      expect(() => router.addRoute(route('/files/**:rest', 'rest'))).not.toThrow();
+      expect(() => router.addRoute(route('/files/:name.:ext', 'name', 'ext'))).not.toThrow();
+      // unnamed wildcards are exposed by position, `**` also as `_`
+      expect(() => router.addRoute(route('/a/*/b/*', '0', '1'))).not.toThrow();
+      expect(() => router.addRoute(route('/all/**', '_'))).not.toThrow();
+      expect(() => router.addRoute(route('/named/**:rest', '_'))).toThrow(/not a parameter/);
+    });
+
     it('should throw error when router is not initialized', () => {
       const route: RouterTypes.Route = {
         method: 'GET',
