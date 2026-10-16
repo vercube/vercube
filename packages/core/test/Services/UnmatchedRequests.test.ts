@@ -126,5 +126,7 @@ describe('requests no route handles', () => {
 
     const stale = await app.fetch(new Request('http://localhost/file.txt', { headers: { 'if-none-match': '"other"' } }));
     expect(stale.status).toBe(200);
+    // read the body, so the file is not opened after the directory is gone
+    expect(await stale.text()).toBe('hello');
   });
 });
