@@ -132,10 +132,11 @@ export class SchemaRegistry {
             continue;
           }
 
-          operations.set(operation, name);
-
           new OpenApiGeneratorV3([...componentDefinitions, { type: 'route', route }]).generateDocument(config);
           registry.registerPath(route);
+
+          // only once it is in the document, so a route that failed does not block another one
+          operations.set(operation, name);
         } catch (error) {
           warn(`the route is left out of the schema, ${error instanceof Error ? error.message : String(error)}`);
         }

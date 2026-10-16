@@ -38,6 +38,24 @@ class CorrectnessController {
   }
 }
 
+@Controller('/b')
+class BrokenFirstController {
+  @Get('/x')
+  @Schema({ ...ok, request: { query: { '~standard': { version: 1, vendor: 'x', validate: () => ({ value: 1 }) } } as any } })
+  public broken() {
+    return {};
+  }
+}
+
+@Controller('/b')
+class WorkingSecondController {
+  @Get('/x')
+  @Schema(ok)
+  public working() {
+    return {};
+  }
+}
+
 @Controller('/c')
 class DuplicateController {
   @Get('/headers')
@@ -59,6 +77,8 @@ async function generate() {
   app.container.expand((container) => {
     container.bind(CorrectnessController);
     container.bind(DuplicateController);
+    container.bind(BrokenFirstController);
+    container.bind(WorkingSecondController);
   });
 
   return { schema: await app.container.get(SchemaRegistry).generateSchema(), warn };
@@ -97,5 +117,11 @@ describe('schema document correctness', () => {
       'SchemaRegistry',
       expect.stringContaining('GET /c/headers is already documented by CorrectnessController.headers'),
     );
+  });
+
+  it('should document a route whose earlier duplicate failed to generate', async () => {
+    const { schema } = await generate();
+
+    expect(schema.paths['/b/x']?.get).toBeDefined();
   });
 });
