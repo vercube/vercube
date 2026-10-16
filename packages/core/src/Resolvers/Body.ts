@@ -149,7 +149,9 @@ async function readLimited(request: Request, limit: number): Promise<string> {
     size += value.byteLength;
 
     if (size > limit) {
-      await reader.cancel();
+      // not awaited: a branch of a cloned body only settles its cancel once the
+      // other branch is cancelled too, which nothing here would ever do
+      reader.cancel().catch(() => undefined);
       throw new PayloadTooLargeError('Request body is too large');
     }
 

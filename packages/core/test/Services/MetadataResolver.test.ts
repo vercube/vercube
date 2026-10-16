@@ -248,10 +248,15 @@ describe('MetadataResolver', () => {
 
     it('should resolve multipart-form-data type', async () => {
       const args: MetadataTypes.Arg[] = [{ idx: 0, type: 'multipart-form-data' }];
+      const form = new FormData();
+      form.append('title', 'hello');
 
-      const result = await resolver.resolveArgs(args, mockEvent);
+      const result = await resolver.resolveArgs(args, {
+        ...mockEvent,
+        request: new Request('http://localhost/upload', { method: 'POST', body: form }),
+      });
 
-      expect(result[0].resolved).toBeNull();
+      expect(result[0].resolved).toEqual({ title: 'hello' });
     });
 
     it('should resolve query-param type', async () => {
@@ -547,7 +552,7 @@ describe('MetadataResolver', () => {
     });
 
     it('should compile a headers resolver', () => {
-      const headers = new Headers({ accept: '*/*' });
+      const headers = { accept: '*/*' };
       vi.mocked(getRequestHeaders).mockReturnValue(headers);
 
       expect(compileOne({ type: 'headers' })(mockEvent)).toBe(headers);
@@ -571,7 +576,6 @@ describe('MetadataResolver', () => {
     });
 
     it('should compile the not-yet-supported types to null', () => {
-      expect(compileOne({ type: 'multipart-form-data' })(mockEvent)).toBeNull();
       expect(compileOne({ type: 'session' })(mockEvent)).toBeNull();
     });
 

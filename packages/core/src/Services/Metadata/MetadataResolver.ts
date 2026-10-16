@@ -1,5 +1,6 @@
 import { resolveRequestBody } from '../../Resolvers/Body';
 import { getRequestHeader, getRequestHeaders } from '../../Resolvers/Headers';
+import { resolveMultipartFormData } from '../../Resolvers/MultipartFormData';
 import { resolveQueryParam, resolveQueryParams } from '../../Resolvers/Query';
 import { resolveRouterParam } from '../../Resolvers/RouterParam';
 import type { MetadataTypes } from '../../Types/MetadataTypes';
@@ -62,8 +63,7 @@ export class MetadataResolver {
         return (event) => resolveRequestBody(event);
       }
       case 'multipart-form-data': {
-        // TODO: add support for multipart/form-data
-        return () => null;
+        return (event) => resolveMultipartFormData(event);
       }
       case 'query-param': {
         const name = arg.data?.name ?? '';

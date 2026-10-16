@@ -12,8 +12,8 @@ class EchoController {
   }
 
   @Get('/headers')
-  public headers(@Headers() headers: globalThis.Headers, @Header('x-one') one: string): unknown {
-    return { one, two: headers.get('x-two'), authorization: headers.get('authorization'), cookie: headers.get('cookie') };
+  public headers(@Headers() headers: Record<string, string>, @Header('x-one') one: string): unknown {
+    return { one, two: headers['x-two'], authorization: headers.authorization, cookie: headers.cookie };
   }
 
   @Post('/json')

@@ -50,8 +50,8 @@ class ResponseController {
   }
 
   @Get('/me')
-  public me(@Header('cookie') cookie: string | null): unknown {
-    return { cookie };
+  public me(@Header('cookie') cookie?: string): unknown {
+    return { cookie: cookie ?? null };
   }
 
   @Sse('/events')

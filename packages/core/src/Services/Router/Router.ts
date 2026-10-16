@@ -127,6 +127,8 @@ export class Router {
 
     const method = route.method.toUpperCase();
 
+    assertParamsInPath(route);
+
     // Resolved once at registration time so nothing on the request path has to
     // build a span name or look the route template back up. `@Get` registers
     // GET and HEAD through two separate `prepareHandler` calls, so this never
@@ -284,6 +286,40 @@ export class Router {
  */
 function isStaticPath(path: string): boolean {
   return !path.includes(':') && !path.includes('*');
+}
+
+/**
+ * Throws when a handler reads a `@Param` the route path does not declare, so a
+ * typo fails at boot instead of resolving to `undefined` on every request.
+ *
+ * Named parameters are `:name` and `**:name`. An unnamed `*` is exposed as
+ * `0`, `1`, ... and an unnamed `**` additionally as `_`.
+ *
+ * @param {RouterTypes.Route} route - The route being registered
+ * @returns {void}
+ * @throws {Error} When a `@Param` name is not a parameter of the path
+ */
+function assertParamsInPath(route: RouterTypes.Route): void {
+  const args = route.handler?.args;
+
+  if (!args?.some((arg) => arg.type === 'param')) {
+    return;
+  }
+
+  const names = new Set([...route.path.matchAll(/:(\w+)/g)].map((match) => match[1]));
+  const unnamedWildcard = /\*(?!\*?:)/.test(route.path);
+
+  for (const arg of args) {
+    const name = arg.type === 'param' ? arg.data?.name : undefined;
+
+    if (name === undefined || names.has(name) || (unnamedWildcard && /^(\d+|_)$/.test(name))) {
+      continue;
+    }
+
+    const handler = `${route.handler.controller ?? 'Controller'}.${route.handler.propertyName}`;
+
+    throw new Error(`@Param('${name}') on ${handler} is not a parameter of the route path ${route.path}`);
+  }
 }
 
 /**
