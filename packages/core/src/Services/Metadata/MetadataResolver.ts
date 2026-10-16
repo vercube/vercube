@@ -230,6 +230,7 @@ export class MetadataResolver {
     // process, so it only ever records the path `@Controller()` declares. A path
     // set for this application with `setControllerPath()` stays in this resolver.
     metadata.__methods[propertyName].url = join(declared);
+    metadata.__methods[propertyName].path = rawPath;
 
     return join(this.fControllerPaths.get(instance.constructor) ?? declared);
   }

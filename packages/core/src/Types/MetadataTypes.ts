@@ -20,6 +20,12 @@ export namespace MetadataTypes {
     req: Request | null;
     res: Response | null;
     url: string | null;
+    /**
+     * The path the route decorator declares, without the controller path, so
+     * the full path can be rebuilt for an application that moved the
+     * controller with `setControllerPath()`.
+     */
+    path?: string;
     method: string | null;
     args: Arg[];
     actions: Action[];
