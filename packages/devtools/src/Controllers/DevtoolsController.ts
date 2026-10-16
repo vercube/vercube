@@ -75,6 +75,15 @@ export class DevtoolsController {
   @Inject(DevtoolsFrameBus)
   private readonly gBus!: DevtoolsFrameBus;
 
+  /** Streams currently open. */
+  private fStreams: number = 0;
+
+  /** Removes the invalidate listener shared by every open stream. */
+  private fUnwatch: (() => void) | undefined;
+
+  /** Ping timer shared by every open stream. */
+  private fPing: ReturnType<typeof setInterval> | undefined;
+
   /**
    * Serves the single-file devtools UI.
    *
@@ -282,6 +291,50 @@ export class DevtoolsController {
   }
 
   /**
+   * Starts what every stream shares when the first one connects. The invalidate
+   * listener and the ping publish to the bus, which reaches every stream, so
+   * one of each serves them all; one per stream sent N copies to N tabs.
+   *
+   * @returns {void}
+   */
+  private connectStream(): void {
+    if (this.fStreams++ > 0) {
+      return;
+    }
+
+    // Structural sections are never pushed in full: a change only announces
+    // itself, and the UI re-fetches the section it actually has open.
+    this.fUnwatch = this.gIntrospection.onInvalidate((id, revision) => {
+      this.gBus.publish<DevtoolsProtocol.InvalidatePayload>('introspect', { id, revision });
+    });
+
+    this.fPing = setInterval(() => {
+      this.gBus.publish<DevtoolsProtocol.ControlPayload>('control', { type: 'ping' });
+    }, PING_INTERVAL_MS);
+
+    this.fPing.unref?.();
+  }
+
+  /**
+   * Stops what every stream shares once the last one disconnects.
+   *
+   * @returns {void}
+   */
+  private disconnectStream(): void {
+    if (--this.fStreams > 0) {
+      return;
+    }
+
+    this.fUnwatch?.();
+    this.fUnwatch = undefined;
+
+    if (this.fPing) {
+      clearInterval(this.fPing);
+      this.fPing = undefined;
+    }
+  }
+
+  /**
    * Streams frames to a connected UI.
    *
    * @returns A server-sent-events response
@@ -289,8 +342,7 @@ export class DevtoolsController {
   @Get('/api/stream')
   public stream(): Response {
     let unsubscribe: (() => void) | undefined;
-    let unwatch: (() => void) | undefined;
-    let ping: ReturnType<typeof setInterval> | undefined;
+    let connected = false;
 
     const stream = new ReadableStream<Uint8Array>({
       start: (controller) => {
@@ -317,26 +369,17 @@ export class DevtoolsController {
           } satisfies DevtoolsProtocol.ControlPayload,
         });
 
-        // Structural sections are never pushed in full: a change only announces
-        // itself, and the UI re-fetches the section it actually has open.
-        unwatch = this.gIntrospection.onInvalidate((id, revision) => {
-          this.gBus.publish<DevtoolsProtocol.InvalidatePayload>('introspect', { id, revision });
-        });
+        this.connectStream();
+        connected = true;
 
         this.gTelemetry.metrics.ensureRunning();
-
-        ping = setInterval(() => {
-          this.gBus.publish<DevtoolsProtocol.ControlPayload>('control', { type: 'ping' });
-        }, PING_INTERVAL_MS);
-
-        ping.unref?.();
       },
       cancel: () => {
         unsubscribe?.();
-        unwatch?.();
 
-        if (ping) {
-          clearInterval(ping);
+        if (connected) {
+          connected = false;
+          this.disconnectStream();
         }
       },
     });
