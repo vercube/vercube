@@ -8,6 +8,8 @@ const mockStorage = {
   getKeys: vi.fn().mockResolvedValue(['key1', 'key2']),
   clear: vi.fn(),
   removeItem: vi.fn(),
+  // only `mystore` is mounted in nitro.config.ts
+  getMount: vi.fn((name: string) => ({ base: name === 'mystore' ? 'mystore:' : '' })),
 };
 
 vi.mock('nitro/storage', () => ({
@@ -55,10 +57,19 @@ describe('NitroStorageManager', () => {
       expect(useStorage).toHaveBeenCalledWith('mystore');
     });
 
-    it('should use empty string as default name', () => {
+    it('should use the root storage without a name', () => {
       const manager = makeManager();
       manager.getStorage();
-      expect(useStorage).toHaveBeenCalledWith('');
+      expect(useStorage).toHaveBeenCalledWith();
+      expect(useStorage).not.toHaveBeenCalledWith('');
+    });
+
+    it('should use the root storage for a name nitro.config.ts did not mount', () => {
+      const manager = makeManager();
+      manager.getStorage('default');
+      manager.getStorage('typo');
+      expect(useStorage).not.toHaveBeenCalledWith('default');
+      expect(useStorage).not.toHaveBeenCalledWith('typo');
     });
 
     it('should warn and return 0 for size()', () => {
@@ -159,13 +170,22 @@ describe('NitroStorageManager', () => {
   });
 
   describe('useStorage fallback', () => {
-    it('should fall back to default useStorage when named storage returns falsy', () => {
-      vi.mocked(useStorage).mockReturnValueOnce(null as any);
+    it('should wait for writes, deletes and clears to finish', async () => {
+      const done: string[] = [];
+      const slow = (name: string) => async () => {
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        done.push(name);
+      };
+      mockStorage.setItem.mockImplementationOnce(slow('set'));
+      mockStorage.removeItem.mockImplementationOnce(slow('delete'));
+      mockStorage.clear.mockImplementationOnce(slow('clear'));
       const manager = makeManager();
-      const storage = manager.getStorage('nonexistent');
-      expect(storage).toBeDefined();
-      // second call (fallback) was made with no args
-      expect(useStorage).toHaveBeenCalledTimes(2);
+
+      await manager.setItem({ key: 'k', value: 1 });
+      await manager.deleteItem({ key: 'k' });
+      await manager.clear({});
+
+      expect(done).toEqual(['set', 'delete', 'clear']);
     });
   });
 

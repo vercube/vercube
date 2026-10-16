@@ -1,7 +1,7 @@
 import { Container, initializeContainer } from '@vercube/di';
 import { Logger } from '@vercube/logger';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { Storage, StorageManager } from '../src';
+import { Storage, StorageError, StorageManager } from '../src';
 import { MemoryStorage } from '../src/Drivers/MemoryStorage';
 import { S3Storage } from '../src/Drivers/S3Storage';
 import { ErrorStorage, TestStorage } from './Utils/Mock.mock';
@@ -181,12 +181,10 @@ describe('StorageManager', () => {
         expect(result[2]).toEqual({ key: 'value' });
       });
 
-      it('should return empty array when storage is undefined', async () => {
-        const result = await storageManager.getItems({
-          storage: 'nonExistentStorage',
-          keys: ['testKey1', 'testKey2'],
-        });
-        expect(result).toEqual([]);
+      it('should throw for a storage that is not mounted', async () => {
+        await expect(storageManager.getItems({ storage: 'nonExistentStorage', keys: ['testKey1'] })).rejects.toThrow(
+          'Storage "nonExistentStorage" is not mounted',
+        );
       });
 
       it('should return items from custom storage', async () => {
@@ -316,12 +314,10 @@ describe('StorageManager', () => {
         expect(result).toBe(false);
       });
 
-      it('should return false when storage is undefined', async () => {
-        const result = await storageManager.hasItem({
-          storage: 'nonExistentStorage',
-          key: 'testKey',
-        });
-        expect(result).toBe(false);
+      it('should throw for a storage that is not mounted', async () => {
+        await expect(storageManager.hasItem({ storage: 'nonExistentStorage', key: 'testKey' })).rejects.toBeInstanceOf(
+          StorageError,
+        );
       });
     });
 
@@ -348,11 +344,8 @@ describe('StorageManager', () => {
         expect(result.length).toBe(2);
       });
 
-      it('should return empty array when storage is undefined', async () => {
-        const result = await storageManager.getKeys({
-          storage: 'nonExistentStorage',
-        });
-        expect(result).toEqual([]);
+      it('should throw for a storage that is not mounted', async () => {
+        await expect(storageManager.getKeys({ storage: 'nonExistentStorage' })).rejects.toBeInstanceOf(StorageError);
       });
     });
 
@@ -378,12 +371,8 @@ describe('StorageManager', () => {
         await expect(storageManager.clear({})).resolves.not.toThrow();
       });
 
-      it('should not throw when storage is undefined', async () => {
-        await expect(
-          storageManager.clear({
-            storage: 'nonExistentStorage',
-          }),
-        ).resolves.not.toThrow();
+      it('should throw for a storage that is not mounted', async () => {
+        await expect(storageManager.clear({ storage: 'nonExistentStorage' })).rejects.toBeInstanceOf(StorageError);
       });
     });
 
@@ -408,11 +397,8 @@ describe('StorageManager', () => {
         expect(result).toBe(2);
       });
 
-      it('should return 0 when storage is undefined', async () => {
-        const result = await storageManager.size({
-          storage: 'nonExistentStorage',
-        });
-        expect(result).toBe(0);
+      it('should throw for a storage that is not mounted', async () => {
+        await expect(storageManager.size({ storage: 'nonExistentStorage' })).rejects.toBeInstanceOf(StorageError);
       });
     });
   });
@@ -458,6 +444,74 @@ describe('StorageManager', () => {
       // add delay to ensure logger is called
       await new Promise((resolve) => setTimeout(resolve, 0));
       expect(logger.error).toHaveBeenCalled();
+    });
+  });
+
+  describe('mount lifecycle', () => {
+    const boot = async () => {
+      const container = new Container();
+      container.bind(StorageManager);
+      container.bindInstance(Logger, logger);
+      const manager = container.get(StorageManager);
+      initializeContainer(container);
+      // let the @Init() run
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      return manager;
+    };
+
+    it('should fail every operation on a storage that failed to initialize', async () => {
+      const container = new Container();
+      container.bind(StorageManager);
+      container.bindInstance(Logger, logger);
+      const manager = container.get(StorageManager);
+
+      await manager.mount({ name: 'broken', storage: ErrorStorage });
+      initializeContainer(container);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      await expect(manager.setItem({ storage: 'broken', key: 'k', value: 1 })).rejects.toThrow(
+        'Failed to initialize storage "broken"',
+      );
+      await expect(manager.getItem({ storage: 'broken', key: 'k' })).rejects.toMatchObject({ operation: 'initialize' });
+    });
+
+    it('should initialize a storage mounted after startup', async () => {
+      const manager = await boot();
+
+      await manager.mount({ name: 'late', storage: TestStorage });
+
+      expect(manager.getStorage('late')!.initialize).toHaveBeenCalled();
+    });
+
+    it('should reject mounting a storage that fails to initialize after startup', async () => {
+      const manager = await boot();
+
+      await expect(manager.mount({ name: 'late', storage: ErrorStorage })).rejects.toBeInstanceOf(StorageError);
+      await expect(manager.hasItem({ storage: 'late', key: 'k' })).rejects.toBeInstanceOf(StorageError);
+    });
+
+    it('should wait for the driver to clear', async () => {
+      const manager = await boot();
+      await manager.mount({ name: 'slow', storage: TestStorage });
+      let cleared = false;
+      vi.spyOn(manager.getStorage('slow')!, 'clear').mockImplementation(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        cleared = true;
+      });
+
+      await manager.clear({ storage: 'slow' });
+
+      expect(cleared).toBe(true);
+    });
+
+    it('should throw for writes and reads on a storage that is not mounted', async () => {
+      const manager = await boot();
+
+      await expect(manager.setItem({ storage: 'sesions', key: 'k', value: 1 })).rejects.toThrow(
+        'Storage "sesions" is not mounted',
+      );
+      await expect(manager.getItem({ storage: 'sesions', key: 'k' })).rejects.toBeInstanceOf(StorageError);
+      await expect(manager.deleteItem({ storage: 'sesions', key: 'k' })).rejects.toBeInstanceOf(StorageError);
     });
   });
 });

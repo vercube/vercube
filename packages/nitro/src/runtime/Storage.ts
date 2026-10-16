@@ -28,8 +28,13 @@ export class NitroStorageManager extends StorageManager {
    * @returns {Storage | undefined} The storage instance if found, undefined otherwise
    */
   public getStorage(name: string = ''): Storage | undefined {
-    // if named storage don't exists - use a default one (nitro.config.ts)
-    const storage = useStorage(name) || useStorage();
+    // `useStorage(name)` always returns a view prefixed with `name:`, so an
+    // unknown name would write prefixed keys into the root storage. Only a
+    // name nitro.config.ts mounted gets its own view, anything else - including
+    // `default` - uses the root storage.
+    const root = useStorage();
+    const mounted = name !== '' && name !== 'default' && root.getMount(name).base !== '';
+    const storage = mounted ? useStorage(name) : root;
 
     return {
       getItem: storage.getItem.bind(storage),
@@ -56,7 +61,7 @@ export class NitroStorageManager extends StorageManager {
    */
   public async getItem<T = unknown>({ storage, key }: StorageTypes.GetItem): Promise<T | null> {
     const storageInstance = this.getStorage(storage);
-    return storageInstance?.getItem<T>(key) ?? null;
+    return (await storageInstance?.getItem<T>(key)) ?? null;
   }
 
   /**
@@ -83,7 +88,7 @@ export class NitroStorageManager extends StorageManager {
    */
   public async setItem<T = unknown, U = unknown>({ storage, key, value, options }: StorageTypes.SetItem<T, U>): Promise<void> {
     const storageInstance = this.getStorage(storage);
-    storageInstance?.setItem<T, U>(key, value, options);
+    await storageInstance?.setItem<T, U>(key, value, options);
   }
 
   /**
@@ -95,7 +100,7 @@ export class NitroStorageManager extends StorageManager {
    */
   public async deleteItem({ storage, key }: StorageTypes.DeleteItem): Promise<void> {
     const storageInstance = this.getStorage(storage);
-    storageInstance?.deleteItem(key);
+    await storageInstance?.deleteItem(key);
   }
 
   /**
@@ -129,7 +134,7 @@ export class NitroStorageManager extends StorageManager {
    */
   public async clear({ storage }: StorageTypes.Clear): Promise<void> {
     const storageInstance = this.getStorage(storage);
-    storageInstance?.clear();
+    await storageInstance?.clear();
   }
 
   /**
