@@ -3,6 +3,7 @@ import { SchemaHeaderResolver, SchemaQueryParamResolver } from '../Resolvers/Sch
 import { SchemaPathParamsResolver } from '../Resolvers/SchemaPathParamsResolver';
 import { SchemaQueryParamsResolver } from '../Resolvers/SchemaQueryParamsResolver';
 import { toOpenApiPath } from './OpenApiPath';
+import type { SchemaWarn } from './StandardSchema';
 import type { RouteConfig } from '@asteasolutions/zod-to-openapi';
 import type { DeepPartial, MetadataTypes } from '@vercube/core';
 
@@ -17,11 +18,13 @@ export type SchemaRouteOptions = Omit<RouteConfig, 'method' | 'path'>;
  *
  * @param metadata - The metadata of the method.
  * @param options - Options passed to `@Schema`.
+ * @param warn - Reports a validation schema that cannot be documented.
  * @returns The route config, or undefined when the method has no route decorator.
  */
 export function createRouteConfig(
   metadata: MetadataTypes.Method | undefined,
   options: SchemaRouteOptions,
+  warn?: SchemaWarn,
 ): RouteConfig | undefined {
   if (!metadata?.method || !metadata.url) {
     return undefined;
@@ -33,13 +36,15 @@ export function createRouteConfig(
     method: metadata.method.toLowerCase() as any,
     path,
     ...(options as any),
+    // `responses` is required by OpenAPI, but nothing enforces it in plain JavaScript
+    responses: options?.responses ?? { 200: { description: 'OK' } },
   };
 
   SchemaPathParamsResolver(params, metadata, schema);
-  SchemaBodyResolver(metadata, schema);
-  SchemaQueryParamsResolver(metadata, schema);
-  SchemaQueryParamResolver(metadata, schema);
-  SchemaHeaderResolver(metadata, schema);
+  SchemaBodyResolver(metadata, schema, warn);
+  SchemaQueryParamsResolver(metadata, schema, warn);
+  SchemaQueryParamResolver(metadata, schema, warn);
+  SchemaHeaderResolver(metadata, schema, warn);
 
   return schema as RouteConfig;
 }

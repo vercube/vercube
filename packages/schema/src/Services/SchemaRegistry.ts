@@ -1,5 +1,6 @@
 import { OpenApiGeneratorV3, OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
 import { InjectOptional } from '@vercube/di';
+import { Logger } from '@vercube/logger';
 import { $SchemaPluginOptions } from '../Symbols/SchemaSymbols';
 import { createRouteConfig } from '../Utils/RouteConfig';
 import type { SchemaPluginOptions } from '../Types/SchemaPluginOptions';
@@ -28,6 +29,9 @@ export interface SchemaEntry {
 export class SchemaRegistry {
   @InjectOptional($SchemaPluginOptions)
   private readonly gSchemaPluginOptions?: SchemaPluginOptions;
+
+  @InjectOptional(Logger)
+  private readonly gLogger?: Logger | null;
 
   /**
    * Documented methods, keyed by prototype and method name, so a controller
@@ -82,19 +86,7 @@ export class SchemaRegistry {
       }
     }
 
-    for (const [prototype, methods] of this.fEntries) {
-      const metadata = (prototype as { __metadata?: MetadataTypes.Ctx }).__metadata;
-
-      for (const [propertyName, options] of methods) {
-        const route = createRouteConfig(metadata?.__methods?.[propertyName], options);
-
-        if (route) {
-          registry.registerPath(route);
-        }
-      }
-    }
-
-    return new OpenApiGeneratorV3(registry.definitions).generateDocument({
+    const config = {
       ...document,
       openapi: '3.0.0',
       info: {
@@ -102,6 +94,35 @@ export class SchemaRegistry {
         version: '1.0.0',
         ...document?.info,
       },
-    });
+    } as const;
+
+    // the components alone, so a route can be generated in isolation against them
+    const componentDefinitions = [...registry.definitions];
+
+    for (const [prototype, methods] of this.fEntries) {
+      const metadata = (prototype as { __metadata?: MetadataTypes.Ctx }).__metadata;
+
+      for (const [propertyName, options] of methods) {
+        const name = `${prototype.constructor?.name ?? 'Controller'}.${propertyName}`;
+        const warn = (message: string): void => this.gLogger?.warn('SchemaRegistry', `${name}: ${message}`);
+
+        // One broken route must not take the whole document down with it, so
+        // every route is generated on its own first and skipped if that fails.
+        try {
+          const route = createRouteConfig(metadata?.__methods?.[propertyName], options, warn);
+
+          if (!route) {
+            continue;
+          }
+
+          new OpenApiGeneratorV3([...componentDefinitions, { type: 'route', route }]).generateDocument(config);
+          registry.registerPath(route);
+        } catch (error) {
+          warn(`the route is left out of the schema, ${error instanceof Error ? error.message : String(error)}`);
+        }
+      }
+    }
+
+    return new OpenApiGeneratorV3(registry.definitions).generateDocument(config);
   }
 }

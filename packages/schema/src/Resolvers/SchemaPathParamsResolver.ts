@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isOpenApiZod, toOpenApiSchema } from '../Utils/StandardSchema';
 import type { RouteConfig } from '@asteasolutions/zod-to-openapi';
 import type { DeepPartial, MetadataTypes } from '@vercube/core';
 
@@ -6,8 +7,9 @@ import type { DeepPartial, MetadataTypes } from '@vercube/core';
  * Declares path parameters for the given route schema.
  *
  * OpenAPI requires every `{name}` in the path to have a matching `in: path`
- * parameter. A parameter read by `@Param({ name, validationSchema })` with a
- * zod schema is documented with that schema. Anything else is documented as a
+ * parameter. A parameter read by `@Param({ name, validationSchema })` is
+ * documented with that schema, converted through its JSON Schema converter
+ * when it is not classic zod. Anything else is documented as a
  * string, which is what the router passes to `@Param`. A `request.params`
  * schema set explicitly in `@Schema` takes precedence and is left untouched.
  *
@@ -25,13 +27,21 @@ export function SchemaPathParamsResolver(
     return;
   }
 
-  const validated = new Map(
-    metadata.args
-      .filter((arg) => arg.type === 'param' && arg.validationSchema instanceof z.ZodType)
+  const validated = new Map<unknown, z.ZodType>();
+
+  for (const arg of metadata.args) {
+    if (arg.type !== 'param' || !arg.validationSchema) {
+      continue;
+    }
+
+    const documented = isOpenApiZod(arg.validationSchema) ? arg.validationSchema : toOpenApiSchema(arg.validationSchema);
+
+    if (documented) {
       // a path param is always required in OpenAPI, even when the schema
       // is optional or has a default, which zod-to-openapi documents as optional
-      .map((arg) => [arg.data?.name, (arg.validationSchema as z.ZodType).openapi({ param: { required: true } })]),
-  );
+      validated.set(arg.data?.name, documented.openapi({ param: { required: true } }));
+    }
+  }
 
   schema.request = {
     ...schema.request,

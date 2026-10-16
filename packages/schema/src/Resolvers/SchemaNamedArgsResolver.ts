@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { isOpenApiZod, toOpenApiSchema } from '../Utils/StandardSchema';
+import type { SchemaWarn } from '../Utils/StandardSchema';
 import type { RouteConfig } from '@asteasolutions/zod-to-openapi';
 import type { DeepPartial, MetadataTypes } from '@vercube/core';
 
@@ -8,15 +10,17 @@ type RequestKey = 'query' | 'headers';
  * Builds a zod object shape out of method arguments that read a single named
  * value, such as `@QueryParam({ name })` or `@Header(name)`.
  *
- * An argument with a zod `validationSchema` is documented with that schema, so
- * its required/optional state follows the validation. Anything else is
+ * An argument with a `validationSchema` is documented with that schema, so its
+ * required/optional state follows the validation. A Standard Schema that is
+ * not classic zod goes through its JSON Schema converter. Anything else is
  * documented as an optional string, since nothing validates it.
  *
  * @param metadata - The metadata of the method.
  * @param type - The argument type to collect.
+ * @param warn - Reports a schema that cannot be documented.
  * @returns The shape, or undefined when the method has no such arguments.
  */
-function collectShape(metadata: MetadataTypes.Method, type: string): Record<string, z.ZodType> | undefined {
+function collectShape(metadata: MetadataTypes.Method, type: string, warn?: SchemaWarn): Record<string, z.ZodType> | undefined {
   // param decorators run right to left, so restore the signature order
   const args = metadata.args.filter((arg) => arg.type === type && arg.data?.name).toSorted((a, b) => a.idx - b.idx);
 
@@ -24,12 +28,32 @@ function collectShape(metadata: MetadataTypes.Method, type: string): Record<stri
     return undefined;
   }
 
-  return Object.fromEntries(
-    args.map((arg) => [
-      arg.data!.name as string,
-      arg.validationSchema instanceof z.ZodType ? withRequired(arg.validationSchema) : z.string().optional(),
-    ]),
-  );
+  return Object.fromEntries(args.map((arg) => [arg.data!.name as string, documentArg(arg, warn)]));
+}
+
+/**
+ * Picks the schema a single named argument is documented with.
+ *
+ * @param arg - The argument.
+ * @param warn - Reports a schema that cannot be documented.
+ * @returns The schema to document.
+ */
+function documentArg(arg: MetadataTypes.Arg, warn?: SchemaWarn): z.ZodType {
+  if (!arg.validationSchema) {
+    return z.string().optional();
+  }
+
+  if (isOpenApiZod(arg.validationSchema)) {
+    return withRequired(arg.validationSchema);
+  }
+
+  const converted = toOpenApiSchema(arg.validationSchema);
+
+  if (!converted) {
+    warn?.(`the validation schema of "${arg.data?.name}" has no JSON Schema converter, it is documented as a string`);
+  }
+
+  return converted ?? z.string().optional();
 }
 
 /**
@@ -76,10 +100,15 @@ function mergeShape(schema: DeepPartial<RouteConfig>, key: RequestKey, shape: Re
  * Resolves single `@QueryParam` arguments into the query schema.
  * @param metadata - The metadata of the method.
  * @param schema - The schema to resolve the query params for.
+ * @param warn - Reports a schema that cannot be documented.
  * @returns void
  */
-export function SchemaQueryParamResolver(metadata: MetadataTypes.Method, schema: DeepPartial<RouteConfig>): void {
-  const shape = collectShape(metadata, 'query-param');
+export function SchemaQueryParamResolver(
+  metadata: MetadataTypes.Method,
+  schema: DeepPartial<RouteConfig>,
+  warn?: SchemaWarn,
+): void {
+  const shape = collectShape(metadata, 'query-param', warn);
 
   if (shape) {
     mergeShape(schema, 'query', shape);
@@ -90,10 +119,11 @@ export function SchemaQueryParamResolver(metadata: MetadataTypes.Method, schema:
  * Resolves `@Header` arguments into the headers schema.
  * @param metadata - The metadata of the method.
  * @param schema - The schema to resolve the headers for.
+ * @param warn - Reports a schema that cannot be documented.
  * @returns void
  */
-export function SchemaHeaderResolver(metadata: MetadataTypes.Method, schema: DeepPartial<RouteConfig>): void {
-  const shape = collectShape(metadata, 'header');
+export function SchemaHeaderResolver(metadata: MetadataTypes.Method, schema: DeepPartial<RouteConfig>, warn?: SchemaWarn): void {
+  const shape = collectShape(metadata, 'header', warn);
 
   if (shape) {
     mergeShape(schema, 'headers', shape);
