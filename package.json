@@ -35,8 +35,8 @@
     "@commitlint/config-conventional": "21.2.3",
     "@oxc-project/runtime": "catalog:",
     "@types/node": "26.6.5",
-    "@vitest/coverage-v8": "5.0.4",
-    "@vitest/ui": "5.0.4",
+    "@vitest/coverage-v8": "5.0.5",
+    "@vitest/ui": "5.0.5",
     "bumpp": "12.3.0",
     "lint-staged": "17.6.0",
     "oxfmt": "0.73.0",
@@ -47,7 +47,7 @@
     "turbo": "2.11.8",
     "typescript": "7.0.2",
     "unrun": "0.3.1",
-    "vitest": "5.0.4"
+    "vitest": "5.0.5"
   },
   "simple-git-hooks": {
     "pre-commit": "pnpm pre-commit",
