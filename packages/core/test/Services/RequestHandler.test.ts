@@ -564,6 +564,33 @@ describe('RequestHandler', () => {
       expect(result.headers.get('x-tweak')).toBe('1');
     });
 
+    it('should append cookies and merge Vary from a ResponseInit', async () => {
+      const first = {
+        onRequest: vi.fn((_req: Request, res: Response) => {
+          res.headers.set('vary', 'Origin');
+          res.headers.append('set-cookie', 'a=1');
+        }),
+      };
+      const second = {
+        onRequest: vi.fn().mockResolvedValue({
+          headers: [
+            ['vary', 'Accept-Encoding'],
+            ['set-cookie', 'b=2'],
+          ],
+        }),
+      };
+
+      mockRoute.data.middlewares.beforeMiddlewares = [
+        { middleware: first, priority: 1, target: 'testMethod' },
+        { middleware: second, priority: 2, target: 'testMethod' },
+      ];
+
+      const result = await requestHandler.handleRequest(mockRequest, mockRoute);
+
+      expect(result.headers.get('vary')).toBe('Origin, Accept-Encoding');
+      expect(result.headers.getSetCookie()).toEqual(['a=1', 'b=2']);
+    });
+
     it('should not end the request when an after middleware returns ResponseInit', async () => {
       const first = { onResponse: vi.fn().mockResolvedValue({ status: 201 }) };
       const second = { onResponse: vi.fn() };

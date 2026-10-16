@@ -760,6 +760,8 @@ export class RequestHandler {
         for (const [key, value] of new Headers(responseInit.headers)) {
           if (key === 'set-cookie') {
             headers.append(key, value);
+          } else if (key === 'vary') {
+            headers.set(key, mergeVary(headers.get(key) ?? '', value));
           } else {
             headers.set(key, value);
           }
