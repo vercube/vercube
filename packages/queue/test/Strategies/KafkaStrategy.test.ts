@@ -13,6 +13,7 @@ const state = vi.hoisted(() => ({
   connectError: null as Error | null,
   sendError: null as Error | null,
   runError: null as Error | null,
+  runErrorOnce: false,
   offsetsError: null as Error | null,
   disconnectError: null as Error | null,
 }));
@@ -52,7 +53,13 @@ vi.mock('kafkajs', () => {
       subscribe: vi.fn(async () => undefined),
       run: vi.fn(async (options: Record<string, unknown>) => {
         if (state.runError) {
-          throw state.runError;
+          const error = state.runError;
+
+          if (state.runErrorOnce) {
+            state.runError = null;
+          }
+
+          throw error;
         }
 
         instance.runOptions = options;
@@ -139,6 +146,7 @@ describe('KafkaStrategy', () => {
     state.connectError = null;
     state.sendError = null;
     state.runError = null;
+    state.runErrorOnce = false;
     state.offsetsError = null;
     state.disconnectError = null;
 
@@ -265,7 +273,7 @@ describe('KafkaStrategy', () => {
       await strategy.consume({ queue: 'emails', concurrency: 3, dispatch: async () => undefined });
 
       expect(state.clients[0].consumer).toHaveBeenCalledWith({ groupId: 'app-workers' });
-      expect(state.consumers[0].subscribe).toHaveBeenCalledWith({ topic: 'emails', fromBeginning: false });
+      expect(state.consumers[0].subscribe).toHaveBeenCalledWith({ topics: ['emails'], fromBeginning: false });
       expect(state.consumers[0].runOptions).toMatchObject({ partitionsConsumedConcurrently: 3 });
     });
 
@@ -275,26 +283,81 @@ describe('KafkaStrategy', () => {
       await replaying.initialize({ client: { brokers: ['x'] }, groupId: 'g', fromBeginning: true });
       await replaying.consume({ queue: 'emails', concurrency: 1, dispatch: async () => undefined });
 
-      expect(state.consumers[0].subscribe).toHaveBeenCalledWith({ topic: 'emails', fromBeginning: true });
+      expect(state.consumers[0].subscribe).toHaveBeenCalledWith({ topics: ['emails'], fromBeginning: true });
     });
 
     it('should disconnect a consumer before replacing it', async () => {
-      await strategy.consume({ queue: 'emails', concurrency: 1, dispatch: async () => undefined });
+      const replaced = await strategy.consume({ queue: 'emails', concurrency: 1, dispatch: async () => undefined });
 
       const first = state.consumers[0];
 
       expect(first.disconnect).not.toHaveBeenCalled();
 
-      const handle = await strategy.consume({ queue: 'emails', concurrency: 1, dispatch: async () => undefined });
+      const dispatch = vi.fn().mockResolvedValue(undefined);
+      const handle = await strategy.consume({ queue: 'emails', concurrency: 1, dispatch });
 
       // Two members of the same group on one topic rebalance twice and both take
       // delivery in between, so the old one leaves before the new one arrives.
       expect(first.disconnect).toHaveBeenCalledBefore(state.consumers[1].connect);
       expect(state.consumers[1].disconnect).not.toHaveBeenCalled();
 
+      // the replaced handle no longer owns the topic
+      await replaced.stop();
+
+      expect(state.consumers[1].disconnect).not.toHaveBeenCalled();
+      await state.consumers[1].handler?.({ topic: 'emails', partition: 0, message: { offset: '1', value: null, headers: {} } });
+      expect(dispatch).toHaveBeenCalled();
+
       await handle.stop();
 
       expect(state.consumers[1].disconnect).toHaveBeenCalled();
+    });
+
+    it('should consume every topic of the mount with a single group member', async () => {
+      const orders = vi.fn().mockResolvedValue(undefined);
+      const emails = vi.fn().mockResolvedValue(undefined);
+
+      const ordersHandle = await strategy.consume({ queue: 'orders', concurrency: 2, dispatch: orders });
+      await strategy.consume({ queue: 'emails', concurrency: 3, dispatch: emails });
+
+      const current = state.consumers.at(-1);
+
+      // the first member left before the one subscribed to both topics joined
+      expect(state.consumers[0].disconnect).toHaveBeenCalled();
+      expect(current.disconnect).not.toHaveBeenCalled();
+      expect(current.subscribe).toHaveBeenCalledWith({ topics: ['orders', 'emails'], fromBeginning: false });
+      expect(current.runOptions).toMatchObject({ partitionsConsumedConcurrently: 5 });
+
+      await current.handler?.({ topic: 'orders', partition: 1, message: { offset: '5', value: null, headers: {} } });
+      await current.handler?.({ topic: 'emails', partition: 0, message: { offset: '6', value: null, headers: {} } });
+
+      expect(orders).toHaveBeenCalledWith(expect.objectContaining({ id: 'orders-1-5' }));
+      expect(emails).toHaveBeenCalledWith(expect.objectContaining({ id: 'emails-0-6' }));
+
+      // stopping one topic keeps the other consumed
+      await ordersHandle.stop();
+
+      const remaining = state.consumers.at(-1);
+
+      expect(current.disconnect).toHaveBeenCalled();
+      expect(remaining.subscribe).toHaveBeenCalledWith({ topics: ['emails'], fromBeginning: false });
+    });
+
+    it('should keep consuming the other topics when a new one cannot start', async () => {
+      await strategy.consume({ queue: 'orders', concurrency: 1, dispatch: async () => undefined });
+
+      // only the attempt with the new topic fails
+      state.runError = new Error('rebalance failed');
+      state.runErrorOnce = true;
+
+      await expect(strategy.consume({ queue: 'emails', concurrency: 1, dispatch: async () => undefined })).rejects.toMatchObject({
+        operation: 'consume',
+      });
+
+      const current = state.consumers.at(-1);
+
+      expect(current.subscribe).toHaveBeenCalledWith({ topics: ['orders'], fromBeginning: false });
+      expect(current.disconnect).not.toHaveBeenCalled();
     });
 
     it('should refuse to consume without a consumer group', async () => {
@@ -312,6 +375,7 @@ describe('KafkaStrategy', () => {
 
       await strategy.consume({ queue: 'emails', concurrency: 1, dispatch });
       await state.consumers[0].handler?.({
+        topic: 'emails',
         partition: 4,
         message: {
           offset: '77',
@@ -334,7 +398,7 @@ describe('KafkaStrategy', () => {
       const dispatch = vi.fn().mockResolvedValue(undefined);
 
       await strategy.consume({ queue: 'emails', concurrency: 1, dispatch });
-      await state.consumers[0].handler?.({ partition: 0, message: { offset: '1', value: null, headers: {} } });
+      await state.consumers[0].handler?.({ topic: 'emails', partition: 0, message: { offset: '1', value: null, headers: {} } });
 
       expect(dispatch.mock.calls[0][0]).toMatchObject({ job: 'unknown', payload: null, attempt: 1 });
     });
@@ -349,7 +413,7 @@ describe('KafkaStrategy', () => {
       });
 
       await expect(
-        state.consumers[0].handler?.({ partition: 0, message: { offset: '1', value: null, headers: {} } }),
+        state.consumers[0].handler?.({ topic: 'emails', partition: 0, message: { offset: '1', value: null, headers: {} } }),
       ).resolves.toBeUndefined();
 
       expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('Skipping a failed job'), expect.anything());
@@ -368,7 +432,7 @@ describe('KafkaStrategy', () => {
       });
 
       await expect(
-        state.consumers[0].handler?.({ partition: 0, message: { offset: '1', value: null, headers: {} } }),
+        state.consumers[0].handler?.({ topic: 'emails', partition: 0, message: { offset: '1', value: null, headers: {} } }),
       ).rejects.toThrow('boom');
     });
 
