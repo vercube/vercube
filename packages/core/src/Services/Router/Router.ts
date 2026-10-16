@@ -198,6 +198,19 @@ export class Router {
   }
 
   /**
+   * Lists the methods the path is routed for, so a request with another
+   * method can be answered with 405 and an `Allow` header.
+   *
+   * @param {string} pathname - The request path
+   * @returns {string[]} The methods, empty when the path is not routed at all
+   */
+  public allowedMethods(pathname: string): string[] {
+    const methods = new Set(this.fRoutes.map((route) => route.method.toUpperCase()));
+
+    return [...methods].filter((method) => this.match(method, pathname) !== undefined).toSorted();
+  }
+
+  /**
    * Resolves a route from an already normalized method and pathname.
    *
    * This is the variant used on the request hot path: it skips the absolute-URL

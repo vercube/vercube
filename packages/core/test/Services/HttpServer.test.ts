@@ -43,17 +43,26 @@ describe('HttpServer', () => {
     container = new Container();
 
     // Create mocks
+    mockErrorHandler = {
+      handleError: vi.fn(),
+    };
     mockRequestHandler = {
       handleRequest: vi.fn(),
+      // no global middlewares: produce the response, an error goes to the error handler
+      handleUnmatched: vi.fn(async (_request: Request, produce: (response: Response) => Promise<Response>) => {
+        try {
+          return await produce(new Response());
+        } catch (error) {
+          return mockErrorHandler.handleError(error);
+        }
+      }),
     };
     mockStaticRequestHandler = {
       handleRequest: vi.fn(),
     };
     mockRouter = {
       match: vi.fn(),
-    };
-    mockErrorHandler = {
-      handleError: vi.fn(),
+      allowedMethods: vi.fn(() => []),
     };
 
     // Bind mocks

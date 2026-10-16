@@ -45,8 +45,8 @@ export class StaticRequestHandler {
       return;
     }
 
-    // Only handle GET requests
-    if (request.method !== 'GET') {
+    // Only handle GET and HEAD requests
+    if (request.method !== 'GET' && request.method !== 'HEAD') {
       return;
     }
 
@@ -91,7 +91,7 @@ export class StaticRequestHandler {
         }
 
         if (stats.isFile()) {
-          return this.serveFile(fullPath, stats);
+          return this.serveFile(request, fullPath, stats);
         }
       } catch {
         // silent catch
@@ -101,13 +101,15 @@ export class StaticRequestHandler {
   }
 
   /**
-   * Serves a static file and returns a Response object
+   * Serves a static file and returns a Response object. A HEAD request gets the
+   * headers only, a matching `If-None-Match` a 304.
    *
+   * @param {Request} request - The incoming HTTP request
    * @param {string} path - The path to the file to serve
    * @param {any} stats - The stats object for the file
    * @returns {Promise<Response>} A promise that resolves to a Response object
    */
-  private async serveFile(path: string, stats: any): Promise<Response> {
+  private async serveFile(request: Request, path: string, stats: any): Promise<Response> {
     const headers = new Headers();
     const ext = extname(path).toLowerCase();
     const contentType = mime.getType(ext) || 'application/octet-stream';
@@ -126,7 +128,20 @@ export class StaticRequestHandler {
     }
 
     if (this.fOptions?.etag) {
-      headers.set('ETag', `W/"${stats.size}-${stats.mtime.getTime()}"`);
+      const etag = `W/"${stats.size}-${stats.mtime.getTime()}"`;
+
+      headers.set('ETag', etag);
+
+      if (matchesEtag(request.headers.get('if-none-match'), etag)) {
+        headers.delete('Content-Type');
+        headers.delete('Content-Length');
+
+        return new Response(null, { status: 304, headers });
+      }
+    }
+
+    if (request.method === 'HEAD') {
+      return new Response(null, { headers });
     }
 
     const stream = createReadStream(path);
@@ -134,4 +149,27 @@ export class StaticRequestHandler {
       headers,
     });
   }
+}
+
+/**
+ * Whether an `If-None-Match` header matches an entity tag, compared weakly as
+ * RFC 9110 requires for `If-None-Match`.
+ *
+ * @param {string | null} header - The `If-None-Match` header
+ * @param {string} etag - The entity tag of the file
+ * @returns {boolean} True when the client already has this version
+ */
+function matchesEtag(header: string | null, etag: string): boolean {
+  if (!header) {
+    return false;
+  }
+
+  if (header.trim() === '*') {
+    return true;
+  }
+
+  const opaque = (tag: string): string => tag.trim().replace(/^W\//, '');
+  const expected = opaque(etag);
+
+  return header.split(',').some((tag) => opaque(tag) === expected);
 }

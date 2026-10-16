@@ -928,6 +928,29 @@ describe('RequestHandler', () => {
     });
   });
 
+  describe('handleUnmatched', () => {
+    it('should produce the response when there are no global middlewares', async () => {
+      const result = await requestHandler.handleUnmatched(new Request('http://localhost/x'), async () => new Response('file'));
+
+      expect(await result.text()).toBe('file');
+    });
+
+    it('should turn a failure outside the middlewares into an error response', async () => {
+      Object.defineProperty(mockGlobalMiddlewareRegistry, 'middlewares', {
+        get: () => {
+          throw new Error('registry broke');
+        },
+      });
+      const errorResponse = new Response('error', { status: 500 });
+      mockErrorHandler.handleError.mockReturnValue(errorResponse);
+
+      const result = await requestHandler.handleUnmatched(new Request('http://localhost/x'), async () => new Response('file'));
+
+      expect(result.status).toBe(500);
+      expect(mockErrorHandler.handleError).toHaveBeenCalledWith(expect.objectContaining({ message: 'registry broke' }));
+    });
+  });
+
   describe('processOverrideResponse', () => {
     it('should handle FastResponse override', () => {
       const fastResponse = new Response('Fast Response', { status: 201 });

@@ -406,7 +406,7 @@ describe('devtools API', () => {
     expect(await response.json()).toEqual({ outcome: 'completed', occurrenceId: 'reports.build@manual:1', durationMs: 3 });
     expect(triggered).toEqual(['reports.build']);
 
-    expect((await devtoolsFetch(app, '/_devtools/api/scheduler/run/reports.build')).status).toBe(404);
+    expect((await devtoolsFetch(app, '/_devtools/api/scheduler/run/reports.build')).status).toBe(405);
     expect(triggered).toHaveLength(1);
   });
 });
