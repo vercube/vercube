@@ -12,6 +12,7 @@ import {
 import { Inject } from '@vercube/di';
 import { Logger } from '@vercube/logger';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { DevtoolsFrameBus } from '../src/Services/DevtoolsFrameBus';
 import { resetDevtoolsTelemetry } from '../src/Telemetry/DevtoolsTelemetry';
 import { createDevtoolsApp, devtoolsFetch, devtoolsJson } from './Utils/App';
 import type { DevtoolsTypes } from '../src/Types/DevtoolsTypes';
@@ -346,11 +347,24 @@ describe('devtools API', () => {
     const app = await createDemoApp();
     const registry = app.container.get(IntrospectionRegistry);
     const onInvalidate = vi.spyOn(registry, 'onInvalidate');
+    const frames: { ch: string; data: unknown }[] = [];
+    app.container.get(DevtoolsFrameBus).subscribe((frame) => void frames.push(frame));
+
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
 
     const first = await devtoolsFetch(app, '/_devtools/api/stream');
     const second = await devtoolsFetch(app, '/_devtools/api/stream');
 
     expect(onInvalidate).toHaveBeenCalledOnce();
+
+    // one frame per change and per ping, however many tabs are open
+    onInvalidate.mock.calls[0][0]('routes', 2);
+    vi.advanceTimersByTime(60_000);
+    vi.useRealTimers();
+
+    expect(frames.filter((frame) => frame.ch === 'introspect')).toHaveLength(1);
+    // a 20 second ping, once for every open stream rather than once per stream
+    expect(frames.filter((frame) => frame.ch === 'control' && (frame.data as { type: string }).type === 'ping')).toHaveLength(3);
 
     await first.body!.cancel();
     await second.body!.cancel();
