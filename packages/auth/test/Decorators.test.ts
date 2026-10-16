@@ -107,6 +107,7 @@ describe('[auth] Decorators', () => {
   });
 
   it('should define metadata for the class method with user injection', async () => {
+    container.bind(AuthProvider, MockAuthProvider);
     const service = container.get(MetadataResolver);
     const instance = container.get(TestClass5);
     const method = service.resolveMethod(Object.getPrototypeOf(instance), 'testMethod');
@@ -147,11 +148,10 @@ describe('[auth] Decorators', () => {
     // Ensure resolver exists
     expect(resolver).toBeDefined();
 
-    // Call the resolver with a mock event
-    const result = await resolver!({ request: {} } as RouterTypes.RouterEvent);
-
-    // Should return null when provider is not found
-    expect(result).toBeNull();
+    // fails closed: a missing provider must never look like an anonymous caller
+    await expect(resolver!({ request: {} } as RouterTypes.RouterEvent)).rejects.toThrow(
+      '@User(): auth provider "AuthProvider" is not registered in the container',
+    );
   });
 
   it('should return user when provider is found', async () => {

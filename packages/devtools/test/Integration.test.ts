@@ -1,4 +1,14 @@
-import { BaseMiddleware, Body, Controller, ContainerProvider, Get, Middleware, Post, QueryParam } from '@vercube/core';
+import {
+  BaseMiddleware,
+  Body,
+  Controller,
+  ContainerProvider,
+  Get,
+  IntrospectionRegistry,
+  Middleware,
+  Post,
+  QueryParam,
+} from '@vercube/core';
 import { Inject } from '@vercube/di';
 import { Logger } from '@vercube/logger';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -330,6 +340,25 @@ describe('devtools API', () => {
     const payload = (await response.json()) as Record<string, unknown>;
 
     expect(Object.keys(payload)).toEqual(expect.arrayContaining(['overview', 'audit', 'introspection', 'signals', 'protocol']));
+  });
+
+  it('shares one invalidate listener and one ping between every open stream', async () => {
+    const app = await createDemoApp();
+    const registry = app.container.get(IntrospectionRegistry);
+    const onInvalidate = vi.spyOn(registry, 'onInvalidate');
+
+    const first = await devtoolsFetch(app, '/_devtools/api/stream');
+    const second = await devtoolsFetch(app, '/_devtools/api/stream');
+
+    expect(onInvalidate).toHaveBeenCalledOnce();
+
+    await first.body!.cancel();
+    await second.body!.cancel();
+
+    // the last stream gone, the next one starts them again
+    const third = await devtoolsFetch(app, '/_devtools/api/stream');
+    expect(onInvalidate).toHaveBeenCalledTimes(2);
+    await third.body!.cancel();
   });
 
   it('streams versioned frames', async () => {
