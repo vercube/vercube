@@ -120,4 +120,33 @@ describe('DefaultErrorHandlerProvider', () => {
     const responseData = await response.json();
     expect(responseData.message).toBe('Internal server error');
   });
+
+  it('should answer every error with a JSON content type', () => {
+    vi.spyOn(logger, 'error').mockImplementation(() => {});
+
+    expect(errorHandler.handleError(new BadRequestError('x')).headers.get('content-type')).toBe('application/json');
+    expect(errorHandler.handleError(new Error('x')).headers.get('content-type')).toBe('application/json');
+  });
+
+  it.each([
+    ['not a number', 'oops', 500],
+    ['zero', 0, 500],
+    ['out of range', 600, 500],
+    ['a success', 200, 500],
+    ['a redirect', 302, 500],
+    ['an error status', 503, 503],
+  ])('should answer a non-HTTP error whose status is %s with %s', (_label, status, expected) => {
+    vi.spyOn(logger, 'error').mockImplementation(() => {});
+
+    const response = errorHandler.handleError(Object.assign(new Error('x'), { status }));
+
+    expect(response.status).toBe(expected);
+  });
+
+  it('should answer an HttpError carrying a status Response refuses with 500', () => {
+    const error = new BadRequestError('x');
+    (error as any).status = 'oops';
+
+    expect(errorHandler.handleError(error).status).toBe(500);
+  });
 });
