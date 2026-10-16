@@ -3,6 +3,7 @@ import { App } from '../Common/App';
 import { createContainer } from '../Common/Container';
 import { loadVercubeConfig } from '../Config/Loader';
 import { RuntimeConfig } from '../Services/Config/RuntimeConfig';
+import { Router } from '../Services/Router/Router';
 import type { MaybePromise } from '../Types/CommonTypes';
 import type { ConfigTypes } from '../Types/ConfigTypes';
 
@@ -72,6 +73,9 @@ export async function createApp({
 
   // initialize container
   initializeContainer(container);
+
+  // the controllers registered their routes during the flush above
+  await container.get(Router).notifyInitialized();
 
   return app;
 }
