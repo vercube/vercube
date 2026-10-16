@@ -607,7 +607,7 @@ export class RequestHandler {
    * @param request - The HTTP request
    * @param response - The current response
    * @param methodArgs - Resolved method arguments
-   * @returns Response if middleware returns one, or updated response, or null
+   * @returns The value returned by the hook, or null
    * @private
    */
   private async executeMiddlewareRequest(
@@ -615,21 +615,13 @@ export class RequestHandler {
     request: Request,
     response: Response,
     methodArgs: MetadataTypes.Arg[],
-  ): Promise<Response | null> {
+  ): Promise<Response | ResponseInit | null> {
     const hookResponse = await hook.middleware.onRequest?.(request, response, {
       middlewareArgs: hook.args,
       methodArgs,
     });
 
-    if (hookResponse instanceof Response) {
-      return hookResponse;
-    }
-
-    if (hookResponse !== null && hookResponse !== undefined) {
-      return this.processOverrideResponse(hookResponse, response);
-    }
-
-    return null;
+    return hookResponse ?? null;
   }
 
   /**
@@ -639,7 +631,7 @@ export class RequestHandler {
    * @param request - The HTTP request
    * @param response - The current response
    * @param payload - The handler response payload
-   * @returns Response if middleware returns one, or updated response, or null
+   * @returns The value returned by the hook, or null
    * @private
    */
   private async executeMiddlewareResponse(
@@ -647,18 +639,10 @@ export class RequestHandler {
     request: Request,
     response: Response,
     payload: unknown,
-  ): Promise<Response | null> {
+  ): Promise<Response | ResponseInit | null> {
     const hookResponse = await hook.middleware.onResponse?.(request, response, payload);
 
-    if (hookResponse instanceof Response) {
-      return hookResponse;
-    }
-
-    if (hookResponse !== null && hookResponse !== undefined) {
-      return this.processOverrideResponse(hookResponse, response);
-    }
-
-    return null;
+    return hookResponse ?? null;
   }
 
   /**
@@ -692,8 +676,9 @@ export class RequestHandler {
             // Middleware returned a Response for early termination
             return { earlyReturn: requestResult, response: currentResponse };
           }
-          if (requestResult !== null && requestResult !== currentResponse) {
-            currentResponse = requestResult;
+          if (requestResult !== null) {
+            // A ResponseInit only tweaks the current response, the pipeline goes on
+            currentResponse = this.processOverrideResponse(requestResult, currentResponse);
           }
         }
 
@@ -704,8 +689,9 @@ export class RequestHandler {
             // Middleware returned a Response for early termination
             return { earlyReturn: responseResult, response: currentResponse };
           }
-          if (responseResult !== null && responseResult !== currentResponse) {
-            currentResponse = responseResult;
+          if (responseResult !== null) {
+            // A ResponseInit only tweaks the current response, the pipeline goes on
+            currentResponse = this.processOverrideResponse(responseResult, currentResponse);
           }
         }
       } catch (error) {
@@ -768,10 +754,22 @@ export class RequestHandler {
     } else if (response !== null) {
       const responseInit = response as ResponseInit;
 
+      // Merge the init headers into the ones set so far instead of replacing them
+      const headers = new Headers(fakeResponse.headers);
+      if (responseInit?.headers) {
+        for (const [key, value] of new Headers(responseInit.headers)) {
+          if (key === 'set-cookie') {
+            headers.append(key, value);
+          } else {
+            headers.set(key, value);
+          }
+        }
+      }
+
       // override fake response before pass it to the args
       fakeResponse = new FastResponse(undefined, {
         status: responseInit?.status ?? fakeResponse.status,
-        headers: responseInit?.headers ?? fakeResponse.headers,
+        headers,
         statusText: responseInit?.statusText ?? fakeResponse.statusText,
       });
     }
