@@ -6,7 +6,16 @@ import { QueueStrategy } from '../Services/QueueStrategy';
 import { toQueueError } from '../Utils/Errors';
 import { ATTEMPT_HEADER, decodePayload, encodePayload, JOB_HEADER, normalizeHeaders, readNumericHeader } from '../Utils/Job';
 import type { QueueTypes } from '../Types/QueueTypes';
-import type { Admin, Consumer, ConsumerConfig, KafkaConfig, Producer, ProducerConfig, ProducerRecord } from 'kafkajs';
+import type {
+  Admin,
+  Consumer,
+  ConsumerConfig,
+  KafkaConfig,
+  KafkaMessage,
+  Producer,
+  ProducerConfig,
+  ProducerRecord,
+} from 'kafkajs';
 
 /** Options the Kafka strategy connects with. */
 export interface KafkaStrategyOptions {
@@ -51,6 +60,10 @@ export interface KafkaStrategyOptions {
  * Ordering is per partition, so use the `key` job option to keep related jobs on
  * the same partition.
  *
+ * A mount runs a single member of the consumer group, subscribed to every
+ * consumed topic. Members of one group subscribed to different topics would be
+ * handed partitions of topics they never subscribed to, and kafkajs drops those.
+ *
  * @example
  * ```ts
  * await queueManager.mount({
@@ -82,8 +95,14 @@ export class KafkaStrategy extends QueueStrategy<KafkaStrategyOptions> {
   /** Admin client, opened only when counters are read */
   private fAdmin: Admin | null = null;
 
-  /** Running consumers, indexed by topic */
-  private fConsumers: Map<string, Consumer> = new Map();
+  /** Consumed topics and where their records go, indexed by topic */
+  private fRoutes: Map<string, QueueTypes.ConsumeRequest> = new Map();
+
+  /** The group member consuming every routed topic */
+  private fConsumer: Consumer | null = null;
+
+  /** Serializes consumer restarts, never rejects */
+  private fRestart: Promise<void> = Promise.resolve();
 
   /**
    * Kafka is a log: only the offsets it keeps can be reported, everything else
@@ -184,78 +203,50 @@ export class KafkaStrategy extends QueueStrategy<KafkaStrategyOptions> {
   }
 
   /**
-   * Subscribes a consumer of the configured group to a topic.
+   * Routes a topic to the consumer of the configured group. The consumer is
+   * restarted subscribed to every routed topic, since kafkajs cannot add a
+   * subscription to a running consumer.
    *
    * @param {QueueTypes.ConsumeRequest} request - Topic to consume, its concurrency and the dispatch callback
-   * @returns {Promise<QueueTypes.ConsumerHandle>} Handle used to stop the consumer again
+   * @returns {Promise<QueueTypes.ConsumerHandle>} Handle used to stop consuming the topic again
    * @throws {QueueError} When no consumer group is configured, or the consumer cannot start
    */
   public async consume(request: QueueTypes.ConsumeRequest): Promise<QueueTypes.ConsumerHandle> {
     const options = this.requireOptions('consume');
-    const kafka = this.requireClient('consume');
+    this.requireClient('consume');
 
     if (!options.groupId) {
       throw new QueueError('Kafka needs a groupId to consume a topic', 'consume', undefined, { queue: request.queue }, false);
     }
 
-    // consume() is public, so a second call must not leave two members of the
-    // same group on the topic: they would rebalance twice and both take
-    // delivery of the same records in between. The old one goes first.
-    const previous = this.fConsumers.get(request.queue);
-
-    if (previous) {
-      this.fConsumers.delete(request.queue);
-      await previous.disconnect().catch(() => undefined);
-    }
-
-    const consumer = kafka.consumer({ ...options.consumer, groupId: options.groupId });
+    // a second call for the same topic replaces the first one's route
+    this.fRoutes.set(request.queue, request);
 
     try {
-      await consumer.connect();
-      await consumer.subscribe({ topic: request.queue, fromBeginning: options.fromBeginning ?? false });
-
-      await consumer.run({
-        partitionsConsumedConcurrently: Math.max(1, request.concurrency),
-        eachMessage: async ({ partition, message }) => {
-          const headers = normalizeHeaders(message.headers);
-
-          try {
-            await request.dispatch({
-              id: `${request.queue}-${partition}-${message.offset}`,
-              job: headers[JOB_HEADER] ?? 'unknown',
-              payload: decodePayload(message.value),
-              headers,
-              attempt: readNumericHeader(headers[ATTEMPT_HEADER], 1),
-              raw: message,
-            });
-          } catch (error) {
-            if ((options.onFailure ?? 'skip') === 'crash') {
-              throw error;
-            }
-
-            // Kafka commits offsets, it cannot single out one message: stopping here
-            // would block the whole partition, so the offset moves on.
-            this.gLogger?.error(`Vercube/KafkaStrategy::Skipping a failed job of "${request.queue}"`, error);
-          }
-        },
-      });
+      await this.restart();
     } catch (error) {
-      await consumer.disconnect().catch(() => undefined);
+      if (this.fRoutes.get(request.queue) === request) {
+        this.fRoutes.delete(request.queue);
+      }
+
+      // the topics that were consumed before keep going without this one
+      await this.restart().catch((restartError: unknown) =>
+        this.gLogger?.error('Vercube/KafkaStrategy::Failed to restart the consumer', restartError),
+      );
 
       throw toQueueError(error, 'Failed to consume the Kafka topic', 'consume', { queue: request.queue });
     }
 
-    this.fConsumers.set(request.queue, consumer);
-
     return {
       queue: request.queue,
       stop: async () => {
-        // only this consumer's entry, never the one that replaced it
-        if (this.fConsumers.get(request.queue) === consumer) {
-          this.fConsumers.delete(request.queue);
+        // only this request's route, never the one that replaced it
+        if (this.fRoutes.get(request.queue) !== request) {
+          return;
         }
 
-        await consumer.disconnect();
+        this.fRoutes.delete(request.queue);
+        await this.restart();
       },
     };
   }
@@ -303,18 +294,112 @@ export class KafkaStrategy extends QueueStrategy<KafkaStrategyOptions> {
    * @returns {Promise<void>} Resolves once everything is disconnected
    */
   public async close(): Promise<void> {
-    const consumers = [...this.fConsumers.values()];
+    // a restart in flight must not bring a consumer back after this
+    this.fRoutes.clear();
+    await this.fRestart;
+
+    const consumer = this.fConsumer;
     const producer = this.fProducer;
     const admin = this.fAdmin;
 
-    this.fConsumers.clear();
+    this.fConsumer = null;
     this.fProducer = null;
     this.fAdmin = null;
 
     try {
-      await Promise.all([...consumers.map((consumer) => consumer.disconnect()), producer?.disconnect(), admin?.disconnect()]);
+      await Promise.all([consumer?.disconnect(), producer?.disconnect(), admin?.disconnect()]);
     } catch (error) {
       this.gLogger?.warn('Vercube/KafkaStrategy::Failed to disconnect', error);
+    }
+  }
+
+  /**
+   * Queues a restart of the consumer behind any restart still running.
+   *
+   * @returns {Promise<void>} Resolves once the consumer runs on the current routes
+   * @throws {Error} When the consumer cannot start
+   */
+  private restart(): Promise<void> {
+    const next = this.fRestart.then(() => this.restartNow());
+
+    this.fRestart = next.catch(() => undefined);
+
+    return next;
+  }
+
+  /**
+   * Replaces the consumer with one subscribed to every routed topic. The old
+   * member leaves first: two members of the group would rebalance twice and
+   * both take delivery of the same records in between.
+   *
+   * @returns {Promise<void>} Resolves once the new consumer runs
+   * @throws {Error} When the consumer cannot start
+   */
+  private async restartNow(): Promise<void> {
+    const previous = this.fConsumer;
+
+    this.fConsumer = null;
+    await previous?.disconnect().catch(() => undefined);
+
+    if (this.fRoutes.size === 0) {
+      return;
+    }
+
+    const options = this.requireOptions('consume');
+    const routes = [...this.fRoutes.values()];
+    const consumer = this.requireClient('consume').consumer({ ...options.consumer, groupId: options.groupId! });
+
+    try {
+      await consumer.connect();
+      await consumer.subscribe({ topics: routes.map((route) => route.queue), fromBeginning: options.fromBeginning ?? false });
+
+      await consumer.run({
+        partitionsConsumedConcurrently: routes.reduce((total, route) => total + Math.max(1, route.concurrency), 0),
+        eachMessage: ({ topic, partition, message }) => this.handleMessage(topic, partition, message),
+      });
+    } catch (error) {
+      await consumer.disconnect().catch(() => undefined);
+
+      throw error;
+    }
+
+    this.fConsumer = consumer;
+  }
+
+  /**
+   * Hands a record to the consumer of its topic.
+   *
+   * @param {string} topic - Topic the record came from
+   * @param {number} partition - Partition the record came from
+   * @param {KafkaMessage} message - The record
+   * @returns {Promise<void>} Resolves once the job is handled
+   */
+  private async handleMessage(topic: string, partition: number, message: KafkaMessage): Promise<void> {
+    const route = this.fRoutes.get(topic);
+
+    if (!route) {
+      return;
+    }
+
+    const headers = normalizeHeaders(message.headers);
+
+    try {
+      await route.dispatch({
+        id: `${topic}-${partition}-${message.offset}`,
+        job: headers[JOB_HEADER] ?? 'unknown',
+        payload: decodePayload(message.value),
+        headers,
+        attempt: readNumericHeader(headers[ATTEMPT_HEADER], 1),
+        raw: message,
+      });
+    } catch (error) {
+      if ((this.fOptions?.onFailure ?? 'skip') === 'crash') {
+        throw error;
+      }
+
+      // Kafka commits offsets, it cannot single out one message: stopping here
+      // would block the whole partition, so the offset moves on.
+      this.gLogger?.error(`Vercube/KafkaStrategy::Skipping a failed job of "${topic}"`, error);
     }
   }
 
