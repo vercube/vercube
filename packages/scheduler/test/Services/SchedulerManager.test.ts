@@ -367,6 +367,22 @@ describe('SchedulerManager', () => {
       expect(b.events).toEqual([expect.objectContaining({ outcome: 'skipped-claimed', trigger: 'misfire' })]);
     });
 
+    it('leaves a late misfire to the occurrence claim when the state cannot be read', async () => {
+      const { manager, events, logger } = await createReplica({ clock }, store);
+      const handler = vi.fn();
+
+      manager.add({ name: 'hourly', schedule: { cron: '0 * * * *' }, misfire: 'run-once', handler });
+      await manager.start();
+      vi.spyOn(store, 'getState').mockRejectedValue(new Error('connection refused'));
+
+      const internal = manager as any;
+      await internal.misfire(internal.fJobs.get('hourly'), at('2026-01-01T01:00:00Z'));
+
+      expect(handler).toHaveBeenCalledTimes(1);
+      expect(events).toEqual([expect.objectContaining({ outcome: 'completed', trigger: 'misfire' })]);
+      expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Failed to read the state'), expect.any(Error));
+    });
+
     it('records the state of a run in the store, including runs of other replicas', async () => {
       const a = await createReplica({ clock, instanceId: 'a' }, store);
       const b = await createReplica({ clock, instanceId: 'b' }, store);
