@@ -36,6 +36,7 @@
     "@standard-schema/spec": "catalog:",
     "@vercube/core": "workspace:*",
     "@vercube/di": "workspace:*",
+    "@vercube/logger": "workspace:*",
     "defu": "catalog:",
     "zod": "catalog:"
   },
