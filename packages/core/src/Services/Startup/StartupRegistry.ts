@@ -50,7 +50,9 @@ export class StartupRegistry {
    */
   public async run(): Promise<void> {
     // a copy, so a hook removing itself does not skip the next one
-    for (const hook of [...this.fHooks]) {
+    const hooks = [...this.fHooks];
+
+    for (const hook of hooks) {
       await hook();
     }
   }
