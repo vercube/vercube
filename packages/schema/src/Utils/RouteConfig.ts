@@ -28,7 +28,8 @@ export function createRouteConfig(
   warn?: SchemaWarn,
   controllerPath?: string,
 ): RouteConfig | undefined {
-  if (!metadata?.method || !metadata.url) {
+  // OpenAPI 3.0 path items have no `connect` operation
+  if (!metadata?.method || !metadata.url || metadata.method.toUpperCase() === 'CONNECT') {
     return undefined;
   }
 
