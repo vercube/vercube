@@ -247,7 +247,7 @@ describe('[Azure Functions] Utils', () => {
 
       expect(cookies).toHaveLength(2);
       expect(cookies![0]).toEqual({
-        name: 'sessionid',
+        name: 'sessionId',
         value: 'abc123',
         httpOnly: true,
         secure: true,
@@ -298,7 +298,7 @@ describe('[Azure Functions] Utils', () => {
 
       expect(cookies).toHaveLength(1);
       expect(cookies![0]).toEqual({
-        name: 'sessionid',
+        name: 'sessionId',
         value: 'abc123',
         httpOnly: true,
         secure: true,
@@ -339,7 +339,7 @@ describe('[Azure Functions] Utils', () => {
       expect(cookies).toHaveLength(1);
       expect(cookies![0]).toEqual({
         name: 'user',
-        value: 'John Doe',
+        value: 'John%20Doe',
         path: '/',
         domain: undefined,
         expires: undefined,
@@ -411,7 +411,7 @@ describe('[Azure Functions] Utils', () => {
       const cookie = parseCookieString(cookieString);
 
       expect(cookie).toEqual({
-        name: 'sessionid',
+        name: 'sessionId',
         value: 'abc123',
         domain: undefined,
         expires: undefined,
@@ -428,7 +428,7 @@ describe('[Azure Functions] Utils', () => {
       const cookie = parseCookieString(cookieString);
 
       expect(cookie).toEqual({
-        name: 'sessionid',
+        name: 'sessionId',
         value: 'abc123',
         path: '/',
         domain: undefined,
@@ -445,7 +445,7 @@ describe('[Azure Functions] Utils', () => {
       const cookie = parseCookieString(cookieString);
 
       expect(cookie).toEqual({
-        name: 'sessionid',
+        name: 'sessionId',
         value: 'abc123',
         secure: true,
         domain: undefined,
@@ -462,7 +462,7 @@ describe('[Azure Functions] Utils', () => {
       const cookie = parseCookieString(cookieString);
 
       expect(cookie).toEqual({
-        name: 'sessionid',
+        name: 'sessionId',
         value: 'abc123',
         httpOnly: true,
         domain: undefined,
@@ -479,7 +479,7 @@ describe('[Azure Functions] Utils', () => {
       const cookie = parseCookieString(cookieString);
 
       expect(cookie).toEqual({
-        name: 'sessionid',
+        name: 'sessionId',
         value: 'abc123',
         domain: '.example.com',
         expires: undefined,
@@ -496,7 +496,7 @@ describe('[Azure Functions] Utils', () => {
       const cookie = parseCookieString(cookieString);
 
       expect(cookie).toEqual({
-        name: 'sessionid',
+        name: 'sessionId',
         value: 'abc123',
         maxAge: 3600,
         domain: undefined,
@@ -513,7 +513,7 @@ describe('[Azure Functions] Utils', () => {
       const cookie = parseCookieString(cookieString);
 
       expect(cookie).toEqual({
-        name: 'sessionid',
+        name: 'sessionId',
         value: 'abc123',
         expires: new Date('Wed, 09 Jun 2021 10:18:14 GMT'),
         domain: undefined,
@@ -530,7 +530,7 @@ describe('[Azure Functions] Utils', () => {
       const cookie = parseCookieString(cookieString);
 
       expect(cookie).toEqual({
-        name: 'sessionid',
+        name: 'sessionId',
         value: 'abc123',
         sameSite: 'Strict',
         domain: undefined,
@@ -548,7 +548,7 @@ describe('[Azure Functions] Utils', () => {
       const cookie = parseCookieString(cookieString);
 
       expect(cookie).toEqual({
-        name: 'sessionid',
+        name: 'sessionId',
         value: 'abc123',
         httpOnly: true,
         secure: true,
@@ -560,13 +560,13 @@ describe('[Azure Functions] Utils', () => {
       });
     });
 
-    it('should handle URL-encoded cookie values', () => {
+    it('should keep URL-encoded cookie values as they are', () => {
       const cookieString = 'user=John%20Doe%40example.com; Path=/';
       const cookie = parseCookieString(cookieString);
 
       expect(cookie).toEqual({
         name: 'user',
-        value: 'John Doe@example.com',
+        value: 'John%20Doe%40example.com',
         path: '/',
         domain: undefined,
         expires: undefined,
@@ -616,7 +616,7 @@ describe('[Azure Functions] Utils', () => {
       const cookie = parseCookieString(cookieString);
 
       expect(cookie).toEqual({
-        name: 'sessionid',
+        name: 'sessionId',
         value: 'abc123',
         secure: true,
         httpOnly: true,
@@ -628,9 +628,9 @@ describe('[Azure Functions] Utils', () => {
       const cookie = parseCookieString(cookieString);
 
       expect(cookie).toEqual({
-        name: 'sessionid',
+        name: 'sessionId',
         value: 'abc123',
-        sameSite: 'lax',
+        sameSite: 'Lax',
         domain: undefined,
         expires: undefined,
         httpOnly: false,
@@ -645,7 +645,7 @@ describe('[Azure Functions] Utils', () => {
       const cookie = parseCookieString(cookieString);
 
       expect(cookie).toEqual({
-        name: 'sessionid',
+        name: 'sessionId',
         value: 'abc123',
         maxAge: 7200,
         domain: undefined,
@@ -662,7 +662,7 @@ describe('[Azure Functions] Utils', () => {
       const cookie = parseCookieString(cookieString);
 
       expect(cookie).toEqual({
-        name: 'sessionid',
+        name: 'sessionId',
         value: 'abc123',
         maxAge: Number.NaN,
         domain: undefined,
@@ -679,7 +679,7 @@ describe('[Azure Functions] Utils', () => {
       const cookie = parseCookieString(cookieString);
 
       expect(cookie).toEqual({
-        name: 'sessionid',
+        name: 'sessionId',
         value: 'abc123',
         expires: new Date(Number.NaN),
         domain: undefined,
@@ -720,9 +720,9 @@ describe('[Azure Functions] Utils', () => {
       const cookie = parseCookieString(cookieString);
 
       expect(cookie).toEqual({
-        name: 'sessionid',
-        value: ' abc123 ',
-        path: ' / ',
+        name: 'sessionId',
+        value: 'abc123',
+        path: '/',
         domain: undefined,
         expires: undefined,
         httpOnly: false,
@@ -737,7 +737,7 @@ describe('[Azure Functions] Utils', () => {
       const cookie = parseCookieString(cookieString);
 
       expect(cookie).toEqual({
-        name: 'sessionid',
+        name: 'sessionId',
         value: 'abc123',
         path: '/',
         secure: true,
@@ -755,7 +755,7 @@ describe('[Azure Functions] Utils', () => {
 
       expect(cookie).toEqual({
         name: 'complex',
-        value: 'value with spaces and symbols!@#$%',
+        value: 'value%20with%20spaces%20and%20symbols%21%40%23%24%25',
         path: '/',
         domain: undefined,
         expires: undefined,
@@ -772,7 +772,7 @@ describe('[Azure Functions] Utils', () => {
 
       expect(cookie).toEqual({
         name: 'data',
-        value: '{"id":123,"name":"John"}',
+        value: '%7B%22id%22%3A123%2C%22name%22%3A%22John%22%7D',
         path: '/',
         domain: undefined,
         expires: undefined,

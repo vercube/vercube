@@ -8,7 +8,7 @@ describe('Utils - Cookies', () => {
       const cookie = parseCookieString(cookieString);
 
       expect(cookie).toEqual({
-        name: 'sessionid',
+        name: 'sessionId',
         value: 'abc123',
         domain: undefined,
         expires: undefined,
@@ -25,7 +25,7 @@ describe('Utils - Cookies', () => {
       const cookie = parseCookieString(cookieString);
 
       expect(cookie).toEqual({
-        name: 'sessionid',
+        name: 'sessionId',
         value: 'abc123',
         path: '/',
         domain: undefined,
@@ -42,7 +42,7 @@ describe('Utils - Cookies', () => {
       const cookie = parseCookieString(cookieString);
 
       expect(cookie).toEqual({
-        name: 'sessionid',
+        name: 'sessionId',
         value: 'abc123',
         secure: true,
         domain: undefined,
@@ -59,7 +59,7 @@ describe('Utils - Cookies', () => {
       const cookie = parseCookieString(cookieString);
 
       expect(cookie).toEqual({
-        name: 'sessionid',
+        name: 'sessionId',
         value: 'abc123',
         httpOnly: true,
         domain: undefined,
@@ -76,7 +76,7 @@ describe('Utils - Cookies', () => {
       const cookie = parseCookieString(cookieString);
 
       expect(cookie).toEqual({
-        name: 'sessionid',
+        name: 'sessionId',
         value: 'abc123',
         domain: '.example.com',
         expires: undefined,
@@ -93,7 +93,7 @@ describe('Utils - Cookies', () => {
       const cookie = parseCookieString(cookieString);
 
       expect(cookie).toEqual({
-        name: 'sessionid',
+        name: 'sessionId',
         value: 'abc123',
         maxAge: 3600,
         domain: undefined,
@@ -110,7 +110,7 @@ describe('Utils - Cookies', () => {
       const cookie = parseCookieString(cookieString);
 
       expect(cookie).toEqual({
-        name: 'sessionid',
+        name: 'sessionId',
         value: 'abc123',
         expires: new Date('Wed, 09 Jun 2021 10:18:14 GMT'),
         domain: undefined,
@@ -127,7 +127,7 @@ describe('Utils - Cookies', () => {
       const cookie = parseCookieString(cookieString);
 
       expect(cookie).toEqual({
-        name: 'sessionid',
+        name: 'sessionId',
         value: 'abc123',
         sameSite: 'Strict',
         domain: undefined,
@@ -145,7 +145,7 @@ describe('Utils - Cookies', () => {
       const cookie = parseCookieString(cookieString);
 
       expect(cookie).toEqual({
-        name: 'sessionid',
+        name: 'sessionId',
         value: 'abc123',
         httpOnly: true,
         secure: true,
@@ -157,13 +157,13 @@ describe('Utils - Cookies', () => {
       });
     });
 
-    it('should handle URL-encoded cookie values', () => {
+    it('should keep URL-encoded cookie values as they are', () => {
       const cookieString = 'user=John%20Doe%40example.com; Path=/';
       const cookie = parseCookieString(cookieString);
 
       expect(cookie).toEqual({
         name: 'user',
-        value: 'John Doe@example.com',
+        value: 'John%20Doe%40example.com',
         path: '/',
         domain: undefined,
         expires: undefined,
@@ -213,7 +213,7 @@ describe('Utils - Cookies', () => {
       const cookie = parseCookieString(cookieString);
 
       expect(cookie).toEqual({
-        name: 'sessionid',
+        name: 'sessionId',
         value: 'abc123',
         secure: true,
         httpOnly: true,
@@ -230,9 +230,9 @@ describe('Utils - Cookies', () => {
       const cookie = parseCookieString(cookieString);
 
       expect(cookie).toEqual({
-        name: 'sessionid',
+        name: 'sessionId',
         value: 'abc123',
-        sameSite: 'lax',
+        sameSite: 'Lax',
         domain: undefined,
         expires: undefined,
         httpOnly: false,
@@ -247,7 +247,7 @@ describe('Utils - Cookies', () => {
       const cookie = parseCookieString(cookieString);
 
       expect(cookie).toEqual({
-        name: 'sessionid',
+        name: 'sessionId',
         value: 'abc123',
         maxAge: 7200,
         domain: undefined,
@@ -264,7 +264,7 @@ describe('Utils - Cookies', () => {
       const cookie = parseCookieString(cookieString);
 
       expect(cookie).toEqual({
-        name: 'sessionid',
+        name: 'sessionId',
         value: 'abc123',
         maxAge: Number.NaN,
         domain: undefined,
@@ -281,7 +281,7 @@ describe('Utils - Cookies', () => {
       const cookie = parseCookieString(cookieString);
 
       expect(cookie).toEqual({
-        name: 'sessionid',
+        name: 'sessionId',
         value: 'abc123',
         expires: new Date(Number.NaN),
         domain: undefined,
@@ -329,7 +329,7 @@ describe('Utils - Cookies', () => {
       const cookieString = 'sessionId=abc123';
       const cookie = parseCookieString(cookieString);
 
-      expect(cookie.name).toBe('sessionid');
+      expect(cookie.name).toBe('sessionId');
       expect(cookie.value).toBe('abc123');
     });
 
@@ -342,7 +342,7 @@ describe('Utils - Cookies', () => {
       const cookieString = 'sessionId=abc123; Path=/';
       const cookie = parseCookieString(cookieString);
 
-      expect(cookie.name).toBe('sessionid');
+      expect(cookie.name).toBe('sessionId');
       expect(cookie.value).toBe('abc123');
       expect(cookie.path).toBe('/');
     });
@@ -361,9 +361,9 @@ describe('Utils - Cookies', () => {
       const cookie = parseCookieString(cookieString);
 
       expect(cookie).toEqual({
-        name: 'sessionid',
-        value: ' abc123 ',
-        path: ' / ',
+        name: 'sessionId',
+        value: 'abc123',
+        path: '/',
         domain: undefined,
         expires: undefined,
         httpOnly: false,
@@ -378,7 +378,7 @@ describe('Utils - Cookies', () => {
       const cookie = parseCookieString(cookieString);
 
       expect(cookie).toEqual({
-        name: 'sessionid',
+        name: 'sessionId',
         value: 'abc123',
         path: '/',
         secure: true,
@@ -396,7 +396,7 @@ describe('Utils - Cookies', () => {
 
       expect(cookie).toEqual({
         name: 'complex',
-        value: 'value with spaces and symbols!@#$%',
+        value: 'value%20with%20spaces%20and%20symbols%21%40%23%24%25',
         path: '/',
         domain: undefined,
         expires: undefined,
@@ -413,7 +413,7 @@ describe('Utils - Cookies', () => {
 
       expect(cookie).toEqual({
         name: 'data',
-        value: '{"id":123,"name":"John"}',
+        value: '%7B%22id%22%3A123%2C%22name%22%3A%22John%22%7D',
         path: '/',
         domain: undefined,
         expires: undefined,
@@ -439,7 +439,28 @@ describe('Utils - Cookies', () => {
       const cookieString = 'sessionId=abc123; samesite=STRICT';
       const cookie = parseCookieString(cookieString);
 
-      expect(cookie.sameSite).toBe('STRICT');
+      expect(cookie.sameSite).toBe('Strict');
+    });
+  });
+
+  describe('parseCookieString regressions', () => {
+    it('should keep every = after the first in the value', () => {
+      expect(parseCookieString('token=abc==; Path=/').value).toBe('abc==');
+    });
+
+    it('should keep the case of the name', () => {
+      expect(parseCookieString('SessionID=x; Path=/').name).toBe('SessionID');
+    });
+
+    it('should not decode the value', () => {
+      expect(parseCookieString('p=100%; Path=/').value).toBe('100%');
+      expect(parseCookieString('q=a%3Bb').value).toBe('a%3Bb');
+    });
+
+    it('should normalize SameSite', () => {
+      expect(parseCookieString('a=1; SameSite=lax').sameSite).toBe('Lax');
+      expect(parseCookieString('a=1; SameSite=none').sameSite).toBe('None');
+      expect(parseCookieString('a=1; SameSite=bogus').sameSite).toBeUndefined();
     });
   });
 
@@ -453,7 +474,7 @@ describe('Utils - Cookies', () => {
 
       expect(cookies).toHaveLength(2);
       expect(cookies![0]).toEqual({
-        name: 'sessionid',
+        name: 'sessionId',
         value: 'abc123',
         httpOnly: true,
         secure: true,
@@ -504,7 +525,7 @@ describe('Utils - Cookies', () => {
 
       expect(cookies).toHaveLength(1);
       expect(cookies![0]).toEqual({
-        name: 'sessionid',
+        name: 'sessionId',
         value: 'abc123',
         httpOnly: true,
         secure: true,
@@ -545,7 +566,7 @@ describe('Utils - Cookies', () => {
       expect(cookies).toHaveLength(1);
       expect(cookies![0]).toEqual({
         name: 'user',
-        value: 'John Doe',
+        value: 'John%20Doe',
         path: '/',
         domain: undefined,
         expires: undefined,
@@ -641,7 +662,7 @@ describe('Utils - Cookies', () => {
       const cookies = cookiesFromHeaders(headers);
 
       expect(cookies).toHaveLength(1);
-      expect(cookies![0].value).toBe('{"key":"value"}');
+      expect(cookies![0].value).toBe('%7B%22key%22%3A%22value%22%7D');
     });
   });
 });

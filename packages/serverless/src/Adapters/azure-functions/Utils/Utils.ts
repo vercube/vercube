@@ -24,8 +24,7 @@ export function cookiesFromHeaders(headers: Headers): Cookie[] | undefined {
  *
  * This function parses a standard Set-Cookie header string and extracts all cookie attributes
  * including name, value, path, sameSite, secure, httpOnly, domain, expires, and maxAge.
- * It handles URL decoding of the cookie value and proper type conversion for boolean and
- * numeric attributes.
+ * The name keeps its case and the value is passed through without URL decoding.
  *
  * The function expects cookie strings in the format:
  * "name=value; path=/; secure; httpOnly; sameSite=Strict; domain=example.com; expires=Wed, 09 Jun 2021 10:18:14 GMT; max-age=3600"
