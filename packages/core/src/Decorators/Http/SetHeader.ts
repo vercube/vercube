@@ -35,6 +35,12 @@ class SetHeaderDecorator extends BaseDecorator<SetHeaderDecoratorOptions, Metada
         return res;
       },
     });
+
+    // declarative copy, for tools such as the OpenAPI generator
+    method.meta.headers = {
+      ...(method.meta.headers as Record<string, string> | undefined),
+      [this.options.key]: this.options.value,
+    };
   }
 }
 

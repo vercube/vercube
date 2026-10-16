@@ -56,6 +56,9 @@ export class SchemaPlugin extends BasePlugin<SchemaPluginOptions> {
     // know that this plugin mounts an HTTP endpoint.
     const registry = app.container.get(SchemaRegistry);
 
+    // the document describes the application, not the endpoints serving it
+    registry.exclude(SchemaController);
+
     app.container.getOptional(IntrospectionRegistry)?.register({
       id: 'openapi',
       title: 'OpenAPI',

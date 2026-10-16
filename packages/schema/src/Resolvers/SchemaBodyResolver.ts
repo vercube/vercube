@@ -21,7 +21,23 @@ export function SchemaBodyResolver(metadata: MetadataTypes.Method, schema: DeepP
   const body = metadata.args.find((arg) => arg.type === 'body');
 
   // a body described in `@Schema()` is the whole description, nothing is merged into it
-  if (!body || !body.validationSchema || schema.request?.body) {
+  if (schema.request?.body) {
+    return;
+  }
+
+  // read without a schema: documented as some JSON, or as a form for an upload
+  if (!body?.validationSchema) {
+    const multipart = metadata.args.some((arg) => arg.type === 'multipart-form-data');
+
+    if (body || multipart) {
+      schema.request = {
+        ...schema.request,
+        body: {
+          content: multipart ? { 'multipart/form-data': { schema: { type: 'object' } } } : { 'application/json': { schema: {} } },
+        } as any,
+      };
+    }
+
     return;
   }
 

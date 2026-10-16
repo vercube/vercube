@@ -14,6 +14,7 @@ exports[`SchemaDecorator > should generate schema correctly 1`] = `
   "paths": {
     "/mock-params/files/{name}": {
       "get": {
+        "operationId": "MockParamsController_getFile",
         "parameters": [
           {
             "in": "path",
@@ -30,10 +31,14 @@ exports[`SchemaDecorator > should generate schema correctly 1`] = `
             "description": "File",
           },
         },
+        "tags": [
+          "MockParamsController",
+        ],
       },
     },
     "/mock-params/pages/{pageId}/comments/{id}": {
       "get": {
+        "operationId": "MockParamsController_getComment",
         "parameters": [
           {
             "in": "path",
@@ -57,10 +62,14 @@ exports[`SchemaDecorator > should generate schema correctly 1`] = `
             "description": "Comment",
           },
         },
+        "tags": [
+          "MockParamsController",
+        ],
       },
     },
     "/mock-params/search": {
       "get": {
+        "operationId": "MockParamsController_search",
         "parameters": [
           {
             "in": "query",
@@ -109,10 +118,14 @@ exports[`SchemaDecorator > should generate schema correctly 1`] = `
             "description": "Results",
           },
         },
+        "tags": [
+          "MockParamsController",
+        ],
       },
     },
     "/mock-params/users/{id}": {
       "get": {
+        "operationId": "MockParamsController_getUser",
         "parameters": [
           {
             "in": "path",
@@ -130,10 +143,14 @@ exports[`SchemaDecorator > should generate schema correctly 1`] = `
             "description": "User",
           },
         },
+        "tags": [
+          "MockParamsController",
+        ],
       },
     },
     "/mock/": {
       "get": {
+        "operationId": "MockController_getMock",
         "responses": {
           "200": {
             "content": {
@@ -154,6 +171,9 @@ exports[`SchemaDecorator > should generate schema correctly 1`] = `
             "description": "Mock schema",
           },
         },
+        "tags": [
+          "MockController",
+        ],
       },
     },
   },

@@ -8,6 +8,10 @@ import { ErrorAuthProvider } from './Mock/Middleware.mock';
 import { MockAuthProvider } from './Mock/TestClass.mock';
 
 describe('[auth] AuthMiddleware', () => {
+  it('should be marked as an authentication requirement for the OpenAPI generator', () => {
+    expect((AuthMiddleware as unknown as Record<symbol, unknown>)[Symbol.for('vercube.auth.middleware')]).toBe(true);
+  });
+
   // Create a mock logger
   const mockLogger = {
     debug: vi.fn(),

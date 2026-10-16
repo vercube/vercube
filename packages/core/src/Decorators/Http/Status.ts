@@ -32,6 +32,9 @@ class StatusDecorator extends BaseDecorator<StatusDecoratorOptions, MetadataType
         status: this.options.code,
       }),
     });
+
+    // declarative copy, for tools such as the OpenAPI generator
+    method.meta.status = this.options.code;
   }
 }
 

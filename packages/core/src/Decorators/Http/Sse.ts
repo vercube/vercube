@@ -41,6 +41,8 @@ class SseDecorator extends BaseDecorator<SseDecoratorOptions> {
     initializeMetadata(this.prototype);
     const method = initializeMetadataMethod(this.prototype, this.propertyName);
     method.method = 'GET';
+    // declarative marker, for tools such as the OpenAPI generator
+    method.meta.sse = true;
 
     const original = (this.prototype as Record<string, Function>)[this.propertyName];
     const name = `${this.instance?.constructor?.name}::${this.propertyName}`;

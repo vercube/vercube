@@ -74,4 +74,23 @@ export interface SchemaPluginOptions {
    * ```
    */
   components?: SchemaComponentsOptions;
+
+  /**
+   * Document every routed method, not only those with `@Schema`. Methods without
+   * it get the defaults derived from the route: path, parameters, body,
+   * responses, `operationId`, tags and security.
+   * @default false
+   */
+  includeAllRoutes?: boolean;
+
+  /**
+   * Security requirement documented for routes guarded by `@Auth()`. Defaults to
+   * `document.security`, else to any one of the `components.securitySchemes`.
+   *
+   * @example
+   * ```ts
+   * security: [{ bearerAuth: [] }]
+   * ```
+   */
+  security?: Record<string, string[]>[];
 }
