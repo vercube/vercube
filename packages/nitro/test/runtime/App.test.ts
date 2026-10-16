@@ -14,6 +14,10 @@ vi.mock('@vercube/di', async (importOriginal) => {
   };
 });
 
+vi.mock('nitro/runtime-config', () => ({
+  useRuntimeConfig: vi.fn(() => ({ apiUrl: 'from-env' })),
+}));
+
 vi.mock('../src/runtime/Storage', () => ({
   NitroStorageManager: class NitroStorageManager {},
 }));
@@ -65,6 +69,13 @@ describe('createNitroApp', () => {
     await createNitroApp(makeNitroOpts({ logLevel }));
     expect(createApp).toHaveBeenCalledWith({
       cfg: expect.objectContaining({ logLevel: expectedLevel }),
+    });
+  });
+
+  it('should read the runtime config when the server starts', async () => {
+    await createNitroApp({ dev: false, logLevel: 3 });
+    expect(createApp).toHaveBeenCalledWith({
+      cfg: expect.objectContaining({ runtime: { apiUrl: 'from-env' } }),
     });
   });
 });

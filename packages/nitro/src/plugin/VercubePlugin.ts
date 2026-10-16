@@ -43,28 +43,23 @@ export function vercubeNitro(options?: PluginOptions): NitroModule {
       // setup hooks
       setupHooks(nitro, options);
 
-      const routeMap = new Map<string, RouteInfo>();
+      // One entry per class, keyed by file and class name: a file can hold
+      // several controllers, and `users.ts` can exist in two scanned dirs. A
+      // class bound as a route is not bound again as a service.
+      const classes = new Map<string, RouteInfo | ServiceInfo>();
 
-      for (const route of await getTransformedRoutes(nitro)) {
-        routeMap.set(route.path, route);
+      for (const entry of [...(await getTransformedRoutes(nitro)), ...(await getTransformedServices(nitro, options?.scanDirs))]) {
+        const key = `${entry.fullPath}:${entry.importClassName}`;
+
+        if (!classes.has(key)) {
+          classes.set(key, entry);
+        }
       }
 
-      const routes = [...routeMap.values()];
-
-      const serviceMap = new Map<string, ServiceInfo>();
-
-      for (const service of await getTransformedServices(nitro, options?.scanDirs)) {
-        serviceMap.set(`${service.fullPath}:${service.importClassName}`, service);
-      }
-
-      const services = [...serviceMap.values()];
+      const bindings = toBindings([...classes.values()]);
 
       // Scan middleware dir to exclude BaseMiddleware subclasses from Nitro's native handling
       await getTransformedMiddlewares(nitro);
-
-      // Deduplicate imports by class name (a class bound as a route shouldn't be imported twice as a service)
-      const routeClassNames = new Set(routes.map((r) => r.importClassName));
-      const uniqueServices = services.filter((s) => !routeClassNames.has(s.importClassName));
 
       const setupFilePath = options?.setupFile ? resolve(nitro.options.rootDir, options.setupFile) : null;
 
@@ -73,19 +68,16 @@ export function vercubeNitro(options?: PluginOptions): NitroModule {
         import { createNitroApp } from '@vercube/nitro';
         ${setupFilePath ? `import __vercubeSetup__ from '${setupFilePath}';` : ''}
 
-        ${routes.map((route) => route.import).join('\n')}
-        ${uniqueServices.map((service) => service.import).join('\n')}
+        ${bindings.map((binding) => binding.import).join('\n')}
 
         export default definePlugin(async (nitroApp) => {
-          const app = await createNitroApp(${JSON.stringify(nitro.options)});
+          // only build flags are baked in, the runtime config is read when the server starts
+          const app = await createNitroApp(${JSON.stringify({ dev: nitro.options.dev, logLevel: nitro.options.logLevel })});
           nitroApp.__vercubeApp__ = app;
           globalThis.__vercubeApp__ = app;
 
-          // bind routes to container
-          ${routes.map((route) => `app.container.bind(${route.importClassName});`).join('\n')}
-
-          // bind services to container
-          ${uniqueServices.map((service) => `app.container.bind(${service.importClassName});`).join('\n')}
+          // bind routes and services to container
+          ${bindings.map((binding) => `app.container.bind(${binding.name});`).join('\n')}
 
           ${setupFilePath ? `await __vercubeSetup__(app);` : ''}
 
@@ -97,4 +89,30 @@ export function vercubeNitro(options?: PluginOptions): NitroModule {
       nitro.options.plugins.push('#internal/vercube-route-plugin');
     },
   };
+}
+
+/**
+ * Builds the import and the local name of every class to bind. A class name
+ * already taken by a class from another file is imported under an alias, so
+ * two `UsersController`s from `api/users.ts` and `routes/users.ts` both load.
+ *
+ * @param entries - Classes to bind, one per file and class name
+ * @returns The import statement and local name of each class
+ */
+function toBindings(entries: (RouteInfo | ServiceInfo)[]): { import: string; name: string }[] {
+  const taken = new Set<string>();
+
+  return entries.map((entry, index) => {
+    if (!taken.has(entry.importClassName)) {
+      taken.add(entry.importClassName);
+      return { import: entry.import, name: entry.importClassName };
+    }
+
+    const alias = `__vercube_${entry.importClassName}_${index}`;
+    const statement = entry.import.includes('{')
+      ? entry.import.replace(`{ ${entry.importClassName} }`, `{ ${entry.importClassName} as ${alias} }`)
+      : entry.import.replace(`import ${entry.importClassName} from`, `import ${alias} from`);
+
+    return { import: statement, name: alias };
+  });
 }
