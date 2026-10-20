@@ -35,7 +35,7 @@
   },
   "dependencies": {
     "@vercube/scan": "workspace:*",
-    "chokidar": "5.0.0",
+    "chokidar": "6.0.0",
     "defu": "catalog:",
     "env-runner": "catalog:",
     "pathe": "catalog:",
