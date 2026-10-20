@@ -40,7 +40,12 @@ describe('documented paths', () => {
     expect(schema.paths['/v2/x']).toBeDefined();
     expect(schema.paths['/moved/x']).toBeUndefined();
     expect(schema.paths['/noslash/{id}']?.get?.parameters).toEqual([
-      expect.objectContaining({ name: 'id', in: 'path', required: true, schema: expect.objectContaining({ pattern: '\\d+' }) }),
+      expect.objectContaining({
+        name: 'id',
+        in: 'path',
+        required: true,
+        schema: expect.objectContaining({ pattern: String.raw`\d+` }),
+      }),
     ]);
   });
 });

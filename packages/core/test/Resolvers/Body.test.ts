@@ -277,7 +277,7 @@ describe('resolveRequestBody', () => {
     it('should handle JSON with special characters', async () => {
       const jsonData = {
         message: 'Hello "World" with quotes',
-        path: 'C:\\Users\\John\\Documents',
+        path: String.raw`C:\Users\John\Documents`,
         unicode: '🎉🚀✨',
         newlines: 'Line 1\nLine 2\r\nLine 3',
         tabs: 'Tab\tSeparated\tValues',
