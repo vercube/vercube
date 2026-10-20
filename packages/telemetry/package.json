@@ -1,6 +1,6 @@
 {
   "name": "@vercube/telemetry",
-  "version": "1.3.3",
+  "version": "1.4.0",
   "description": "OpenTelemetry instrumentation for the Vercube framework - traces, metrics and log correlation",
   "packageManager": "pnpm@12.14.0",
   "repository": {
