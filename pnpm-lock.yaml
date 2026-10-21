@@ -180,8 +180,8 @@ catalogs:
       specifier: 6.1.7
       version: 6.1.7
     env-runner:
-      specifier: 0.3.4
-      version: 0.3.4
+      specifier: 0.3.7
+      version: 0.3.7
     jiti:
       specifier: 2.7.0
       version: 2.7.0
@@ -975,7 +975,7 @@ importers:
         version: 6.1.7
       env-runner:
         specifier: 'catalog:'
-        version: 0.3.4
+        version: 0.3.7
       pathe:
         specifier: 'catalog:'
         version: 2.0.3
@@ -1716,12 +1716,14 @@ packages:
   '@opentelemetry/sdk-trace-base@2.12.0':
     resolution: {integrity: sha512-JOERgZCxRM06FEJ5kEWxlSRChah6MmXDx3KwCruqEv/iEyLkTokCSemf2y1w8oIHtfrr8EVTpzebq/31vn2Cpg==}
     engines: {node: ^18.19.0 || >=20.6.0}
+    deprecated: Use @opentelemetry/sdk-trace package
     peerDependencies:
       '@opentelemetry/api': '>=1.3.0 <1.10.0'
 
   '@opentelemetry/sdk-trace-node@2.12.0':
     resolution: {integrity: sha512-9DufH1IlmQMoKAfot5y/FhTP1RnmhLb5K6eKmJO/bvzPjYwPAazoiAUbTZFdPbqxOXN0FEbhZx/e6SB1Og4jmg==}
     engines: {node: ^18.19.0 || >=20.6.0}
+    deprecated: Use @opentelemetry/sdk-trace package
     peerDependencies:
       '@opentelemetry/api': '>=1.0.0 <1.10.0'
 
@@ -3316,8 +3318,8 @@ packages:
     resolution: {integrity: sha512-S8EFBKyznRwPVwayK187cYjvnpgC92xy+q0BIF++V965pfjMVVRbQ/HoTYGA/1EHmZ7E68k6Heq+4WnvVhOL5w==}
     hasBin: true
 
-  env-runner@0.3.4:
-    resolution: {integrity: sha512-zP3dtlJZUn++g7N/rL2aiWkzqxsqCNCRTt8d3Gf3+iSCCIoSgBdWMSY1fz+dQ4+kH37kJ5etnEeJ4BouqIS1yQ==}
+  env-runner@0.3.7:
+    resolution: {integrity: sha512-Fcv10GJOlfwP4mD6g05mTtZ1/YrmJGAFIRDYfJwXAhl4xyZCX5O2LsJVTSDctK2jUjzIrNCSk3IkHKvoOqfzHA==}
     hasBin: true
 
   error-ex@1.3.4:
@@ -4237,6 +4239,11 @@ packages:
 
   srvx@1.0.5:
     resolution: {integrity: sha512-KvSKRpgPG/oaq3cyT614OQ2bAa7DynuGamivCZeoZzIUULOdbQz6wUtnnVuC4+DCx2Zglzo8v5gBYmWIWYhDxA==}
+    engines: {node: '>=20.16.0'}
+    hasBin: true
+
+  srvx@1.0.6:
+    resolution: {integrity: sha512-QeTKgAhk8OSsfeq60bl3wuVs9PmBftzmk7owBInA/F1YQne+TRw0UcPymNpURldAmx8hfmM2PNNGH/zgo3GpLA==}
     engines: {node: '>=20.16.0'}
     hasBin: true
 
@@ -6556,6 +6563,10 @@ snapshots:
     optionalDependencies:
       srvx: 1.0.5
 
+  crossws@0.4.15(srvx@1.0.6):
+    optionalDependencies:
+      srvx: 1.0.6
+
   csstype@3.2.3: {}
 
   data-uri-to-buffer@4.0.1: {}
@@ -6613,10 +6624,10 @@ snapshots:
       httpxy: 0.5.5
       srvx: 1.0.5
 
-  env-runner@0.3.4:
+  env-runner@0.3.7:
     dependencies:
-      crossws: 0.4.15(srvx@1.0.5)
-      srvx: 1.0.5
+      crossws: 0.4.15(srvx@1.0.6)
+      srvx: 1.0.6
 
   error-ex@1.3.4:
     dependencies:
@@ -7574,6 +7585,8 @@ snapshots:
     optional: true
 
   srvx@1.0.5: {}
+
+  srvx@1.0.6: {}
 
   stack-trace@1.0.0-pre2: {}
 
