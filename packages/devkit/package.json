@@ -29,7 +29,7 @@
     "@oxc-project/runtime": "catalog:",
     "@vercube/core": "workspace:*",
     "c12": "catalog:",
-    "chokidar": "5.0.0",
+    "chokidar": "6.0.0",
     "consola": "catalog:",
     "defu": "catalog:",
     "dotenv": "18.0.8",
