@@ -27,8 +27,10 @@ export abstract class AuthProvider<U = unknown> {
   /**
    * Get current user
    *
-   * Called by `@User()` only when `@Auth()` with the same provider has not
-   * already authenticated the request.
+   * `@User()` skips it only when `@Auth()` with the same provider returned
+   * `{ user }` earlier in the request. It is called otherwise: on a route
+   * without `@Auth()`, after a legacy `null` from `validate()`, or with
+   * `requestContext: false`, so every provider has to implement it.
    *
    * @param {Request} request - The request object
    * @returns A promise of the current user or null if no user is authenticated
