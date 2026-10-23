@@ -75,6 +75,16 @@ class AccountController {
   }
 }
 
+@Controller('/team')
+@Auth()
+class TeamController {
+  @Get('/me')
+  @Auth({ roles: ['member'] })
+  public me(@User() user: Account): unknown {
+    return user;
+  }
+}
+
 describe('[auth] @User() after @Auth()', () => {
   afterEach(() => {
     loadAccount.mockClear();
@@ -90,6 +100,30 @@ describe('[auth] @User() after @Auth()', () => {
 
     expect(await res.json()).toEqual({ id: '7', provider: 'default' });
     expect(loadAccount).toHaveBeenCalledTimes(1);
+  });
+
+  it('should reject the request when validate() returns { error }', async () => {
+    await using app = await createTestApp({
+      controllers: [AccountController],
+      providers: [[AuthProvider, AccountAuthProvider], OtherAuthProvider, LegacyAuthProvider],
+    });
+
+    const res = await app.get('/accounts/me').expect(401);
+
+    expect(await res.json()).toMatchObject({ message: 'Unknown user' });
+  });
+
+  it('should hand @User() the user when @Auth() is on both the controller and the method', async () => {
+    await using app = await createTestApp({
+      controllers: [TeamController],
+      providers: [[AuthProvider, AccountAuthProvider]],
+    });
+
+    const res = await app.get('/team/me').header('x-user', '7').expect(200);
+
+    // one validate() per @Auth(), none for @User()
+    expect(await res.json()).toEqual({ id: '7', provider: 'default' });
+    expect(loadAccount).toHaveBeenCalledTimes(2);
   });
 
   it('should not leak the user into the next request', async () => {
