@@ -1,6 +1,7 @@
 import { timingSafeEqual } from 'node:crypto';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { AuthProvider } from '@vercube/auth';
+import type { AuthTypes } from '@vercube/auth';
 import type { MaybePromise } from '@vercube/core';
 
 /**
@@ -13,18 +14,18 @@ export class BasicAuthenticationProvider extends AuthProvider {
   /**
    * Authenticates based on the HTTP event
    * @param request - The HTTP event containing the request
-   * @returns An error string or Promise of error string, null or Promise of null if authentication is successful
+   * @returns The authenticated user, or an error when authentication fails
    */
-  public validate(request: Request): MaybePromise<string | null> {
+  public validate(request: Request): MaybePromise<AuthTypes.ValidationResult> {
     const [type, token] = (request.headers.get('Authorization') ?? '').split(' ');
 
     if (type !== 'Basic') {
-      return 'Invalid authentication method';
+      return { error: 'Invalid authentication method' };
     }
 
     // Validate token exists
     if (!token) {
-      return 'Invalid authentication token';
+      return { error: 'Invalid authentication token' };
     }
 
     const decoded = Buffer.from(token, 'base64').toString();
@@ -32,7 +33,7 @@ export class BasicAuthenticationProvider extends AuthProvider {
 
     // Validate decoded credentials
     if (!user || !pass) {
-      return 'Invalid authentication credentials';
+      return { error: 'Invalid authentication credentials' };
     }
 
     // Use timing-safe comparison to prevent timing attacks
@@ -44,10 +45,10 @@ export class BasicAuthenticationProvider extends AuthProvider {
     const passMatches = pass.length === expectedPass.length && timingSafeEqual(Buffer.from(pass), Buffer.from(expectedPass));
 
     if (!userMatches || !passMatches) {
-      return 'Invalid username or password';
+      return { error: 'Invalid username or password' };
     }
 
-    return null;
+    return { user: null };
   }
 
   /**

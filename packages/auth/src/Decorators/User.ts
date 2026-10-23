@@ -1,6 +1,7 @@
-import { initializeMetadata, initializeMetadataMethod, InternalServerError, setMetadataArg } from '@vercube/core';
-import { BaseDecorator, Container, createDecorator, Inject } from '@vercube/di';
+import { initializeMetadata, initializeMetadataMethod, InternalServerError, RequestContext, setMetadataArg } from '@vercube/core';
+import { BaseDecorator, Container, createDecorator, Inject, InjectOptional } from '@vercube/di';
 import { AuthProvider } from '../Services/AuthProvider';
+import { recallUser } from '../Utils/AuthenticatedUsers';
 import type { RouterTypes } from '@vercube/core';
 
 /**
@@ -12,7 +13,7 @@ interface UserDecoratorOptions {
    * Optional custom auth provider to use for retrieving the current user
    * If not provided, the default AuthProvider will be used
    */
-  provider?: typeof AuthProvider;
+  provider?: typeof AuthProvider<any>;
 }
 
 /**
@@ -25,6 +26,9 @@ interface UserDecoratorOptions {
 class UserDecorator extends BaseDecorator<UserDecoratorOptions> {
   @Inject(Container)
   private gContainer!: Container;
+
+  @InjectOptional(RequestContext)
+  private gRequestContext!: RequestContext | null;
 
   /**
    * Called when the decorator is created.
@@ -40,15 +44,21 @@ class UserDecorator extends BaseDecorator<UserDecoratorOptions> {
       idx: this.propertyIndex,
       type: 'custom',
       resolver: async (event: RouterTypes.RouterEvent) => {
-        const provider = this.options?.provider
-          ? this.gContainer.getOptional(this.options.provider)
-          : this.gContainer.getOptional(AuthProvider);
+        const providerKey = this.options?.provider ?? AuthProvider;
+
+        // @Auth() with the same provider already authenticated this request
+        const authenticated = recallUser(this.gRequestContext, providerKey);
+
+        if (authenticated) {
+          return authenticated.user;
+        }
+
+        const provider = this.gContainer.getOptional(providerKey);
 
         // fail closed, like AuthMiddleware: a handler must never mistake a
         // missing provider for an anonymous caller
         if (!provider) {
-          const name = (this.options?.provider ?? AuthProvider).name;
-          throw new InternalServerError(`@User(): auth provider "${name}" is not registered in the container`);
+          throw new InternalServerError(`@User(): auth provider "${providerKey.name}" is not registered in the container`);
         }
 
         return provider.getCurrentUser(event.request);
