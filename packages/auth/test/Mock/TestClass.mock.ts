@@ -39,6 +39,5 @@ export class MockAuthProvider extends AuthProvider {
 }
 
 export class TestClass7 {
-  // @ts-expect-error
   public testMethod(@User({ provider: MockAuthProvider }) user: any) {}
 }

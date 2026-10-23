@@ -1,7 +1,8 @@
-import { InternalServerError, UnauthorizedError } from '@vercube/core';
-import { Container, Inject } from '@vercube/di';
+import { InternalServerError, RequestContext, UnauthorizedError } from '@vercube/core';
+import { Container, Inject, InjectOptional } from '@vercube/di';
 import { createInstrument, ValueType } from '@vercube/telemetry/instrument';
 import { AuthProvider } from '../Services/AuthProvider';
+import { rememberUser } from '../Utils/AuthenticatedUsers';
 import type { AuthTypes } from '../Types/AuthTypes';
 import type { BaseMiddleware, MiddlewareOptions } from '@vercube/core';
 
@@ -52,6 +53,12 @@ export class AuthMiddleware implements BaseMiddleware<AuthTypes.MiddlewareOption
   private gContainer!: Container;
 
   /**
+   * Request context the authenticated user is handed to `@User()` through.
+   */
+  @InjectOptional(RequestContext)
+  private gRequestContext!: RequestContext | null;
+
+  /**
    * Middleware function that processes the HTTP event.
    *
    * @param {Request} request - The HTTP request to be processed
@@ -74,14 +81,27 @@ export class AuthMiddleware implements BaseMiddleware<AuthTypes.MiddlewareOption
       throw new InternalServerError(`AuthMiddleware: auth provider "${providerKey.name}" is not registered in the container`);
     }
 
-    const authenticationError = await provider.validate(request, args.middlewareArgs);
+    const result = await provider.validate(request, args.middlewareArgs);
 
-    if (authenticationError) {
+    // the shape providers returned before ValidationResult: an error message,
+    // or nothing on success, so there is no user to hand to @User()
+    if (!result || typeof result === 'string') {
+      if (result) {
+        recordOutcome('denied');
+        throw new UnauthorizedError(result);
+      }
+
+      recordOutcome('allowed');
+      return;
+    }
+
+    if ('error' in result) {
       recordOutcome('denied');
-      throw new UnauthorizedError(authenticationError);
+      throw new UnauthorizedError(result.error);
     }
 
     recordOutcome('allowed');
+    rememberUser(this.gRequestContext, providerKey, result.user);
   }
 }
 

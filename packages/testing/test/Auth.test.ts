@@ -27,6 +27,14 @@ class AdminController {
   }
 }
 
+@Controller('/whoami')
+class WhoAmIController {
+  @Get('/')
+  public whoami(@User() user: Account | null): unknown {
+    return { user };
+  }
+}
+
 /** Records the request the provider is asked about. */
 class RecordingProvider extends TestAuthProvider<Account> {
   public override validate(request: Request): string | null {
@@ -48,6 +56,16 @@ describe('testAuth', () => {
     const res = await app.get('/admin').as({ id: '7' }).expect(200);
 
     expect(await res.json()).toEqual({ id: '7' });
+  });
+
+  it('should hand @User() the user on a route without @Auth()', async () => {
+    await using app = await createTestApp({ controllers: [WhoAmIController], extensions: [testAuth()] });
+
+    const res = await app.get('/whoami').as({ id: '7' }).expect(200);
+    const anonymous = await app.get('/whoami').expect(200);
+
+    expect(await res.json()).toEqual({ user: { id: '7' } });
+    expect(await anonymous.json()).toEqual({ user: null });
   });
 
   it('should check the roles the route requires', async () => {
