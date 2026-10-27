@@ -189,8 +189,8 @@ catalogs:
       specifier: 3.0.260903-beta
       version: 3.0.260903-beta
     ocache:
-      specifier: 0.3.0
-      version: 0.3.0
+      specifier: 0.3.1
+      version: 0.3.1
     ohash:
       specifier: 2.0.12
       version: 2.0.12
@@ -538,7 +538,7 @@ importers:
         version: link:../telemetry
       ocache:
         specifier: 'catalog:'
-        version: 0.3.0
+        version: 0.3.1
       ohash:
         specifier: 'catalog:'
         version: 2.0.12
@@ -3939,6 +3939,9 @@ packages:
   ocache@0.3.0:
     resolution: {integrity: sha512-RS/9P0zeBb0gDJmadGERLH8lZNXK7xbufTDhclkXGvFGTsj0G4M5/cLk+mizcERH29mLXNnocfB5wjcK70wGJg==}
 
+  ocache@0.3.1:
+    resolution: {integrity: sha512-qeBrhQ0ly6tgXsakgNwLx6diRUppJZIcV5OjVGa5yp9HzztutkaGDDXJqVMo1fKWz5fNDtTp3iPU2fuhHf0+Lg==}
+
   ohash@2.0.12:
     resolution: {integrity: sha512-65S/5gk9YSsaRjcyf7Nfa6h/d3E8/1gslpXfI4W7Dxn/oap8IKRuNT5VXkLQ1YFKIEg4apRY4Pj6aiwFzrDdmw==}
 
@@ -7190,6 +7193,8 @@ snapshots:
   obug@3.0.0: {}
 
   ocache@0.3.0: {}
+
+  ocache@0.3.1: {}
 
   ohash@2.0.12: {}
 
