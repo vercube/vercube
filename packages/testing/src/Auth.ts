@@ -45,22 +45,23 @@ export class TestAuthProvider<U = unknown> extends AuthProvider<U> {
    *
    * @param request - The request
    * @param params - What `@Auth()` requires
-   * @returns An error message, or null when the request may go through
+   * @returns The user, or an error message when the request may not go through
    */
-  public validate(request: Request, params?: AuthTypes.MiddlewareOptions): string | null {
+  public validate(request: Request, params?: AuthTypes.MiddlewareOptions): AuthTypes.ValidationResult<U> {
     if (!this.fUsers.has(request)) {
-      return 'Unauthorized';
+      return { error: 'Unauthorized' };
     }
 
+    const user = this.fUsers.get(request)!;
     const required = params?.roles ?? [];
 
     if (required.length === 0) {
-      return null;
+      return { user };
     }
 
-    const roles = this.fRoles(this.fUsers.get(request)!);
+    const roles = this.fRoles(user);
 
-    return required.some((role) => roles.includes(role)) ? null : 'Forbidden';
+    return required.some((role) => roles.includes(role)) ? { user } : { error: 'Forbidden' };
   }
 
   /**
