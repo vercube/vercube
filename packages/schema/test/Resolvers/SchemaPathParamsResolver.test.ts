@@ -67,7 +67,7 @@ describe('SchemaPathParamsResolver', () => {
 
   it('should mark an optional param and carry its pattern', () => {
     const schema: DeepPartial<RouteConfig> = {};
-    SchemaPathParamsResolver(pathOf(['id', 'slug'], ['slug'], { id: '\\d+' }), meta(), schema);
+    SchemaPathParamsResolver(pathOf(['id', 'slug'], ['slug'], { id: String.raw`\d+` }), meta(), schema);
 
     const registry = new OpenAPIRegistry();
     registry.registerPath({ method: 'get', path: '/a/{id}/{slug}', request: schema.request as any, responses: {} });
@@ -77,7 +77,7 @@ describe('SchemaPathParamsResolver', () => {
     });
 
     expect(document.paths['/a/{id}/{slug}'].get?.parameters).toEqual([
-      expect.objectContaining({ name: 'id', required: true, schema: expect.objectContaining({ pattern: '\\d+' }) }),
+      expect.objectContaining({ name: 'id', required: true, schema: expect.objectContaining({ pattern: String.raw`\d+` }) }),
       expect.objectContaining({ name: 'slug', required: false }),
     ]);
   });

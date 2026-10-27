@@ -126,7 +126,7 @@ describe('Security utilities for prototype pollution protection', () => {
 
     it('should keep escaped but harmless payloads intact', () => {
       const result = safeJsonParse(String.raw`{"name":"John \u0044oe","path":"a\\b"}`);
-      expect(result).toEqual({ name: 'John Doe', path: 'a\\b' });
+      expect(result).toEqual({ name: 'John Doe', path: String.raw`a\b` });
     });
 
     it('should filter out prototype during parsing', () => {
