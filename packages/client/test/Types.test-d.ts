@@ -2,7 +2,7 @@
 import { Controller, Get, Param } from '@vercube/core';
 import { describe, expectTypeOf, it } from 'vitest';
 import { createClient } from '../src';
-import type { RouteDef, SseEvent, SseStream } from '../src';
+import type { Jsonify, RouteDef, SseEvent, SseStream } from '../src';
 import type { TestRoutes } from './fixtures/Controllers';
 import type { VercubeRoutes } from './fixtures/routes';
 
@@ -88,6 +88,13 @@ describe('types', () => {
     expectTypeOf(api.head('/users/:id', { params: { id: '1' } })).resolves.toBeVoid();
     expectTypeOf(api.post('/users/raw')).resolves.toBeString();
     expectTypeOf(api.get('/users/fail')).toEqualTypeOf<Promise<never>>();
+  });
+
+  it('arrays serialize undefined and functions as null', () => {
+    expectTypeOf<Jsonify<(string | undefined)[]>>().toEqualTypeOf<(string | null)[]>();
+    expectTypeOf<Jsonify<[Date, undefined, () => void]>>().toEqualTypeOf<[string, null, null]>();
+    // in an object the key is dropped instead, so it stays optional
+    expectTypeOf<Jsonify<{ a?: string }>>().toEqualTypeOf<{ a?: string }>();
   });
 
   it('sse', () => {
