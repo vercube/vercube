@@ -42,9 +42,6 @@ export class HealthRegistry {
   /** The run in progress, shared by concurrent callers. */
   private fRunning: Promise<HealthTypes.Report> | null = null;
 
-  /** Bumped whenever the set of checks changes, so a stale run is not cached. */
-  private fGeneration: number = 0;
-
   /**
    * Applies the registry settings. Drops the cached report.
    *
@@ -169,15 +166,20 @@ export class HealthRegistry {
       }
     }
 
-    const generation = this.fGeneration;
     const running = this.runAll().then((report) => {
-      if (this.fRunning === running) {
-        this.fRunning = null;
+      // Only the latest run writes the cache: an older one finishing after a
+      // `fresh` run must not replace its report, and a run the checks changed
+      // under (`invalidate()` forgot it) must not be cached at all.
+      if (this.fRunning !== running) {
+        return report;
       }
 
-      // the checks changed while running, the next caller has to run again
-      if (generation === this.fGeneration && this.fCacheTtl > 0) {
-        this.fCached = { report, expires: report.timestamp + this.fCacheTtl };
+      this.fRunning = null;
+
+      // from when the run finished, or a check slower than the TTL (a hung
+      // backend timing out) would store a report that is already stale
+      if (this.fCacheTtl > 0) {
+        this.fCached = { report, expires: Date.now() + this.fCacheTtl };
       }
 
       return report;
@@ -194,7 +196,6 @@ export class HealthRegistry {
    * @returns {void}
    */
   public invalidate(): void {
-    this.fGeneration++;
     this.fCached = null;
     this.fRunning = null;
   }

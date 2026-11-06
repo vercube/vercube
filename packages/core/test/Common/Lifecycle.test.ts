@@ -96,6 +96,17 @@ describe('App lifecycle', () => {
     expect(instance.state).toBe('closed');
   });
 
+  it('should be closed even when something failed to close', async () => {
+    const instance = await boot();
+
+    instance.onClose(() => {
+      throw new Error('broker');
+    });
+
+    await expect(instance.close()).rejects.toThrow(AggregateError);
+    expect(instance.state).toBe('closed');
+  });
+
   it('should go straight to draining when closed before it started', async () => {
     const instance = await boot();
     const gate = Promise.withResolvers<void>();

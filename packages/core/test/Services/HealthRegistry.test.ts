@@ -171,6 +171,60 @@ describe('HealthRegistry', () => {
     expect(check).toHaveBeenCalledTimes(1);
   });
 
+  it('should cache a report from a check slower than the TTL', async () => {
+    registry.configure({ cacheTtl: 50 });
+
+    const check = vi.fn(() => new Promise<void>((resolve) => setTimeout(resolve, 80)));
+    registry.register({ name: 'slow', check });
+
+    await registry.check();
+    await registry.check();
+
+    expect(check).toHaveBeenCalledTimes(1);
+  });
+
+  it('should not let an older run replace the report of a fresh one', async () => {
+    registry.configure({ cacheTtl: 60_000 });
+
+    const gates = [Promise.withResolvers<void>(), Promise.withResolvers<void>()];
+    let call = 0;
+
+    registry.register({
+      name: 'db',
+      check: async () => {
+        const index = call++;
+        await gates[index].promise;
+        return { status: 'ok', details: { call: index } };
+      },
+    });
+
+    const older = registry.check();
+    const fresh = registry.check({ fresh: true });
+
+    gates[1].resolve();
+    await fresh;
+    gates[0].resolve();
+    await older;
+
+    expect(registry.cached?.checks.db.details).toEqual({ call: 1 });
+    expect((await registry.check()).checks.db.details).toEqual({ call: 1 });
+  });
+
+  it('should not cache a run the checks changed under', async () => {
+    registry.configure({ cacheTtl: 60_000 });
+
+    const gate = Promise.withResolvers<void>();
+    registry.register({ name: 'db', check: () => gate.promise });
+
+    const stale = registry.check();
+    registry.unregister('db');
+    gate.resolve();
+    await stale;
+
+    expect(registry.cached).toBeNull();
+    expect((await registry.check()).checks).toEqual({});
+  });
+
   it('should run again with fresh', async () => {
     registry.configure({ cacheTtl: 60_000 });
 
