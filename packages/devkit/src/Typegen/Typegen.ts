@@ -61,8 +61,8 @@ export async function typegen(
  * Keeps the route map in step with a running dev worker.
  *
  * The worker reports its routes after every restart, which in development is
- * every save; the map is only regenerated when the route table changes or a
- * file it imports is gone.
+ * every save; the file is only rewritten when the map it would hold differs
+ * from what is on disk.
  *
  * @param app - The devkit app
  * @returns A handler for worker messages, or `null` when typegen is off

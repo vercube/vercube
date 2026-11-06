@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { buildEnvironments } from '../src/prod';
+import { buildEnvironments, builtEntry } from '../src/prod';
 import { VERCUBE_ENV } from '../src/types';
 import type { VercubePluginContext } from '../src/types';
 
@@ -40,5 +40,19 @@ describe('buildEnvironments', () => {
     expect(build).toHaveBeenCalledTimes(2);
     expect(build.mock.calls[0][0]).toBe(clientEnv);
     expect(build.mock.calls[1][0]).toBe(serverEnv);
+  });
+
+  it('inspects the entry the server build emitted, wherever it was written', () => {
+    const output = {
+      output: [
+        { type: 'asset', fileName: 'a.css' },
+        { type: 'chunk', isEntry: false, fileName: 'x-1.mjs' },
+        { type: 'chunk', isEntry: true, fileName: 'server.mjs' },
+      ],
+    };
+
+    expect(builtEntry(ctx(), '/abs/out', output)).toBe('/abs/out/server.mjs');
+    expect(builtEntry(ctx(), 'build', [output])).toBe('/abs/build/server.mjs');
+    expect(builtEntry(ctx(), undefined, undefined)).toBe('/abs/dist/index.mjs');
   });
 });

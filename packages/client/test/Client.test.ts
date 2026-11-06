@@ -200,8 +200,11 @@ describe('createClient', () => {
 
     await createClient<TestRoutes>({ baseURL: 'http://test/api/', fetch }).get('/users/:id', { params: { id: '1' } });
     await createClient({ baseURL: 'http://test', fetch }).get('/search?q=alice', { query: { page: 2 } });
+    await createClient({ baseURL: 'http://test', fetch }).get('/search?q=alice#top', { query: { page: 2 } });
+    await createClient({ baseURL: 'http://test', fetch }).get('/search#top', { query: { page: 2 } });
 
-    expect(seen).toEqual(['http://test/api/users/1', 'http://test/search?q=alice&page=2']);
+    expect(seen.map((url) => new URL(url).search)).toEqual(['', '?q=alice&page=2', '?q=alice&page=2', '?page=2']);
+    expect(seen.slice(0, 2)).toEqual(['http://test/api/users/1', 'http://test/search?q=alice&page=2']);
   });
 
   it('refuses path parameters that would climb to another route', async () => {

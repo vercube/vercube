@@ -37,6 +37,9 @@ const messageListeners = new Set<MessageListener>();
 
 const envs: Record<string, ViteEnvRunner | undefined> = Object.create(null);
 
+/** Route reports started so far; only the latest one is sent. */
+let reports = 0;
+
 /**
  * Owns the module runner and loaded entry for a single Vite environment.
  */
@@ -129,9 +132,15 @@ async function reportRoutes(entry: ViteEntry): Promise<void> {
   if (!entry.inspect || !sendMessage) {
     return;
   }
+  const report = ++reports;
   try {
     const [routes, discovery] = await Promise.all([entry.inspect('routes'), entry.inspect('discovery')]);
-    sendMessage({ type: 'vercube:routes', routes: routes?.data ?? [], discovery: discovery?.data ?? null });
+    // two saves in a row: the older entry can finish last, and its routes
+    // must not replace the newer ones; nor may a missing section empty the map
+    if (report !== reports || !Array.isArray(routes?.data)) {
+      return;
+    }
+    sendMessage({ type: 'vercube:routes', routes: routes.data, discovery: discovery?.data ?? null });
   } catch (error) {
     console.error(error);
   }

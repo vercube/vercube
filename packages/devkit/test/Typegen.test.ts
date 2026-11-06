@@ -130,7 +130,7 @@ describe('watchRouteTypes', () => {
     expect(watchRouteTypes(app())).toBeNull();
   });
 
-  it('regenerates when the route table changes or an imported file is gone, not on every report', async () => {
+  it('follows route, controller and output changes, writing only when the map differs', async () => {
     const onMessage = watchRouteTypes(app({ typegen: true }))!;
     const file = join(root, '.vercube/routes.d.ts');
     const user = [routes[0]];
@@ -140,11 +140,16 @@ describe('watchRouteTypes', () => {
 
     await onMessage(message(user));
     const first = readFileSync(file, 'utf8');
+    const written = statSync(file).mtimeMs;
 
-    // same table: the file is not even regenerated, let alone rewritten
+    // same table: the file is left alone
+    await onMessage(message(user));
+    expect(statSync(file).mtimeMs).toBe(written);
+
+    // deleted while dev runs: written again
     rmSync(file);
     await onMessage(message(user));
-    expect(() => statSync(file)).toThrow();
+    expect(readFileSync(file, 'utf8')).toBe(first);
 
     // a changed table
     await onMessage(message([{ ...routes[0], handler: 'show' }]));
@@ -156,6 +161,13 @@ describe('watchRouteTypes', () => {
     await onMessage(message([{ ...routes[0], handler: 'show' }]));
     expect(readFileSync(file, 'utf8')).toContain("from '../src/Controllers/UserController.js'");
     expect(first).toContain("from '../src/UserController.js'");
+
+    // a controller that was not exported: same table, now it is
+    await onMessage(message(routes));
+    expect(readFileSync(file, 'utf8')).not.toContain('GhostController');
+    writeFileSync(join(root, 'src/Ghost.ts'), `@Controller('/ghost') export class GhostController {}`);
+    await onMessage(message(routes));
+    expect(readFileSync(file, 'utf8')).toContain("'GET /ghost': RouteDef<GhostController, 'get'>;");
   });
 });
 
@@ -187,6 +199,19 @@ describe('typegen from the built application', () => {
     expect(builtEntry(app({ entry: ['src/server.ts', 'src/worker.ts'] }))).toBe('server.mjs');
     expect(builtEntry(app({ entry: 'src/main.ts' }))).toBe('index.mjs');
     expect((await typegen(app({ typegen: true, entry: ['src/server.ts'] })))!.routes).toBe(0);
+  });
+
+  it('reaches an entry that only listens when it should, even with VERCUBE_LISTEN=0', async () => {
+    fakeEntry(
+      `if (process.env.VERCUBE_LISTEN !== '1') process.exit(0);\nconst sections = { routes: { data: ${JSON.stringify(routes.slice(0, 1))} } };`,
+    );
+    vi.stubEnv('VERCUBE_LISTEN', '0');
+
+    try {
+      expect((await typegen(app({ typegen: true })))!.routes).toBe(1);
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it('refuses to replace the map when the routes section is missing', async () => {

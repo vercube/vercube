@@ -207,7 +207,7 @@ type ParamsOf<P extends readonly unknown[], A extends RouteArgs> = A extends {
 /** Query fields from `@QueryParam` and `@QueryParams`. */
 type QueryOf<P extends readonly unknown[], A extends RouteArgs> = Simplify<
   (A extends { query: infer M extends Record<string, number> } ? Fields<P, M, 'query'> : Empty) &
-    (A extends { queries: infer I extends number } ? Partial<QueryObject<NonNullable<ArgAt<P, I>>>> : Empty)
+    (A extends { queries: infer I extends number } ? QueryObject<NonNullable<ArgAt<P, I>>> : Empty)
 >;
 
 /**
@@ -225,7 +225,10 @@ export type RouteDef<C, M extends keyof C, A extends RouteArgs = Empty> = C[M] e
       query: QueryOf<P, A>;
       headers: A extends { header: infer H extends Record<string, number> } ? Fields<P, H, 'header'> : Empty;
       body: A extends { body: infer I extends number } ? ArgAt<P, I> : never;
-      form: A extends { form: infer I extends number } ? FormObject<NonNullable<ArgAt<P, I>>> : never;
+      form: A extends { form: infer I extends number }
+        ? // `undefined` stays when the handler accepts a request without a form
+          FormObject<NonNullable<ArgAt<P, I>>> | (undefined extends ArgAt<P, I> ? undefined : never)
+        : never;
       response: A extends { sse: true } ? SseStream<SseEventOf<YieldOf<R>>> : ResponseOf<R>;
     }
   : never;
