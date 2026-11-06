@@ -5,6 +5,7 @@ import { RuntimeConfig } from '../Services/Config/RuntimeConfig';
 import { DefaultErrorHandlerProvider } from '../Services/ErrorHandler/DefaultErrorHandlerProvider';
 import { ErrorHandlerProvider } from '../Services/ErrorHandler/ErrorHandlerProvider';
 import { HealthRegistry } from '../Services/Health/HealthRegistry';
+import { HealthRoutes } from '../Services/Health/HealthRoutes';
 import { HooksService } from '../Services/Hooks/HooksService';
 import { HttpServer } from '../Services/HttpServer/HttpServer';
 import { IntrospectionRegistry } from '../Services/Introspection/IntrospectionRegistry';
@@ -63,6 +64,7 @@ export function createContainer(config: ConfigTypes.Config): Container {
   // routes are on, and nothing runs until something asks for a report.
   container.bind(AppLifecycle);
   container.bind(HealthRegistry);
+  container.bind(HealthRoutes);
 
   // Always bound, always empty until `@vercube/telemetry` installs itself.
   // Core reads it once per service and short-circuits on `hooks === null`.

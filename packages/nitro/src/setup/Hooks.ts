@@ -18,11 +18,11 @@ export function setupHooks(nitro: Nitro, options?: PluginOptions): void {
     validateBundler(nitro);
     validateTypescript(nitro);
 
-    await setupRoutes(nitro);
+    await setupRoutes(nitro, options);
   });
 
   nitro.hooks.hook('compiled', async () => {
-    await setupRoutes(nitro);
+    await setupRoutes(nitro, options);
     nitro.routing.sync();
   });
 

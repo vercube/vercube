@@ -64,6 +64,9 @@ export class CoreTelemetryHooks implements TelemetryTypes.Hooks {
   /** Path prefixes that produce no telemetry. */
   private readonly fExclude: string[];
 
+  /** Exact paths that produce no telemetry. */
+  private readonly fExcludeExact: ReadonlySet<string>;
+
   /** Extra header names to withhold, or null when headers are not captured. */
   private readonly fRedactHeaders: ReadonlySet<string> | null;
 
@@ -81,6 +84,7 @@ export class CoreTelemetryHooks implements TelemetryTypes.Hooks {
     this.fBodyBytes = resolveBodyBytes(options.spans?.bodies);
     this.fBootstrapPending = options.spans?.di !== false;
     this.fExclude = options.exclude ?? [];
+    this.fExcludeExact = new Set(options.excludeExact ?? []);
     this.fRedactHeaders = resolveHeaderRedaction(options.spans?.headers);
   }
 
@@ -89,7 +93,7 @@ export class CoreTelemetryHooks implements TelemetryTypes.Hooks {
     spanContext: TelemetryTypes.ServerSpanContext,
     fn: () => Response | Promise<Response>,
   ): Response | Promise<Response> {
-    if (this.fExclude.length > 0 && this.isExcluded(getRequestPathname(spanContext.request))) {
+    if ((this.fExclude.length > 0 || this.fExcludeExact.size > 0) && this.isExcluded(getRequestPathname(spanContext.request))) {
       return fn();
     }
 
@@ -182,6 +186,15 @@ export class CoreTelemetryHooks implements TelemetryTypes.Hooks {
    * @returns True when nothing should be recorded
    */
   private isExcluded(path: string): boolean {
+    if (this.fExcludeExact.size > 0) {
+      // the router serves `/x/` as `/x`, so the exact list does too
+      const bare = path.length > 1 && path.endsWith('/') ? path.slice(0, -1) : path;
+
+      if (this.fExcludeExact.has(bare)) {
+        return true;
+      }
+    }
+
     return this.fExclude.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
   }
 

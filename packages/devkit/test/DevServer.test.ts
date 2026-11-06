@@ -41,7 +41,8 @@ describe('DevServer', async () => {
 
     await new Promise((resolve) => setTimeout(resolve, 100));
 
-    expect(fork).toHaveBeenCalledWith(expectedPath);
+    // the worker is told it is one, so `health` does not make a reload wait for a drain
+    expect(fork).toHaveBeenCalledWith(expectedPath, [], { env: expect.objectContaining({ VERCUBE_DEV_SERVER: '1' }) });
   });
 
   it('asks the worker for its routes when typegen is on', async () => {

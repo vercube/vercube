@@ -48,6 +48,42 @@ describe('vercubeNitro', () => {
     expect(nitro.options.plugins).toContain('#internal/vercube-route-plugin');
   });
 
+  it('should pass the health option to the app with every endpoint spelled out', async () => {
+    const nitro = makeMockNitro();
+    await vercubeNitro({ health: { path: '/probes', endpoints: { startup: false } } }).setup!(nitro);
+    expect(nitro.options.virtual['#internal/vercube-route-plugin']).toContain(
+      '{"health":{"endpoints":{"live":"/probes/live","ready":"/probes/ready","startup":false}}}',
+    );
+  });
+
+  it('should turn health off explicitly by default', async () => {
+    const nitro = makeMockNitro();
+    await vercubeNitro().setup!(nitro);
+    expect(nitro.options.virtual['#internal/vercube-route-plugin']).toContain('{"health":false}');
+  });
+
+  it('should refuse a token that would be baked into the build', async () => {
+    await expect(vercubeNitro({ health: { token: 'secret' } as never }).setup!(makeMockNitro())).rejects.toThrow(
+      'runtimeConfig.vercube.healthToken',
+    );
+  });
+
+  it('should refuse checks that cannot survive the build', async () => {
+    await expect(vercubeNitro({ health: { checks: [] } as never }).setup!(makeMockNitro())).rejects.toThrow('setupFile');
+  });
+
+  it('should refuse an invalid option at build time', async () => {
+    await expect(vercubeNitro({ health: { endpoints: { live: '/x', ready: '/x' } } }).setup!(makeMockNitro())).rejects.toThrow(
+      'both set to /x',
+    );
+  });
+
+  it('should accept full details, the token comes at runtime', async () => {
+    const nitro = makeMockNitro();
+    await vercubeNitro({ health: { details: 'full' } }).setup!(nitro);
+    expect(nitro.options.virtual['#internal/vercube-route-plugin']).toContain('"details":"full"');
+  });
+
   it('should include routes in the virtual plugin', async () => {
     vi.mocked(getTransformedRoutes).mockResolvedValue([
       {
@@ -239,6 +275,6 @@ describe('vercubeNitro', () => {
 
     const virtual = nitro.options.virtual['#internal/vercube-route-plugin'];
     expect(virtual).not.toContain('build-time-secret');
-    expect(virtual).toContain('createNitroApp({"dev":false,"logLevel":3})');
+    expect(virtual).toContain('createNitroApp({"dev":false,"logLevel":3}, {"health":false})');
   });
 });

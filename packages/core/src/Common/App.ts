@@ -2,6 +2,7 @@ import { initializeContainer, Inject } from '@vercube/di';
 import { Logger } from '@vercube/logger';
 import { RuntimeConfig } from '../Services/Config/RuntimeConfig';
 import { HealthRegistry } from '../Services/Health/HealthRegistry';
+import { HealthRoutes } from '../Services/Health/HealthRoutes';
 import { HttpServer } from '../Services/HttpServer/HttpServer';
 import { IntrospectionRegistry } from '../Services/Introspection/IntrospectionRegistry';
 import { AppLifecycle } from '../Services/Lifecycle/AppLifecycle';
@@ -11,6 +12,7 @@ import { Router } from '../Services/Router/Router';
 import { StaticRequestHandler } from '../Services/Router/StaticRequestHandler';
 import { ShutdownRegistry } from '../Services/Shutdown/ShutdownRegistry';
 import { StartupRegistry } from '../Services/Startup/StartupRegistry';
+import { resolveHealthOptions, resolveShutdownDefaults } from '../Utils/Health';
 import { LISTEN_ENV, shouldListen } from '../Utils/Listen';
 import type { BasePlugin } from '../Services/Plugins/BasePlugin';
 import type { ShutdownHook } from '../Services/Shutdown/ShutdownRegistry';
@@ -156,6 +158,14 @@ export class App {
     }
 
     await this.gRouter.initialize();
+
+    // before the controllers register theirs, so a collision is the
+    // application route's registration, which `start()` reports
+    const health = resolveHealthOptions(this.fConfig);
+
+    if (health) {
+      this.container.get(HealthRoutes).mount(health);
+    }
   }
 
   /**
@@ -230,9 +240,11 @@ export class App {
    * @throws {Error} The first hook failure
    */
   public start(): Promise<void> {
-    this.fStarting ??= this.gStartupRegistry.run().then(() => {
+    this.fStarting ??= (async () => {
+      await this.gStartupRegistry.run();
+
       this.gLifecycle.advance('ready');
-    });
+    })();
 
     return this.fStarting;
   }
@@ -276,14 +288,14 @@ export class App {
    *
    * @param {object} [options] - How long to wait
    * @param {number} [options.timeout] - Milliseconds the HTTP server waits for requests in flight, defaults to `shutdown.timeout`
-   * @param {number} [options.drainDelay] - Milliseconds to keep serving before the HTTP server closes, defaults to `shutdown.drainDelay`
+   * @param {number} [options.drainDelay] - Milliseconds to keep serving before the HTTP server closes, defaults to `shutdown.drainDelay` (5000 with `health` on, 0 otherwise)
    * @returns {Promise<void>} Resolves once everything is closed
    * @throws {AggregateError} When the server or a callback failed to close, after every callback has run
    */
   public close(options: { timeout?: number; drainDelay?: number } = {}): Promise<void> {
     this.fClosing ??= this.shutdown(
       options.timeout ?? this.fConfig?.shutdown?.timeout ?? DEFAULT_SHUTDOWN_TIMEOUT,
-      options.drainDelay ?? this.fConfig?.shutdown?.drainDelay ?? 0,
+      options.drainDelay ?? resolveShutdownDefaults(this.fConfig).drainDelay,
     );
 
     return this.fClosing;
@@ -456,7 +468,7 @@ export class App {
    * @private
    */
   private installSignals(): void {
-    const option = this.fConfig?.shutdown?.handleSignals;
+    const option = resolveShutdownDefaults(this.fConfig).handleSignals;
 
     if (!option || this.fSignalCleanup) {
       return;

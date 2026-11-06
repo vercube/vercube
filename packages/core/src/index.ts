@@ -83,6 +83,8 @@ export * from './Services/Shutdown/ShutdownRegistry';
 export * from './Services/Startup/StartupRegistry';
 export * from './Services/Lifecycle/AppLifecycle';
 export * from './Services/Health/HealthRegistry';
+export * from './Services/Health/HealthController';
+export * from './Services/Health/HealthRoutes';
 
 // Errors
 export * from './Errors/HttpError';
@@ -113,6 +115,7 @@ export * from './Types/HealthTypes';
 // Utils
 export * from './Utils/Utils';
 export * from './Utils/Listen';
+export * from './Utils/Health';
 export * from './Utils/Security';
 export * from './Utils/Flatten';
 export * from './Utils/Url';

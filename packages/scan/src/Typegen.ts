@@ -18,6 +18,8 @@ export interface TypegenRoute {
   handler: string;
   args: { idx: number; type: string; name?: string }[];
   sse?: boolean;
+  /** An infrastructure route (health probes, devtools), always left out. */
+  internal?: boolean;
   /**
    * Errors the route answers with: class name, status, and for an implicit
    * one (core adds a 400, 401 or 403 nobody declared) the module to import it from.
@@ -212,7 +214,10 @@ export function generateRouteTypes(options: TypegenOptions): TypegenResult {
     const path = route.path.replace(/(.)\/+$/, '$1');
     const id = `${route.method.toUpperCase()} ${path}`;
 
-    if (entries.has(id) || pending.some((entry) => entry.id === id)) {
+    // A framework route (health probes, devtools) is not the application's to
+    // type, and looking it up by class name could find an application class
+    // that happens to share the name.
+    if (route.internal || entries.has(id) || pending.some((entry) => entry.id === id)) {
       continue;
     }
 
