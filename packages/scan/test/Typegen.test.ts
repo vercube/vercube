@@ -2,7 +2,14 @@ import { mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:f
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { findControllers, generateRouteTypes, resolveControllers, TYPEGEN_HEADER, writeRouteTypes } from '../src/Typegen';
+import {
+  createRouteTypesWriter,
+  findControllers,
+  generateRouteTypes,
+  resolveControllers,
+  TYPEGEN_HEADER,
+  writeRouteTypes,
+} from '../src/Typegen';
 import type { TypegenRoute } from '../src/Typegen';
 
 let root: string;
@@ -153,6 +160,7 @@ describe('generateRouteTypes', () => {
       files: ['/app/src/Controllers/UserController.ts', '/app/src/Feed.mts'],
       code: [
         TYPEGEN_HEADER,
+        '',
         "import type { RouteDef } from '@vercube/client';",
         "import type { UserController } from '../src/Controllers/UserController.js';",
         "import type FeedController from '../src/Feed.mjs';",
@@ -315,6 +323,32 @@ describe('writeRouteTypes', () => {
     expect(statSync(file).mtimeMs).toBe(mtime);
     expect(writeRouteTypes(file, 'b')).toBe(true);
     expect(readFileSync(file, 'utf8')).toBe('b');
+  });
+});
+
+describe('createRouteTypesWriter', () => {
+  it('warns once per reason, however many routes it skipped', async () => {
+    write('src/A.ts', `@Controller('/a') export class AController {}`);
+
+    const warnings: string[] = [];
+    const routes: TypegenRoute[] = [
+      { method: 'GET', path: '/a', controller: 'AController', handler: 'a', args: [] },
+      { method: 'GET', path: '/lib', controller: 'LibController', handler: 'a', args: [] },
+      { method: 'HEAD', path: '/lib', controller: 'LibController', handler: 'a', args: [] },
+      { method: 'GET', path: '/lib/x', controller: 'LibController', handler: 'x', args: [] },
+      { method: 'GET', path: '/other', controller: 'OtherController', handler: 'a', args: [] },
+    ];
+
+    await createRouteTypesWriter({
+      root,
+      outFile: join(root, '.vercube/routes.d.ts'),
+      logger: { warn: (m) => warnings.push(m) },
+    })(routes);
+
+    expect(warnings).toEqual([
+      'Skipped GET /lib and 2 more routes: no source file found for LibController',
+      'Skipped GET /other: no source file found for OtherController',
+    ]);
   });
 });
 

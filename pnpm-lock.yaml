@@ -479,6 +479,9 @@ importers:
 
   examples/vite:
     dependencies:
+      '@vercube/client':
+        specifier: workspace:*
+        version: link:../../packages/client
       '@vercube/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1065,6 +1068,9 @@ importers:
       '@vercube/auth':
         specifier: workspace:*
         version: link:../packages/auth
+      '@vercube/client':
+        specifier: workspace:*
+        version: link:../packages/client
       '@vercube/core':
         specifier: workspace:*
         version: link:../packages/core
