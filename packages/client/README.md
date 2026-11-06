@@ -34,6 +34,18 @@ pnpm add @vercube/client
 
 ## 📖 Usage
 
+The route map tells the client which routes exist. `vercube typegen` (and `vercube dev`, `vercube build` and the Vite plugin) write it to `.vercube/routes.d.ts`; it can also be written by hand:
+
+```ts
+import type { UserController } from './src/Controllers/UserController';
+import type { RouteDef } from '@vercube/client';
+
+export interface VercubeRoutes {
+  'GET /users/:id': RouteDef<UserController, 'getUser', { param: { id: 0 } }>;
+  'POST /users': RouteDef<UserController, 'create', { body: 0 }>;
+}
+```
+
 ```ts
 import { createClient } from '@vercube/client';
 import type { VercubeRoutes } from './.vercube/routes';

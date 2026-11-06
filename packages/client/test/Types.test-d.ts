@@ -2,7 +2,7 @@
 import { Controller, Get, Param } from '@vercube/core';
 import { describe, expectTypeOf, it } from 'vitest';
 import { createClient } from '../src';
-import type { RouteDef, SseEvent, SseStream } from '../src';
+import type { Jsonify, RouteDef, SseEvent, SseStream } from '../src';
 import type { TestRoutes } from './fixtures/Controllers';
 import type { VercubeRoutes } from './fixtures/routes';
 
@@ -90,6 +90,13 @@ describe('types', () => {
     expectTypeOf(api.get('/users/fail')).toEqualTypeOf<Promise<never>>();
   });
 
+  it('arrays serialize undefined and functions as null', () => {
+    expectTypeOf<Jsonify<(string | undefined)[]>>().toEqualTypeOf<(string | null)[]>();
+    expectTypeOf<Jsonify<[Date, undefined, () => void]>>().toEqualTypeOf<[string, null, null]>();
+    // in an object the key is dropped instead, so it stays optional
+    expectTypeOf<Jsonify<{ a?: string }>>().toEqualTypeOf<{ a?: string }>();
+  });
+
   it('sse', () => {
     expectTypeOf(api.get('/events/ticks')).resolves.toEqualTypeOf<
       SseStream<SseEvent<{ n: number }, 'tick'> | SseEvent<undefined, 'done'>>
@@ -119,7 +126,11 @@ describe('types', () => {
 
   it('the generated map is the hand-written one, plus HEAD for every GET', () => {
     expectTypeOf<Omit<VercubeRoutes, `HEAD ${string}`>>().toEqualTypeOf<Omit<TestRoutes, `HEAD ${string}`>>();
-    expectTypeOf<VercubeRoutes['HEAD /users/:id']>().toEqualTypeOf<TestRoutes['HEAD /users/:id']>();
+    // every GET has its HEAD twin, with the same definition
+    type ExpectedHeads = {
+      [K in keyof TestRoutes as K extends `GET ${infer Path}` ? `HEAD ${Path}` : never]: TestRoutes[K];
+    };
+    expectTypeOf<Pick<VercubeRoutes, Extract<keyof VercubeRoutes, `HEAD ${string}`>>>().toEqualTypeOf<ExpectedHeads>();
   });
 
   it('changing a handler signature breaks the call site', () => {

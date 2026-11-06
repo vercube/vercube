@@ -180,4 +180,66 @@ describe('createClient', () => {
 
     expect(seen).toEqual(['http://host/api/users/7']);
   });
+
+  it('lets a form set its own content type over a default JSON one', async () => {
+    const seen: Request[] = [];
+    const api = createClient<TestRoutes>({
+      baseURL: 'http://test',
+      headers: { 'content-type': 'application/json' },
+      fetch: async (r) => (seen.push(r), Response.json({})),
+    });
+
+    await api.post('/users/:id/avatar', { params: { id: '1' }, form: { file: new Blob(['x']), caption: 'me' } });
+
+    expect(seen[0].headers.get('content-type')).toMatch(/^multipart\/form-data; boundary=/);
+  });
+
+  it('joins baseURL and path with one slash and merges an existing query string', async () => {
+    const seen: string[] = [];
+    const fetch = async (r: Request) => (seen.push(r.url), Response.json({}));
+
+    await createClient<TestRoutes>({ baseURL: 'http://test/api/', fetch }).get('/users/:id', { params: { id: '1' } });
+    await createClient({ baseURL: 'http://test', fetch }).get('/search?q=alice', { query: { page: 2 } });
+
+    expect(seen).toEqual(['http://test/api/users/1', 'http://test/search?q=alice&page=2']);
+  });
+
+  it('refuses path parameters that would climb to another route', async () => {
+    const { api, fetch } = setup();
+
+    await expect(api.get('/users/:id', { params: { id: '..' } })).rejects.toThrow('cannot be "." or ".."');
+    await expect(api.get('/users/files/**:path', { params: { path: 'a/../../search' } })).rejects.toThrow(TypeError);
+    // encoded inside a segment, a dot is harmless
+    await api.get('/users/:id', { params: { id: 'a..b' } });
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the HTTP error when its JSON body is broken', async () => {
+    const { api } = setup(() => new Response('{"message":', { status: 500, headers: { 'content-type': 'application/json' } }));
+    const error = (await api.get('/users/fail').catch((error_: unknown) => error_)) as VercubeClientError;
+
+    expect(error).toBeInstanceOf(VercubeClientError);
+    expect(error.status).toBe(500);
+    expect(error.body).toBe('{"message":');
+  });
+
+  it('aborts a request already in flight', async () => {
+    let started!: () => void;
+    const inFlight = new Promise<void>((resolve) => (started = resolve));
+    const api = createClient<TestRoutes>({
+      baseURL: 'http://test',
+      fetch: (request) =>
+        new Promise((_, reject) => {
+          started();
+          request.signal.addEventListener('abort', () => reject(request.signal.reason));
+        }),
+    });
+    const controller = new AbortController();
+    const pending = api.get('/users/:id', { params: { id: '1' }, signal: controller.signal });
+
+    await inFlight;
+    controller.abort();
+
+    await expect(pending).rejects.toMatchObject({ name: 'AbortError' });
+  });
 });

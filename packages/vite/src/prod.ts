@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs';
-import { createRouteTypesWriter, inspectEntry, resolveTypegenOutput } from '@vercube/scan';
+import { createRouteTypesWriter, INSPECT_TIMEOUT, inspectEntry, resolveTypegenOutput } from '@vercube/scan';
 import { resolve } from 'pathe';
 import { VERCUBE_ENV } from './types';
 import type { VercubePluginContext } from './types';
@@ -54,7 +54,12 @@ async function writeRouteTypes(ctx: VercubePluginContext, builder: ViteBuilder):
 
   const logger = builder.config.logger;
   try {
-    const sections = await inspectEntry(resolve(ctx.root, 'dist', 'index.mjs'), ['routes', 'discovery'], ctx.root);
+    const sections = await inspectEntry(
+      resolve(ctx.root, 'dist', 'index.mjs'),
+      ['routes', 'discovery'],
+      ctx.root,
+      INSPECT_TIMEOUT,
+    );
     const write = createRouteTypesWriter({
       root: ctx.root,
       outFile,
@@ -63,10 +68,11 @@ async function writeRouteTypes(ctx: VercubePluginContext, builder: ViteBuilder):
         success: (message) => logger.info(`[vercube] ${message}`),
       },
     });
-    await write(
-      (sections.routes?.data ?? []) as Parameters<typeof write>[0],
-      sections.discovery?.data as Parameters<typeof write>[1],
-    );
+    // an empty map would replace a good one and break every typed call
+    if (!Array.isArray(sections.routes?.data)) {
+      throw new TypeError('The application did not report its routes');
+    }
+    await write(sections.routes.data as Parameters<typeof write>[0], sections.discovery?.data as Parameters<typeof write>[1]);
   } catch (error) {
     logger.warn(`[vercube] Route types not written: ${(error as Error).message}`);
   }
