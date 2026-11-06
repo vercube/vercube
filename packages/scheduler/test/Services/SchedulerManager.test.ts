@@ -258,7 +258,7 @@ describe('SchedulerManager', () => {
       await manager.start();
       await clock.advance('1d');
 
-      expect(runs).toEqual(['2026-03-29T01:30:00.000Z']);
+      expect(runs).toEqual(['2026-03-29T01:00:00.000Z']);
     });
   });
 

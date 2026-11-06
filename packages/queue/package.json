@@ -46,8 +46,8 @@
     "@vercube/telemetry": "workspace:*"
   },
   "optionalDependencies": {
-    "amqplib": "2.2.0",
-    "bullmq": "6.4.0",
+    "amqplib": "2.2.1",
+    "bullmq": "6.7.1",
     "kafkajs": "2.2.4"
   },
   "devDependencies": {

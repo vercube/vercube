@@ -65,9 +65,10 @@ export function assertTimezone(timezone: string, job?: string): void {
  * croner is used as a calculator only: its own timers are never started, since
  * the manager owns timing so a test clock can drive it.
  *
- * Around daylight saving changes, a time that does not exist runs once at the
- * first valid instant after it, and a time that happens twice runs once, on its
- * first pass.
+ * Around daylight saving changes, the way Vixie cron does: a fixed time that
+ * does not exist runs once, when the gap ends, and one that happens twice runs
+ * once, on its first pass. Interval expressions skip the missing times and run
+ * on both passes through a repeated hour.
  *
  * @param expression - The cron expression
  * @param timezone - IANA time zone the expression is read in

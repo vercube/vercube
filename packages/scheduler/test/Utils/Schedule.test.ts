@@ -52,9 +52,9 @@ describe('cronSchedule', () => {
     it('runs a time skipped by spring forward once, at the first valid instant', () => {
       const schedule = cronSchedule('30 2 * * *', 'Europe/Warsaw', 'job');
 
-      // 02:30 does not exist on 2026-03-29, it runs at 03:30 CEST
-      expect(iso(schedule.next(at('2026-03-28T12:00:00Z')))).toBe('2026-03-29T01:30:00.000Z');
-      expect(iso(schedule.next(at('2026-03-29T01:30:00Z')))).toBe('2026-03-30T00:30:00.000Z');
+      // 02:30 does not exist on 2026-03-29, it runs when the gap ends, at 03:00 CEST
+      expect(iso(schedule.next(at('2026-03-28T12:00:00Z')))).toBe('2026-03-29T01:00:00.000Z');
+      expect(iso(schedule.next(at('2026-03-29T01:00:00Z')))).toBe('2026-03-30T00:30:00.000Z');
     });
 
     it('runs a time repeated by fall back once, on its first pass', () => {
@@ -64,10 +64,19 @@ describe('cronSchedule', () => {
       expect(iso(schedule.next(at('2026-10-25T00:30:00Z')))).toBe('2026-10-26T01:30:00.000Z');
     });
 
-    it('does not repeat the hour fall back repeats, leaving a 90 minute gap', () => {
+    it('runs an interval job on both passes through the hour fall back repeats', () => {
       const schedule = cronSchedule('*/30 * * * *', 'Europe/Warsaw', 'job');
 
-      expect(iso(schedule.next(at('2026-10-25T00:30:00Z')))).toBe('2026-10-25T02:00:00.000Z');
+      // 02:30 CEST, then 02:00 and 02:30 CET, then 03:00 CET
+      expect(iso(schedule.next(at('2026-10-25T00:30:00Z')))).toBe('2026-10-25T01:00:00.000Z');
+      expect(iso(schedule.next(at('2026-10-25T01:30:00Z')))).toBe('2026-10-25T02:00:00.000Z');
+    });
+
+    it('skips a time spring forward removes for an interval job', () => {
+      const schedule = cronSchedule('*/30 * * * *', 'Europe/Warsaw', 'job');
+
+      // 01:30 CET, then 03:00 CEST
+      expect(iso(schedule.next(at('2026-03-29T00:30:00Z')))).toBe('2026-03-29T01:00:00.000Z');
     });
   });
 });

@@ -36,12 +36,13 @@
     "@vercube/di": "workspace:*",
     "@vercube/scan": "workspace:*",
     "@vercube/storage": "workspace:*",
-    "chokidar": "5.0.0",
+    "chokidar": "6.0.0",
     "defu": "catalog:",
     "nitro": "catalog:",
-    "oxc-parser": "0.155.0",
+    "oxc-parser": "0.157.0",
     "pathe": "catalog:",
-    "tinyglobby": "0.2.17"
+    "tinyglobby": "0.2.17",
+    "unstorage": "2.0.0-beta.0"
   },
   "publishConfig": {
     "access": "public"

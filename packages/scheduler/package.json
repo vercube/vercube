@@ -44,7 +44,7 @@
     "@vercube/di": "workspace:*",
     "@vercube/logger": "workspace:*",
     "@vercube/telemetry": "workspace:*",
-    "croner": "10.0.1"
+    "croner": "11.0.0"
   },
   "optionalDependencies": {
     "ioredis": "6.0.0",

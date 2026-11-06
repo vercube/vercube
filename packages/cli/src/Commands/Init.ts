@@ -27,6 +27,7 @@ const pms: Record<PackageManagerName, undefined> = {
   deno: undefined,
   aube: undefined,
   nub: undefined,
+  upm: undefined,
 };
 
 const packageManagerOptions = Object.keys(pms) as PackageManagerName[];
