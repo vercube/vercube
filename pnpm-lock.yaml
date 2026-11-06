@@ -963,6 +963,9 @@ importers:
       '@vercube/auth':
         specifier: workspace:^
         version: link:../auth
+      '@vercube/client':
+        specifier: workspace:*
+        version: link:../client
       '@vercube/core':
         specifier: workspace:*
         version: link:../core
