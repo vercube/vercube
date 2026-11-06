@@ -50,6 +50,8 @@ export function createClient<R = Record<string, AnyRoute>>(options: ClientOption
 
     if (form !== undefined) {
       payload = form instanceof FormData ? form : toFormData(form as Record<string, unknown>);
+      // a default `application/json` would win over the multipart boundary `Request` sets
+      merged.delete('content-type');
     } else if (body !== undefined) {
       if (isRaw(body)) {
         payload = body as BodyInit;
@@ -62,7 +64,7 @@ export function createClient<R = Record<string, AnyRoute>>(options: ClientOption
       }
     }
 
-    let req = new Request(`${options.baseURL ?? ''}${fillPath(path, params)}${toQuery(query)}`, {
+    let req = new Request(joinUrl(options.baseURL ?? '', fillPath(path, params), toQuery(query)), {
       ...rest,
       method: method.toUpperCase(),
       headers: merged,
@@ -81,7 +83,7 @@ export function createClient<R = Record<string, AnyRoute>>(options: ClientOption
     res = (await options.onResponse?.({ request: req, response: res })) ?? res;
 
     if (!res.ok) {
-      throw new VercubeClientError(res, await readBody(res));
+      throw new VercubeClientError(res, await readBody(res, true));
     }
 
     if (req.method === 'HEAD') {
@@ -89,7 +91,8 @@ export function createClient<R = Record<string, AnyRoute>>(options: ClientOption
     }
 
     if (res.body && res.headers.get('content-type')?.startsWith('text/event-stream')) {
-      return parseSse(res.body, init.signal);
+      // the final request's signal: `onRequest` may have replaced it
+      return parseSse(res.body, req.signal);
     }
 
     return readBody(res);
@@ -106,16 +109,41 @@ export function createClient<R = Record<string, AnyRoute>>(options: ClientOption
 
 /**
  * @param response - Any response
+ * @param lenient - Keep the text when JSON does not parse, so an error status is not lost to a `SyntaxError`
  * @returns JSON when it is JSON, the text otherwise, `undefined` when empty
  */
-async function readBody(response: Response): Promise<unknown> {
+async function readBody(response: Response, lenient = false): Promise<unknown> {
   const text = await response.text();
 
   if (text === '') {
     return undefined;
   }
 
-  return /[/+]json\b/.test(response.headers.get('content-type') ?? '') ? JSON.parse(text) : text;
+  if (!/[/+]json\b/.test(response.headers.get('content-type') ?? '')) {
+    return text;
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    if (lenient) {
+      return text;
+    }
+
+    throw error;
+  }
+}
+
+/**
+ * @param base - The `baseURL`
+ * @param path - The filled path, which may already carry a query string
+ * @param query - `?...` built from `query`, or an empty string
+ * @returns The URL, with one slash at the join and one `?`
+ */
+function joinUrl(base: string, path: string, query: string): string {
+  const url = base.endsWith('/') && path.startsWith('/') ? base + path.slice(1) : base + path;
+
+  return query && url.includes('?') ? `${url}&${query.slice(1)}` : url + query;
 }
 
 /**
@@ -134,9 +162,14 @@ function fillPath(path: string, params: Record<string, unknown> = {}): string {
       throw new TypeError(`Missing path parameter "${name}" for ${path}`);
     }
 
-    const text = String(value);
+    const segments = wildcard ? String(value).split('/') : [String(value)];
 
-    return wildcard ? text.split('/').map(encodeURIComponent).join('/') : encodeURIComponent(text);
+    // the URL parser resolves these, so `../admin` would reach another route
+    if (segments.some((segment) => segment === '.' || segment === '..')) {
+      throw new TypeError(`Path parameter "${name}" cannot be "." or ".." in ${path}`);
+    }
+
+    return segments.map(encodeURIComponent).join('/');
   });
 }
 

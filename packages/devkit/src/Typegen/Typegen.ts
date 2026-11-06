@@ -1,4 +1,4 @@
-import { createRouteTypesWriter, resolveTypegenOutput } from '@vercube/scan';
+import { createRouteTypesWriter, INSPECT_TIMEOUT, resolveTypegenOutput } from '@vercube/scan';
 import consola from 'consola';
 import { inspect } from './Inspect';
 import type { DevKitTypes } from '../Types/DevKitTypes';
@@ -41,9 +41,14 @@ export async function typegen(
   let { routes, discovery } = options;
 
   if (!routes) {
-    const sections = await inspect(app, ['routes', 'discovery']);
+    const sections = await inspect(app, ['routes', 'discovery'], undefined, INSPECT_TIMEOUT);
 
-    routes = (sections.routes?.data ?? []) as IntrospectionTypes.RouteDescription[];
+    // an empty map would replace a good one and break every typed call
+    if (!Array.isArray(sections.routes?.data)) {
+      throw new TypeError('The application did not report its routes');
+    }
+
+    routes = sections.routes.data as IntrospectionTypes.RouteDescription[];
     discovery = sections.discovery?.data as IntrospectionTypes.DiscoveryDescription | null | undefined;
   }
 

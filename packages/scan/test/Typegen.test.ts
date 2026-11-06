@@ -2,7 +2,14 @@ import { mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:f
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { createRouteTypesWriter, findControllers, generateRouteTypes, TYPEGEN_HEADER, writeRouteTypes } from '../src/Typegen';
+import {
+  createRouteTypesWriter,
+  findControllers,
+  generateRouteTypes,
+  resolveControllers,
+  TYPEGEN_HEADER,
+  writeRouteTypes,
+} from '../src/Typegen';
 import type { TypegenRoute } from '../src/Typegen';
 
 let root: string;
@@ -52,6 +59,35 @@ describe('findControllers', () => {
     write('node_modules/pkg/W.ts', `@Controller('/w') export class WController {}`);
 
     expect(await findControllers(root)).toEqual({ XController: null });
+  });
+
+  it('recognises aliased, namespaced and spaced decorators', async () => {
+    const a = write(
+      'src/A.ts',
+      `import { Controller as HttpController } from '@vercube/core';\n@HttpController('/a') export class AController {}`,
+    );
+    const b = write('src/B.ts', `import * as core from '@vercube/core';\n@core.Controller('/b') export class BController {}`);
+    const c = write('src/C.ts', `@Controller ('/c') export class CController {}`);
+
+    write('src/D.ts', `import * as other from 'x';\n@other.Injectable() export class DService {}`);
+
+    expect(await findControllers(root)).toEqual({
+      AController: { file: a, exportName: 'AController' },
+      BController: { file: b, exportName: 'BController' },
+      CController: { file: c, exportName: 'CController' },
+    });
+  });
+
+  it('reads a file listed twice once', async () => {
+    const file = write(
+      'src/Two.ts',
+      `@Controller('/a') export class AController {}\n@Controller('/b') export class BController {}`,
+    );
+
+    expect(await findControllers([file, file])).toEqual({
+      AController: { file, exportName: 'AController' },
+      BController: { file, exportName: 'BController' },
+    });
   });
 
   it('reads only the given files', async () => {
@@ -124,7 +160,7 @@ describe('generateRouteTypes', () => {
         TYPEGEN_HEADER,
         '',
         "import type { RouteDef } from '@vercube/client';",
-        "import type { UserController } from '../src/Controllers/UserController';",
+        "import type { UserController } from '../src/Controllers/UserController.js';",
         "import type FeedController from '../src/Feed.mjs';",
         '',
         'export interface VercubeRoutes {',
@@ -181,6 +217,25 @@ describe('generateRouteTypes', () => {
     expect(code).toContain('export interface VercubeRoutes {\n}');
   });
 
+  it('finds a controller a bundler renamed, and keeps clear of the names the file declares', () => {
+    const { code, skipped } = generateRouteTypes({
+      routes: [
+        { method: 'GET', path: '/a', controller: 'UserController$1', handler: 'a', args: [] },
+        { method: 'GET', path: '/b', controller: 'RouteDef', handler: 'b', args: [] },
+      ],
+      controllers: {
+        UserController: controllers.UserController,
+        RouteDef: { file: '/app/src/RouteDef.ts', exportName: 'RouteDef' },
+      },
+      outFile: out,
+    });
+
+    expect(skipped).toEqual([]);
+    expect(code).toContain("import type { UserController as UserController$1 } from '../src/Controllers/UserController.js';");
+    expect(code).toContain("import type { RouteDef as RouteDef_ } from '../src/RouteDef.js';");
+    expect(code).toContain("'GET /b': RouteDef<RouteDef_, 'b'>;");
+  });
+
   it('imports a re-exported controller under its class name', () => {
     const { code } = generateRouteTypes({
       routes: [{ method: 'GET', path: '/a', controller: 'AController', handler: 'a', args: [] }],
@@ -188,7 +243,7 @@ describe('generateRouteTypes', () => {
       outFile: out,
     });
 
-    expect(code).toContain("import type { Renamed as AController } from '../src/A';");
+    expect(code).toContain("import type { Renamed as AController } from '../src/A.js';");
   });
 });
 
@@ -230,5 +285,23 @@ describe('createRouteTypesWriter', () => {
       'Skipped GET /lib and 2 more routes: no source file found for LibController',
       'Skipped GET /other: no source file found for OtherController',
     ]);
+  });
+});
+
+describe('resolveControllers', () => {
+  it('prefers discovery, and scans the project for controllers it does not list', async () => {
+    write('src/Listed.ts', `@Controller('/a') export class AController {}`);
+    write('src/Other.ts', `@Controller('/a') export class AController {}`);
+    const bound = write('src/Bound.ts', `@Controller('/b') export class BController {}`);
+    const routes: TypegenRoute[] = [
+      { method: 'GET', path: '/a', controller: 'AController', handler: 'a', args: [] },
+      { method: 'GET', path: '/b', controller: 'BController', handler: 'b', args: [] },
+    ];
+
+    const found = await resolveControllers(routes, root, { root, controllers: [{ name: 'AController', path: 'src/Listed.ts' }] });
+
+    // the scan alone would find AController twice
+    expect(found.AController).toEqual({ file: join(root, 'src/Listed.ts'), exportName: 'AController' });
+    expect(found.BController).toEqual({ file: bound, exportName: 'BController' });
   });
 });
