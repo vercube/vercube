@@ -195,6 +195,16 @@ export namespace ConfigTypes {
      * @default 25000
      */
     timeout?: number;
+
+    /**
+     * Milliseconds the application keeps serving after `close()` begins and
+     * before the HTTP server stops accepting connections. `app.state` is
+     * `draining` meanwhile, so a readiness probe fails and a load balancer or
+     * Kubernetes stops routing new requests here before they would be
+     * refused. Skipped when the server never listened (serverless, Nitro).
+     * @default 0
+     */
+    drainDelay?: number;
   }
 
   /**
