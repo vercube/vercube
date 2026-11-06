@@ -1,8 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { parseSync } from 'oxc-parser';
-import { dirname, relative } from 'pathe';
+import { dirname, relative, resolve } from 'pathe';
 import { glob } from 'tinyglobby';
-import { extractDecoratorArg } from './Ast';
 import { GLOB_SCAN_PATTERN } from './Scan';
 
 /**
@@ -65,6 +64,12 @@ const IGNORE = [
   '**/{test,tests,__tests__}/**',
 ];
 
+/** Names the generated file declares itself. */
+const RESERVED = new Set(['RouteDef', 'VercubeRoutes']);
+
+/** A `Controller(` call, allowing for whitespace and an alias such as `HttpController(`. */
+const CONTROLLER_CALL = /Controller\s*\(/;
+
 /** `:name` and `**:name` segments of a route template. */
 const SEGMENT = /(?:\*\*)?:(\w+)/g;
 
@@ -98,7 +103,8 @@ export function generateRouteTypes(options: TypegenOptions): TypegenResult {
       continue;
     }
 
-    const source = controllers[route.controller];
+    // a bundler renames a class that collides with another (`UserController$1`)
+    const source = controllers[route.controller] ?? controllers[route.controller.replace(/\$\d+$/, '')];
 
     if (!source?.exportName) {
       skipped.push({ id, reason: whyNotImportable(route.controller, source, outFile) });
@@ -106,14 +112,16 @@ export function generateRouteTypes(options: TypegenOptions): TypegenResult {
     }
 
     const specifier = toSpecifier(outFile, source.file);
-    const binding = source.exportName === route.controller ? route.controller : `${source.exportName} as ${route.controller}`;
+    // the file's own names cannot be taken by a controller
+    const local = RESERVED.has(route.controller) ? `${route.controller}_` : route.controller;
+    const binding = source.exportName === local ? local : `${source.exportName} as ${local}`;
 
     if (!imports.has(specifier)) {
       imports.set(specifier, new Set());
     }
 
     imports.get(specifier)!.add(binding);
-    entries.set(id, `RouteDef<${route.controller}, ${quote(route.handler)}${describeArgs(route.args, path, route.sse)}>`);
+    entries.set(id, `RouteDef<${local}, ${quote(route.handler)}${describeArgs(route.args, path, route.sse)}>`);
   }
 
   const lines = [TYPEGEN_HEADER, `import type { RouteDef } from ${quote(clientModule)};`];
@@ -155,11 +163,12 @@ export async function findControllers(input: string | string[]): Promise<Record<
     typeof input === 'string' ? await glob(GLOB_SCAN_PATTERN, { cwd: input, absolute: true, ignore: IGNORE, dot: false }) : input;
   const found: Record<string, ControllerSource | null> = {};
 
-  for (const file of files.sort()) {
+  // discovery lists a file once per class in it
+  for (const file of [...new Set(files)].sort()) {
     const code = readFileSync(file, 'utf8');
 
     // cheap filter: parsing every file of a project takes far longer
-    if (!code.includes('Controller(')) {
+    if (!CONTROLLER_CALL.test(code)) {
       continue;
     }
 
@@ -169,6 +178,31 @@ export async function findControllers(input: string | string[]): Promise<Record<
   }
 
   return found;
+}
+
+/**
+ * Finds the source of every controller the routes name. Files listed by a
+ * discovery manifest are read first; a controller missing from it (bound in
+ * `setup`, say) is looked for in the rest of the project.
+ *
+ * @param routes - The routes
+ * @param root - Project root
+ * @param discovery - The discovery manifest, when the build wrote one
+ * @returns Class name to source, as {@link findControllers} returns it
+ */
+export async function resolveControllers(
+  routes: TypegenRoute[],
+  root: string,
+  discovery?: { root?: string; controllers?: { name: string; path: string }[] } | null,
+): Promise<Record<string, ControllerSource | null>> {
+  if (!discovery?.controllers?.length) {
+    return findControllers(root);
+  }
+
+  const known = await findControllers(discovery.controllers.map((c) => resolve(discovery.root ?? root, c.path)));
+  const missing = routes.some((route) => !(route.controller in known) && !(route.controller.replace(/\$\d+$/, '') in known));
+
+  return missing ? { ...(await findControllers(root)), ...known } : known;
 }
 
 /**
@@ -216,10 +250,19 @@ function whyNotImportable(name: string, source: ControllerSource | null | undefi
 function extractControllerExports(file: string, code: string): Map<string, string | null> {
   const program = parseSync(file, code).program as { body: any[] };
   const controllers = new Map<string, string | null>();
+  const { names, namespaces } = controllerBindings(program.body);
+  const isControllerCall = (expression: any): boolean => {
+    const callee = expression?.type === 'CallExpression' ? expression.callee : null;
+
+    return (
+      (callee?.type === 'Identifier' && names.has(callee.name)) ||
+      (callee?.type === 'MemberExpression' && callee.property?.name === 'Controller' && namespaces.has(callee.object?.name))
+    );
+  };
   const isController = (node: any): boolean =>
     (node?.type === 'ClassDeclaration' || node?.type === 'Class') &&
     Boolean(node.id?.name) &&
-    extractDecoratorArg(node.decorators, 'Controller') !== null;
+    (node.decorators ?? []).some((decorator: any) => isControllerCall(decorator.expression));
 
   for (const node of program.body) {
     if (node.type === 'ExportNamedDeclaration' && isController(node.declaration)) {
@@ -251,6 +294,36 @@ function extractControllerExports(file: string, code: string): Map<string, strin
   }
 
   return controllers;
+}
+
+/**
+ * How a file refers to `@Controller`: its own name, an alias
+ * (`import { Controller as HttpController }`) or a namespace (`core.Controller`).
+ *
+ * @param body - The file's top-level statements
+ * @returns Local names of the decorator, and namespaces it can be reached through
+ */
+function controllerBindings(body: any[]): { names: Set<string>; namespaces: Set<string> } {
+  const names = new Set(['Controller']);
+  const namespaces = new Set<string>();
+
+  for (const node of body) {
+    if (node.type !== 'ImportDeclaration') {
+      continue;
+    }
+
+    for (const specifier of node.specifiers ?? []) {
+      const imported = specifier.imported?.name ?? specifier.imported?.value;
+
+      if (specifier.type === 'ImportSpecifier' && imported === 'Controller') {
+        names.add(specifier.local.name);
+      } else if (specifier.type === 'ImportNamespaceSpecifier') {
+        namespaces.add(specifier.local.name);
+      }
+    }
+  }
+
+  return { names, namespaces };
 }
 
 /**
@@ -323,11 +396,13 @@ function describeArgs(args: TypegenRoute['args'], path: string, sse: boolean | u
 /**
  * @param from - The generated file
  * @param to - The controller's source
- * @returns A relative module specifier, without a TypeScript extension
+ * @returns A relative module specifier, with the extension of the emitted JavaScript
  */
 function toSpecifier(from: string, to: string): string {
   const path = relative(dirname(from), to)
-    .replace(/\.(?:ts|tsx)$/, '')
+    // `.js` resolves to the `.ts` source under every module resolution,
+    // extensionless only under `bundler`
+    .replace(/\.(?:ts|tsx)$/, '.js')
     .replace(/\.mts$/, '.mjs')
     .replace(/\.cts$/, '.cjs');
 

@@ -1,10 +1,13 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { findControllers, generateRouteTypes, writeRouteTypes } from '@vercube/scan';
+import { generateRouteTypes, resolveControllers, writeRouteTypes } from '@vercube/scan';
 import consola from 'consola';
 import { inspect } from './Inspect';
 import type { DevKitTypes } from '../Types/DevKitTypes';
 import type { IntrospectionTypes } from '@vercube/core';
+
+/** How long the application may take to boot for typegen, before the build moves on without it. */
+export const INSPECT_TIMEOUT = 60_000;
 
 /** Where the route map goes unless `build.typegen.output` says otherwise. */
 export const DEFAULT_TYPEGEN_OUTPUT = '.vercube/routes.d.ts';
@@ -52,6 +55,12 @@ export async function typegen(
   options: DevKitTypes.TypegenRunOptions = {},
 ): Promise<DevKitTypes.TypegenResult | null> {
   const root = app.config.build?.root ?? process.cwd();
+
+  // `false` is a decision, even against an explicit `vercube typegen`
+  if (app.config.build?.typegen === false) {
+    return null;
+  }
+
   const outFile = options.force
     ? resolve(
         root,
@@ -67,15 +76,18 @@ export async function typegen(
   let discovery = options.discovery;
 
   if (!routes) {
-    const sections = await inspect(app, ['routes', 'discovery']);
+    const sections = await inspect(app, ['routes', 'discovery'], undefined, INSPECT_TIMEOUT);
 
-    routes = (sections.routes?.data ?? []) as IntrospectionTypes.RouteDescription[];
+    // an empty map would replace a good one and break every typed call
+    if (!Array.isArray(sections.routes?.data)) {
+      throw new TypeError('The application did not report its routes');
+    }
+
+    routes = sections.routes.data as IntrospectionTypes.RouteDescription[];
     discovery = sections.discovery?.data as IntrospectionTypes.DiscoveryDescription | null | undefined;
   }
 
-  const controllers = await findControllers(
-    discovery?.controllers?.length ? discovery.controllers.map((c) => resolve(discovery!.root ?? root, c.path)) : root,
-  );
+  const controllers = await resolveControllers(routes, root, discovery);
   const { code, skipped } = generateRouteTypes({ routes, controllers, outFile });
   const written = writeRouteTypes(outFile, code);
 

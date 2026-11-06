@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createHooks } from 'hookable';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { builtEntry } from '../src/Typegen/Inspect';
 import { resolveTypegenOutput, typegen } from '../src/Typegen/Typegen';
 import type { DevKitTypes } from '../src/Types/DevKitTypes';
 import type { ConfigTypes, IntrospectionTypes } from '@vercube/core';
@@ -111,11 +112,61 @@ describe('typegen', () => {
     });
 
     // a project-wide scan would have found UserController twice
-    expect(readFileSync(result!.file, 'utf8')).toContain("from '../src/UserController'");
+    expect(readFileSync(result!.file, 'utf8')).toContain("from '../src/UserController.js'");
   });
 
   it('does nothing when off, unless forced', async () => {
     expect(await typegen(app(), { routes })).toBeNull();
     expect((await typegen(app(), { routes, force: true }))?.written).toBe(true);
+  });
+});
+
+/** A built entry that answers `VERCUBE_INSPECT` the way core does, with `body` as the sections. */
+function fakeEntry(body: string, file = 'dist/index.mjs'): void {
+  mkdirSync(join(root, file, '..'), { recursive: true });
+  writeFileSync(
+    join(root, file),
+    `import { writeFileSync } from 'node:fs';\n${body}\nwriteFileSync(process.env.VERCUBE_INSPECT_OUT, JSON.stringify(sections));\n`,
+  );
+}
+
+describe('typegen from the built application', () => {
+  it('reads the routes the application reports', async () => {
+    fakeEntry(
+      `const sections = { routes: { id: 'routes', data: ${JSON.stringify(routes.slice(0, 1))} }, discovery: { data: null } };`,
+    );
+
+    const result = await typegen(app({ typegen: true }));
+
+    expect(readFileSync(result!.file, 'utf8')).toContain(
+      "'GET /users/:id': RouteDef<UserController, 'get', { param: { id: 0 } }>;",
+    );
+  });
+
+  it('inspects the entry the build names after the first of several', async () => {
+    fakeEntry(`const sections = { routes: { data: [] } };`, 'dist/server.mjs');
+
+    expect(builtEntry(app({ entry: ['src/server.ts', 'src/worker.ts'] }))).toBe('server.mjs');
+    expect(builtEntry(app({ entry: 'src/main.ts' }))).toBe('index.mjs');
+    expect((await typegen(app({ typegen: true, entry: ['src/server.ts'] })))!.routes).toBe(0);
+  });
+
+  it('refuses to replace the map when the routes section is missing', async () => {
+    fakeEntry(`const sections = {};`);
+
+    await expect(typegen(app({ typegen: true }))).rejects.toThrow('did not report its routes');
+  });
+
+  it('gives up on an application that never finishes booting', async () => {
+    mkdirSync(join(root, 'dist'));
+    writeFileSync(join(root, 'dist/index.mjs'), 'setInterval(() => {}, 1000);\n');
+
+    const { inspect } = await import('../src/Typegen/Inspect');
+
+    await expect(inspect(app(), ['routes'], undefined, 300)).rejects.toThrow('did not finish within 0.3s');
+  });
+
+  it('stays off with typegen: false, even when forced', async () => {
+    expect(await typegen(app({ typegen: false }), { routes, force: true })).toBeNull();
   });
 });

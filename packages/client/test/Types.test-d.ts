@@ -126,7 +126,11 @@ describe('types', () => {
 
   it('the generated map is the hand-written one, plus HEAD for every GET', () => {
     expectTypeOf<Omit<VercubeRoutes, `HEAD ${string}`>>().toEqualTypeOf<Omit<TestRoutes, `HEAD ${string}`>>();
-    expectTypeOf<VercubeRoutes['HEAD /users/:id']>().toEqualTypeOf<TestRoutes['HEAD /users/:id']>();
+    // every GET has its HEAD twin, with the same definition
+    type ExpectedHeads = {
+      [K in keyof TestRoutes as K extends `GET ${infer Path}` ? `HEAD ${Path}` : never]: TestRoutes[K];
+    };
+    expectTypeOf<Pick<VercubeRoutes, Extract<keyof VercubeRoutes, `HEAD ${string}`>>>().toEqualTypeOf<ExpectedHeads>();
   });
 
   it('changing a handler signature breaks the call site', () => {
