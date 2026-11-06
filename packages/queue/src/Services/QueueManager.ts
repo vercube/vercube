@@ -201,6 +201,35 @@ export class QueueManager {
   }
 
   /**
+   * Names of the mounted strategies, in mount order.
+   *
+   * @returns {string[]} The mount names
+   */
+  public get mounts(): string[] {
+    return [...this.fStrategies.keys()];
+  }
+
+  /**
+   * Checks that the broker behind a mount answers, connecting it first when
+   * nothing has used it yet. Resolves without a round trip for a transport
+   * that has no broker.
+   *
+   * @param {string} [name] - Mount name, defaults to `default`
+   * @returns {Promise<void>} Resolves once the broker answered
+   * @throws {QueueError} When nothing is mounted under the name, or the broker cannot be reached
+   */
+  public async ping(name: string = DEFAULT_STRATEGY): Promise<void> {
+    const mount = this.fStrategies.get(name);
+
+    if (!mount) {
+      throw new QueueError(`No queue strategy is mounted under "${name}"`, 'ping', undefined, undefined, false);
+    }
+
+    await this.ensureReady(mount);
+    await mount.strategy.ping?.();
+  }
+
+  /**
    * Adds a single job to a queue.
    *
    * @template TQueue - Queue the job is added to

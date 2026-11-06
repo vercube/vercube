@@ -289,6 +289,19 @@ export class KafkaStrategy extends QueueStrategy<KafkaStrategyOptions> {
   }
 
   /**
+   * Asks the cluster to describe itself, for the readiness probe: a round
+   * trip to a broker rather than a flag the client last saw.
+   *
+   * @returns {Promise<void>} Resolves once a broker answered
+   * @throws {QueueError} When the strategy has not been initialized
+   */
+  public override async ping(): Promise<void> {
+    const admin = await this.adminClient();
+
+    await admin.describeCluster();
+  }
+
+  /**
    * Disconnects every consumer, the producer and the admin client.
    *
    * @returns {Promise<void>} Resolves once everything is disconnected
@@ -411,8 +424,11 @@ export class KafkaStrategy extends QueueStrategy<KafkaStrategyOptions> {
    */
   private async adminClient(): Promise<Admin> {
     if (!this.fAdmin) {
-      this.fAdmin = this.requireClient('stats').admin();
-      await this.fAdmin.connect();
+      const admin = this.requireClient('stats').admin();
+
+      // kept only once connected, so a failed connect is tried again next time
+      await admin.connect();
+      this.fAdmin = admin;
     }
 
     return this.fAdmin;

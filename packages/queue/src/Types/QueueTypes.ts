@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 import type { QueueStrategy } from '../Services/QueueStrategy';
-import type { MaybePromise, ValidationTypes } from '@vercube/core';
+import type { HealthTypes, MaybePromise, ValidationTypes } from '@vercube/core';
 import type { IOC } from '@vercube/di';
 
 export namespace QueueTypes {
@@ -755,5 +755,14 @@ export namespace QueueTypes {
   export interface PluginOptions extends Defaults {
     /** Strategies to mount when the application boots. */
     strategies?: AnyMount[];
+
+    /**
+     * Registers a readiness check, `queue:<mount name>`, for every mounted
+     * strategy that talks to a broker (BullMQ, RabbitMQ, Kafka). `false`
+     * registers none; `{ critical: false }` reports them without failing
+     * readiness.
+     * @default true
+     */
+    health?: HealthTypes.ModuleOption;
   }
 }

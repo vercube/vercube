@@ -69,6 +69,9 @@ export class BullMQStrategy extends QueueStrategy<BullMQStrategyOptions> {
   /** Consumers, one per queue name */
   private fWorkers: Map<string, Worker> = new Map();
 
+  /** Connection the health check pings over, opened on the first check */
+  private fPingQueue: Queue | null = null;
+
   /**
    * BullMQ supports the full job model natively.
    *
@@ -285,6 +288,35 @@ export class BullMQStrategy extends QueueStrategy<BullMQStrategyOptions> {
   }
 
   /**
+   * Reads a key from Redis. Over a connection of its own, so a check never
+   * waits behind a worker's blocking read. While Redis is down the command
+   * waits for the reconnect, and the health check timeout reports it.
+   *
+   * @returns {Promise<void>} Resolves once Redis answered
+   * @throws {QueueError} When the strategy has not been initialized
+   */
+  public override async ping(): Promise<void> {
+    const options = this.requireOptions('ping');
+
+    if (!this.fPingQueue) {
+      this.fPingQueue = new Queue('vercube-health', {
+        connection: options.connection,
+        prefix: options.prefix,
+      });
+
+      // a refused connection is what the check reports; unhandled, the
+      // emitter would throw it out of the process
+      this.fPingQueue.on('error', () => {});
+    }
+
+    const client = await this.fPingQueue.getBackend().client;
+
+    // BullMQ's client interface has no PING; a read of a key that never
+    // exists is the same round trip on every Redis-compatible server
+    await client.get('vercube:health');
+  }
+
+  /**
    * Closes every worker and producer this strategy created.
    *
    * @returns {Promise<void>} Resolves once everything is closed
@@ -293,10 +325,12 @@ export class BullMQStrategy extends QueueStrategy<BullMQStrategyOptions> {
     const closing = [
       ...[...this.fWorkers.values()].map((worker) => worker.close()),
       ...[...this.fQueues.values()].map((queue) => queue.close()),
+      ...(this.fPingQueue ? [this.fPingQueue.close()] : []),
     ];
 
     this.fWorkers.clear();
     this.fQueues.clear();
+    this.fPingQueue = null;
 
     await Promise.all(closing);
   }
