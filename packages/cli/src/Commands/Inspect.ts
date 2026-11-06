@@ -1,8 +1,4 @@
-import { spawn } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
-import { build, createVercube } from '@vercube/devkit';
+import { build, createVercube, inspect } from '@vercube/devkit';
 import { BaseCommand } from '../BaseCommand';
 import { Command } from '../Decorators/Command';
 import { Flag } from '../Decorators/Flag';
@@ -49,42 +45,9 @@ export class InspectCommand extends BaseCommand {
       return instance;
     });
 
-    const entry = resolve(app.config.build?.output?.dir ?? 'dist', this.entry);
-    const directory = mkdtempSync(join(tmpdir(), 'vercube-inspect-'));
-    const output = join(directory, 'introspection.json');
+    const sections = this.section ? this.section.split(',').map((id) => id.trim()) : [];
 
-    try {
-      await this.runEntry(entry, output);
-      process.stdout.write(readFileSync(output, 'utf8'));
-    } finally {
-      rmSync(directory, { recursive: true, force: true });
-    }
-  }
-
-  /**
-   * Runs the built entry with introspection enabled.
-   *
-   * The child's stdout is pointed at this process's stderr: an application is
-   * free to log while it boots, and none of that belongs in the payload.
-   *
-   * @param entry - Absolute path of the built entry file
-   * @param output - File the child writes the JSON to
-   * @returns Resolves when the child exits successfully
-   */
-  private runEntry(entry: string, output: string): Promise<void> {
-    return new Promise((done, fail) => {
-      const child = spawn(process.execPath, [entry], {
-        env: {
-          ...process.env,
-          VERCUBE_INSPECT: this.section ?? '*',
-          VERCUBE_INSPECT_OUT: output,
-        },
-        stdio: ['ignore', process.stderr, 'inherit'],
-      });
-
-      child.on('error', fail);
-      child.on('exit', (code) => (code === 0 ? done() : fail(new Error(`Inspect exited with code ${code}`))));
-    });
+    process.stdout.write(`${JSON.stringify(await inspect(app, sections, this.entry), null, 2)}\n`);
   }
 }
 

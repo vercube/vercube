@@ -93,6 +93,26 @@ export namespace ConfigTypes {
      * The `input`, `output`, and `onwarn` fields are managed internally and cannot be overridden here.
      */
     rolldownConfig?: Omit<RolldownOptions, 'input' | 'output' | 'onwarn'>;
+
+    /**
+     * The typed route map for `@vercube/client`, written by `vercube build`,
+     * `vercube dev`, `vercube typegen` and the Vite plugin.
+     *
+     * On by default when the project depends on `@vercube/client`. `false`
+     * turns it off; an object turns it on and sets where it is written.
+     */
+    typegen?: boolean | TypegenOptions;
+  }
+
+  /**
+   * Options for the generated route map.
+   */
+  export interface TypegenOptions {
+    /**
+     * Where the file is written, relative to the project root.
+     * @default '.vercube/routes.d.ts'
+     */
+    output?: string;
   }
 
   /**

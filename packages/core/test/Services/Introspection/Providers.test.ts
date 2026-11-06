@@ -1,6 +1,16 @@
 import { describeContainer } from '@vercube/di';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { BaseMiddleware, Controller, createApp, Get, IntrospectionRegistry, Middleware, Post, QueryParam } from '../../../src';
+import {
+  BaseMiddleware,
+  Controller,
+  createApp,
+  Get,
+  IntrospectionRegistry,
+  Middleware,
+  Post,
+  QueryParam,
+  Sse,
+} from '../../../src';
 import { defaultConfig } from '../../../src/Config/DefaultConfig';
 import type { App } from '../../../src';
 import type { IntrospectionTypes } from '../../../src/Types/IntrospectionTypes';
@@ -23,6 +33,11 @@ class CatalogController {
   @Middleware(AuditMiddleware, { priority: 5 })
   public search(@QueryParam({ name: 'q' }) query: string): unknown {
     return { query };
+  }
+
+  @Sse('/feed')
+  public async *feed(): AsyncGenerator<string> {
+    yield 'item';
   }
 }
 
@@ -80,6 +95,13 @@ describe('core introspection providers', () => {
 
     expect(search.args).toEqual([{ idx: 0, type: 'query-param', name: 'q', validated: false }]);
     expect(search.middlewares).toContainEqual({ name: 'AuditMiddleware', phase: 'before', priority: 5, global: false });
+  });
+
+  it('marks SSE routes', async () => {
+    const section = await registry.describe<IntrospectionTypes.RouteDescription[]>('routes');
+
+    expect(section!.data.find((route) => route.id === 'GET /catalog/feed')?.sse).toBe(true);
+    expect(section!.data.find((route) => route.id === 'GET /catalog/:id')).not.toHaveProperty('sse');
   });
 
   it('redacts credentials in the config section', async () => {

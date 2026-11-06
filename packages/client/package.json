@@ -34,7 +34,8 @@
   },
   "devDependencies": {
     "@vercube/core": "workspace:*",
-    "@vercube/di": "workspace:*"
+    "@vercube/di": "workspace:*",
+    "@vercube/scan": "workspace:*"
   },
   "publishConfig": {
     "access": "public"
