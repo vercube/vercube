@@ -141,9 +141,18 @@ async function readBody(response: Response, lenient = false): Promise<unknown> {
  * @returns The URL, with one slash at the join and one `?`
  */
 function joinUrl(base: string, path: string, query: string): string {
-  const url = base.endsWith('/') && path.startsWith('/') ? base + path.slice(1) : base + path;
+  const joined = base.endsWith('/') && path.startsWith('/') ? base + path.slice(1) : base + path;
 
-  return query && url.includes('?') ? `${url}&${query.slice(1)}` : url + query;
+  if (!query) {
+    return joined;
+  }
+
+  // the query goes before a `#fragment`, or the server never sees it
+  const hash = joined.indexOf('#');
+  const url = hash === -1 ? joined : joined.slice(0, hash);
+  const fragment = hash === -1 ? '' : joined.slice(hash);
+
+  return (url.includes('?') ? `${url}&${query.slice(1)}` : url + query) + fragment;
 }
 
 /**
