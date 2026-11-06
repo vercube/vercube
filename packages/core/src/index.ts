@@ -33,6 +33,7 @@ export * from './Decorators/Http/Redirect';
 export * from './Decorators/Http/Middleware';
 export * from './Decorators/Http/MultipartFormData';
 export * from './Decorators/Http/Sse';
+export * from './Decorators/Http/Throws';
 
 // Hooks
 export * from './Decorators/Hooks/Listen';
@@ -83,6 +84,7 @@ export * from './Services/Startup/StartupRegistry';
 
 // Errors
 export * from './Errors/HttpError';
+export * from './Errors/RouteErrors';
 export * from './Errors/Http/BadRequestError';
 export * from './Errors/Http/ForbiddenError';
 export * from './Errors/Http/InternalServerError';

@@ -4,12 +4,16 @@ import {
   BaseMiddleware,
   Controller,
   createApp,
+  ForbiddenError,
   Get,
+  HttpError,
   IntrospectionRegistry,
   Middleware,
   Post,
   QueryParam,
+  NotFoundError,
   Sse,
+  Throws,
 } from '../../../src';
 import { defaultConfig } from '../../../src/Config/DefaultConfig';
 import type { App } from '../../../src';
@@ -22,15 +26,30 @@ class AuditMiddleware extends BaseMiddleware {
   }
 }
 
+class GuardMiddleware extends BaseMiddleware {
+  public onRequest(): void {
+    // no-op
+  }
+}
+
+Object.defineProperty(GuardMiddleware, Symbol.for('vercube.auth.middleware'), { value: true });
+
+class ConflictError extends HttpError {
+  public static readonly status: number = 409;
+}
+
 @Controller('/catalog')
+@Throws(ForbiddenError)
 class CatalogController {
   @Get('/:id')
+  @Throws(NotFoundError, ConflictError)
   public byId(): unknown {
     return { ok: true };
   }
 
   @Post('/search')
   @Middleware(AuditMiddleware, { priority: 5 })
+  @Middleware(GuardMiddleware)
   public search(@QueryParam({ name: 'q' }) query: string): unknown {
     return { query };
   }
@@ -56,6 +75,7 @@ describe('core introspection providers', () => {
       setup: (instance) => {
         instance.container.bind(CatalogController);
         instance.container.bind(AuditMiddleware);
+        instance.container.bind(GuardMiddleware);
       },
     });
 
@@ -102,6 +122,28 @@ describe('core introspection providers', () => {
 
     expect(section!.data.find((route) => route.id === 'GET /catalog/feed')?.sse).toBe(true);
     expect(section!.data.find((route) => route.id === 'GET /catalog/:id')).not.toHaveProperty('sse');
+  });
+
+  it('lists declared errors, the controller ones included, and the implicit ones', async () => {
+    const section = await registry.describe<IntrospectionTypes.RouteDescription[]>('routes');
+
+    expect(section!.data.find((route) => route.id === 'GET /catalog/:id')?.throws).toEqual([
+      { name: 'ForbiddenError', status: 403 },
+      { name: 'NotFoundError', status: 404 },
+      { name: 'ConflictError', status: 409 },
+    ]);
+    // secured: the implicit 403 and the declared one are the same class, listed once
+    expect(section!.data.find((route) => route.id === 'POST /catalog/search')?.throws).toEqual([
+      { name: 'UnauthorizedError', status: 401, module: '@vercube/core' },
+      { name: 'ForbiddenError', status: 403, module: '@vercube/core' },
+    ]);
+  });
+
+  it('marks routes guarded by an authentication middleware', async () => {
+    const section = await registry.describe<IntrospectionTypes.RouteDescription[]>('routes');
+
+    expect(section!.data.find((route) => route.id === 'POST /catalog/search')?.secured).toBe(true);
+    expect(section!.data.find((route) => route.id === 'GET /catalog/:id')).not.toHaveProperty('secured');
   });
 
   it('redacts credentials in the config section', async () => {

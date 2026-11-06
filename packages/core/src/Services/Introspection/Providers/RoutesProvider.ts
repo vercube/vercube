@@ -1,4 +1,6 @@
 import { Inject } from '@vercube/di';
+import { getRouteErrors } from '../../../Errors/RouteErrors';
+import { isAuthMiddleware } from '../../../Utils/Utils';
 import { MetadataResolver } from '../../Metadata/MetadataResolver';
 import { Router } from '../../Router/Router';
 import type { IntrospectionTypes } from '../../../Types/IntrospectionTypes';
@@ -52,6 +54,11 @@ export function describeRoute(route: RouterTypes.Route, basePath?: string): Intr
   const handler = route.handler;
   const instance = handler.instance as object | undefined;
   const prototype = instance ? (Object.getPrototypeOf(instance) as { __metadata?: MetadataTypes.Ctx }) : undefined;
+  const middlewares = [...(handler.middlewares?.beforeMiddlewares ?? []), ...(handler.middlewares?.afterMiddlewares ?? [])];
+  const secured = middlewares.some((definition) => isAuthMiddleware(definition.middleware));
+  const throws = getRouteErrors(prototype, handler.propertyName, { args: handler.args ?? [], secured }).map(
+    ({ name, status, module }) => (module ? { name, status, module } : { name, status }),
+  );
 
   return {
     id: `${route.method} ${route.path}`,
@@ -68,6 +75,8 @@ export function describeRoute(route: RouterTypes.Route, basePath?: string): Intr
     actions: handler.actions?.length ?? 0,
     simple: handler.simple === true,
     ...(prototype?.__metadata?.__methods?.[handler.propertyName]?.meta?.sse === true ? { sse: true } : {}),
+    ...(throws.length > 0 ? { throws } : {}),
+    ...(secured ? { secured: true } : {}),
   };
 }
 
