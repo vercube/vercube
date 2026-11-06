@@ -13,8 +13,12 @@ dev server via [`@vercube/vite`](../../packages/vite).
 pnpm dev      # vite, open http://localhost:3010
 ```
 
-The page fetches `GET /api/hello/:name` from the Vercube controller and round-trips a
-WebSocket message to the `/echo` namespace.
+The page calls `GET /api/hello/:name` through [`@vercube/client`](../../packages/client), typed by
+the controller, and round-trips a WebSocket message to the `/echo` namespace.
+
+The types come from `.vercube/routes.d.ts`, which the plugin rewrites whenever routes are added,
+removed or moved. It is committed, so the frontend type-checks without starting the server. Rename
+the `name` parameter of `HelloController.greet` and `App.vue` stops compiling.
 
 ## Build
 
@@ -30,7 +34,8 @@ the same way the dev server does.
 
 ```
 index.html               # Vite entry (frontend)
-src/main.ts, App.vue      # Vue app, calls the Vercube API
+.vercube/routes.d.ts      # generated route map for @vercube/client
+src/main.ts, App.vue      # Vue app, calls the Vercube API through the typed client
 src/server/               # Vercube, auto-discovered controllers
   Controllers/HelloController.ts   # GET /api/hello, /api/hello/:name
   Controllers/EchoWsController.ts  # WebSocket @Namespace('/echo')
