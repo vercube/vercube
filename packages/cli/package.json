@@ -16,6 +16,7 @@
   "exports": {
     ".": "./dist/index.mjs",
     "./toolkit": "./dist/toolkit.mjs",
+    "./recipe": "./dist/recipe.mjs",
     "./package.json": "./package.json"
   },
   "types": "./dist/index.d.mts",
@@ -36,9 +37,11 @@
     "@vercube/logger": "workspace:*",
     "c12": "catalog:",
     "citty": "0.2.2",
+    "confbox": "0.3.1",
     "consola": "catalog:",
     "giget": "3.3.1",
     "jiti": "catalog:",
+    "magicast": "0.5.5",
     "nypm": "0.6.12",
     "pathe": "catalog:",
     "srvx": "catalog:",

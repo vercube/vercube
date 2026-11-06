@@ -591,6 +591,9 @@ importers:
       citty:
         specifier: 0.2.2
         version: 0.2.2
+      confbox:
+        specifier: 0.3.1
+        version: 0.3.1
       consola:
         specifier: 'catalog:'
         version: 3.4.2
@@ -600,6 +603,9 @@ importers:
       jiti:
         specifier: 'catalog:'
         version: 2.7.0
+      magicast:
+        specifier: 0.5.5
+        version: 0.5.5
       nypm:
         specifier: 0.6.12
         version: 0.6.12
