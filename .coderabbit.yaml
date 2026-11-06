@@ -7,3 +7,4 @@ reviews:
       - feat/scheduler-.*
       - feat/test-boot
       - feat/testing.*
+      - feat/client.*
