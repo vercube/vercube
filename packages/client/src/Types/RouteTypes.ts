@@ -117,8 +117,13 @@ export type ErrorBody<E, S extends number> = E extends unknown
   ? Simplify<{ status: S } & Omit<Jsonify<E>, HiddenErrorFields> & { message?: string }>
   : never;
 
+/** A `throws` key as a status: `404` and `'404'` alike. */
+type StatusOf<K> = K extends number ? K : K extends `${infer N extends number}` ? N : never;
+
 /** Every error body of a `throws` map, as one union. */
-type ErrorsOf<T> = { [S in keyof T & number]: ErrorBody<T[S], S> }[keyof T & number];
+type ErrorsOf<T> = {
+  [K in keyof T]-?: [StatusOf<K>] extends [never] ? never : ErrorBody<T[K], StatusOf<K>>;
+}[keyof T];
 
 /** What the handler returned, after `await`, without the error `Response`s. */
 type Returned<R> = Exclude<Awaited<R>, Response>;
