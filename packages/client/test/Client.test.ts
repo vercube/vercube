@@ -290,3 +290,60 @@ describe('createClient', () => {
     expect(seen).toEqual(['http://test/search?at=12:30', 'http://test/users/7?at=12:30#t:1']);
   });
 });
+
+describe('safe', () => {
+  it('never throws for an error status', async () => {
+    const { api } = setup(() => Response.json({ status: 404, name: 'NotFoundError' }, { status: 404 }));
+    const res = await api.safe.get('/users/:id', { params: { id: '1' } });
+
+    expect(res).toMatchObject({ data: null, error: { status: 404, body: { name: 'NotFoundError' } } });
+  });
+
+  it('keeps a body that is not JSON', async () => {
+    const { api } = setup(() => new Response('Bad gateway', { status: 502 }));
+
+    expect((await api.safe.get('/users/:id', { params: { id: '1' } })).error?.body).toBe('Bad gateway');
+  });
+
+  it('still throws on a network failure', async () => {
+    const api = createClient<TestRoutes>({
+      baseURL: 'http://test',
+      fetch: () => Promise.reject(new TypeError('fetch failed')),
+    });
+
+    await expect(api.safe.get('/users/:id', { params: { id: '1' } })).rejects.toThrow('fetch failed');
+  });
+
+  it('still throws on abort', async () => {
+    const { api } = setup();
+    const controller = new AbortController();
+
+    controller.abort();
+
+    await expect(api.safe.get('/users/:id', { params: { id: '1' }, signal: controller.signal })).rejects.toThrow();
+  });
+
+  it('still throws when a hook throws', async () => {
+    const api = createClient<TestRoutes>({
+      baseURL: 'http://test',
+      fetch: () => Response.json({}),
+      onRequest: () => {
+        throw new Error('hook');
+      },
+    });
+
+    await expect(api.safe.get('/users/:id', { params: { id: '1' } })).rejects.toThrow('hook');
+  });
+});
+
+describe('isRouteError', () => {
+  it('matches the route the error came from, by template', async () => {
+    const { api } = setup(() => Response.json({}, { status: 404 }));
+    const error = await api.get('/users/:id', { params: { id: '1' } }).catch((error: unknown) => error);
+
+    expect(error).toBeInstanceOf(VercubeClientError);
+    expect(api.isRouteError(error, 'GET /users/:id')).toBe(true);
+    expect(api.isRouteError(error, 'DELETE /users/:id')).toBe(false);
+    expect(api.isRouteError(null, 'GET /users/:id')).toBe(false);
+  });
+});

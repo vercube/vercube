@@ -73,7 +73,8 @@ export class TestApp<R = Record<string, AnyRoute>> extends TestClient {
    * A `@vercube/client` for this application, typed by the route map given to
    * `createTestApp<Routes>()`. Requests go through `dispatch()`: in memory, no
    * port, and refused once the app is closing. Error statuses throw a
-   * `VercubeClientError`, as they would against a deployed server.
+   * `VercubeClientError`, as they would against a deployed server;
+   * `app.client.safe` returns them instead, typed with the route's declared errors.
    *
    * @example
    * ```ts
@@ -82,6 +83,8 @@ export class TestApp<R = Record<string, AnyRoute>> extends TestClient {
    * await using app = await createTestApp<VercubeRoutes>({ controllers: [UserController] });
    *
    * const user = await app.client.get('/users/:id', { params: { id: '1' } });
+   * const { error } = await app.client.safe.get('/users/:id', { params: { id: 'missing' } });
+   * expect(error?.status).toBe(404);
    * ```
    */
   public get client(): Client<R> {

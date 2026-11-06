@@ -52,6 +52,10 @@ export class UserController {
   @Get('/:id')
   @Throws(NotFoundError)
   public async getUser(@Param('id') id: string): Promise<User> {
+    if (id === 'missing') {
+      throw new NotFoundError('No such user');
+    }
+
     return { id, name: `user-${id}`, createdAt: new Date(0) };
   }
 
@@ -149,6 +153,10 @@ export class AccountController {
   @Put('/email')
   @Throws(GoneError)
   public changeEmail(@Body() body: { email: string }): { email: string } {
+    if (body.email === 'taken@example.com') {
+      throw new ConflictError('7');
+    }
+
     return body;
   }
 }
