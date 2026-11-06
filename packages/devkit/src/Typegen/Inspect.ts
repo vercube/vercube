@@ -38,26 +38,52 @@ export async function inspect(
           VERCUBE_INSPECT: sections.length > 0 ? sections.join(',') : '*',
           VERCUBE_INSPECT_OUT: output,
         },
-        stdio: ['ignore', process.stderr, 'inherit'],
+        // piped rather than handed over: in a worker thread `process.stderr`
+        // has no file descriptor to give
+        stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
       });
+      let finished = false;
+      const finish = (error?: Error): void => {
+        if (finished) {
+          return;
+        }
+
+        finished = true;
+        clearTimeout(timer);
+
+        if (error) {
+          fail(error);
+        } else {
+          done();
+        }
+      };
+
+      child.stdout!.pipe(process.stderr, { end: false });
+      child.stderr!.pipe(process.stderr, { end: false });
 
       // an application whose setup waits on a service that never answers
       const timer =
         timeout > 0
           ? setTimeout(() => {
               child.kill('SIGKILL');
-              fail(new Error(`Inspect did not finish within ${timeout / 1000}s`));
+              finish(new Error(`Inspect did not finish within ${timeout / 1000}s`));
             }, timeout)
           : undefined;
 
-      child.on('error', fail);
+      // core says so once the file is written: a setup that leaves a handle
+      // open (a database pool, say) would otherwise keep the process alive
+      child.on('message', (message: { type?: string }) => {
+        if (message?.type === 'vercube:inspected') {
+          child.kill('SIGKILL');
+          finish();
+        }
+      });
+      child.on('error', finish);
       child.on('exit', (code) => {
-        clearTimeout(timer);
-
         if (code === 0) {
-          done();
+          finish();
         } else {
-          fail(new Error(`Inspect exited with code ${code}`));
+          finish(new Error(`Inspect exited with code ${code}`));
         }
       });
     });
