@@ -9,3 +9,4 @@ reviews:
       - feat/test-boot
       - feat/testing.*
       - feat/client.*
+      - feat/health.*

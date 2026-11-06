@@ -1,8 +1,10 @@
 import { initializeContainer, Inject } from '@vercube/di';
 import { Logger } from '@vercube/logger';
 import { RuntimeConfig } from '../Services/Config/RuntimeConfig';
+import { HealthRegistry } from '../Services/Health/HealthRegistry';
 import { HttpServer } from '../Services/HttpServer/HttpServer';
 import { IntrospectionRegistry } from '../Services/Introspection/IntrospectionRegistry';
+import { AppLifecycle } from '../Services/Lifecycle/AppLifecycle';
 import { PluginsRegistry } from '../Services/Plugins/PluginsRegistry';
 import { RequestHandler } from '../Services/Router/RequestHandler';
 import { Router } from '../Services/Router/Router';
@@ -14,6 +16,7 @@ import type { BasePlugin } from '../Services/Plugins/BasePlugin';
 import type { ShutdownHook } from '../Services/Shutdown/ShutdownRegistry';
 import type { StartupHook } from '../Services/Startup/StartupRegistry';
 import type { ConfigTypes } from '../Types/ConfigTypes';
+import type { HealthTypes } from '../Types/HealthTypes';
 import type { VercubePlugin, VercubePluginEnv } from '../Types/Plugin';
 import type { Container } from '@vercube/di';
 
@@ -51,6 +54,12 @@ export class App {
   @Inject(StartupRegistry)
   private gStartupRegistry!: StartupRegistry;
 
+  @Inject(AppLifecycle)
+  private gLifecycle!: AppLifecycle;
+
+  @Inject(HealthRegistry)
+  private gHealthRegistry!: HealthRegistry;
+
   /** The run of the startup hooks, shared by `start()` and `listen()`. */
   private fStarting: Promise<void> | undefined;
 
@@ -85,6 +94,27 @@ export class App {
    */
   public set container(container: Container) {
     this.fInternalContainer = container;
+  }
+
+  /**
+   * Where the application is in its lifecycle: `starting` until the
+   * {@link App.onStart} hooks have finished, `ready` after, `draining` as soon
+   * as {@link App.close} begins, and `closed` once it has finished.
+   *
+   * @returns {HealthTypes.AppState} The current state
+   */
+  public get state(): HealthTypes.AppState {
+    return this.gLifecycle.state;
+  }
+
+  /**
+   * The health check registry. Modules register a check for each backend they
+   * depend on, and the readiness route runs them.
+   *
+   * @returns {HealthRegistry} The registry
+   */
+  public get health(): HealthRegistry {
+    return this.gHealthRegistry;
   }
 
   /**
@@ -188,7 +218,8 @@ export class App {
 
   /**
    * Runs the startup hooks registered with {@link App.onStart}, once however
-   * often it is called. `listen()` calls it; an application driven without
+   * often it is called, and moves {@link App.state} to `ready` once they
+   * have finished. A failing hook leaves the application `starting`. `listen()` calls it; an application driven without
    * `listen()`, such as one embedded in Nitro, calls it after the container
    * is initialized.
    *
@@ -196,7 +227,9 @@ export class App {
    * @throws {Error} The first hook failure
    */
   public start(): Promise<void> {
-    this.fStarting ??= this.gStartupRegistry.run();
+    this.fStarting ??= this.gStartupRegistry.run().then(() => {
+      this.gLifecycle.advance('ready');
+    });
 
     return this.fStarting;
   }
@@ -225,7 +258,10 @@ export class App {
   }
 
   /**
-   * Closes the application gracefully. The HTTP server stops accepting
+   * Closes the application gracefully. {@link App.state} turns `draining`
+   * right away, so a readiness probe fails while the server keeps serving for
+   * `drainDelay` milliseconds: long enough for a load balancer to stop
+   * routing new requests here. Then the HTTP server stops accepting
    * connections and waits for the requests in flight, closing the connections
    * still open once `timeout` elapses. Then the callbacks registered with
    * {@link App.onClose} run, last registered first, so modules such as the
@@ -237,11 +273,15 @@ export class App {
    *
    * @param {object} [options] - How long to wait
    * @param {number} [options.timeout] - Milliseconds the HTTP server waits for requests in flight, defaults to `shutdown.timeout`
+   * @param {number} [options.drainDelay] - Milliseconds to keep serving before the HTTP server closes, defaults to `shutdown.drainDelay`
    * @returns {Promise<void>} Resolves once everything is closed
    * @throws {AggregateError} When the server or a callback failed to close, after every callback has run
    */
-  public close(options: { timeout?: number } = {}): Promise<void> {
-    this.fClosing ??= this.shutdown(options.timeout ?? this.fConfig?.shutdown?.timeout ?? DEFAULT_SHUTDOWN_TIMEOUT);
+  public close(options: { timeout?: number; drainDelay?: number } = {}): Promise<void> {
+    this.fClosing ??= this.shutdown(
+      options.timeout ?? this.fConfig?.shutdown?.timeout ?? DEFAULT_SHUTDOWN_TIMEOUT,
+      options.drainDelay ?? this.fConfig?.shutdown?.drainDelay ?? 0,
+    );
 
     return this.fClosing;
   }
@@ -351,15 +391,27 @@ export class App {
   }
 
   /**
-   * Stops the HTTP server, runs the shutdown hooks, then disposes the
-   * container. A step that fails does not keep the next one from running.
+   * Marks the application as draining, keeps serving for `drainDelay`, stops
+   * the HTTP server, runs the shutdown hooks, then disposes the container. A
+   * step that fails does not keep the next one from running.
    *
    * @param {number} timeout - Milliseconds the HTTP server waits for requests in flight
+   * @param {number} drainDelay - Milliseconds to keep serving before the HTTP server closes
    * @returns {Promise<void>} Resolves once everything is closed
    * @private
    */
-  private async shutdown(timeout: number): Promise<void> {
+  private async shutdown(timeout: number, drainDelay: number): Promise<void> {
     const errors: unknown[] = [];
+
+    // before anything awaits: a readiness probe answering right after
+    // `close()` was called must already see it
+    this.gLifecycle.advance('draining');
+
+    // Only a server that listens has a load balancer in front of it to drain
+    // from. Serverless platforms and Nitro route requests themselves.
+    if (drainDelay > 0 && this.gHttpServer.listening) {
+      await new Promise<void>((resolve) => setTimeout(resolve, drainDelay));
+    }
 
     try {
       await this.gHttpServer.close(timeout);
@@ -381,6 +433,8 @@ export class App {
 
     this.fSignalCleanup?.();
     this.fSignalCleanup = null;
+
+    this.gLifecycle.advance('closed');
 
     if (errors.length > 0) {
       throw new AggregateError(errors, 'Failed to close the application');

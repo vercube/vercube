@@ -81,6 +81,8 @@ export * from './Services/Telemetry/TelemetryRegistry';
 export * from './Services/Telemetry/TelemetryOptions';
 export * from './Services/Shutdown/ShutdownRegistry';
 export * from './Services/Startup/StartupRegistry';
+export * from './Services/Lifecycle/AppLifecycle';
+export * from './Services/Health/HealthRegistry';
 
 // Errors
 export * from './Errors/HttpError';
@@ -106,6 +108,7 @@ export * from './Types/IntrospectionTypes';
 export * from './Types/TelemetryTypes';
 export * from './Types/ValidationTypes';
 export * from './Types/HttpCodes';
+export * from './Types/HealthTypes';
 
 // Utils
 export * from './Utils/Utils';
