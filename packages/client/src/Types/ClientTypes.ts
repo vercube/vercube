@@ -27,7 +27,11 @@ export interface ClientOptions {
   headers?: HeadersInit | (() => HeadersInit | Promise<HeadersInit>);
   /** Runs before each request. Returning a `Request` replaces it. */
   onRequest?: (context: RequestContext) => void | Request | Promise<void | Request>;
-  /** Runs after each response, error responses included. Returning a `Response` replaces it. */
+  /**
+   * Runs after each response, error responses included. Returning a `Response`
+   * replaces it. The hook gets a copy, so reading its body leaves the client's
+   * intact; an event stream is the exception, its body is the client's.
+   */
   onResponse?: (context: ResponseContext) => void | Response | Promise<void | Response>;
 }
 

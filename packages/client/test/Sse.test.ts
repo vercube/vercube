@@ -132,4 +132,22 @@ describe('parseSse', () => {
 
     expect(cancelled).toEqual(['unstarted', 'pending']);
   });
+
+  it('cancels the body when the signal aborts before the first next(), or was aborted already', async () => {
+    const cancelled: unknown[] = [];
+    const idle = () =>
+      new ReadableStream<Uint8Array>({
+        cancel(reason) {
+          cancelled.push(reason);
+        },
+      });
+    const late = new AbortController();
+
+    parseSse(idle(), late.signal);
+    late.abort('late');
+    parseSse(idle(), AbortSignal.abort('early'));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(cancelled).toEqual(['late', 'early']);
+  });
 });

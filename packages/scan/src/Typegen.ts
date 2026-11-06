@@ -73,7 +73,7 @@ const IGNORE = [
 const RESERVED = new Set(['RouteDef', 'VercubeRoutes']);
 
 /** A `Controller(` call, allowing for whitespace and an alias such as `HttpController(`. */
-const CONTROLLER_CALL = /Controller\s*\(/;
+const CONTROLLER_CALL = /Controller\s*\(|\bController\s+as\s/;
 
 /** `:name` and `**:name` segments of a route template. */
 const SEGMENT = /(?:\*\*)?:(\w+)/g;
@@ -126,7 +126,8 @@ export function generateRouteTypes(options: TypegenOptions): TypegenResult {
   const imports = new Map<string, Set<string>>();
   const files = new Set<string>();
   const skipped: TypegenResult['skipped'] = [];
-  const locals = localNames(routes.map((route) => route.controller));
+  const names = new Set(routes.map((route) => route.controller));
+  const locals = localNames([...names]);
 
   for (const route of routes) {
     // `@Get('/')` under `@Controller('/users')` registers `/users/`, which the
@@ -138,8 +139,7 @@ export function generateRouteTypes(options: TypegenOptions): TypegenResult {
       continue;
     }
 
-    // a bundler renames a class that collides with another (`UserController$1`)
-    const source = controllers[route.controller] ?? controllers[route.controller.replace(/\$\d+$/, '')];
+    const source = lookupController(controllers, route.controller, names);
 
     if (!source?.exportName) {
       skipped.push({ id, reason: whyNotImportable(route.controller, source, outFile) });
@@ -217,6 +217,31 @@ export async function findControllers(input: string | string[]): Promise<Record<
 }
 
 /**
+ * The source of a controller by its runtime name. A bundler renames a class
+ * that collides with another (`UserController$1`); that name falls back to
+ * `UserController` only when no route belongs to a class of that exact name,
+ * since otherwise the two cannot be told apart.
+ *
+ * @param controllers - Class name to source
+ * @param name - The controller's name in the route table
+ * @param names - Every controller name in the route table
+ * @returns The source, `null` when ambiguous, `undefined` when unknown
+ */
+function lookupController(
+  controllers: Record<string, ControllerSource | null>,
+  name: string,
+  names: Set<string>,
+): ControllerSource | null | undefined {
+  if (name in controllers) {
+    return controllers[name];
+  }
+
+  const original = name.replace(/\$\d+$/, '');
+
+  return original !== name && !names.has(original) ? controllers[original] : undefined;
+}
+
+/**
  * Finds the source of every controller the routes name. Files listed by a
  * discovery manifest are read first; a controller missing from it (bound in
  * `setup`, say) is looked for in the rest of the project.
@@ -235,8 +260,11 @@ export async function resolveControllers(
     return findControllers(root);
   }
 
-  const known = await findControllers(discovery.controllers.map((c) => resolve(discovery.root ?? root, c.path)));
-  const missing = routes.some((route) => !(route.controller in known) && !(route.controller.replace(/\$\d+$/, '') in known));
+  // a file the manifest lists can be gone by now; the scan below finds where it went
+  const listed = discovery.controllers.map((c) => resolve(discovery.root ?? root, c.path)).filter((file) => existsSync(file));
+  const known = await findControllers(listed);
+  const names = new Set(routes.map((route) => route.controller));
+  const missing = routes.some((route) => lookupController(known, route.controller, names) === undefined);
 
   return missing ? { ...(await findControllers(root)), ...known } : known;
 }
@@ -401,26 +429,52 @@ export async function inspectEntry(
           VERCUBE_INSPECT: sections.length > 0 ? sections.join(',') : '*',
           VERCUBE_INSPECT_OUT: output,
         },
-        stdio: ['ignore', process.stderr, 'inherit'],
+        // piped rather than handed over: in a worker thread `process.stderr`
+        // has no file descriptor to give
+        stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
       });
+      let finished = false;
+      const finish = (error?: Error): void => {
+        if (finished) {
+          return;
+        }
+
+        finished = true;
+        clearTimeout(timer);
+
+        if (error) {
+          fail(error);
+        } else {
+          done();
+        }
+      };
+
+      child.stdout!.pipe(process.stderr, { end: false });
+      child.stderr!.pipe(process.stderr, { end: false });
 
       // an application whose setup waits on a service that never answers
       const timer =
         timeout > 0
           ? setTimeout(() => {
               child.kill('SIGKILL');
-              fail(new Error(`Inspect did not finish within ${timeout / 1000}s`));
+              finish(new Error(`Inspect did not finish within ${timeout / 1000}s`));
             }, timeout)
           : undefined;
 
-      child.on('error', fail);
+      // core says so once the file is written: a setup that leaves a handle
+      // open (a database pool, say) would otherwise keep the process alive
+      child.on('message', (message: { type?: string }) => {
+        if (message?.type === 'vercube:inspected') {
+          child.kill('SIGKILL');
+          finish();
+        }
+      });
+      child.on('error', finish);
       child.on('exit', (code) => {
-        clearTimeout(timer);
-
         if (code === 0) {
-          done();
+          finish();
         } else {
-          fail(new Error(`Inspect exited with code ${code}`));
+          finish(new Error(`Inspect exited with code ${code}`));
         }
       });
     });
@@ -630,7 +684,8 @@ function toSpecifier(from: string, to: string): string {
     .replace(/\.mts$/, '.mjs')
     .replace(/\.cts$/, '.cjs');
 
-  return path.startsWith('.') ? path : `./${path}`;
+  // `.hidden/X.js` would be a package name, not a relative path
+  return path.startsWith('./') || path.startsWith('../') ? path : `./${path}`;
 }
 
 /**
