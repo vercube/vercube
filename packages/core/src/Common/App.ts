@@ -26,6 +26,9 @@ const DEFAULT_SHUTDOWN_SIGNALS = ['SIGTERM', 'SIGINT'];
 /** How long the HTTP server waits for requests in flight when no timeout is configured. */
 const DEFAULT_SHUTDOWN_TIMEOUT = 25_000;
 
+/** The longest delay a timer takes before it overflows and fires at once. */
+const MAX_TIMER_DELAY = 2_147_483_647;
+
 /**
  * Represents the main application class.
  */
@@ -410,7 +413,8 @@ export class App {
     // Only a server that listens has a load balancer in front of it to drain
     // from. Serverless platforms and Nitro route requests themselves.
     if (drainDelay > 0 && this.gHttpServer.listening) {
-      await new Promise<void>((resolve) => setTimeout(resolve, drainDelay));
+      // a timer overflows past 2^31-1 ms and fires at once, so Infinity is capped
+      await new Promise<void>((resolve) => setTimeout(resolve, Math.min(drainDelay, MAX_TIMER_DELAY)));
     }
 
     try {
