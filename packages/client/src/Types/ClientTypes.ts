@@ -50,9 +50,11 @@ type HeadersInit_<H> = Empty extends H ? { headers?: HeadersInit } : { headers: 
 type BodyInit_<B, F> = [B] extends [never]
   ? [F] extends [never]
     ? { body?: RawBody; form?: undefined }
-    : Empty extends F
-      ? { form?: F; body?: undefined }
-      : { form: F; body?: undefined }
+    : undefined extends F
+      ? { form?: Exclude<F, undefined>; body?: undefined }
+      : Empty extends F
+        ? { form?: F; body?: undefined }
+        : { form: F; body?: undefined }
   : undefined extends B
     ? { body?: B | RawBody; form?: undefined }
     : { body: B | RawBody; form?: undefined };
