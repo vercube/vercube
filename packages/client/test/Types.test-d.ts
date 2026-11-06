@@ -29,7 +29,11 @@ describe('types', () => {
     void api.get('/users', { query: { sort: 'asc' } });
     void api.get('/users', { query: { sort: 'desc', page: 2, tag: ['a', 'b'] } });
     void api.get('/users/search', { query: { q: 'x', limit: 5 } });
+
+    // @ts-expect-error `q` is required in the @QueryParams() object
     void api.get('/users/search');
+    // @ts-expect-error `q` is required in the @QueryParams() object
+    void api.get('/users/search', { query: { limit: 5 } });
 
     // @ts-expect-error `sort` is required by the handler
     void api.get('/users', { query: { page: 1 } });
@@ -70,6 +74,22 @@ describe('types', () => {
     void api.post('/users/:id/avatar', { params: { id: '1' }, form: { file: 'x', caption: 'me' } });
     // @ts-expect-error a multipart route takes `form`, not `body`
     void api.post('/users/:id/avatar', { params: { id: '1' }, body: { caption: 'me' } });
+    // @ts-expect-error the handler requires the form
+    void api.post('/users/:id/avatar', { params: { id: '1' } });
+  });
+
+  it('optional multipart', () => {
+    class Upload {
+      public put(form: { file: File } | undefined): number {
+        return form ? 1 : 0;
+      }
+    }
+    const up = createClient<{ 'PUT /file': RouteDef<Upload, 'put', { form: 0 }> }>();
+
+    void up.put('/file');
+    void up.put('/file', { form: { file: new Blob(['x']) } });
+    // @ts-expect-error the upload must be a Blob
+    void up.put('/file', { form: { file: 'x' } });
   });
 
   it('return types', () => {
