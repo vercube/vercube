@@ -10,6 +10,7 @@ import {
   resolveHealthPaths,
   resolveShutdownDefaults,
   resolveTelemetryOptions,
+  Router,
   timingSafeEqualString,
   UnauthorizedError,
 } from '../../src';
@@ -124,6 +125,16 @@ describe('resolveShutdownDefaults', () => {
     expect(resolveShutdownDefaults({ health: true })).toEqual({ drainDelay: 5000, handleSignals: true });
   });
 
+  it('should not drain the vercube dev worker by default', () => {
+    expect(resolveShutdownDefaults({ health: true }, { VERCUBE_DEV_SERVER: '1' })).toEqual({
+      drainDelay: 0,
+      handleSignals: true,
+    });
+    expect(resolveShutdownDefaults({ health: true, shutdown: { drainDelay: 100 } }, { VERCUBE_DEV_SERVER: '1' }).drainDelay).toBe(
+      100,
+    );
+  });
+
   it('should keep what the application set', () => {
     expect(resolveShutdownDefaults({ health: true, shutdown: { drainDelay: 0, handleSignals: false } })).toEqual({
       drainDelay: 0,
@@ -134,7 +145,7 @@ describe('resolveShutdownDefaults', () => {
 
 describe('telemetry exclusion', () => {
   it('should leave the probes out of telemetry', () => {
-    expect(resolveTelemetryOptions({ telemetry: true, health: { endpoints: { live: '/livez' } } }).exclude).toEqual([
+    expect(resolveTelemetryOptions({ telemetry: true, health: { endpoints: { live: '/livez' } } }).excludeExact).toEqual([
       '/livez',
       '/_health/ready',
       '/_health/startup',
@@ -142,20 +153,18 @@ describe('telemetry exclusion', () => {
   });
 
   it('should keep the exclusions the application set', () => {
-    expect(resolveTelemetryOptions({ telemetry: { exclude: ['/metrics'] }, health: true }).exclude).toEqual([
-      '/metrics',
-      '/_health/live',
-      '/_health/ready',
-      '/_health/startup',
-    ]);
+    const options = resolveTelemetryOptions({ telemetry: { exclude: ['/metrics'], excludeExact: ['/ping'] }, health: true });
+
+    expect(options.exclude).toEqual(['/metrics']);
+    expect(options.excludeExact).toEqual(['/ping', '/_health/live', '/_health/ready', '/_health/startup']);
   });
 
   it('should trace the probes when asked to', () => {
-    expect(resolveTelemetryOptions({ telemetry: true, health: { telemetry: true } }).exclude).toBeUndefined();
+    expect(resolveTelemetryOptions({ telemetry: true, health: { telemetry: true } }).excludeExact).toBeUndefined();
   });
 
   it('should exclude nothing without health', () => {
-    expect(resolveTelemetryOptions({ telemetry: true }).exclude).toBeUndefined();
+    expect(resolveTelemetryOptions({ telemetry: true }).excludeExact).toBeUndefined();
   });
 });
 
@@ -348,21 +357,67 @@ describe('health routes', () => {
   });
 
   it('should fail the boot when an application route collides with a probe', async () => {
-    await boot({ health: true }, (instance) => {
-      instance.container.bind(CollidingController);
-    });
-
-    await expect(app!.start()).rejects.toThrow(
-      'health: the ready endpoint /_health/ready collides with the route GET /_health/ready (CollidingController.ready)',
+    await expect(
+      boot({ health: true }, (instance) => {
+        instance.container.bind(CollidingController);
+      }),
+    ).rejects.toThrow(
+      'GET /_health/ready (CollidingController.ready) collides with the health ready endpoint. Move the route, or the probe with health.endpoints.ready.',
     );
   });
 
-  it('should fail listen() on a collision', async () => {
-    await boot({ health: true, server: { host: '127.0.0.1', port: await freePort(), static: undefined } }, (instance) => {
-      instance.container.bind(CollidingController);
+  it('should fail a route registered after the start on a probe path', async () => {
+    await boot({ health: true });
+    await app!.start();
+
+    app!.container.bind(CollidingController);
+
+    expect(() => app!.container.flushQueue()).toThrow('collides with the health ready endpoint');
+    expect((await get('/_health/ready')).body).toEqual({ status: 'ok', checks: {} });
+  });
+
+  it('should fail a HEAD-only route on a probe path', () => {
+    const router = new Router();
+
+    (router as unknown as { gHooksService: { trigger: () => void } }).gHooksService = { trigger: () => {} };
+    void router.initialize();
+    router.reserve('/_health/live', { owner: 'the probe', hint: '', owns: () => false });
+
+    const route = (method: 'HEAD' | 'POST' | 'get', path: string) => () =>
+      router.addRoute({ method: method as 'HEAD', path, handler: { instance: {}, propertyName: 'x' } as never });
+
+    expect(route('HEAD', '/_health/live/')).toThrow('collides with the probe');
+    expect(route('get', '/_health/live')).toThrow('collides with the probe');
+    expect(route('POST', '/_health/live')).not.toThrow();
+    expect(route('HEAD', '/_health/live/x')).not.toThrow();
+  });
+
+  it('should keep the probes of two applications in one process apart', async () => {
+    const first = await createApp({
+      cfg: { requestLogging: false, server: { static: undefined }, health: { endpoints: { live: '/one' } } },
+      configFile: false,
+    });
+    const second = await createApp({
+      cfg: { requestLogging: false, server: { static: undefined }, health: { endpoints: { live: '/two' } } },
+      configFile: false,
     });
 
-    await expect(app!.listen()).rejects.toThrow('collides with the route');
+    expect((await first.fetch(new Request('http://localhost/one'))).status).toBe(200);
+    expect((await first.fetch(new Request('http://localhost/two'))).status).toBe(404);
+    expect((await second.fetch(new Request('http://localhost/two'))).status).toBe(200);
+
+    await Promise.all([first.close(), second.close()]);
+  });
+
+  it('should treat a malformed authorization header as anonymous', async () => {
+    await boot({ health: { token: 'secret', cacheTtl: 0 } });
+    await app!.start();
+
+    app!.health.register({ name: 'db', check: () => Promise.reject(new Error('ECONNREFUSED')) });
+
+    for (const authorization of ['Bearer', 'Bearer ', 'Basic secret', 'secret', 'Bearer secret extra']) {
+      expect((await get('/_health/ready', { authorization })).body.checks.db).toEqual({ status: 'down' });
+    }
   });
 
   it('should not collide once the probe moved', async () => {

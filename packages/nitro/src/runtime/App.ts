@@ -19,15 +19,18 @@ export async function createNitroApp(
   nitroOpts: Partial<Pick<NitroOptions, 'dev' | 'logLevel' | 'runtimeConfig'>>,
   cfg: Pick<ConfigTypes.Config, 'health'> = {},
 ): Promise<App> {
+  const runtime = nitroOpts.runtimeConfig ?? useRuntimeConfig();
+
   const app = await createApp({
     cfg: {
       logLevel: getLogLevel(nitroOpts.logLevel),
       production: !nitroOpts.dev,
       dev: nitroOpts.dev,
       runtime: {
-        ...(nitroOpts.runtimeConfig ?? useRuntimeConfig()),
+        ...runtime,
       },
-      ...(cfg.health === undefined ? {} : { health: cfg.health }),
+      // the plugin's option wins over `vercube.config.ts`, it is what Nitro routes
+      health: withRuntimeToken(cfg.health ?? false, runtime),
     },
   });
 
@@ -62,4 +65,22 @@ function getLogLevel(logLevel: Nitro['options']['logLevel'] | undefined): Config
       return 'debug';
     }
   }
+}
+
+/**
+ * Adds the token from `runtimeConfig.vercube.healthToken` to the `health`
+ * option, so it is read when the server starts rather than baked into the build.
+ *
+ * @param health - The `health` option from the plugin
+ * @param runtime - The Nitro runtime config
+ * @returns The option with the token, when there is one
+ */
+function withRuntimeToken(health: ConfigTypes.Config['health'], runtime: Record<string, unknown>): ConfigTypes.Config['health'] {
+  const token = (runtime.vercube as { healthToken?: unknown } | undefined)?.healthToken;
+
+  if (!health || typeof token !== 'string' || token === '') {
+    return health;
+  }
+
+  return { ...(health === true ? {} : health), token };
 }

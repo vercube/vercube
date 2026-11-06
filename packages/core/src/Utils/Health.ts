@@ -111,20 +111,33 @@ export function resolveHealthPaths(config: ConfigTypes.Config | undefined): stri
 }
 
 /**
+ * Set by `vercube dev` on the worker it forks. The worker is restarted with
+ * SIGTERM on every change and killed a second later, so it must not drain.
+ */
+export const DEV_SERVER_ENV = 'VERCUBE_DEV_SERVER';
+
+/**
  * The graceful shutdown settings with the defaults `health` brings applied:
- * a drain delay of 5000 ms and signal handling, unless set explicitly.
+ * a drain delay of 5000 ms and signal handling, unless set explicitly. The
+ * `vercube dev` worker gets no default drain delay, nothing balances traffic
+ * to it and a reload would wait for it.
  *
  * @param {ConfigTypes.Config | undefined} config - The application configuration
+ * @param {Record<string, string | undefined>} [env] - Environment to read, `process.env` by default
  * @returns {{ drainDelay: number; handleSignals: boolean | string[] }} The settings
  */
-export function resolveShutdownDefaults(config: ConfigTypes.Config | undefined): {
+export function resolveShutdownDefaults(
+  config: ConfigTypes.Config | undefined,
+  env: Record<string, string | undefined> = globalThis.process?.env ?? {},
+): {
   drainDelay: number;
   handleSignals: boolean | string[];
 } {
   const health = isHealthEnabled(config);
+  const devServer = !!env[DEV_SERVER_ENV];
 
   return {
-    drainDelay: config?.shutdown?.drainDelay ?? (health ? DEFAULT_HEALTH_DRAIN_DELAY : 0),
+    drainDelay: config?.shutdown?.drainDelay ?? (health && !devServer ? DEFAULT_HEALTH_DRAIN_DELAY : 0),
     handleSignals: config?.shutdown?.handleSignals ?? health,
   };
 }

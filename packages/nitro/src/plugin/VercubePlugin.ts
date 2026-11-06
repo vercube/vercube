@@ -1,12 +1,13 @@
 import { defu } from 'defu';
 import { resolve } from 'pathe';
+import { resolveNitroHealth } from '../_internal/health';
 import { setupHooks } from '../setup/Hooks';
 import { getTransformedMiddlewares } from '../setup/Middleware';
 import { getTransformedRoutes } from '../setup/Routes';
 import { getTransformedServices } from '../setup/Services';
+import type { NitroHealthOption } from '../_internal/health';
 import type { RouteInfo } from '../build/Routes';
 import type { ServiceInfo } from '../build/Services';
-import type { HealthTypes } from '@vercube/core';
 import type { NitroModule } from 'nitro/types';
 
 export interface PluginOptions {
@@ -31,16 +32,19 @@ export interface PluginOptions {
   setupFile?: string;
 
   /**
-   * Liveness, readiness and startup endpoints, the `health` option of
-   * `vercube.config.ts`. Set here because Nitro has to know the probe paths
-   * when it builds its route table. Register checks with
-   * `app.health.register()` in the `setupFile`.
+   * Liveness, readiness and startup endpoints. Under Nitro this replaces the
+   * `health` option of `vercube.config.ts`: Nitro has to know the probe paths
+   * when it builds its route table.
    *
-   * The drain delay does not apply: Nitro owns the server and its shutdown.
+   * Register checks with `app.health.register()` in the `setupFile`. The token
+   * that unlocks the full report is read at runtime from
+   * `runtimeConfig.vercube.healthToken` (`NITRO_VERCUBE_HEALTH_TOKEN`), so it
+   * never ends up in the build. The drain delay does not apply: Nitro owns
+   * the server and its shutdown.
    *
    * @default false
    */
-  health?: boolean | Omit<HealthTypes.Options, 'checks'>;
+  health?: NitroHealthOption;
 }
 
 const defaultOptions: PluginOptions = {
@@ -53,6 +57,9 @@ export function vercubeNitro(options?: PluginOptions): NitroModule {
   return {
     name: '@vercube/nitro',
     setup: async (nitro) => {
+      // fails the build on an invalid option, not the first request
+      const health = resolveNitroHealth(options?.health);
+
       // setup hooks
       setupHooks(nitro, options);
 
@@ -85,7 +92,7 @@ export function vercubeNitro(options?: PluginOptions): NitroModule {
 
         export default definePlugin(async (nitroApp) => {
           // only build flags are baked in, the runtime config is read when the server starts
-          const app = await createNitroApp(${JSON.stringify({ dev: nitro.options.dev, logLevel: nitro.options.logLevel })}${options?.health ? `, ${JSON.stringify({ health: options.health })}` : ''});
+          const app = await createNitroApp(${JSON.stringify({ dev: nitro.options.dev, logLevel: nitro.options.logLevel })}, ${JSON.stringify({ health })});
           nitroApp.__vercubeApp__ = app;
           globalThis.__vercubeApp__ = app;
 

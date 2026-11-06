@@ -11,8 +11,8 @@ import type { HealthTypes } from '../../Types/HealthTypes';
 const METHODS = ['GET', 'HEAD'] as const;
 
 /**
- * Registers the probe endpoints of the `health` option and checks, once
- * every route is known, that no application route shares their paths.
+ * Registers the probe endpoints of the `health` option and reserves their
+ * paths, so no application route can take one.
  */
 export class HealthRoutes {
   @Inject(Container)
@@ -78,6 +78,14 @@ export class HealthRoutes {
         continue;
       }
 
+      // An application route on a probe path fails its registration, however
+      // late it comes, instead of one of the two silently shadowing the other.
+      this.gRouter.reserve(path, {
+        owner: `the health ${endpoint} endpoint`,
+        hint: `Move the route, or the probe with health.endpoints.${endpoint}.`,
+        owns: (handler) => handler.instance instanceof HealthController,
+      });
+
       initializeMetadataMethod(prototype, endpoint);
 
       for (const method of METHODS) {
@@ -89,55 +97,4 @@ export class HealthRoutes {
       }
     }
   }
-
-  /**
-   * Fails when an application route was registered on a probe path. The
-   * router keeps the later registration, so one of the two would otherwise be
-   * unreachable without a word.
-   *
-   * @returns {void}
-   * @throws {Error} Naming the probe and the route that collide
-   */
-  public assertNoCollisions(): void {
-    const options = this.fOptions;
-
-    if (!options) {
-      return;
-    }
-
-    for (const endpoint of HEALTH_ENDPOINTS) {
-      const path = options.endpoints[endpoint];
-
-      if (path === null) {
-        continue;
-      }
-
-      const route = this.gRouter.routes.find(
-        (entry) =>
-          (entry.method === 'GET' || entry.method === 'HEAD') &&
-          !(entry.handler.instance instanceof HealthController) &&
-          normalize(entry.path) === path,
-      );
-
-      if (route) {
-        const handler = `${route.handler.controller ?? 'Controller'}.${route.handler.propertyName}`;
-
-        throw new Error(
-          `health: the ${endpoint} endpoint ${path} collides with the route ${route.method} ${route.path} (${handler}). Move the route or set health.endpoints.${endpoint}.`,
-        );
-      }
-    }
-  }
-}
-
-/**
- * Normalizes a route path the way the router matches it.
- *
- * @param {string} path - The route path
- * @returns {string} With a leading and without a trailing slash
- */
-function normalize(path: string): string {
-  const withLeading = path.startsWith('/') ? path : `/${path}`;
-
-  return withLeading.length > 1 ? withLeading.replace(/\/+$/, '') || '/' : withLeading;
 }

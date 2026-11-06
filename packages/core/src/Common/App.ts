@@ -241,9 +241,6 @@ export class App {
    */
   public start(): Promise<void> {
     this.fStarting ??= (async () => {
-      // every route is registered by now, including what Nitro binds late
-      this.container.getOptional(HealthRoutes)?.assertNoCollisions();
-
       await this.gStartupRegistry.run();
 
       this.gLifecycle.advance('ready');

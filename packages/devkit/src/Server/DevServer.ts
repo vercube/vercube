@@ -63,10 +63,11 @@ export function createDevServer(app: DevKitTypes.App): DevKitTypes.DevServer {
 
     // Create a new worker; with typegen on, it reports its routes back
     if (onRoutes) {
-      currentFork = fork(forkEntry, [], { env: { ...process.env, VERCUBE_DEV_ROUTES: '1' } });
+      currentFork = fork(forkEntry, [], { env: { ...process.env, VERCUBE_DEV_SERVER: '1', VERCUBE_DEV_ROUTES: '1' } });
       currentFork.on('message', (message) => void onRoutes(message));
     } else {
-      currentFork = fork(forkEntry);
+      // the worker skips the drain delay `health` brings, a reload must not wait for it
+      currentFork = fork(forkEntry, [], { env: { ...process.env, VERCUBE_DEV_SERVER: '1' } });
     }
   }
 

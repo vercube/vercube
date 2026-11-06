@@ -208,6 +208,14 @@ export namespace TelemetryTypes {
     exclude?: string[];
 
     /**
+     * Exact paths that produce no telemetry, a trailing slash tolerated. Unlike
+     * `exclude`, nothing beneath them is affected: the `health` option puts its
+     * probes here, so an application route under `/status` keeps its traces
+     * when a probe sits at `/status`.
+     */
+    excludeExact?: string[];
+
+    /**
      * Ship log events to the OTLP endpoint alongside traces.
      *
      * Off by default: exporting logs is a separate cost and a separate
