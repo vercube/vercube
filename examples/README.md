@@ -17,6 +17,7 @@ An ultra-efficient JavaScript server framework that runs anywhere - Node.js, Bun
 | `azure-functions` | [examples/azure-functions](https://github.com/vercube/vercube/tree/main/examples/azure-functions/) | `npx giget gh:vercube/vercube/examples/azure-functions vercube-azure`       |
 | `websockets`      | [examples/ws](https://github.com/vercube/vercube/tree/main/examples/ws/)                           | `npx giget gh:vercube/vercube/examples/ws vercube-ws`                       |
 | `queue`           | [examples/queue](https://github.com/vercube/vercube/tree/main/examples/queue/)                     | `npx giget gh:vercube/vercube/examples/queue vercube-queue`                 |
+| `client`          | [examples/client](https://github.com/vercube/vercube/tree/main/examples/client/)                   | `npx giget gh:vercube/vercube/examples/client vercube-client`               |
 
 ## <a name="running-locally">🛠️ Running Examples Locally</a>
 
@@ -28,5 +29,6 @@ pnpm --filter @examples/base dev
 pnpm --filter @examples/custom-plugin dev
 pnpm --filter @examples/ws dev
 pnpm --filter @examples/queue dev
+pnpm --filter @examples/client dev
 pnpm --filter @examples/aws-lambda dev
 ```
