@@ -37,7 +37,7 @@ const METHODS: Method[] = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPT
  * @returns The client
  */
 export function createClient<R = Record<string, AnyRoute>>(options: ClientOptions = {}): Client<R> {
-  const request = async (method: string, path: string, init: Init = {}): Promise<unknown> => {
+  const send = async (method: string, path: string, init: Init = {}): Promise<{ data: unknown; response: Response }> => {
     const { params, query, headers, body, form, ...rest } = init;
     // unbound `fetch` throws "Illegal invocation" in browsers
     const fetcher = options.fetch ?? ((input: Request) => fetch(input));
@@ -96,25 +96,49 @@ export function createClient<R = Record<string, AnyRoute>>(options: ClientOption
     }
 
     if (!res.ok) {
-      throw new VercubeClientError(res, await readBody(res, true));
+      // the route as the route map names it, so `isRouteError` can match it
+      throw new VercubeClientError(res, await readBody(res, true), `${method.toUpperCase()} ${path}`);
     }
 
     if (req.method === 'HEAD') {
-      return undefined;
+      return { data: undefined, response: res };
     }
 
     if (res.body && isEventStream(res)) {
       // the final request's signal: `onRequest` may have replaced it
-      return parseSse(res.body, req.signal);
+      return { data: parseSse(res.body, req.signal), response: res };
     }
 
-    return readBody(res);
+    return { data: await readBody(res), response: res };
   };
 
-  const client: Record<string, unknown> = { request };
+  const request = async (method: string, path: string, init?: Init): Promise<unknown> => (await send(method, path, init)).data;
+
+  const safeRequest = async (method: string, path: string, init?: Init): Promise<unknown> => {
+    try {
+      const { data, response } = await send(method, path, init);
+
+      return { data, error: null, response };
+    } catch (error) {
+      // only an answer from the server; a network failure or an abort is not one
+      if (error instanceof VercubeClientError) {
+        return { data: null, error, response: error.response };
+      }
+
+      throw error;
+    }
+  };
+
+  const safe: Record<string, unknown> = { request: safeRequest };
+  const client: Record<string, unknown> = {
+    request,
+    safe,
+    isRouteError: (error: unknown, route: string): boolean => error instanceof VercubeClientError && error.route === route,
+  };
 
   for (const method of METHODS) {
     client[method.toLowerCase()] = (path: string, init?: Init) => request(method, path, init);
+    safe[method.toLowerCase()] = (path: string, init?: Init) => safeRequest(method, path, init);
   }
 
   return client as never;

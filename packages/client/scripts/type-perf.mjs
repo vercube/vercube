@@ -6,13 +6,17 @@
 // With `--errors`, every route also gets the `throws` map the generator writes
 // (a declared 404, the implicit 400 of a body, the 401 and 403 of a secured route).
 //
-//   node packages/client/scripts/type-perf.mjs [routes] [--errors]
+// With `--safe`, every call goes through `api.safe` and reads the error status,
+// which is what makes the compiler build each route's error union.
+//
+//   node packages/client/scripts/type-perf.mjs [routes] [--errors] [--safe]
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 const args = process.argv.slice(2);
 const errors = args.includes('--errors');
+const safe = args.includes('--safe');
 const total = Number(args.find((arg) => !arg.startsWith('--')) ?? 500);
 /** `; throws: { ... }` for a route, when errors are measured. */
 const throws = (map) => (errors ? `; throws: { ${map} }` : '');
@@ -93,7 +97,10 @@ writeFileSync(
 );
 writeFileSync(
   join(dir, 'calls.ts'),
-  `import { createClient } from '@vercube/client';\nimport type { VercubeRoutes } from './routes';\n\nconst api = createClient<VercubeRoutes>();\n\nexport async function run(): Promise<void> {\n${calls.join('\n')}\n}\n`,
+  `import { createClient } from '@vercube/client';\nimport type { VercubeRoutes } from './routes';\n\nconst api = createClient<VercubeRoutes>();\n\nexport async function run(): Promise<void> {\n${(safe
+    ? calls.map((call, i) => call.replace('await api.', `const r${i} = await api.safe.`) + ` void r${i}.error?.status;`)
+    : calls
+  ).join('\n')}\n}\n`,
 );
 
 /**
@@ -125,7 +132,9 @@ try {
   const base = check(['controllers.ts']);
   const full = check(['controllers.ts', 'routes.ts', 'calls.ts']);
 
-  console.log(`${total} routes${errors ? ' with errors' : ''}, one call each (client cost = full - controllers only)`);
+  console.log(
+    `${total} routes${errors ? ' with errors' : ''}, one ${safe ? 'safe ' : ''}call each (client cost = full - controllers only)`,
+  );
   console.table({
     'controllers only': base,
     full,

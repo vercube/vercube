@@ -1,5 +1,5 @@
 import { VercubeClientError } from '@vercube/client';
-import { Body, Controller, Get, Header, NotFoundError, Param, Post } from '@vercube/core';
+import { Body, Controller, Get, Header, NotFoundError, Param, Post, Throws } from '@vercube/core';
 import { describe, expect, expectTypeOf, it } from 'vitest';
 import { createTestApp, TestingError } from '../../src';
 import type { RouteDef } from '@vercube/client';
@@ -7,6 +7,7 @@ import type { RouteDef } from '@vercube/client';
 @Controller('/users')
 export class UserController {
   @Get('/:id')
+  @Throws(NotFoundError)
   public get(@Param('id') id: string): { id: string; name: string } {
     if (id === 'missing') {
       throw new NotFoundError('No such user');
@@ -22,7 +23,7 @@ export class UserController {
 }
 
 interface Routes {
-  'GET /users/:id': RouteDef<UserController, 'get', { param: { id: 0 } }>;
+  'GET /users/:id': RouteDef<UserController, 'get', { param: { id: 0 }; throws: { 404: NotFoundError } }>;
   'POST /users': RouteDef<UserController, 'create', { body: 0; header: { 'x-tenant': 1 } }>;
 }
 
@@ -48,6 +49,21 @@ describe('app.client', () => {
 
     expect(error).toBeInstanceOf(VercubeClientError);
     expect(error).toMatchObject({ status: 404, message: 'No such user' });
+  });
+
+  it('returns declared errors through safe', async () => {
+    await using app = await createTestApp<Routes>({ controllers: [UserController] });
+
+    const res = await app.client.safe.get('/users/:id', { params: { id: 'missing' } });
+
+    expect(res).toMatchObject({ data: null, error: { status: 404, body: { name: 'NotFoundError' } } });
+
+    if (res.error) {
+      expectTypeOf(res.error.status).toEqualTypeOf<404>();
+      expect(app.client.isRouteError(res.error, 'GET /users/:id')).toBe(true);
+    }
+
+    expect((await app.client.safe.get('/users/:id', { params: { id: '1' } })).data).toEqual({ id: '1', name: 'Ada' });
   });
 
   it('is untyped without a route map', async () => {

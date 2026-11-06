@@ -1,9 +1,9 @@
 // Type-level tests, checked by `pnpm test:tscheck` (vitest does not run `.test-d.ts` files).
 import { Controller, Get, HttpError, NotFoundError, Param } from '@vercube/core';
 import { describe, expectTypeOf, it } from 'vitest';
-import { createClient } from '../src';
+import { createClient, VercubeClientError } from '../src';
 import type { Jsonify, RouteDef, SseEvent, SseStream } from '../src';
-import type { TestRoutes } from './fixtures/Controllers';
+import type { TestRoutes, User } from './fixtures/Controllers';
 import type { VercubeRoutes } from './fixtures/routes';
 import type { BadRequestError } from '@vercube/core';
 
@@ -212,6 +212,100 @@ describe('types', () => {
       expectTypeOf<NonNullable<Route['errors']>['status']>().toEqualTypeOf<404 | 410>();
       expectTypeOf<Extract<NonNullable<Route['errors']>, { name: 'GoneError' }>['status']>().toEqualTypeOf<410>();
     });
+  });
+
+  describe('safe', () => {
+    it('returns the data or a typed error, discriminated by status', async () => {
+      const res = await api.safe.get('/users/:id', { params: { id: '1' } });
+
+      if (res.error) {
+        expectTypeOf(res.data).toBeNull();
+        expectTypeOf(res.error.status).toEqualTypeOf<404>();
+        expectTypeOf(res.error.body).toEqualTypeOf<{ status: 404; name: string; message?: string }>();
+        return;
+      }
+
+      expectTypeOf(res.data).toEqualTypeOf<Jsonify<User>>();
+      expectTypeOf(res.response).toEqualTypeOf<Response>();
+    });
+
+    it('narrows each error by status', async () => {
+      const res = await api.safe.put('/account/email', { body: { email: 'a@b.c' } });
+
+      if (!res.error) {
+        expectTypeOf(res.data).toEqualTypeOf<{ email: string }>();
+        return;
+      }
+
+      switch (res.error.status) {
+        case 400: {
+          expectTypeOf(res.error.body.errors).toEqualTypeOf<Jsonify<NonNullable<BadRequestError['errors']>> | undefined>();
+          break;
+        }
+        case 409: {
+          expectTypeOf(res.error.body.existingId).toEqualTypeOf<string>();
+          break;
+        }
+        case 410: {
+          expectTypeOf(res.error.body).toEqualTypeOf<{ status: 410; name: string; message?: string }>();
+          break;
+        }
+        default: {
+          expectTypeOf(res.error.status).toEqualTypeOf<401 | 403>();
+        }
+      }
+    });
+
+    it('types the error of a route without declared errors as a plain client error', async () => {
+      const res = await api.safe.get('/users/search', { query: { q: 'x' } });
+
+      expectTypeOf(res.error).toEqualTypeOf<VercubeClientError | null>();
+
+      if (res.error) {
+        return;
+      }
+
+      expectTypeOf(res.data).toEqualTypeOf<{ q: string; limit?: number }>();
+    });
+
+    it('takes the same arguments as the throwing calls', () => {
+      // @ts-expect-error params are required
+      void api.safe.get('/users/:id');
+      // @ts-expect-error not a GET route
+      void api.safe.get('/users/raw');
+      void api.safe.request('PUT', '/users/:id', { params: { id: '1' } });
+      expectTypeOf(api.safe.head('/users/:id', { params: { id: '1' } }))
+        .resolves.toHaveProperty('data')
+        .toEqualTypeOf<void | null>();
+    });
+
+    it('works on a client without a route map', async () => {
+      const res = await createClient().safe.get('/anything');
+
+      expectTypeOf(res.error).toEqualTypeOf<VercubeClientError | null>();
+    });
+  });
+
+  it('isRouteError narrows a caught error to the route errors', async () => {
+    try {
+      await api.get('/users/:id', { params: { id: '1' } });
+    } catch (error) {
+      if (api.isRouteError(error, 'GET /account')) {
+        expectTypeOf(error.status).toEqualTypeOf<401 | 403 | 409>();
+
+        if (error.status === 409) {
+          expectTypeOf(error.body.name).toEqualTypeOf<'ConflictError'>();
+        }
+      }
+
+      // @ts-expect-error not a route of the map
+      void api.isRouteError(error, 'GET /nope');
+    }
+  });
+
+  it('VercubeClientError keeps its single-argument form', () => {
+    expectTypeOf<VercubeClientError<{ message: string }>['body']>().toEqualTypeOf<{ message: string }>();
+    expectTypeOf<VercubeClientError['status']>().toEqualTypeOf<number>();
   });
 
   it('changing a handler signature breaks the call site', () => {

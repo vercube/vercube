@@ -2,7 +2,7 @@
 import { createApp } from '@vercube/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createClient, VercubeClientError } from '../src';
-import { EventsController, UserController } from './fixtures/Controllers';
+import { AccountController, EventsController, GuardMiddleware, UserController } from './fixtures/Controllers';
 import type { TestRoutes } from './fixtures/Controllers';
 import type { App } from '@vercube/core';
 
@@ -16,6 +16,8 @@ beforeAll(async () => {
     setup: async (app) => {
       app.container.bind(UserController);
       app.container.bind(EventsController);
+      app.container.bind(AccountController);
+      app.container.bind(GuardMiddleware);
     },
   });
   api = createClient<TestRoutes>({ baseURL: 'http://test', fetch: (request) => app.fetch(request) });
@@ -64,6 +66,60 @@ describe('against a Vercube app', () => {
 
     expect(error).toBeInstanceOf(VercubeClientError);
     expect((error as VercubeClientError).status).toBe(500);
+  });
+
+  describe('safe', () => {
+    it('resolves to the data and the response on success', async () => {
+      const res = await api.safe.get('/users/:id', { params: { id: '42' } });
+
+      expect(res.error).toBeNull();
+      expect(res.data).toMatchObject({ id: '42' });
+      expect(res.response.status).toBe(200);
+    });
+
+    it('resolves to a declared error instead of throwing', async () => {
+      const res = await api.safe.get('/users/:id', { params: { id: 'missing' } });
+
+      expect(res.data).toBeNull();
+      expect(res.error).toBeInstanceOf(VercubeClientError);
+      expect(res.error?.status).toBe(404);
+      expect(res.error?.body).toEqual({ status: 404, name: 'NotFoundError', message: 'No such user' });
+      expect(res.response.status).toBe(404);
+    });
+
+    it('carries the fields of a custom error, and the implicit 400 of a body that is not JSON', async () => {
+      const conflict = await api.safe.put('/account/email', { body: { email: 'taken@example.com' } });
+
+      expect(conflict.error?.body).toEqual({ status: 409, name: 'ConflictError', message: 'Already exists', existingId: '7' });
+
+      const invalid = await api.safe.post('/users', {
+        body: new Blob(['{'], { type: 'application/json' }),
+        headers: { 'x-tenant': 't', 'content-type': 'application/json' },
+      });
+
+      expect(invalid.error?.status).toBe(400);
+      expect(invalid.error?.body).toMatchObject({ status: 400, name: 'BadRequestError' });
+    });
+
+    it('resolves to an undeclared error too', async () => {
+      const res = await api.safe.get('/users/fail');
+
+      expect(res.error?.status).toBe(500);
+    });
+
+    it('works through request() and for HEAD', async () => {
+      expect((await api.safe.request('GET', '/users/:id', { params: { id: 'missing' } })).error?.status).toBe(404);
+      expect(await api.safe.head('/users/:id', { params: { id: '1' } })).toMatchObject({ data: undefined, error: null });
+    });
+  });
+
+  it('tells a route error apart with isRouteError', async () => {
+    const error = await api.get('/users/:id', { params: { id: 'missing' } }).catch((error: unknown) => error);
+
+    expect(api.isRouteError(error, 'GET /users/:id')).toBe(true);
+    expect(api.isRouteError(error, 'PUT /account/email')).toBe(false);
+    expect(api.isRouteError(new Error('nope'), 'GET /users/:id')).toBe(false);
+    expect((error as VercubeClientError).route).toBe('GET /users/:id');
   });
 
   it('streams SSE events', async () => {
