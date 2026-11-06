@@ -1,0 +1,266 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`error responses > should match the snapshot 1`] = `
+{
+  "/items/": {
+    "post": {
+      "operationId": "ItemsController_create",
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {},
+          },
+        },
+      },
+      "responses": {
+        "201": {
+          "description": "Created",
+          "headers": {
+            "Cache-Control": {
+              "schema": {
+                "example": "no-store",
+                "type": "string",
+              },
+            },
+          },
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "errors": {
+                    "items": {
+                      "properties": {
+                        "message": {
+                          "type": "string",
+                        },
+                        "path": {
+                          "items": {},
+                          "type": "array",
+                        },
+                      },
+                      "required": [
+                        "message",
+                      ],
+                      "type": "object",
+                    },
+                    "type": "array",
+                  },
+                  "message": {
+                    "type": "string",
+                  },
+                  "name": {
+                    "type": "string",
+                  },
+                  "status": {
+                    "enum": [
+                      400,
+                    ],
+                    "type": "integer",
+                  },
+                },
+                "required": [
+                  "status",
+                  "name",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "Bad Request (BadRequestError)",
+        },
+      },
+      "tags": [
+        "ItemsController",
+      ],
+    },
+  },
+  "/items/secret/{id}": {
+    "get": {
+      "operationId": "ItemsController_guarded",
+      "parameters": [
+        {
+          "in": "path",
+          "name": "id",
+          "required": true,
+          "schema": {
+            "type": "string",
+          },
+        },
+      ],
+      "responses": {
+        "200": {
+          "description": "OK",
+        },
+        "401": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "message": {
+                    "type": "string",
+                  },
+                  "name": {
+                    "type": "string",
+                  },
+                  "status": {
+                    "enum": [
+                      401,
+                    ],
+                    "type": "integer",
+                  },
+                },
+                "required": [
+                  "status",
+                  "name",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "Unauthorized (UnauthorizedError)",
+        },
+        "403": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "message": {
+                    "type": "string",
+                  },
+                  "name": {
+                    "type": "string",
+                  },
+                  "status": {
+                    "enum": [
+                      403,
+                    ],
+                    "type": "integer",
+                  },
+                },
+                "required": [
+                  "status",
+                  "name",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "Forbidden (ForbiddenError)",
+        },
+        "404": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "message": {
+                    "type": "string",
+                  },
+                  "name": {
+                    "type": "string",
+                  },
+                  "status": {
+                    "enum": [
+                      404,
+                    ],
+                    "type": "integer",
+                  },
+                },
+                "required": [
+                  "status",
+                  "name",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "Not Found (NotFoundError)",
+        },
+        "409": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "message": {
+                    "type": "string",
+                  },
+                  "name": {
+                    "type": "string",
+                  },
+                  "status": {
+                    "enum": [
+                      409,
+                    ],
+                    "type": "integer",
+                  },
+                },
+                "required": [
+                  "status",
+                  "name",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "Conflict (ConflictError)",
+        },
+      },
+      "tags": [
+        "ItemsController",
+      ],
+    },
+  },
+  "/items/{id}": {
+    "get": {
+      "operationId": "ItemsController_get",
+      "parameters": [
+        {
+          "in": "path",
+          "name": "id",
+          "required": true,
+          "schema": {
+            "type": "string",
+          },
+        },
+      ],
+      "responses": {
+        "200": {
+          "description": "OK",
+        },
+        "404": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "message": {
+                    "type": "string",
+                  },
+                  "name": {
+                    "type": "string",
+                  },
+                  "status": {
+                    "enum": [
+                      404,
+                    ],
+                    "type": "integer",
+                  },
+                },
+                "required": [
+                  "status",
+                  "name",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "Not Found (NotFoundError)",
+        },
+      },
+      "tags": [
+        "ItemsController",
+      ],
+    },
+  },
+}
+`;

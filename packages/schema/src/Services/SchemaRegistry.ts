@@ -1,5 +1,12 @@
 import { OpenApiGeneratorV3, OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
-import { GlobalMiddlewareRegistry, isAuthMiddleware, MetadataResolver, Router, skipsGlobalMiddlewares } from '@vercube/core';
+import {
+  getRouteErrors,
+  GlobalMiddlewareRegistry,
+  isAuthMiddleware,
+  MetadataResolver,
+  Router,
+  skipsGlobalMiddlewares,
+} from '@vercube/core';
 import { InjectOptional } from '@vercube/di';
 import { Logger } from '@vercube/logger';
 import { $SchemaPluginOptions } from '../Symbols/SchemaSymbols';
@@ -143,12 +150,14 @@ export class SchemaRegistry {
         try {
           const controller = (prototype as { constructor?: Function }).constructor;
           const controllerPath = controller ? this.gMetadataResolver?.getControllerPath(controller) : undefined;
+          const secured = this.isSecured(prototype, propertyName);
           const context: RouteContext = {
             controller: controller?.name ?? 'Controller',
             propertyName,
-            secured: this.isSecured(prototype, propertyName),
+            secured,
             security,
             globalSecurity,
+            errors: getRouteErrors(prototype, propertyName, { args: metadata?.__methods?.[propertyName]?.args ?? [], secured }),
           };
           const route = createRouteConfig(metadata?.__methods?.[propertyName], options, warn, controllerPath, context);
 
