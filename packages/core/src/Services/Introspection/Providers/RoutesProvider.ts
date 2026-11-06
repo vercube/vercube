@@ -1,4 +1,5 @@
 import { Inject } from '@vercube/di';
+import { getThrownErrors } from '../../../Decorators/Http/Throws';
 import { MetadataResolver } from '../../Metadata/MetadataResolver';
 import { Router } from '../../Router/Router';
 import type { IntrospectionTypes } from '../../../Types/IntrospectionTypes';
@@ -52,6 +53,9 @@ export function describeRoute(route: RouterTypes.Route, basePath?: string): Intr
   const handler = route.handler;
   const instance = handler.instance as object | undefined;
   const prototype = instance ? (Object.getPrototypeOf(instance) as { __metadata?: MetadataTypes.Ctx }) : undefined;
+  const throws = getThrownErrors(prototype, handler.propertyName)
+    .map(({ name, status }) => ({ name, status }))
+    .sort((a, b) => a.status - b.status || a.name.localeCompare(b.name));
 
   return {
     id: `${route.method} ${route.path}`,
@@ -68,6 +72,7 @@ export function describeRoute(route: RouterTypes.Route, basePath?: string): Intr
     actions: handler.actions?.length ?? 0,
     simple: handler.simple === true,
     ...(prototype?.__metadata?.__methods?.[handler.propertyName]?.meta?.sse === true ? { sse: true } : {}),
+    ...(throws.length > 0 ? { throws } : {}),
   };
 }
 

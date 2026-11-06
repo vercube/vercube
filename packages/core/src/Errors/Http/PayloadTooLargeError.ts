@@ -6,6 +6,12 @@ import { HttpError } from '../HttpError';
  */
 export class PayloadTooLargeError extends HttpError {
   /**
+   * The HTTP status code every instance answers with, readable without
+   * creating one (`@Throws` and the client typegen read it).
+   */
+  public static readonly status: number = 413;
+
+  /**
    * The name of the error.
    * @type {string}
    */

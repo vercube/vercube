@@ -108,6 +108,18 @@ export namespace IntrospectionTypes {
     simple: boolean;
     /** Set on `@Sse()` routes, which answer with `text/event-stream`. */
     sse?: true;
+    /**
+     * Errors declared with `@Throws()` on the handler or its controller,
+     * sorted by status. `name` is the class name. Absent when none are declared.
+     */
+    throws?: RouteThrows[];
+  }
+
+  /** One error a route declares with `@Throws()`. */
+  export interface RouteThrows {
+    /** Class name of the error. */
+    name: string;
+    status: number;
   }
 
   /** One source file the scanner attributed to a class. */

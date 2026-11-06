@@ -4,12 +4,16 @@ import {
   BaseMiddleware,
   Controller,
   createApp,
+  ForbiddenError,
   Get,
+  HttpError,
   IntrospectionRegistry,
   Middleware,
   Post,
   QueryParam,
+  NotFoundError,
   Sse,
+  Throws,
 } from '../../../src';
 import { defaultConfig } from '../../../src/Config/DefaultConfig';
 import type { App } from '../../../src';
@@ -22,9 +26,15 @@ class AuditMiddleware extends BaseMiddleware {
   }
 }
 
+class ConflictError extends HttpError {
+  public static readonly status: number = 409;
+}
+
 @Controller('/catalog')
+@Throws(ForbiddenError)
 class CatalogController {
   @Get('/:id')
+  @Throws(NotFoundError, ConflictError)
   public byId(): unknown {
     return { ok: true };
   }
@@ -102,6 +112,19 @@ describe('core introspection providers', () => {
 
     expect(section!.data.find((route) => route.id === 'GET /catalog/feed')?.sse).toBe(true);
     expect(section!.data.find((route) => route.id === 'GET /catalog/:id')).not.toHaveProperty('sse');
+  });
+
+  it('lists declared errors, the controller ones included', async () => {
+    const section = await registry.describe<IntrospectionTypes.RouteDescription[]>('routes');
+
+    expect(section!.data.find((route) => route.id === 'GET /catalog/:id')?.throws).toEqual([
+      { name: 'ForbiddenError', status: 403 },
+      { name: 'NotFoundError', status: 404 },
+      { name: 'ConflictError', status: 409 },
+    ]);
+    expect(section!.data.find((route) => route.id === 'POST /catalog/search')?.throws).toEqual([
+      { name: 'ForbiddenError', status: 403 },
+    ]);
   });
 
   it('redacts credentials in the config section', async () => {

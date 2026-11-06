@@ -32,7 +32,8 @@ export namespace MetadataTypes {
     /**
      * Declarative facts about the route, for tools that describe it rather
      * than run it: `status` (`@Status`), `redirect` (`@Redirect`, as
-     * `{ location, code }`), `headers` (`@SetHeader`) and `sse` (`@Sse`).
+     * `{ location, code }`), `headers` (`@SetHeader`), `sse` (`@Sse`) and `throws` (`@Throws`, read
+     * it with `getThrownErrors()`, which adds the controller's own).
      */
     meta: Record<string, unknown>;
   }
