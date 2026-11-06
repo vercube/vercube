@@ -22,13 +22,24 @@ export function parseSse(
 ): AsyncGenerator<SseEvent, void, undefined> {
   const reader = body.getReader();
   const cancel = (reason?: unknown): Promise<void> => reader.cancel(reason).catch(() => {});
-  const events = readEvents(reader, signal);
+  const abort = (): void => void cancel(signal?.reason);
+  const release = (): void => signal?.removeEventListener('abort', abort);
+  const events = readEvents(reader, signal, release);
   const finish = events.return.bind(events);
+
+  // Registered here, not in the generator: its body only runs on the first
+  // `next()`, and an abort before that must still close the stream.
+  if (signal?.aborted) {
+    abort();
+  } else {
+    signal?.addEventListener('abort', abort, { once: true });
+  }
 
   // A generator only runs `finally` once it has started and reached a `yield`,
   // so cancelling from in there would miss `return()` before the first event
   // and wait for the next event while a read is pending.
   events.return = async (value) => {
+    release();
     await cancel();
     return finish(value);
   };
@@ -38,15 +49,16 @@ export function parseSse(
 
 /**
  * @param reader - The body's reader
- * @param signal - Aborting it rejects the next read
+ * @param signal - Checked before each read and each event
+ * @param release - Removes the abort listener once the events end
  * @returns The events
  */
 async function* readEvents(
   reader: ReadableStreamDefaultReader<Uint8Array>,
-  signal?: AbortSignal | null,
+  signal: AbortSignal | null | undefined,
+  release: () => void,
 ): AsyncGenerator<SseEvent, void, undefined> {
   const decoder = new TextDecoder();
-  const abort = (): void => void reader.cancel(signal?.reason).catch(() => {});
   let buffer = '';
   let data: string[] = [];
   let event: string | undefined;
@@ -91,8 +103,6 @@ async function* readEvents(
     return undefined;
   };
 
-  signal?.addEventListener('abort', abort, { once: true });
-
   try {
     while (true) {
       signal?.throwIfAborted();
@@ -123,7 +133,7 @@ async function* readEvents(
       }
     }
   } finally {
-    signal?.removeEventListener('abort', abort);
+    release();
     reader.cancel().catch(() => {});
   }
 }
