@@ -1,4 +1,4 @@
-import { MetadataResolver, ShutdownRegistry, StartupRegistry } from '@vercube/core';
+import { HealthRegistry, MetadataResolver, ShutdownRegistry, StartupRegistry } from '@vercube/core';
 import { Container, initializeContainer } from '@vercube/di';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SchedulerCommand } from '../../src/Commands/SchedulerCommands';
@@ -37,6 +37,7 @@ describe('SchedulerPlugin', () => {
     startup = new StartupRegistry();
     app = {
       container,
+      health: new HealthRegistry(),
       onClose: (hook: () => Promise<void>) => shutdown.register(hook),
       onStart: (hook: () => Promise<void>) => startup.register(hook),
     } as unknown as App;
@@ -184,5 +185,67 @@ describe('SchedulerPlugin', () => {
     } as never);
 
     expect(registered).toEqual([SchedulerCommand]);
+  });
+
+  describe('health', () => {
+    class PingStore extends MemoryStore {
+      public static reachable = true;
+
+      public async ping(): Promise<void> {
+        if (!PingStore.reachable) {
+          throw new Error('ECONNREFUSED 127.0.0.1:5432');
+        }
+      }
+    }
+
+    beforeEach(() => {
+      PingStore.reachable = true;
+      app.health.configure({ cacheTtl: 0 });
+    });
+
+    it('should register a check for a store with a backend', async () => {
+      await plugin.use(app, { store: { store: PingStore }, autoStart: false });
+
+      expect(app.health.names).toEqual(['scheduler:store']);
+      expect((await app.health.check()).status).toBe('ok');
+    });
+
+    it('should report down when the store is unreachable', async () => {
+      await plugin.use(app, { store: { store: PingStore }, autoStart: false });
+
+      PingStore.reachable = false;
+
+      expect((await app.health.check()).checks['scheduler:store']).toMatchObject({
+        status: 'down',
+        error: 'ECONNREFUSED 127.0.0.1:5432',
+      });
+    });
+
+    it('should register nothing for the memory store', async () => {
+      await plugin.use(app, { store: { store: MemoryStore }, autoStart: false });
+
+      expect(app.health.size).toBe(0);
+    });
+
+    it('should register nothing with health: false', async () => {
+      await plugin.use(app, { store: { store: PingStore }, autoStart: false, health: false });
+
+      expect(app.health.size).toBe(0);
+    });
+
+    it('should not connect a closed store again', async () => {
+      await plugin.use(app, { store: { store: PingStore }, autoStart: false });
+      await container.get(SchedulerManager).close();
+
+      expect((await app.health.check()).checks['scheduler:store'].error).toBe('The scheduler is closed');
+    });
+
+    it('should mark the check non-critical', async () => {
+      await plugin.use(app, { store: { store: PingStore }, autoStart: false, health: { critical: false } });
+
+      PingStore.reachable = false;
+
+      expect((await app.health.check()).status).toBe('degraded');
+    });
   });
 });

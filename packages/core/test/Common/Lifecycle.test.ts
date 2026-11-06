@@ -1,7 +1,7 @@
 import { createServer } from 'node:net';
 import { Inject } from '@vercube/di';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { AppLifecycle, Controller, createApp, Get, HealthRegistry } from '../../src';
+import { AppLifecycle, Controller, createApp, Get, HEALTH_REGISTRY_KEY, HealthRegistry } from '../../src';
 import type { App, ConfigTypes } from '../../src';
 
 @Controller('/probe')
@@ -215,6 +215,8 @@ describe('App lifecycle', () => {
     const instance = await boot();
 
     expect(instance.health).toBe(instance.container.get(HealthRegistry));
+    // modules that do not import core at runtime inject it by this key
+    expect(instance.container.get(HEALTH_REGISTRY_KEY)).toBe(instance.health);
   });
 });
 

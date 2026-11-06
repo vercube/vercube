@@ -407,6 +407,23 @@ export class RabbitMQStrategy extends QueueStrategy<RabbitMQStrategyOptions> {
   }
 
   /**
+   * Opens and closes a channel, for the readiness probe.
+   *
+   * @returns {Promise<void>} Resolves once the broker answered
+   * @throws {QueueError} When the strategy is not connected
+   */
+  public override async ping(): Promise<void> {
+    if (!this.fConnection) {
+      throw new QueueError('RabbitMQ strategy is not connected', 'ping', undefined, undefined, false);
+    }
+
+    // opening a channel is a round trip to the broker, unlike reading a flag
+    const channel = await this.fConnection.createChannel();
+
+    await channel.close();
+  }
+
+  /**
    * Stops every consumer and closes the connection.
    *
    * @returns {Promise<void>} Resolves once the connection is closed

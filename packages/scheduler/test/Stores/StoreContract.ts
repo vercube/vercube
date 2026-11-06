@@ -33,6 +33,13 @@ export function runStoreContract(name: string, factory: () => Promise<StoreFixtu
     };
 
     it(
+      'answers a health ping, when it has a backend',
+      withStore(async ({ store }) => {
+        await expect(store.ping?.() ?? Promise.resolve()).resolves.toBeUndefined();
+      }),
+    );
+
+    it(
       'claims a free key',
       withStore(async ({ store }) => {
         expect(await store.claim('free', 'a', 60_000)).toBe(true);

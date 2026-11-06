@@ -123,4 +123,14 @@ export abstract class SchedulerStore<InitOptions = undefined> {
    * @returns Resolves once everything is closed
    */
   public abstract close(): Promise<void>;
+
+  /**
+   * Checks that the backend answers, for the readiness probe. Resolves when it
+   * does, throws when it does not. A store without a backend, such as the
+   * in-memory one, leaves it out and gets no health check.
+   *
+   * @returns Resolves once the backend answered.
+   * @throws {Error} When the backend cannot be reached.
+   */
+  public ping?(): Promise<void>;
 }

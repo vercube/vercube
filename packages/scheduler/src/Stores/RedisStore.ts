@@ -147,6 +147,11 @@ export class RedisStore extends SchedulerStore<RedisStoreOptions | undefined> {
   }
 
   /** @inheritdoc */
+  public override async ping(): Promise<void> {
+    await this.client.ping();
+  }
+
+  /** @inheritdoc */
   public async close(): Promise<void> {
     const client = this.fClient;
 

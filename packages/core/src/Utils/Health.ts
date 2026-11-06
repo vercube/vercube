@@ -143,6 +143,26 @@ export function resolveShutdownDefaults(
 }
 
 /**
+ * Reads the `health` option of a module plugin.
+ *
+ * @param {HealthTypes.ModuleOption | undefined} option - The option, on by default
+ * @returns {{ critical: boolean; timeout?: number } | null} What to register the checks with, `null` for none
+ */
+export function resolveModuleHealth(
+  option: HealthTypes.ModuleOption | undefined,
+): { critical: boolean; timeout?: number } | null {
+  if (option === false) {
+    return null;
+  }
+
+  if (option === undefined || option === true) {
+    return { critical: true };
+  }
+
+  return { critical: option.critical !== false, ...(option.timeout === undefined ? {} : { timeout: option.timeout }) };
+}
+
+/**
  * Compares two strings in time that depends only on their lengths, so a token
  * cannot be guessed one character at a time.
  *

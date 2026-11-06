@@ -1,5 +1,12 @@
 import type { HealthTypes } from '../../Types/HealthTypes';
 
+/**
+ * A second key the registry is bound under. Modules that stay independent of
+ * `@vercube/core` at runtime, such as `@vercube/storage`, inject it by this
+ * string instead of importing the class.
+ */
+export const HEALTH_REGISTRY_KEY = 'vercube:health';
+
 /** Default per-check timeout in milliseconds. */
 export const DEFAULT_HEALTH_TIMEOUT = 1000;
 

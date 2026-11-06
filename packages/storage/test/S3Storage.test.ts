@@ -1,5 +1,12 @@
 import { Readable } from 'node:stream';
-import { DeleteObjectCommand, HeadObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import {
+  DeleteObjectCommand,
+  HeadBucketCommand,
+  HeadObjectCommand,
+  ListObjectsV2Command,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { S3Storage } from '../src/Drivers/S3Storage';
 import { StorageError } from '../src/Errors/StorageError';
@@ -190,6 +197,31 @@ describe('S3Storage', () => {
       expect(mockSend).toHaveBeenCalledWith(expect.any(DeleteObjectCommand));
       const cmd = mockSend.mock.calls[0][0] as DeleteObjectCommand;
       expect(cmd.input.Key).toBe('key');
+    });
+  });
+
+  describe('ping', () => {
+    it('should ask S3 about the bucket', async () => {
+      mockSend.mockResolvedValueOnce({});
+
+      await storage.ping();
+
+      expect(mockSend.mock.calls[0][0]).toBeInstanceOf(HeadBucketCommand);
+      expect((mockSend.mock.calls[0][0] as HeadBucketCommand).input.Bucket).toBe('test-bucket');
+    });
+
+    it('should count a 403 as reachable, HeadBucket needs s3:ListBucket', async () => {
+      mockSend.mockRejectedValueOnce({ name: 'Forbidden', $metadata: { httpStatusCode: 403 } });
+
+      await expect(storage.ping()).resolves.toBeUndefined();
+    });
+
+    it('should fail on a missing bucket or an unreachable endpoint', async () => {
+      mockSend.mockRejectedValueOnce({ name: 'NotFound', $metadata: { httpStatusCode: 404 } });
+      await expect(storage.ping()).rejects.toMatchObject({ name: 'NotFound' });
+
+      mockSend.mockRejectedValueOnce(new Error('connect ECONNREFUSED'));
+      await expect(storage.ping()).rejects.toThrow('ECONNREFUSED');
     });
   });
 

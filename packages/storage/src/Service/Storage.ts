@@ -78,4 +78,14 @@ export abstract class Storage<InitOptions = undefined> {
    * @returns {Promise<number>} A promise that resolves with the number of stored items
    */
   public abstract size(): MaybePromise<number>;
+
+  /**
+   * Checks that the backend answers, for the readiness probe. Resolves when it
+   * does, throws when it does not. A driver without a backend, such as the
+   * in-memory one, leaves it out and gets no health check.
+   *
+   * @returns Resolves once the backend answered.
+   * @throws {Error} When the backend cannot be reached.
+   */
+  public ping?(): Promise<void>;
 }

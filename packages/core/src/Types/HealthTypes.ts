@@ -184,6 +184,13 @@ export namespace HealthTypes {
   }
 
   /**
+   * The `health` option of a module plugin such as `QueuePlugin`: `false`
+   * registers no check, an object tunes the checks it registers.
+   * @default true
+   */
+  export type ModuleOption = boolean | { critical?: boolean; timeout?: number };
+
+  /**
    * Settings of the registry.
    */
   export interface RegistryOptions {

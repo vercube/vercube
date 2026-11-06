@@ -1,6 +1,7 @@
 import {
   DeleteObjectCommand,
   GetObjectCommand,
+  HeadBucketCommand,
   HeadObjectCommand,
   ListObjectsV2Command,
   PutObjectCommand,
@@ -135,6 +136,26 @@ export class S3Storage implements Storage<S3BaseOptions> {
     this.s3 = new S3Client(s3Options);
     this.bucket = bucket;
     this.logger = logger;
+  }
+
+  /**
+   * Asks S3 about the bucket, for the readiness probe. A 403 still counts as
+   * reachable: `HeadBucket` needs `s3:ListBucket`, which a least-privilege
+   * policy granting only object access leaves out, while storage works.
+   *
+   * @returns {Promise<void>} Resolves once S3 answered
+   * @throws {Error} When S3 cannot be reached, the bucket does not exist, or S3 fails
+   */
+  public async ping(): Promise<void> {
+    try {
+      await this.s3.send(new HeadBucketCommand({ Bucket: this.bucket }));
+    } catch (error) {
+      if ((error as { $metadata?: { httpStatusCode?: number } })?.$metadata?.httpStatusCode === 403) {
+        return;
+      }
+
+      throw error;
+    }
   }
 
   /**

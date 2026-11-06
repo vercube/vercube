@@ -48,6 +48,21 @@ describe('PostgresStore', () => {
     vi.useRealTimers();
   });
 
+  it('pings with SELECT 1, and fails before it is initialized', async () => {
+    const pool = givenPool();
+    const store = new PostgresStore();
+
+    await expect(store.ping()).rejects.toThrow('not initialized');
+
+    await store.initialize({ pool, createTables: false });
+    await store.ping();
+
+    expect(pool.query).toHaveBeenLastCalledWith('SELECT 1');
+
+    pool.query.mockRejectedValueOnce(new Error('terminating connection'));
+    await expect(store.ping()).rejects.toThrow('terminating connection');
+  });
+
   it('is named and distributed', () => {
     const store = new PostgresStore();
 

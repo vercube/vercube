@@ -7,9 +7,27 @@ export namespace StorageTypes {
     storage?: string;
   }
 
+  /**
+   * The `health` option of a mount: `false` registers no check, an object
+   * tunes the one it registers.
+   * @default true
+   */
+  export type HealthOption = boolean | { critical?: boolean; timeout?: number };
+
+  /** What the storage manager needs from `app.health`, injected without importing core. */
+  export interface HealthRegistryLike {
+    register(check: { name: string; critical?: boolean; timeout?: number; check: () => Promise<void> }): () => void;
+  }
+
   export type Mount<T extends Storage<unknown>> = {
     name?: string;
     storage: IOC.Newable<T>;
+    /**
+     * Registers a readiness check, `storage:<name>`, when the driver talks to a
+     * backend (S3). In-memory storage gets none.
+     * @default true
+     */
+    health?: HealthOption;
   } & (T extends Storage<undefined> ? { initOptions?: unknown } : T extends Storage<infer U> ? { initOptions: U } : never);
 
   export interface Storages<T = unknown> {
