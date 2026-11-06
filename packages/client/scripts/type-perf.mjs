@@ -48,7 +48,9 @@ for (let c = 0; c < controllerCount; c++) {
         methods.push(
           `  @Get('/r${n}') public h${m}(@QueryParam({ name: 'page' }) page: number | undefined, @QueryParam({ name: 'sort' }) sort: 'a' | 'b'): { items: { id: string }[] } { return null!; }`,
         );
-        entries.push(`  'GET /c${c}/r${n}': RouteDef<C${c}, 'h${m}', { query: { page: 0; sort: 1 }${throws('401: UnauthorizedError; 403: ForbiddenError')} }>;`);
+        entries.push(
+          `  'GET /c${c}/r${n}': RouteDef<C${c}, 'h${m}', { query: { page: 0; sort: 1 }${throws('401: UnauthorizedError; 403: ForbiddenError')} }>;`,
+        );
         calls.push(`  await api.get('/c${c}/r${n}', { query: { sort: 'a' } });`);
         break;
       }
@@ -64,7 +66,9 @@ for (let c = 0; c < controllerCount; c++) {
         methods.push(
           `  @Put('/r${n}/:id') public h${m}(@Param('id') id: string, @Body() body: { name?: string }, @Header('x-t') t: string): void {}`,
         );
-        entries.push(`  'PUT /c${c}/r${n}/:id': RouteDef<C${c}, 'h${m}', { param: { id: 0 }; body: 1; header: { 'x-t': 2 }${throws('400: BadRequestError; 404: NotFoundError')} }>;`);
+        entries.push(
+          `  'PUT /c${c}/r${n}/:id': RouteDef<C${c}, 'h${m}', { param: { id: 0 }; body: 1; header: { 'x-t': 2 }${throws('400: BadRequestError; 404: NotFoundError')} }>;`,
+        );
         calls.push(`  await api.put('/c${c}/r${n}/:id', { params: { id: '1' }, body: {}, headers: { 'x-t': 'a' } });`);
         break;
       }
