@@ -1,5 +1,6 @@
 import { Inject } from '@vercube/di';
 import { getThrownErrors } from '../../../Decorators/Http/Throws';
+import { isAuthMiddleware } from '../../../Utils/Utils';
 import { MetadataResolver } from '../../Metadata/MetadataResolver';
 import { Router } from '../../Router/Router';
 import type { IntrospectionTypes } from '../../../Types/IntrospectionTypes';
@@ -73,6 +74,11 @@ export function describeRoute(route: RouterTypes.Route, basePath?: string): Intr
     simple: handler.simple === true,
     ...(prototype?.__metadata?.__methods?.[handler.propertyName]?.meta?.sse === true ? { sse: true } : {}),
     ...(throws.length > 0 ? { throws } : {}),
+    ...([...(handler.middlewares?.beforeMiddlewares ?? []), ...(handler.middlewares?.afterMiddlewares ?? [])].some((definition) =>
+      isAuthMiddleware(definition.middleware),
+    )
+      ? { secured: true }
+      : {}),
   };
 }
 

@@ -113,6 +113,8 @@ export namespace IntrospectionTypes {
      * sorted by status. `name` is the class name. Absent when none are declared.
      */
     throws?: RouteThrows[];
+    /** Set when an authentication middleware (`@Auth()`) guards the route. */
+    secured?: true;
   }
 
   /** One error a route declares with `@Throws()`. */

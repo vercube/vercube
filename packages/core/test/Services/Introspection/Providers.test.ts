@@ -26,6 +26,14 @@ class AuditMiddleware extends BaseMiddleware {
   }
 }
 
+class GuardMiddleware extends BaseMiddleware {
+  public onRequest(): void {
+    // no-op
+  }
+}
+
+Object.defineProperty(GuardMiddleware, Symbol.for('vercube.auth.middleware'), { value: true });
+
 class ConflictError extends HttpError {
   public static readonly status: number = 409;
 }
@@ -41,6 +49,7 @@ class CatalogController {
 
   @Post('/search')
   @Middleware(AuditMiddleware, { priority: 5 })
+  @Middleware(GuardMiddleware)
   public search(@QueryParam({ name: 'q' }) query: string): unknown {
     return { query };
   }
@@ -66,6 +75,7 @@ describe('core introspection providers', () => {
       setup: (instance) => {
         instance.container.bind(CatalogController);
         instance.container.bind(AuditMiddleware);
+        instance.container.bind(GuardMiddleware);
       },
     });
 
@@ -125,6 +135,13 @@ describe('core introspection providers', () => {
     expect(section!.data.find((route) => route.id === 'POST /catalog/search')?.throws).toEqual([
       { name: 'ForbiddenError', status: 403 },
     ]);
+  });
+
+  it('marks routes guarded by an authentication middleware', async () => {
+    const section = await registry.describe<IntrospectionTypes.RouteDescription[]>('routes');
+
+    expect(section!.data.find((route) => route.id === 'POST /catalog/search')?.secured).toBe(true);
+    expect(section!.data.find((route) => route.id === 'GET /catalog/:id')).not.toHaveProperty('secured');
   });
 
   it('redacts credentials in the config section', async () => {

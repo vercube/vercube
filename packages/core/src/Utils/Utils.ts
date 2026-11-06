@@ -197,3 +197,25 @@ export function skipGlobalMiddlewares(target: any): void {
 export function skipsGlobalMiddlewares(target: any): boolean {
   return target?.__metadata?.__meta?.[SKIP_GLOBAL_MIDDLEWARES] === true;
 }
+
+/**
+ * Marker the authentication middleware of `@vercube/auth` carries, so tools
+ * that describe routes find it without importing that package.
+ */
+const AUTH_MIDDLEWARE = Symbol.for('vercube.auth.middleware');
+
+/**
+ * Whether a middleware, as a class or an instance, requires authentication.
+ *
+ * @param {unknown} middleware - Middleware class or instance
+ * @returns {boolean} True for an authentication middleware
+ */
+export function isAuthMiddleware(middleware: unknown): boolean {
+  if (!middleware) {
+    return false;
+  }
+
+  const target = typeof middleware === 'function' ? middleware : (middleware as object).constructor;
+
+  return (target as unknown as Record<symbol, unknown> | undefined)?.[AUTH_MIDDLEWARE] === true;
+}

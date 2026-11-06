@@ -1,5 +1,5 @@
 import { OpenApiGeneratorV3, OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
-import { GlobalMiddlewareRegistry, MetadataResolver, Router, skipsGlobalMiddlewares } from '@vercube/core';
+import { GlobalMiddlewareRegistry, isAuthMiddleware, MetadataResolver, Router, skipsGlobalMiddlewares } from '@vercube/core';
 import { InjectOptional } from '@vercube/di';
 import { Logger } from '@vercube/logger';
 import { $SchemaPluginOptions } from '../Symbols/SchemaSymbols';
@@ -246,9 +246,7 @@ export class SchemaRegistry {
    * @returns True when the route requires authentication
    */
   private isSecured(prototype: object, propertyName: string): boolean {
-    const marker = Symbol.for('vercube.auth.middleware');
-    const isAuth = (entry: MetadataTypes.Middleware): boolean =>
-      (entry.middleware as unknown as Record<symbol, unknown>)?.[marker] === true;
+    const isAuth = (entry: MetadataTypes.Middleware): boolean => isAuthMiddleware(entry.middleware);
 
     const own = (prototype as { __metadata?: MetadataTypes.Ctx }).__metadata?.__middlewares ?? [];
 
