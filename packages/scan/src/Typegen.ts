@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { parseSync } from 'oxc-parser';
 import { dirname, isAbsolute, join, relative, resolve } from 'pathe';
@@ -59,9 +59,11 @@ export interface ControllerSource {
   exportName: string | null;
   /**
    * Classes the file can name, by class name: what it imports and what it
-   * exports itself. Used to import the errors its routes declare.
+   * exports itself. Used to import the errors its routes declare. `null` marks
+   * a name the file knows but that cannot be imported: a class it does not
+   * export, or two imports going by the same class name.
    */
-  types?: Record<string, TypegenImport>;
+  types?: Record<string, TypegenImport | null>;
 }
 
 /** Options for {@link generateRouteTypes}. */
@@ -199,6 +201,10 @@ export function generateRouteTypes(options: TypegenOptions): TypegenResult {
     return local;
   };
 
+  // routes resolved first and their error types imported after, in a fixed
+  // order, so the names the imports get do not depend on the route order
+  const pending: { id: string; local: string; route: TypegenRoute; path: string; errors: ResolvedError[] }[] = [];
+
   for (const route of routes) {
     // `@Get('/')` under `@Controller('/users')` registers `/users/`, which the
     // router also serves as `/users`; the shorter form is the one people write.
@@ -206,7 +212,7 @@ export function generateRouteTypes(options: TypegenOptions): TypegenResult {
     const path = route.path.replace(/(.)\/+$/, '$1');
     const id = `${route.method.toUpperCase()} ${path}`;
 
-    if (entries.has(id)) {
+    if (entries.has(id) || pending.some((entry) => entry.id === id)) {
       continue;
     }
 
@@ -225,7 +231,36 @@ export function generateRouteTypes(options: TypegenOptions): TypegenResult {
 
     addImport(specifier, binding);
 
-    const throws = describeThrows(route, source, importType, (message) => warnings.add(`${id}: ${message}`));
+    pending.push({
+      id,
+      local,
+      route,
+      path,
+      errors: resolveThrows(route, source, (message) => warnings.add(`${id}: ${message}`)),
+    });
+  }
+
+  const errorTypes = pending.flatMap((entry) => entry.errors.flatMap((error) => (error.type ? [error] : [])));
+  const typeKey = (error: ResolvedError): string => `${error.type!.module}\0${error.type!.name}\0${error.className}`;
+
+  for (const error of errorTypes.sort((a, b) => typeKey(a).localeCompare(typeKey(b)))) {
+    importType(error.type!, error.className);
+  }
+
+  for (const { id, local, route, path, errors } of pending) {
+    const throws = new Map<number, string[]>();
+
+    for (const error of errors) {
+      const type = error.type ? importType(error.type, error.className) : UNKNOWN_ERROR;
+      const types = throws.get(error.status) ?? [];
+
+      if (!types.includes(type)) {
+        types.push(type);
+      }
+
+      throws.set(error.status, types);
+    }
+
     entries.set(id, `RouteDef<${local}, ${quote(route.handler)}${describeArgs(route.args, path, route.sse, throws)}>`);
   }
 
@@ -267,7 +302,7 @@ export function generateRouteTypes(options: TypegenOptions): TypegenResult {
 export async function findControllers(input: string | string[]): Promise<Record<string, ControllerSource | null>> {
   const files =
     typeof input === 'string' ? await glob(GLOB_SCAN_PATTERN, { cwd: input, absolute: true, ignore: IGNORE, dot: false }) : input;
-  const found: Record<string, ControllerSource | null> = {};
+  const found: Record<string, ControllerSource | null> = Object.create(null);
 
   // discovery lists a file once per class in it
   for (const file of [...new Set(files)].sort()) {
@@ -617,7 +652,7 @@ function whyNotImportable(name: string, source: ControllerSource | null | undefi
 function extractControllerExports(
   file: string,
   code: string,
-): { controllers: Map<string, string | null>; types: Record<string, TypegenImport> } {
+): { controllers: Map<string, string | null>; types: Record<string, TypegenImport | null> } {
   const program = parseSync(file, code).program as { body: any[] };
   const controllers = new Map<string, string | null>();
   const { names, namespaces } = controllerBindings(program.body);
@@ -663,67 +698,185 @@ function extractControllerExports(
     }
   }
 
-  return { controllers, types: namedTypes(file, program.body) };
+  return { controllers, types: namedTypes(file, program) };
 }
 
 /**
  * The classes a file can name and where to import each from: its imports, by
  * the imported name (a class keeps its own name at runtime, whatever the local
- * alias), and the classes it exports itself.
+ * alias), members of its namespace imports, and its own classes.
  *
  * @param file - Absolute path of the file
- * @param body - Its top-level statements
- * @returns Class name to import
+ * @param program - The parsed file
+ * @returns Class name to import, `null` for a name that cannot be imported
  */
-function namedTypes(file: string, body: any[]): Record<string, TypegenImport> {
-  const types: Record<string, TypegenImport> = {};
+function namedTypes(file: string, program: any): Record<string, TypegenImport | null> {
+  const body: any[] = program.body;
+  const types: Record<string, TypegenImport | null> = Object.create(null);
+  const set = (name: string, type: TypegenImport | null): void => {
+    if (!Object.hasOwn(types, name)) {
+      types[name] = type;
+      return;
+    }
+
+    const existing = types[name];
+
+    // two different classes going by one name cannot be told apart
+    if (!existing || !type || existing.module !== type.module || existing.name !== type.name) {
+      types[name] = null;
+    }
+  };
+
+  // the file's own classes, and the name each is exported under
   const declared = new Set<string>();
+  const exported = new Map<string, string>();
 
   for (const node of body) {
     const declaration =
       node.type === 'ExportNamedDeclaration' || node.type === 'ExportDefaultDeclaration' ? node.declaration : node;
 
-    if ((declaration?.type === 'ClassDeclaration' || declaration?.type === 'Class') && declaration.id?.name) {
+    if (isClass(declaration) && declaration.id?.name) {
       declared.add(declaration.id.name);
 
       if (node.type === 'ExportNamedDeclaration') {
-        types[declaration.id.name] = { module: file, name: declaration.id.name };
+        exported.set(declaration.id.name, declaration.id.name);
       } else if (node.type === 'ExportDefaultDeclaration') {
-        types[declaration.id.name] = { module: file, name: 'default' };
+        exported.set(declaration.id.name, 'default');
+      }
+    } else if (node.type === 'ExportNamedDeclaration' && !node.source) {
+      for (const specifier of node.specifiers ?? []) {
+        const name = specifier.exported?.name ?? specifier.exported?.value;
+
+        if (!exported.has(specifier.local?.name)) {
+          exported.set(specifier.local?.name, name);
+        }
+      }
+    } else if (
+      // `export default ConflictError`
+      node.type === 'ExportDefaultDeclaration' &&
+      node.declaration?.type === 'Identifier' &&
+      !exported.has(node.declaration.name)
+    ) {
+      exported.set(node.declaration.name, 'default');
+    }
+  }
+
+  for (const name of declared) {
+    set(name, exported.has(name) ? { module: file, name: exported.get(name)! } : null);
+  }
+
+  const namespaces = new Map<string, string>();
+
+  for (const node of body) {
+    if (node.type !== 'ImportDeclaration' || node.importKind === 'type') {
+      continue;
+    }
+
+    const module = resolveModule(file, node.source.value);
+
+    for (const specifier of node.specifiers ?? []) {
+      if (!module || specifier.importKind === 'type') {
+        continue;
+      }
+
+      if (specifier.type === 'ImportSpecifier') {
+        const imported = specifier.imported?.name ?? specifier.imported?.value;
+
+        set(imported, { module, name: imported });
+      } else if (specifier.type === 'ImportDefaultSpecifier') {
+        // the class keeps its declared name at runtime, whatever this file calls it
+        set(defaultClassName(module) ?? specifier.local.name, { module, name: 'default' });
+      } else if (specifier.type === 'ImportNamespaceSpecifier') {
+        namespaces.set(specifier.local.name, module);
       }
     }
   }
 
-  for (const node of body) {
-    if (node.type === 'ImportDeclaration' && node.importKind !== 'type') {
-      const module = resolveModule(file, node.source.value);
-
-      for (const specifier of node.specifiers ?? []) {
-        if (!module || specifier.importKind === 'type') {
-          continue;
-        }
-
-        if (specifier.type === 'ImportSpecifier') {
-          const imported = specifier.imported?.name ?? specifier.imported?.value;
-
-          types[imported] ??= { module, name: imported };
-        } else if (specifier.type === 'ImportDefaultSpecifier') {
-          types[specifier.local.name] ??= { module, name: 'default' };
-        }
+  // `@Throws(Errors.ConflictError)` through `import * as Errors`
+  if (namespaces.size > 0) {
+    walk(program, (node) => {
+      if (
+        node.type === 'MemberExpression' &&
+        !node.computed &&
+        node.object?.type === 'Identifier' &&
+        namespaces.has(node.object.name) &&
+        node.property?.type === 'Identifier'
+      ) {
+        set(node.property.name, { module: namespaces.get(node.object.name)!, name: node.property.name });
       }
-    } else if (node.type === 'ExportNamedDeclaration' && !node.source) {
-      // `export { ConflictError }` of a class declared above
-      for (const specifier of node.specifiers ?? []) {
-        const local = specifier.local?.name;
-
-        if (declared.has(local)) {
-          types[local] ??= { module: file, name: specifier.exported?.name ?? specifier.exported?.value ?? local };
-        }
-      }
-    }
+    });
   }
 
   return types;
+}
+
+/**
+ * @param node - Any AST node
+ * @returns True for a class declaration or expression
+ */
+function isClass(node: any): boolean {
+  return node?.type === 'ClassDeclaration' || node?.type === 'Class' || node?.type === 'ClassExpression';
+}
+
+/**
+ * Calls `visit` for every node below `node`.
+ *
+ * @param node - The root
+ * @param visit - Called with each node
+ */
+function walk(node: any, visit: (node: any) => void): void {
+  if (!node || typeof node !== 'object') {
+    return;
+  }
+
+  if (Array.isArray(node)) {
+    for (const child of node) {
+      walk(child, visit);
+    }
+
+    return;
+  }
+
+  if (typeof node.type === 'string') {
+    visit(node);
+  }
+
+  for (const key in node) {
+    if (key !== 'parent') {
+      walk(node[key], visit);
+    }
+  }
+}
+
+/**
+ * The name of the class a file exports as default, read from its source.
+ *
+ * @param module - A package name, or an absolute file path
+ * @returns The class name, `undefined` for a package or a file without one
+ */
+function defaultClassName(module: string): string | undefined {
+  if (!isAbsolute(module)) {
+    return undefined;
+  }
+
+  try {
+    const body: any[] = (parseSync(module, readFileSync(module, 'utf8')).program as { body: any[] }).body;
+    const node = body.find((statement) => statement.type === 'ExportDefaultDeclaration');
+
+    if (isClass(node?.declaration)) {
+      return node.declaration.id?.name;
+    }
+
+    if (node?.declaration?.type === 'Identifier') {
+      const name = node.declaration.name;
+
+      return body.some((statement) => isClass(statement) && statement.id?.name === name) ? name : undefined;
+    }
+  } catch {
+    // unreadable or not parseable: the import's local name is used instead
+  }
+
+  return undefined;
 }
 
 /** Extensions tried, in order, for a relative import written without one. */
@@ -747,57 +900,57 @@ function resolveModule(from: string, specifier: string): string | null {
   const stem = base.replace(/\.(?:m|c)?js$/, '');
   const candidates = [base, ...SOURCE_EXTENSIONS.map((ext) => stem + ext)];
 
-  return candidates.find((candidate) => existsSync(candidate) && !candidate.endsWith('/')) ?? null;
+  // a directory is not a module: its `index` file is
+  return candidates.find((candidate) => existsSync(candidate) && statSync(candidate).isFile()) ?? null;
+}
+
+/** An error of a route, with the type to import, `null` when it cannot be imported. */
+interface ResolvedError {
+  status: number;
+  type: TypegenImport | null;
+  /** The runtime class name, which a default import goes by. */
+  className: string;
 }
 
 /**
- * The errors of one route, by status. An implicit error names its module; a
- * declared one is imported from wherever the controller file imports it.
+ * The errors of one route. An implicit error names its module; a declared one
+ * is imported from wherever the controller file imports it, and from
+ * `@vercube/core` only when the file does not know the name at all.
  *
  * @param route - The route
  * @param source - Its controller's source
- * @param importType - Imports a type and returns its local name
  * @param warn - Reports an error that could not be imported
- * @returns Status to type expressions
+ * @returns The errors, in the order the route table lists them
  */
-function describeThrows(
-  route: TypegenRoute,
-  source: ControllerSource,
-  importType: (type: TypegenImport, className: string) => string,
-  warn: (message: string) => void,
-): Map<number, string[]> {
-  const byStatus = new Map<number, string[]>();
-  const add = (status: number, type: string): void => {
-    const types = byStatus.get(status) ?? [];
+function resolveThrows(route: TypegenRoute, source: ControllerSource, warn: (message: string) => void): ResolvedError[] {
+  const known = (name: string): TypegenImport | null | undefined =>
+    source.types && Object.hasOwn(source.types, name) ? source.types[name] : undefined;
 
-    if (!types.includes(type)) {
-      types.push(type);
-    }
-
-    byStatus.set(status, types);
-  };
-
-  for (const { name, status, module } of route.throws ?? []) {
+  return (route.throws ?? []).map(({ name, status, module }) => {
     // a bundler renames a class that collides with another
     const original = name.replace(/\$\d+$/, '');
-    const type =
-      (module ? { module, name: original } : undefined) ??
-      source.types?.[name] ??
-      source.types?.[original] ??
-      (CORE_ERRORS.has(original) ? { module: '@vercube/core', name: original } : undefined);
+    let type: TypegenImport | null | undefined = module ? { module, name: original } : known(name);
 
-    if (type) {
-      add(status, importType(type, original));
-    } else {
-      warn(
-        `cannot import the type of ${original} (${status}), so it is typed as a generic error. ` +
-          `Import it in the controller's file, or export it from there.`,
-      );
-      add(status, UNKNOWN_ERROR);
+    if (type === undefined) {
+      type = known(original);
     }
-  }
 
-  return byStatus;
+    if (type === undefined && CORE_ERRORS.has(original)) {
+      type = { module: '@vercube/core', name: original };
+    }
+
+    if (!type) {
+      warn(
+        type === null
+          ? `cannot import the type of ${original} (${status}): the controller's file declares it without exporting it, ` +
+              `or imports two classes of that name. It is typed as a generic error.`
+          : `cannot import the type of ${original} (${status}), so it is typed as a generic error. ` +
+              `Import it in the controller's file, or export it from there.`,
+      );
+    }
+
+    return { status, type: type ?? null, className: original };
+  });
 }
 
 /**
