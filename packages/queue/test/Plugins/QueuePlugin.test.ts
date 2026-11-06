@@ -18,9 +18,10 @@ describe('QueuePlugin', () => {
     container.bindInstance(Container, container);
 
     shutdown = new ShutdownRegistry();
+    container.bind(HealthRegistry);
     app = {
       container,
-      health: new HealthRegistry(),
+      health: container.get(HealthRegistry),
       onClose: (hook: () => Promise<void>) => shutdown.register(hook),
     } as unknown as App;
     plugin = container.resolve(QueuePlugin);
@@ -164,11 +165,39 @@ describe('QueuePlugin', () => {
       expect(report.checks['queue:jobs']).toMatchObject({ status: 'down', error: 'ECONNREFUSED 127.0.0.1:6379' });
     });
 
-    it('should report down once the mount is gone', async () => {
+    it('should remove the check with the mount', async () => {
       await plugin.use(app, { strategies: [{ name: 'jobs', strategy: PingStrategy }] });
       await container.get(QueueManager).unmount('jobs');
 
-      expect((await app.health.check()).checks['queue:jobs'].error).toContain('No queue strategy is mounted under "jobs"');
+      expect(app.health.size).toBe(0);
+      expect((await app.health.check()).status).toBe('ok');
+    });
+
+    it('should register a check for a strategy mounted later', async () => {
+      await plugin.use(app);
+      await container.get(QueueManager).mount({ name: 'late', strategy: PingStrategy });
+
+      expect(app.health.names).toEqual(['queue:late']);
+    });
+
+    it('should keep health: false when registered again without the option', async () => {
+      await plugin.use(app, { health: false, strategies: [{ name: 'jobs', strategy: PingStrategy }] });
+      await container.resolve(QueuePlugin).use(app, { strategies: [{ name: 'more', strategy: PingStrategy }] });
+
+      expect(app.health.size).toBe(0);
+    });
+
+    it('should not connect a closed manager again', async () => {
+      await plugin.use(app, { strategies: [{ name: 'jobs', strategy: PingStrategy }] });
+
+      const manager = container.get(QueueManager);
+      const strategy = manager.getStrategy('jobs') as PingStrategy;
+
+      await manager.close();
+      const initialized = strategy.initialized;
+
+      expect((await app.health.check()).checks['queue:jobs'].error).toBe('The queue manager is closed');
+      expect(strategy.initialized).toBe(initialized);
     });
 
     it('should register nothing with health: false', async () => {

@@ -16,6 +16,7 @@ const state = vi.hoisted(() => ({
   runErrorOnce: false,
   offsetsError: null as Error | null,
   disconnectError: null as Error | null,
+  adminConnect: null as null | (() => Promise<void>),
 }));
 
 vi.mock('kafkajs', () => {
@@ -75,7 +76,8 @@ vi.mock('kafkajs', () => {
 
   const admin = () => {
     const instance = {
-      connect: vi.fn(async () => undefined),
+      connect: vi.fn(async () => state.adminConnect?.()),
+      describeCluster: vi.fn(async () => ({ brokers: [], controller: 1, clusterId: 'c' })),
       disconnect: vi.fn(async () => undefined),
       fetchTopicOffsets: vi.fn(async () => {
         if (state.offsetsError) {
@@ -149,6 +151,7 @@ describe('KafkaStrategy', () => {
     state.runErrorOnce = false;
     state.offsetsError = null;
     state.disconnectError = null;
+    state.adminConnect = null;
 
     container = new Container();
     logger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() } as unknown as Logger;
@@ -172,6 +175,43 @@ describe('KafkaStrategy', () => {
       progress: false,
       stats: true,
       peek: false,
+    });
+  });
+
+  describe('health', () => {
+    it('should ping the cluster over one admin client', async () => {
+      await Promise.all([strategy.ping(), strategy.ping(), strategy.stats('emails')]);
+
+      expect(state.admins).toHaveLength(1);
+      expect(state.admins[0].describeCluster).toHaveBeenCalledTimes(2);
+    });
+
+    it('should try a failed admin connect again, without leaking the failed client', async () => {
+      state.adminConnect = async () => {
+        throw new Error('ECONNREFUSED');
+      };
+
+      await expect(strategy.ping()).rejects.toThrow('ECONNREFUSED');
+
+      state.adminConnect = null;
+      await strategy.ping();
+
+      expect(state.admins).toHaveLength(2);
+      expect(state.admins[0].disconnect).toHaveBeenCalledOnce();
+      expect(state.admins[1].disconnect).not.toHaveBeenCalled();
+    });
+
+    it('should disconnect an admin that connects after close', async () => {
+      const gate = Promise.withResolvers<void>();
+      state.adminConnect = () => gate.promise;
+
+      const pinging = strategy.ping();
+
+      await strategy.close();
+      gate.resolve();
+
+      await expect(pinging).rejects.toThrow('closed');
+      expect(state.admins[0].disconnect).toHaveBeenCalled();
     });
   });
 

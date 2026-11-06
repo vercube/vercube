@@ -139,13 +139,23 @@ export class S3Storage implements Storage<S3BaseOptions> {
   }
 
   /**
-   * Asks S3 whether the bucket exists and is readable, for the readiness probe.
+   * Asks S3 about the bucket, for the readiness probe. A 403 still counts as
+   * reachable: `HeadBucket` needs `s3:ListBucket`, which a least-privilege
+   * policy granting only object access leaves out, while storage works.
    *
    * @returns {Promise<void>} Resolves once S3 answered
-   * @throws {Error} When the bucket cannot be reached
+   * @throws {Error} When S3 cannot be reached, the bucket does not exist, or S3 fails
    */
   public async ping(): Promise<void> {
-    await this.s3.send(new HeadBucketCommand({ Bucket: this.bucket }));
+    try {
+      await this.s3.send(new HeadBucketCommand({ Bucket: this.bucket }));
+    } catch (error) {
+      if ((error as { $metadata?: { httpStatusCode?: number } })?.$metadata?.httpStatusCode === 403) {
+        return;
+      }
+
+      throw error;
+    }
   }
 
   /**
