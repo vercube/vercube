@@ -229,6 +229,20 @@ describe('typegen from the built application', () => {
     await expect(inspect(app(), ['routes'], undefined, 300)).rejects.toThrow('did not finish within 0.3s');
   });
 
+  it('returns as soon as the file is written, even when setup left a handle open', async () => {
+    fakeEntry(`const sections = { routes: { data: [] } };`);
+    writeFileSync(
+      join(root, 'dist/index.mjs'),
+      `${readFileSync(join(root, 'dist/index.mjs'), 'utf8')}process.send({ type: 'vercube:inspected' });\nsetInterval(() => {}, 1000);\n`,
+    );
+
+    const { inspect } = await import('../src/Typegen/Inspect');
+    const started = Date.now();
+
+    expect(await inspect(app(), ['routes'], undefined, 5000)).toEqual({ routes: { data: [] } });
+    expect(Date.now() - started).toBeLessThan(4000);
+  });
+
   it('stays off with typegen: false, even when forced', async () => {
     expect(await typegen(app({ typegen: false }), { routes, force: true })).toBeNull();
   });

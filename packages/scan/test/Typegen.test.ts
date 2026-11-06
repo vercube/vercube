@@ -68,6 +68,7 @@ describe('findControllers', () => {
     );
     const b = write('src/B.ts', `import * as core from '@vercube/core';\n@core.Controller('/b') export class BController {}`);
     const c = write('src/C.ts', `@Controller ('/c') export class CController {}`);
+    const e = write('src/E.ts', `import { Controller as Ctl } from '@vercube/core';\n@Ctl('/e') export class EController {}`);
 
     write('src/D.ts', `import * as other from 'x';\n@other.Injectable() export class DService {}`);
 
@@ -75,6 +76,7 @@ describe('findControllers', () => {
       AController: { file: a, exportName: 'AController' },
       BController: { file: b, exportName: 'BController' },
       CController: { file: c, exportName: 'CController' },
+      EController: { file: e, exportName: 'EController' },
     });
   });
 
@@ -264,6 +266,30 @@ describe('generateRouteTypes', () => {
     expect(code).toContain("'GET /d': RouteDef<VercubeRoutes_, 'd'>;");
   });
 
+  it('does not guess which class a renamed controller is when both names have routes', () => {
+    const { code, skipped } = generateRouteTypes({
+      routes: [
+        { method: 'GET', path: '/a', controller: 'UserController', handler: 'a', args: [] },
+        { method: 'GET', path: '/b', controller: 'UserController$1', handler: 'b', args: [] },
+      ],
+      controllers: { UserController: controllers.UserController },
+      outFile: out,
+    });
+
+    expect(skipped).toEqual([{ id: 'GET /b', reason: 'no source file found for UserController$1' }]);
+    expect(code).toContain("'GET /a': RouteDef<UserController, 'a'>;");
+  });
+
+  it('keeps a dot-named directory relative', () => {
+    const { code } = generateRouteTypes({
+      routes: [{ method: 'GET', path: '/a', controller: 'A', handler: 'a', args: [] }],
+      controllers: { A: { file: '/app/.vercube/.hidden/A.ts', exportName: 'A' } },
+      outFile: out,
+    });
+
+    expect(code).toContain("import type { A } from './.hidden/A.js';");
+  });
+
   it('imports a re-exported controller under its class name', () => {
     const { code } = generateRouteTypes({
       routes: [{ method: 'GET', path: '/a', controller: 'AController', handler: 'a', args: [] }],
@@ -331,5 +357,14 @@ describe('resolveControllers', () => {
     // the scan alone would find AController twice
     expect(found.AController).toEqual({ file: join(root, 'src/Listed.ts'), exportName: 'AController' });
     expect(found.BController).toEqual({ file: bound, exportName: 'BController' });
+  });
+
+  it('skips a listed file that is gone and finds the controller where it moved', async () => {
+    const moved = write('src/Moved.ts', `@Controller('/a') export class AController {}`);
+    const routes: TypegenRoute[] = [{ method: 'GET', path: '/a', controller: 'AController', handler: 'a', args: [] }];
+
+    const found = await resolveControllers(routes, root, { root, controllers: [{ name: 'AController', path: 'src/Gone.ts' }] });
+
+    expect(found.AController).toEqual({ file: moved, exportName: 'AController' });
   });
 });

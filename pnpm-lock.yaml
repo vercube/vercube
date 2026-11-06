@@ -356,6 +356,27 @@ importers:
         specifier: workspace:*
         version: link:../../packages/logger
 
+  examples/client:
+    dependencies:
+      '@oxc-project/runtime':
+        specifier: 'catalog:'
+        version: 0.157.0
+      '@vercube/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@vercube/client':
+        specifier: workspace:*
+        version: link:../../packages/client
+      '@vercube/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@vercube/di':
+        specifier: workspace:*
+        version: link:../../packages/di
+      '@vercube/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
+
   examples/custom-plugin:
     dependencies:
       '@oxc-project/runtime':

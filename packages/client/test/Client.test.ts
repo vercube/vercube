@@ -245,4 +245,48 @@ describe('createClient', () => {
 
     await expect(pending).rejects.toMatchObject({ name: 'AbortError' });
   });
+
+  it('lets FormData and URLSearchParams bodies set their own content type over a JSON default', async () => {
+    const seen: Request[] = [];
+    const api = createClient({
+      baseURL: 'http://test',
+      headers: { 'content-type': 'application/json' },
+      fetch: (request: Request) => (seen.push(request), new Response(null, { status: 204 })),
+    });
+    const form = new FormData();
+
+    form.append('a', '1');
+    await api.post('/raw', { body: form });
+    await api.post('/raw', { body: new URLSearchParams({ a: '1' }) });
+    await api.post('/raw', { body: new URLSearchParams({ a: '1' }), headers: { 'content-type': 'text/plain' } });
+
+    expect(seen[0].headers.get('content-type')).toMatch(/^multipart\/form-data; boundary=/);
+    expect(seen[1].headers.get('content-type')).toMatch(/^application\/x-www-form-urlencoded/);
+    expect(seen[2].headers.get('content-type')).toBe('text/plain');
+  });
+
+  it('keeps the body readable after an onResponse hook reads it', async () => {
+    const logged: string[] = [];
+    const api = createClient<TestRoutes>({
+      baseURL: 'http://test',
+      fetch: () => Response.json({ message: 'nope' }, { status: 404 }),
+      onResponse: async ({ response }) => void logged.push(await response.text()),
+    });
+    const error = (await api.get('/users/fail').catch((error_: unknown) => error_)) as VercubeClientError;
+
+    expect(logged).toEqual(['{"message":"nope"}']);
+    expect(error).toBeInstanceOf(VercubeClientError);
+    expect(error.status).toBe(404);
+    expect(error.body).toEqual({ message: 'nope' });
+  });
+
+  it('leaves colons in a query string or fragment alone', async () => {
+    const seen: string[] = [];
+    const api = createClient({ baseURL: 'http://test', fetch: (r: Request) => (seen.push(r.url), Response.json({})) });
+
+    await api.get('/search?at=12:30');
+    await api.get('/users/:id?at=12:30#t:1', { params: { id: '7' } });
+
+    expect(seen).toEqual(['http://test/search?at=12:30', 'http://test/users/7?at=12:30#t:1']);
+  });
 });
