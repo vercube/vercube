@@ -10,6 +10,14 @@ A example showcasing how to use Vercube with Azure Functions. This template demo
 
 ## <a name="getting-started">🚀 Quick Start</a>
 
+The example runs on the [Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local) (`func`). Install them globally first:
+
+```sh
+$ npm install -g azure-functions-core-tools@4
+```
+
+Then start the app:
+
 ```sh
 $ pnpm i
 $ pnpm start
