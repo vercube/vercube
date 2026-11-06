@@ -70,7 +70,7 @@ export function resolveTelemetryOptions(
   // Kubernetes probes every few seconds on every replica: traced, they would
   // bury real traffic in traces and the devtools Requests panel.
   const probes = healthExclusions(config);
-  const extra = probes ? [...contributions, { exclude: probes }] : contributions;
+  const extra = probes ? [...contributions, { excludeExact: probes }] : contributions;
 
   if (extra.length === 0) {
     return base;
@@ -106,8 +106,7 @@ function healthExclusions(config: ConfigTypes.Config): string[] | null {
       return null;
     }
 
-    // exclusion matches by prefix, and a probe on `/` would hide everything
-    return resolveHealthPaths(config).filter((path) => path !== '/');
+    return resolveHealthPaths(config);
   } catch {
     return null;
   }

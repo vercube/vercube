@@ -101,6 +101,14 @@ export class Router {
   private fRevision: number = 0;
 
   /**
+   * Static GET paths only one owner may register, such as the health probes,
+   * with the test that tells the owner's handlers apart.
+   * @private
+   */
+  private fReserved: Map<string, { owner: string; hint: string; owns: (handler: RouterTypes.RouterHandler) => boolean }> =
+    new Map();
+
+  /**
    * All routes registered in this router, in registration order.
    */
   public get routes(): readonly RouterTypes.Route[] {
@@ -128,6 +136,16 @@ export class Router {
     const method = route.method.toUpperCase();
 
     assertParamsInPath(route);
+
+    if (this.fReserved.size > 0 && (method === 'GET' || method === 'HEAD')) {
+      const reserved = this.fReserved.get(normalizePath(route.path));
+
+      if (reserved && !reserved.owns(route.handler)) {
+        const handler = `${route.handler.controller ?? 'Controller'}.${route.handler.propertyName}`;
+
+        throw new Error(`${method} ${route.path} (${handler}) collides with ${reserved.owner}. ${reserved.hint}`);
+      }
+    }
 
     // Resolved once at registration time so nothing on the request path has to
     // build a span name or look the route template back up. `@Get` registers
@@ -159,6 +177,37 @@ export class Router {
   }
 
   /**
+   * Reserves a static path for GET and HEAD: registering a route there fails
+   * unless `owns` accepts its handler. Without it the router would keep the
+   * later of two registrations and make the other unreachable without a word.
+   * Cleared by {@link Router.initialize}.
+   *
+   * @param {string} path - The path
+   * @param {object} reservation - Who holds the path
+   * @param {string} reservation.owner - What holds it, for the error message
+   * @param {string} reservation.hint - How to resolve a collision, for the error message
+   * @param {(handler: RouterTypes.RouterHandler) => boolean} reservation.owns - Whether a handler belongs to the owner
+   * @returns {void}
+   * @throws {Error} When a route of another owner is already registered there
+   */
+  public reserve(
+    path: string,
+    { owner, hint, owns }: { owner: string; hint: string; owns: (handler: RouterTypes.RouterHandler) => boolean },
+  ): void {
+    const key = normalizePath(path);
+    const taken = this.fRoutes.find(
+      (route) =>
+        ['GET', 'HEAD'].includes(route.method.toUpperCase()) && normalizePath(route.path) === key && !owns(route.handler),
+    );
+
+    if (taken) {
+      throw new Error(`${taken.method} ${taken.path} collides with ${owner}. ${hint}`);
+    }
+
+    this.fReserved.set(key, { owner, hint, owns });
+  }
+
+  /**
    * Initializes the router and triggers `RouterBeforeInitHook`.
    *
    * The router is usable as soon as this returns; the promise settles once the
@@ -176,6 +225,7 @@ export class Router {
     this.fDynamicContext = createRouter<RouterTypes.RouterHandler>();
     this.fRoutes = [];
     this.fStaticRoutes.clear();
+    this.fReserved.clear();
     this.fRevision++;
 
     return before.then(() => undefined);

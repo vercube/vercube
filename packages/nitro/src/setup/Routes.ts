@@ -1,4 +1,4 @@
-import { resolveHealthPaths } from '@vercube/core';
+import { nitroHealthPaths } from '../_internal/health';
 import { scanFiles, type FileInfo } from '../_internal/scan';
 import { IMPORT_SOURCE, transformRoute, type RouteInfo } from '../build/Routes';
 import type { PluginOptions } from '../plugin/VercubePlugin';
@@ -27,7 +27,7 @@ export async function setupRoutes(nitro: Nitro, options?: PluginOptions): Promis
       lazy: true,
     })),
     // the probes are not files Nitro could scan, they come from the option
-    ...resolveHealthPaths({ health: options?.health }).flatMap((route) =>
+    ...nitroHealthPaths(options?.health).flatMap((route) =>
       (['GET', 'HEAD'] as HTTPMethod[]).map((method) => ({
         route,
         method,
