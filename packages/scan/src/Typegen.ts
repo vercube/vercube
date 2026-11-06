@@ -289,8 +289,6 @@ export interface RouteTypesWriterOptions {
 export interface RouteTypesWrite {
   /** Absolute path of the route map. */
   file: string;
-  /** False when the route table had not changed, so nothing was generated. */
-  generated: boolean;
   /** False when the content was already up to date. */
   written: boolean;
   /** Number of route registrations read. */
@@ -339,32 +337,31 @@ export function createRouteTypesWriter(
   options: RouteTypesWriterOptions,
 ): (routes: TypegenRoute[], discovery?: TypegenDiscovery | null) => Promise<RouteTypesWrite> {
   const { root, outFile, logger } = options;
-  let key: string | undefined;
-  let files: string[] = [];
+  let warned: string | undefined;
 
+  // Controllers are looked up on every report rather than cached by route
+  // table: a controller can move, gain an export or stop being ambiguous
+  // without any route changing, and the map must follow. The file is only
+  // written when its content changes, and also when it was deleted.
   return async (routes, discovery) => {
-    const next = routesKey(routes);
-
-    if (next === key && files.every((file) => existsSync(file))) {
-      return { file: outFile, generated: false, written: false, routes: routes.length, skipped: [], files };
-    }
-
     const controllers = await resolveControllers(routes, root, discovery);
     const result = generateRouteTypes({ routes, controllers, outFile });
     const written = writeRouteTypes(outFile, result.code);
+    const skipped = JSON.stringify(result.skipped);
 
-    for (const { id, reason } of result.skipped) {
-      logger?.warn(`Skipped ${id}: ${reason}`);
+    // the same warnings on every save would bury everything else
+    if (skipped !== warned) {
+      for (const { id, reason } of result.skipped) {
+        logger?.warn(`Skipped ${id}: ${reason}`);
+      }
+      warned = skipped;
     }
 
     if (written) {
       logger?.success?.(`Route types written to ${outFile}`);
     }
 
-    key = next;
-    files = result.files;
-
-    return { file: outFile, generated: true, written, routes: routes.length, skipped: result.skipped, files };
+    return { file: outFile, written, routes: routes.length, skipped: result.skipped, files: result.files };
   };
 }
 
@@ -397,6 +394,10 @@ export async function inspectEntry(
         cwd,
         env: {
           ...process.env,
+          // an entry that only calls `listen()` when it should listen (an app
+          // that serves a frontend, or one built on a serverless platform)
+          // must still reach it, where core stops before binding the port
+          VERCUBE_LISTEN: '1',
           VERCUBE_INSPECT: sections.length > 0 ? sections.join(',') : '*',
           VERCUBE_INSPECT_OUT: output,
         },
@@ -428,23 +429,6 @@ export async function inspectEntry(
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }
-}
-
-/**
- * @param routes - The routes section
- * @returns Everything about it that ends up in the route map
- */
-function routesKey(routes: TypegenRoute[]): string {
-  return JSON.stringify(
-    routes.map((route) => [
-      route.method,
-      route.path,
-      route.controller,
-      route.handler,
-      route.sse,
-      route.args.map((arg) => [arg.idx, arg.type, arg.name]),
-    ]),
-  );
 }
 
 /**

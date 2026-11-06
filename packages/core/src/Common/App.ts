@@ -313,20 +313,32 @@ export class App {
 
   /**
    * Sends the `routes` and `discovery` sections to the parent process, now
-   * and whenever the routes section is touched.
+   * and whenever either section is touched. The route map is a development
+   * aid, so a section that fails to describe itself is logged and the server
+   * keeps running.
    *
    * @returns {Promise<void>} Resolves once the first report is sent
    */
   private async reportRoutes(): Promise<void> {
     const registry = this.container.get(IntrospectionRegistry);
     const send = async (): Promise<void> => {
-      const [routes, discovery] = await Promise.all([registry.describe('routes'), registry.describe('discovery')]);
+      try {
+        const [routes, discovery] = await Promise.all([registry.describe('routes'), registry.describe('discovery')]);
 
-      process.send?.({ type: 'vercube:routes', routes: routes?.data ?? [], discovery: discovery?.data ?? null });
+        // without the section there is nothing to say; an empty map would
+        // replace a good one
+        if (!Array.isArray(routes?.data)) {
+          return;
+        }
+
+        process.send?.({ type: 'vercube:routes', routes: routes.data, discovery: discovery?.data ?? null });
+      } catch (error) {
+        this.container.getOptional(Logger)?.warn('Vercube/App::Route types not reported', error);
+      }
     };
 
     registry.onInvalidate((id) => {
-      if (id === 'routes') {
+      if (id === 'routes' || id === 'discovery') {
         void send();
       }
     });
