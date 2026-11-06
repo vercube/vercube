@@ -125,8 +125,9 @@ export function generateRouteTypes(options: TypegenOptions): TypegenResult {
 
   for (const route of routes) {
     // `@Get('/')` under `@Controller('/users')` registers `/users/`, which the
-    // router also serves as `/users`; the shorter form is the one people write
-    const path = route.path.length > 1 ? route.path.replace(/\/+$/, '') : route.path;
+    // router also serves as `/users`; the shorter form is the one people write.
+    // A path of only slashes (`//`) is the root.
+    const path = route.path.replace(/(.)\/+$/, '$1');
     const id = `${route.method.toUpperCase()} ${path}`;
 
     if (entries.has(id)) {
