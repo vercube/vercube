@@ -1,6 +1,7 @@
 import {
   DeleteObjectCommand,
   GetObjectCommand,
+  HeadBucketCommand,
   HeadObjectCommand,
   ListObjectsV2Command,
   PutObjectCommand,
@@ -135,6 +136,16 @@ export class S3Storage implements Storage<S3BaseOptions> {
     this.s3 = new S3Client(s3Options);
     this.bucket = bucket;
     this.logger = logger;
+  }
+
+  /**
+   * Asks S3 whether the bucket exists and is readable, for the readiness probe.
+   *
+   * @returns {Promise<void>} Resolves once S3 answered
+   * @throws {Error} When the bucket cannot be reached
+   */
+  public async ping(): Promise<void> {
+    await this.s3.send(new HeadBucketCommand({ Bucket: this.bucket }));
   }
 
   /**

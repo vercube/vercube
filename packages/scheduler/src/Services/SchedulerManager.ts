@@ -1971,6 +1971,20 @@ export class SchedulerManager {
   }
 
   /**
+   * Checks that the backend of the mounted store answers, connecting it first
+   * when nothing has used it yet. Resolves without a round trip for a store
+   * that has no backend.
+   *
+   * @returns {Promise<void>} Resolves once the backend answered
+   * @throws {SchedulerError} When no store is mounted, or its backend cannot be reached
+   */
+  public async ping(): Promise<void> {
+    const store = await this.readyStore('ping');
+
+    await store.ping?.();
+  }
+
+  /**
    * Initializes the store once, reusing the same promise for every later call.
    *
    * @param {SchedulerTypes.MountedStore} mounted - Store to initialize

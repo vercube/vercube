@@ -46,6 +46,16 @@ describe('queue health against an unreachable broker', () => {
     expect(result).toMatchObject({ status: 'down', error: 'Timed out after 500ms' });
   });
 
+  it.runIf(process.env.REDIS_URL)('should report BullMQ up when Redis answers', async () => {
+    const url = new URL(process.env.REDIS_URL!);
+    const result = await ping({
+      strategy: BullMQStrategy,
+      initOptions: { connection: { host: url.hostname, port: Number(url.port || 6379), maxRetriesPerRequest: null } },
+    });
+
+    expect(result.status).toBe('ok');
+  });
+
   it('should report RabbitMQ down', async () => {
     const result = await ping({ strategy: RabbitMQStrategy, initOptions: { url: `amqp://${UNREACHABLE}`, recovery: false } });
 

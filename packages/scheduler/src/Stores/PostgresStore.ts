@@ -298,6 +298,15 @@ export class PostgresStore extends SchedulerStore<PostgresStoreOptions | undefin
   }
 
   /** @inheritdoc */
+  public override async ping(): Promise<void> {
+    if (!this.fPool) {
+      throw new Error('The Postgres store is not initialized');
+    }
+
+    await this.fPool.query('SELECT 1');
+  }
+
+  /** @inheritdoc */
   public async close(): Promise<void> {
     if (this.fHousekeeping) {
       clearInterval(this.fHousekeeping);

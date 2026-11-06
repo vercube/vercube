@@ -4,7 +4,7 @@ import { EvlogMiddleware } from '../Middleware/EvlogMiddleware';
 import { RuntimeConfig } from '../Services/Config/RuntimeConfig';
 import { DefaultErrorHandlerProvider } from '../Services/ErrorHandler/DefaultErrorHandlerProvider';
 import { ErrorHandlerProvider } from '../Services/ErrorHandler/ErrorHandlerProvider';
-import { HealthRegistry } from '../Services/Health/HealthRegistry';
+import { HEALTH_REGISTRY_KEY, HealthRegistry } from '../Services/Health/HealthRegistry';
 import { HealthRoutes } from '../Services/Health/HealthRoutes';
 import { HooksService } from '../Services/Hooks/HooksService';
 import { HttpServer } from '../Services/HttpServer/HttpServer';
@@ -64,6 +64,7 @@ export function createContainer(config: ConfigTypes.Config): Container {
   // routes are on, and nothing runs until something asks for a report.
   container.bind(AppLifecycle);
   container.bind(HealthRegistry);
+  container.bindInstance(HEALTH_REGISTRY_KEY, container.get(HealthRegistry));
   container.bind(HealthRoutes);
 
   // Always bound, always empty until `@vercube/telemetry` installs itself.
