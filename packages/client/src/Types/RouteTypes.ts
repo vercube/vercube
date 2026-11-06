@@ -86,8 +86,11 @@ export type Jsonify<T> =
         : T extends Function
           ? never
           : T extends readonly unknown[]
-            ? { [K in keyof T]: Jsonify<T[K]> }
+            ? { [K in keyof T]: JsonItem<T[K]> }
             : { [K in keyof T as T[K] extends Function | symbol ? never : K]: Jsonify<T[K]> };
+
+/** An array element: `JSON.stringify` writes `null` where an object would drop the key. */
+type JsonItem<T> = IsAny<T> extends true ? any : T extends undefined | void | Function | symbol ? null : Jsonify<T>;
 
 /** What the handler returned, after `await`, without the error `Response`s. */
 type Returned<R> = Exclude<Awaited<R>, Response>;

@@ -99,4 +99,37 @@ describe('parseSse', () => {
 
     expect(await collect(await api.get('/events'))).toEqual([{ data: 1, event: undefined, id: undefined, retry: undefined }]);
   });
+
+  it('delivers an event closed by a CR right at the end of the stream', async () => {
+    expect((await collect(parseSse(stream(['data: 1\r\r'])))).map((e) => e.data)).toEqual([1]);
+  });
+
+  it('stops between events of one chunk once aborted', async () => {
+    const controller = new AbortController();
+    const events = parseSse(stream(['data: 1\n\ndata: 2\n\n']), controller.signal);
+
+    expect((await events.next()).value).toMatchObject({ data: 1 });
+    controller.abort();
+    await expect(events.next()).rejects.toMatchObject({ name: 'AbortError' });
+  });
+
+  it('cancels the body on return() before the first event and while a read is pending', async () => {
+    const cancelled: string[] = [];
+    const idle = (name: string) =>
+      new ReadableStream<Uint8Array>({
+        cancel() {
+          cancelled.push(name);
+        },
+      });
+
+    await parseSse(idle('unstarted')).return();
+
+    const pending = parseSse(idle('pending'));
+    const next = pending.next();
+
+    await pending.return();
+    await expect(next).resolves.toMatchObject({ done: true });
+
+    expect(cancelled).toEqual(['unstarted', 'pending']);
+  });
 });

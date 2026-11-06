@@ -3,6 +3,7 @@ reviews:
   auto_review:
     # the default branch is always reviewed, these add stacked pull requests on top of it
     base_branches:
+      - '1.6'
       - feat/schedule
       - feat/scheduler-.*
       - feat/test-boot

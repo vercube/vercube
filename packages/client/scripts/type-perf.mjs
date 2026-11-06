@@ -19,10 +19,13 @@ const controllers = [];
 const entries = [];
 const calls = [];
 
-for (let c = 0; c < total / 10; c++) {
+const controllerCount = Math.ceil(total / 10);
+
+for (let c = 0; c < controllerCount; c++) {
   const methods = [];
 
-  for (let m = 0; m < 10; m++) {
+  // the last controller holds what is left when `total` is not a multiple of ten
+  for (let m = 0; m < Math.min(10, total - c * 10); m++) {
     const n = c * 10 + m;
 
     switch (m % 5) {
@@ -75,7 +78,7 @@ writeFileSync(
 );
 writeFileSync(
   join(dir, 'routes.ts'),
-  `import type { RouteDef } from '@vercube/client';\nimport type { ${Array.from({ length: total / 10 }, (_, c) => `C${c}`).join(', ')} } from './controllers';\n\nexport interface VercubeRoutes {\n${entries.join('\n')}\n}\n`,
+  `import type { RouteDef } from '@vercube/client';\nimport type { ${Array.from({ length: controllerCount }, (_, c) => `C${c}`).join(', ')} } from './controllers';\n\nexport interface VercubeRoutes {\n${entries.join('\n')}\n}\n`,
 );
 writeFileSync(
   join(dir, 'calls.ts'),
@@ -91,7 +94,9 @@ function check(files) {
     join(dir, 'tsconfig.json'),
     JSON.stringify({
       extends: join(root, 'tsconfig.json'),
-      compilerOptions: { rootDir: '/', noEmit: true },
+      compilerOptions: { rootDir: '/', noEmit: true, types: ['node'] },
+      // the root config's `include` would add the whole repository to both runs
+      include: [],
       files: files.map((f) => join(dir, f)),
     }),
   );
