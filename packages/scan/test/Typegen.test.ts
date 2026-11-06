@@ -606,4 +606,30 @@ describe('route errors', () => {
 
     expect((await generate(routes)).code).toBe((await generate([...routes].reverse())).code);
   });
+
+  it('reads `{ default as X }` as a default import, and never swaps an unresolved import for the core class', async () => {
+    write('src/Gone.ts', `export default class GoneError {}`);
+    write(
+      'src/UserController.ts',
+      [
+        `import { default as Gone } from './Gone';`,
+        `import { NotFoundError } from './missing';`,
+        `@Controller('/users') export class UserController {}`,
+      ].join('\n'),
+    );
+
+    const { code, warnings } = await generate([
+      route({
+        throws: [
+          { name: 'NotFoundError', status: 404 },
+          { name: 'GoneError', status: 410 },
+        ],
+      }),
+    ]);
+
+    expect(code).toContain(`import type GoneError from '../src/Gone.js';`);
+    expect(code).toContain(`throws: { 404: { name: string; message?: string }; 410: GoneError }`);
+    expect(code).not.toContain('@vercube/core');
+    expect(warnings).toHaveLength(1);
+  });
 });
