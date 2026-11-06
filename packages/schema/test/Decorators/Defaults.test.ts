@@ -5,13 +5,16 @@ import {
   createApp,
   Get,
   GlobalMiddlewareRegistry,
+  HttpError,
   Middleware,
   MultipartFormData,
+  NotFoundError,
   Post,
   Redirect,
   SetHeader,
   Sse,
   Status,
+  Throws,
 } from '@vercube/core';
 import { describe, expect, it } from 'vitest';
 import { Schema, SchemaPlugin } from '../../src';
@@ -24,8 +27,34 @@ class FakeAuth extends BaseMiddleware {
 }
 Object.defineProperty(FakeAuth, Symbol.for('vercube.auth.middleware'), { value: true });
 
+class ConflictError extends HttpError {
+  public static readonly status: number = 409;
+}
+
 @Controller('/items')
 class ItemsController {
+  @Get('/:id')
+  @Throws(NotFoundError)
+  @Schema({})
+  public get() {
+    return {};
+  }
+
+  @Get('/secret/:id')
+  @Middleware(FakeAuth)
+  @Throws(NotFoundError, ConflictError)
+  @Schema({})
+  public guarded() {
+    return {};
+  }
+
+  @Get('/handwritten')
+  @Throws(NotFoundError)
+  @Schema({ responses: { 200: { description: 'Only this' } } })
+  public handwritten() {
+    return {};
+  }
+
   @Post('/')
   @Status(201)
   @SetHeader('Cache-Control', 'no-store')
@@ -91,7 +120,7 @@ describe('defaults derived from the route', () => {
   it('should document the status and headers the route declares', async () => {
     const schema = await generate();
 
-    expect(schema.paths['/items/']?.post?.responses).toEqual({
+    expect(schema.paths['/items/']?.post?.responses).toMatchObject({
       201: { description: 'Created', headers: { 'Cache-Control': { schema: { type: 'string', example: 'no-store' } } } },
     });
     expect(schema.paths['/items/old']?.get?.responses).toEqual({
@@ -158,5 +187,52 @@ describe('defaults derived from the route', () => {
     });
     // the schema endpoints themselves stay out
     expect(Object.keys(schema.paths).some((path) => path.startsWith('/_schema'))).toBe(false);
+  });
+});
+
+describe('error responses', () => {
+  it('should document declared errors with the error body', async () => {
+    const schema = await generate();
+
+    expect(schema.paths['/items/{id}']?.get?.responses).toEqual({
+      200: { description: 'OK' },
+      404: {
+        description: 'Not Found (NotFoundError)',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              required: ['status', 'name'],
+              properties: { status: { type: 'integer', enum: [404] }, name: { type: 'string' }, message: { type: 'string' } },
+            },
+          },
+        },
+      },
+    });
+  });
+
+  it('should add the 400 of a body, with its validation issues, and the 401 and 403 of a secured route', async () => {
+    const schema = await generate();
+    const created = schema.paths['/items/']?.post?.responses as any;
+
+    expect(Object.keys(created)).toEqual(['201', '400']);
+    expect(created[400].content['application/json'].schema.properties.errors).toMatchObject({ type: 'array' });
+    expect(Object.keys(schema.paths['/items/secret/{id}']?.get?.responses ?? {})).toEqual(['200', '401', '403', '404', '409']);
+  });
+
+  it('should keep responses written in @Schema as they are', async () => {
+    const schema = await generate();
+
+    expect(schema.paths['/items/handwritten']?.get?.responses).toEqual({ 200: { description: 'Only this' } });
+  });
+
+  it('should match the snapshot', async () => {
+    const schema = await generate();
+
+    expect({
+      '/items/{id}': schema.paths['/items/{id}'],
+      '/items/secret/{id}': schema.paths['/items/secret/{id}'],
+      '/items/': schema.paths['/items/'],
+    }).toMatchSnapshot();
   });
 });

@@ -1,5 +1,6 @@
+import { BadRequestError } from '@vercube/core';
 import type { RouteConfig } from '@asteasolutions/zod-to-openapi';
-import type { DeepPartial, MetadataTypes } from '@vercube/core';
+import type { DeepPartial, MetadataTypes, RouteError } from '@vercube/core';
 
 /** A security requirement: scheme names and their scopes. */
 export type SecurityRequirement = Record<string, string[]>;
@@ -18,6 +19,8 @@ export interface RouteContext {
   security: SecurityRequirement[];
   /** Whether the document declares a top-level security requirement. */
   globalSecurity: boolean;
+  /** Errors the route answers with: declared with `@Throws()`, and implicit ones. */
+  errors?: RouteError[];
 }
 
 /** Descriptions of the statuses a route usually answers with. */
@@ -31,14 +34,43 @@ const STATUS_DESCRIPTIONS: Readonly<Record<number, string>> = {
   303: 'See Other',
   307: 'Temporary Redirect',
   308: 'Permanent Redirect',
+  400: 'Bad Request',
+  401: 'Unauthorized',
+  402: 'Payment Required',
+  403: 'Forbidden',
+  404: 'Not Found',
+  405: 'Method Not Allowed',
+  406: 'Not Acceptable',
+  409: 'Conflict',
+  410: 'Gone',
+  412: 'Precondition Failed',
+  413: 'Payload Too Large',
+  415: 'Unsupported Media Type',
+  422: 'Unprocessable Content',
+  429: 'Too Many Requests',
+  500: 'Internal Server Error',
+  502: 'Bad Gateway',
+  503: 'Service Unavailable',
 };
+
+/** A validation issue, as `BadRequestError.errors` carries it (Standard Schema). */
+const ISSUE_SCHEMA = {
+  type: 'object',
+  required: ['message'],
+  properties: {
+    message: { type: 'string' },
+    path: { type: 'array', items: {} },
+  },
+} as const;
 
 /**
  * Fills in what `@Schema` leaves out from what the framework already knows
  * about the route:
  *
  * - `operationId` as `Controller_method`, and the controller name as its tag
- * - `responses` from `@Status`, `@Redirect`, `@SetHeader` and `@Sse`
+ * - `responses` from `@Status`, `@Redirect`, `@SetHeader` and `@Sse`, plus
+ *   one per error status: declared with `@Throws()`, and the 400, 401 and 403
+ *   the framework answers with itself
  * - `security` from an authentication middleware such as `@Auth()`, and `[]`
  *   for a public route when the document requires security globally
  *
@@ -60,7 +92,10 @@ export function SchemaDefaultsResolver(
   schema.tags = (options.tags ?? [context.controller]) as string[];
 
   if (!options.responses) {
-    schema.responses = defaultResponses(metadata) as DeepPartial<RouteConfig['responses']>;
+    schema.responses = {
+      ...defaultResponses(metadata),
+      ...errorResponses(context.errors ?? []),
+    } as DeepPartial<RouteConfig['responses']>;
   }
 
   if (options.security === undefined) {
@@ -100,4 +135,44 @@ function defaultResponses(metadata: MetadataTypes.Method): RouteConfig['response
       ...(meta.sse ? { content: { 'text/event-stream': { schema: { type: 'string' } } } } : {}),
     },
   } as RouteConfig['responses'];
+}
+
+/**
+ * One response per error status. The body is what Vercube answers an
+ * `HttpError` with: its own fields, at least `status` and `name`, `message`
+ * when it has one, and the validation issues of a 400.
+ *
+ * @param errors - The route's errors
+ * @returns Responses by status
+ */
+function errorResponses(errors: RouteError[]): RouteConfig['responses'] {
+  const byStatus = Map.groupBy(errors, (error) => error.status);
+  const responses: RouteConfig['responses'] = {};
+
+  for (const [status, entries] of byStatus) {
+    const names = entries.map((entry) => entry.name);
+    const withIssues = entries.some(
+      (entry) => entry.error === BadRequestError || entry.error.prototype instanceof BadRequestError,
+    );
+
+    responses[status] = {
+      description: `${STATUS_DESCRIPTIONS[status] ?? 'Error'} (${names.join(', ')})`,
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            required: ['status', 'name'],
+            properties: {
+              status: { type: 'integer', enum: [status] },
+              name: { type: 'string' },
+              message: { type: 'string' },
+              ...(withIssues ? { errors: { type: 'array', items: ISSUE_SCHEMA } } : {}),
+            },
+          },
+        },
+      },
+    } as unknown as RouteConfig['responses'][number];
+  }
+
+  return responses;
 }
