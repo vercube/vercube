@@ -1,8 +1,10 @@
+import { createClient } from '@vercube/client';
 import { TestingError } from '../Errors/TestingError';
 import { CookieJar } from '../Request/CookieJar';
 import { TestClient } from './TestClient';
 import type { TestLogger } from '../Services/TestLogger';
 import type { TestingTypes } from '../Types/TestingTypes';
+import type { AnyRoute, Client } from '@vercube/client';
 import type { App } from '@vercube/core';
 import type { Container, IOC } from '@vercube/di';
 
@@ -23,8 +25,10 @@ export type Impersonator = (request: Request, user: unknown) => Request | void;
  * const res = await app.get('/users/1').expect(200);
  * expect(await res.json()).toEqual({ id: '1' });
  * ```
+ *
+ * Pass the generated route map to `createTestApp` for a typed `app.client`.
  */
-export class TestApp extends TestClient {
+export class TestApp<R = Record<string, AnyRoute>> extends TestClient {
   /** The application itself, for anything this class does not cover. */
   public readonly app: App;
 
@@ -36,6 +40,9 @@ export class TestApp extends TestClient {
 
   /** The logger bound by `createTestApp`, null with `logger: false`. */
   private readonly fLogs: TestLogger | null;
+
+  /** Created on first use. */
+  private fClient: Client<R> | null = null;
 
   /** Extensions, in registration order. */
   private readonly fExtensions: TestingTypes.Extension[];
@@ -62,6 +69,30 @@ export class TestApp extends TestClient {
   }
 
   /** The application's container. */
+  /**
+   * A `@vercube/client` for this application, typed by the route map given to
+   * `createTestApp<Routes>()`. Requests go through `dispatch()`: in memory, no
+   * port, and refused once the app is closing. Error statuses throw a
+   * `VercubeClientError`, as they would against a deployed server.
+   *
+   * @example
+   * ```ts
+   * import type { VercubeRoutes } from '../.vercube/routes';
+   *
+   * await using app = await createTestApp<VercubeRoutes>({ controllers: [UserController] });
+   *
+   * const user = await app.client.get('/users/:id', { params: { id: '1' } });
+   * ```
+   */
+  public get client(): Client<R> {
+    this.fClient ??= createClient<R>({
+      baseURL: this.baseUrl.replace(/\/+$/, ''),
+      fetch: (request) => this.dispatch(request),
+    });
+
+    return this.fClient;
+  }
+
   public get container(): Container {
     return this.app.container;
   }
@@ -228,12 +259,13 @@ export class TestAgent extends TestClient {
   public readonly jar: CookieJar = new CookieJar();
 
   /** The application requests go to. */
-  private readonly fApp: TestApp;
+  // any route map: an agent does not use the typed client
+  private readonly fApp: TestApp<any>;
 
   /**
    * @param app - The application requests go to
    */
-  constructor(app: TestApp) {
+  constructor(app: TestApp<any>) {
     super();
     this.fApp = app;
   }

@@ -5,6 +5,7 @@ import { TestLogger } from '../Services/TestLogger';
 import { applyOverrides, bindProviders } from '../Utils/Bindings';
 import { TestApp } from './TestApp';
 import type { TestingTypes } from '../Types/TestingTypes';
+import type { AnyRoute } from '@vercube/client';
 import type { App, ConfigTypes } from '@vercube/core';
 
 /** Configuration tests start from, under whatever `config` sets. */
@@ -42,8 +43,17 @@ const TEST_CONFIG: ConfigTypes.Config = {
  *
  * await app.close();
  * ```
+ *
+ * With the generated route map, `app.client` is a typed `@vercube/client`:
+ *
+ * ```ts
+ * const app = await createTestApp<VercubeRoutes>({ controllers: [UserController] });
+ * const user = await app.client.get('/users/:id', { params: { id: '1' } });
+ * ```
  */
-export async function createTestApp(options: TestingTypes.TestAppOptions = {}): Promise<TestApp> {
+export async function createTestApp<R = Record<string, AnyRoute>>(
+  options: TestingTypes.TestAppOptions = {},
+): Promise<TestApp<R>> {
   const logs = options.logger === false ? null : new TestLogger();
   const extensions = options.extensions ?? [];
 
@@ -112,7 +122,7 @@ export async function createTestApp(options: TestingTypes.TestAppOptions = {}): 
     // a test app is driven without listen(), so the startup hooks run here
     await booted.start();
 
-    const testApp = new TestApp(booted, {
+    const testApp = new TestApp<R>(booted, {
       logs,
       baseUrl: options.baseUrl ?? 'http://localhost',
       extensions,

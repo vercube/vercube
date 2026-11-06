@@ -138,7 +138,8 @@ export namespace TestingTypes {
     beforeInitialize?(app: App): MaybePromise<void>;
 
     /** Runs once the application has booted. */
-    ready?(testApp: TestApp): MaybePromise<void>;
+    // whatever route map the app was created with
+    ready?(testApp: TestApp<any>): MaybePromise<void>;
 
     /** Runs on `close()`, after the application has closed, last extension first. */
     teardown?(): MaybePromise<void>;
