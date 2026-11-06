@@ -197,6 +197,11 @@ describe('types', () => {
       expectTypeOf<TestRoutes['GET /users/search']['errors']>().toBeNever();
     });
 
+    it('read a status written as a string key', () => {
+      type Route = RouteDef<OrdersLike, 'get', { throws: { '404': NotFoundError } }>;
+      expectTypeOf<NonNullable<Route['errors']>['status']>().toEqualTypeOf<404>();
+    });
+
     it('type several classes under one status as a union', () => {
       class GoneError extends HttpError {
         public static readonly status: number = 410;
