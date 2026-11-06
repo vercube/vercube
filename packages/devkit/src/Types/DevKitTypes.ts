@@ -63,6 +63,15 @@ export namespace DevKitTypes {
     routes: number;
     /** Routes left out, with the reason. */
     skipped: { id: string; reason: string }[];
+    /** Controller files the route map imports. */
+    files: string[];
+  }
+
+  /** What a forked application reports when `VERCUBE_DEV_ROUTES` is set. */
+  export interface RoutesMessage {
+    type: 'vercube:routes';
+    routes: IntrospectionTypes.RouteDescription[];
+    discovery: IntrospectionTypes.DiscoveryDescription | null;
   }
 
   export interface DevServer {

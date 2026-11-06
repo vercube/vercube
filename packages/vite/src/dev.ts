@@ -1,3 +1,4 @@
+import { createRouteTypesWriter, resolveTypegenOutput } from '@vercube/scan';
 import { watch as chokidarWatch } from 'chokidar';
 import { createViteHotChannel } from 'env-runner/vite';
 import { addRoute, createRouter, findRoute } from 'rou3';
@@ -107,6 +108,8 @@ export async function configureViteDevServer(ctx: VercubePluginContext, server: 
     env.hot.send({ type: 'full-reload' });
   });
 
+  watchRouteTypes(ctx, server);
+
   const watcher = chokidarWatch(ctx.scanDirs, { ignoreInitial: true }).on('all', (event) => {
     if (RELOAD_EVENTS.has(event)) {
       reload();
@@ -165,6 +168,40 @@ export async function configureViteDevServer(ctx: VercubePluginContext, server: 
  * @param routes - The discovered HTTP routes.
  * @returns A predicate `(url) => boolean`.
  */
+/**
+ * Writes the `@vercube/client` route map from what the worker reports after
+ * each reload. The writer skips reports whose route table did not change.
+ */
+function watchRouteTypes(ctx: VercubePluginContext, server: ViteDevServer): void {
+  const outFile = resolveTypegenOutput(ctx.root, ctx.pluginConfig.typegen);
+  if (!outFile || !ctx._envRunner) {
+    return;
+  }
+
+  const logger = server.config.logger;
+  const write = createRouteTypesWriter({
+    root: ctx.root,
+    outFile,
+    logger: {
+      warn: (message) => logger.warn(`[vercube] ${message}`, { timestamp: true }),
+      success: (message) => logger.info(`[vercube] ${message}`, { timestamp: true }),
+    },
+  });
+  let queue = Promise.resolve();
+
+  ctx._envRunner.onMessage((message: any) => {
+    if (message?.type !== 'vercube:routes' || !Array.isArray(message.routes)) {
+      return;
+    }
+    queue = queue
+      .then(() => write(message.routes, message.discovery))
+      .then(
+        () => {},
+        (error: Error) => logger.warn(`[vercube] Route types not written: ${error.message}`),
+      );
+  });
+}
+
 function buildRouteMatcher(routes: RouteInfo[]): (url: string) => boolean {
   const router = createRouter<true>();
   const seen = new Set<string>();

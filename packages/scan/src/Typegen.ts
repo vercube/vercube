@@ -1,9 +1,12 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { spawn } from 'node:child_process';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { parseSync } from 'oxc-parser';
-import { dirname, relative } from 'pathe';
+import { dirname, join, relative, resolve } from 'pathe';
 import { glob } from 'tinyglobby';
 import { extractDecoratorArg } from './Ast';
 import { GLOB_SCAN_PATTERN } from './Scan';
+import type { ScanLogger } from './Types';
 
 /**
  * One route as the `routes` introspection section describes it. Declared here
@@ -47,6 +50,8 @@ export interface TypegenResult {
   code: string;
   /** Routes left out, with the reason, one per route id. */
   skipped: { id: string; reason: string }[];
+  /** Absolute paths of the controller files the result imports. */
+  files: string[];
 }
 
 /** First line of every generated file, also how a generated file is recognised. */
@@ -86,6 +91,7 @@ export function generateRouteTypes(options: TypegenOptions): TypegenResult {
   const { routes, controllers, outFile, clientModule = '@vercube/client' } = options;
   const entries = new Map<string, string>();
   const imports = new Map<string, Set<string>>();
+  const files = new Set<string>();
   const skipped: TypegenResult['skipped'] = [];
 
   for (const route of routes) {
@@ -106,6 +112,8 @@ export function generateRouteTypes(options: TypegenOptions): TypegenResult {
     }
 
     const specifier = toSpecifier(outFile, source.file);
+
+    files.add(source.file);
     const binding = source.exportName === route.controller ? route.controller : `${source.exportName} as ${route.controller}`;
 
     if (!imports.has(specifier)) {
@@ -141,7 +149,7 @@ export function generateRouteTypes(options: TypegenOptions): TypegenResult {
 
   lines.push('}', '');
 
-  return { code: lines.join('\n'), skipped };
+  return { code: lines.join('\n'), skipped, files: [...files].sort() };
 }
 
 /**
@@ -188,6 +196,190 @@ export function writeRouteTypes(file: string, code: string): boolean {
   writeFileSync(file, code, 'utf8');
 
   return true;
+}
+
+/** Where the route map goes unless configured otherwise, relative to the root. */
+export const DEFAULT_TYPEGEN_OUTPUT = '.vercube/routes.d.ts';
+
+/** The `typegen` option, as `vercube.config.ts` and the Vite plugin take it. */
+export type TypegenSetting = boolean | { output?: string } | undefined;
+
+/** The discovery manifest, as far as typegen reads it. */
+export interface TypegenDiscovery {
+  root?: string;
+  controllers?: { name: string; path: string }[];
+}
+
+/** Options for {@link createRouteTypesWriter}. */
+export interface RouteTypesWriterOptions {
+  /** Project root, scanned for controllers when there is no discovery manifest. */
+  root: string;
+  /** Absolute path of the route map. */
+  outFile: string;
+  /** Receives one warning per skipped route, and a note when the file is written. */
+  logger?: ScanLogger & { success?(message: string): void };
+}
+
+/** What one write did. */
+export interface RouteTypesWrite {
+  /** Absolute path of the route map. */
+  file: string;
+  /** False when the route table had not changed, so nothing was generated. */
+  generated: boolean;
+  /** False when the content was already up to date. */
+  written: boolean;
+  /** Number of route registrations read. */
+  routes: number;
+  /** Routes left out, with the reason. */
+  skipped: { id: string; reason: string }[];
+  /** Controller files the route map imports. */
+  files: string[];
+}
+
+/**
+ * Where the route map should be written: wherever `setting` says when it is
+ * set, otherwise only for projects that depend on `@vercube/client`, so nobody
+ * gets a file that imports a package they do not have.
+ *
+ * @param root - Project root
+ * @param setting - The `typegen` option
+ * @param force - Ignore whether the project depends on `@vercube/client`
+ * @returns Absolute path, or `null` when typegen is off
+ */
+export function resolveTypegenOutput(root: string, setting: TypegenSetting, force = false): string | null {
+  if (setting === false && !force) {
+    return null;
+  }
+
+  if (setting === undefined && !force && !dependsOnClient(root)) {
+    return null;
+  }
+
+  return resolve(root, (typeof setting === 'object' ? setting.output : undefined) ?? DEFAULT_TYPEGEN_OUTPUT);
+}
+
+/**
+ * Returns a function that keeps the route map in step with a routes section.
+ *
+ * The map only depends on the route table and on where the controllers live,
+ * so a call whose route table matches the previous one, with every imported
+ * file still in place, generates nothing. A dev server can therefore call it
+ * on every reload. Controller files come from the discovery manifest when
+ * there is one, and from scanning the root otherwise.
+ *
+ * @param options - Root, output path and logger
+ * @returns The writer; calls are not meant to overlap
+ */
+export function createRouteTypesWriter(
+  options: RouteTypesWriterOptions,
+): (routes: TypegenRoute[], discovery?: TypegenDiscovery | null) => Promise<RouteTypesWrite> {
+  const { root, outFile, logger } = options;
+  let key: string | undefined;
+  let files: string[] = [];
+
+  return async (routes, discovery) => {
+    const next = routesKey(routes);
+
+    if (next === key && files.every((file) => existsSync(file))) {
+      return { file: outFile, generated: false, written: false, routes: routes.length, skipped: [], files };
+    }
+
+    const controllers = await findControllers(
+      discovery?.controllers?.length ? discovery.controllers.map((c) => resolve(discovery.root ?? root, c.path)) : root,
+    );
+    const result = generateRouteTypes({ routes, controllers, outFile });
+    const written = writeRouteTypes(outFile, result.code);
+
+    for (const { id, reason } of result.skipped) {
+      logger?.warn(`Skipped ${id}: ${reason}`);
+    }
+
+    if (written) {
+      logger?.success?.(`Route types written to ${outFile}`);
+    }
+
+    key = next;
+    files = result.files;
+
+    return { file: outFile, generated: true, written, routes: routes.length, skipped: result.skipped, files };
+  };
+}
+
+/**
+ * Runs a built Vercube entry with introspection on and returns the sections.
+ *
+ * The entry is the only thing that knows what the application's `setup` binds,
+ * so it is run, and core stops it right before it would bind a port. Its stdout
+ * goes to this process's stderr: an application may log while it boots, and
+ * none of that belongs in the result.
+ *
+ * @param file - The built entry
+ * @param sections - Section ids; every section when empty
+ * @param cwd - Working directory, where the discovery manifest is looked up
+ * @returns Section id to section
+ */
+export async function inspectEntry(
+  file: string,
+  sections: string[] = [],
+  cwd: string = process.cwd(),
+): Promise<Record<string, { id: string; title: string; revision: number; data: unknown }>> {
+  const directory = mkdtempSync(join(tmpdir(), 'vercube-inspect-'));
+  const output = join(directory, 'introspection.json');
+
+  try {
+    await new Promise<void>((done, fail) => {
+      const child = spawn(process.execPath, [file], {
+        cwd,
+        env: {
+          ...process.env,
+          VERCUBE_INSPECT: sections.length > 0 ? sections.join(',') : '*',
+          VERCUBE_INSPECT_OUT: output,
+        },
+        stdio: ['ignore', process.stderr, 'inherit'],
+      });
+
+      child.on('error', fail);
+      child.on('exit', (code) => (code === 0 ? done() : fail(new Error(`Inspect exited with code ${code}`))));
+    });
+
+    return JSON.parse(readFileSync(output, 'utf8'));
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+}
+
+/**
+ * @param routes - The routes section
+ * @returns Everything about it that ends up in the route map
+ */
+function routesKey(routes: TypegenRoute[]): string {
+  return JSON.stringify(
+    routes.map((route) => [
+      route.method,
+      route.path,
+      route.controller,
+      route.handler,
+      route.sse,
+      route.args.map((arg) => [arg.idx, arg.type, arg.name]),
+    ]),
+  );
+}
+
+/**
+ * @param root - Project root
+ * @returns True when its `package.json` lists `@vercube/client`
+ */
+function dependsOnClient(root: string): boolean {
+  try {
+    const pkg = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8')) as Record<
+      string,
+      Record<string, string> | undefined
+    >;
+
+    return ['dependencies', 'devDependencies', 'peerDependencies'].some((key) => Boolean(pkg[key]?.['@vercube/client']));
+  } catch {
+    return false;
+  }
 }
 
 /**

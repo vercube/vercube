@@ -1,4 +1,5 @@
 import { existsSync } from 'node:fs';
+import { createRouteTypesWriter, inspectEntry, resolveTypegenOutput } from '@vercube/scan';
 import { resolve } from 'pathe';
 import { VERCUBE_ENV } from './types';
 import type { VercubePluginContext } from './types';
@@ -37,4 +38,36 @@ export async function buildEnvironments(ctx: VercubePluginContext, builder: Vite
   }
 
   await builder.build(server);
+  await writeRouteTypes(ctx, builder);
+}
+
+/**
+ * Writes the `@vercube/client` route map from the server just built: its entry
+ * is run with introspection on, which stops it before it binds a port. A
+ * failure is reported but does not fail the build.
+ */
+async function writeRouteTypes(ctx: VercubePluginContext, builder: ViteBuilder): Promise<void> {
+  const outFile = resolveTypegenOutput(ctx.root, ctx.pluginConfig.typegen);
+  if (!outFile) {
+    return;
+  }
+
+  const logger = builder.config.logger;
+  try {
+    const sections = await inspectEntry(resolve(ctx.root, 'dist', 'index.mjs'), ['routes', 'discovery'], ctx.root);
+    const write = createRouteTypesWriter({
+      root: ctx.root,
+      outFile,
+      logger: {
+        warn: (message) => logger.warn(`[vercube] ${message}`),
+        success: (message) => logger.info(`[vercube] ${message}`),
+      },
+    });
+    await write(
+      (sections.routes?.data ?? []) as Parameters<typeof write>[0],
+      sections.discovery?.data as Parameters<typeof write>[1],
+    );
+  } catch (error) {
+    logger.warn(`[vercube] Route types not written: ${(error as Error).message}`);
+  }
 }

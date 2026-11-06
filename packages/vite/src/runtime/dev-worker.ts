@@ -21,6 +21,7 @@ type NodeUpgradeHandler = (req: unknown, socket: unknown, head: unknown) => void
 
 interface ViteEntry {
   fetch?: (req: Request) => Promise<Response> | Response;
+  inspect?: (id: string) => Promise<{ data?: unknown } | undefined>;
   default?: { fetch?: (req: Request) => Promise<Response> | Response };
   handleUpgrade?: NodeUpgradeHandler;
 }
@@ -66,6 +67,7 @@ class ViteEnvRunner {
     try {
       this.#entry = (await this.runner.import(this.#entryPath)) as ViteEntry;
       this.#entryError = undefined;
+      void reportRoutes(this.#entry);
     } catch (error) {
       console.error(error);
       this.#entryError = error;
@@ -117,6 +119,22 @@ async function reloadAll(): Promise<void> {
 if (typeof process !== 'undefined' && typeof process.on === 'function') {
   process.on('unhandledRejection', (error) => console.error(error));
   process.on('uncaughtException', (error) => console.error(error));
+}
+
+/**
+ * Tells the host which routes the freshly loaded app registered, for the
+ * `@vercube/client` route map. The host decides whether anything changed.
+ */
+async function reportRoutes(entry: ViteEntry): Promise<void> {
+  if (!entry.inspect || !sendMessage) {
+    return;
+  }
+  try {
+    const [routes, discovery] = await Promise.all([entry.inspect('routes'), entry.inspect('discovery')]);
+    sendMessage({ type: 'vercube:routes', routes: routes?.data ?? [], discovery: discovery?.data ?? null });
+  } catch (error) {
+    console.error(error);
+  }
 }
 
 /**
