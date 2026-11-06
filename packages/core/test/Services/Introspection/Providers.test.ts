@@ -124,7 +124,7 @@ describe('core introspection providers', () => {
     expect(section!.data.find((route) => route.id === 'GET /catalog/:id')).not.toHaveProperty('sse');
   });
 
-  it('lists declared errors, the controller ones included', async () => {
+  it('lists declared errors, the controller ones included, and the implicit ones', async () => {
     const section = await registry.describe<IntrospectionTypes.RouteDescription[]>('routes');
 
     expect(section!.data.find((route) => route.id === 'GET /catalog/:id')?.throws).toEqual([
@@ -132,8 +132,10 @@ describe('core introspection providers', () => {
       { name: 'NotFoundError', status: 404 },
       { name: 'ConflictError', status: 409 },
     ]);
+    // secured: the implicit 403 and the declared one are the same class, listed once
     expect(section!.data.find((route) => route.id === 'POST /catalog/search')?.throws).toEqual([
-      { name: 'ForbiddenError', status: 403 },
+      { name: 'UnauthorizedError', status: 401, module: '@vercube/core' },
+      { name: 'ForbiddenError', status: 403, module: '@vercube/core' },
     ]);
   });
 

@@ -84,6 +84,7 @@ export * from './Services/Startup/StartupRegistry';
 
 // Errors
 export * from './Errors/HttpError';
+export * from './Errors/RouteErrors';
 export * from './Errors/Http/BadRequestError';
 export * from './Errors/Http/ForbiddenError';
 export * from './Errors/Http/InternalServerError';
