@@ -299,6 +299,10 @@ export class App {
       const { writeFileSync } = await import('node:fs');
       writeFileSync(target, json, 'utf8');
 
+      // the parent stops the process once the file is complete, so a handle
+      // left open by `setup` does not keep it waiting
+      process.send?.({ type: 'vercube:inspected' });
+
       return;
     }
 

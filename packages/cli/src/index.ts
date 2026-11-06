@@ -10,6 +10,7 @@ import { DevCommand } from './Commands/Dev';
 import { FetchCommand } from './Commands/Fetch';
 import { InitCommand } from './Commands/Init';
 import { InspectCommand } from './Commands/Inspect';
+import { TypegenCommand } from './Commands/Typegen';
 
 const container = createCliContainer();
 const registry = container.resolve(CommandRegistry);
@@ -20,6 +21,7 @@ registry.register(DevCommand);
 registry.register(InitCommand);
 registry.register(FetchCommand);
 registry.register(InspectCommand);
+registry.register(TypegenCommand);
 
 // Load and register user-defined commands from vercube.config.ts (via jiti, zero build)
 const userCommands = await loadUserCommands(process.cwd());

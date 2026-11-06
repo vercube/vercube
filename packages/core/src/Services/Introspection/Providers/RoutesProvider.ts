@@ -67,6 +67,7 @@ export function describeRoute(route: RouterTypes.Route, basePath?: string): Intr
     ],
     actions: handler.actions?.length ?? 0,
     simple: handler.simple === true,
+    ...(prototype?.__metadata?.__methods?.[handler.propertyName]?.meta?.sse === true ? { sse: true } : {}),
   };
 }
 

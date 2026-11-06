@@ -624,6 +624,9 @@ importers:
       '@vercube/di':
         specifier: workspace:*
         version: link:../di
+      '@vercube/scan':
+        specifier: workspace:*
+        version: link:../scan
 
   packages/core:
     dependencies:
@@ -673,6 +676,9 @@ importers:
       '@vercube/core':
         specifier: workspace:*
         version: link:../core
+      '@vercube/scan':
+        specifier: workspace:*
+        version: link:../scan
       c12:
         specifier: 'catalog:'
         version: 4.0.0-rc.4(dotenv@18.0.9)(giget@3.3.1)(jiti@2.7.0)(magicast@0.5.5)

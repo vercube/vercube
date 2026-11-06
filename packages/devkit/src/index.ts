@@ -10,3 +10,6 @@ export * from './Build/Watch';
 
 /** Dev server */
 export * from './Server/DevServer';
+
+export * from './Typegen/Inspect';
+export * from './Typegen/Typegen';

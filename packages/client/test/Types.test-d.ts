@@ -4,6 +4,7 @@ import { describe, expectTypeOf, it } from 'vitest';
 import { createClient } from '../src';
 import type { Jsonify, RouteDef, SseEvent, SseStream } from '../src';
 import type { TestRoutes } from './fixtures/Controllers';
+import type { VercubeRoutes } from './fixtures/routes';
 
 const api = createClient<TestRoutes>({ baseURL: 'http://test', fetch: () => new Response() });
 
@@ -141,6 +142,15 @@ describe('types', () => {
     const loose = createClient();
 
     expectTypeOf(loose.get('/anything', { query: { a: 1 } })).resolves.toBeAny();
+  });
+
+  it('the generated map is the hand-written one, plus HEAD for every GET', () => {
+    expectTypeOf<Omit<VercubeRoutes, `HEAD ${string}`>>().toEqualTypeOf<Omit<TestRoutes, `HEAD ${string}`>>();
+    // every GET has its HEAD twin, with the same definition
+    type ExpectedHeads = {
+      [K in keyof TestRoutes as K extends `GET ${infer Path}` ? `HEAD ${Path}` : never]: TestRoutes[K];
+    };
+    expectTypeOf<Pick<VercubeRoutes, Extract<keyof VercubeRoutes, `HEAD ${string}`>>>().toEqualTypeOf<ExpectedHeads>();
   });
 
   it('changing a handler signature breaks the call site', () => {

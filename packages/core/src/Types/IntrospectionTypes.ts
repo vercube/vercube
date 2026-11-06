@@ -106,6 +106,8 @@ export namespace IntrospectionTypes {
     actions: number;
     /** True when the route takes the allocation-free fast path. */
     simple: boolean;
+    /** Set on `@Sse()` routes, which answer with `text/event-stream`. */
+    sse?: true;
   }
 
   /** One source file the scanner attributed to a class. */

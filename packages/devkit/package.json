@@ -28,6 +28,7 @@
   "dependencies": {
     "@oxc-project/runtime": "catalog:",
     "@vercube/core": "workspace:*",
+    "@vercube/scan": "workspace:*",
     "c12": "catalog:",
     "chokidar": "6.0.0",
     "consola": "catalog:",
