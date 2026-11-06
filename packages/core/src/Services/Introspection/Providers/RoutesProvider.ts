@@ -1,6 +1,6 @@
 import { Inject } from '@vercube/di';
 import { getRouteErrors } from '../../../Errors/RouteErrors';
-import { isAuthMiddleware } from '../../../Utils/Utils';
+import { isAuthMiddleware, skipsGlobalMiddlewares } from '../../../Utils/Utils';
 import { MetadataResolver } from '../../Metadata/MetadataResolver';
 import { Router } from '../../Router/Router';
 import type { IntrospectionTypes } from '../../../Types/IntrospectionTypes';
@@ -77,6 +77,7 @@ export function describeRoute(route: RouterTypes.Route, basePath?: string): Intr
     ...(prototype?.__metadata?.__methods?.[handler.propertyName]?.meta?.sse === true ? { sse: true } : {}),
     ...(throws.length > 0 ? { throws } : {}),
     ...(secured ? { secured: true } : {}),
+    ...(prototype && skipsGlobalMiddlewares(prototype) ? { internal: true } : {}),
   };
 }
 

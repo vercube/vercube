@@ -99,6 +99,91 @@ export namespace HealthTypes {
   }
 
   /**
+   * How much of the readiness report a response shows.
+   *
+   * - `none`: only the overall status
+   * - `summary`: the status of each check, by name
+   * - `full`: also durations, error messages and details
+   */
+  export type DetailsLevel = 'none' | 'summary' | 'full';
+
+  /**
+   * The probe endpoints.
+   */
+  export type Endpoint = 'live' | 'ready' | 'startup';
+
+  /**
+   * The `health` option of `vercube.config.ts`.
+   */
+  export interface Options extends RegistryOptions {
+    /**
+     * Base path of the endpoints, giving `<path>/live`, `<path>/ready` and
+     * `<path>/startup`.
+     * @default '/_health'
+     */
+    path?: string;
+
+    /**
+     * Overrides each endpoint independently with a full path that ignores
+     * `path`, or `false` to not register it.
+     *
+     * @example { live: '/livez', ready: '/internal/k8s/ready', startup: false }
+     */
+    endpoints?: Partial<Record<Endpoint, string | false>>;
+
+    /**
+     * Application checks registered at startup, next to the ones modules add.
+     */
+    checks?: Check[];
+
+    /**
+     * How much of the readiness report anonymous requests see. `full` exposes
+     * error messages, so it needs `token`.
+     * @default 'summary'
+     */
+    details?: DetailsLevel;
+
+    /**
+     * A request carrying `Authorization: Bearer <token>` always gets the full
+     * report.
+     */
+    token?: string;
+
+    /**
+     * Record probe requests in telemetry traces and the devtools Requests
+     * panel. Off, so frequent probes do not bury real traffic.
+     * @default false
+     */
+    telemetry?: boolean;
+  }
+
+  /**
+   * The `health` option with its defaults applied and validated.
+   */
+  export interface ResolvedOptions {
+    /** The full path of each endpoint, `null` when it is not registered. */
+    endpoints: Record<Endpoint, string | null>;
+
+    /** Application checks. */
+    checks: Check[];
+
+    /** What anonymous requests see. */
+    details: DetailsLevel;
+
+    /** Token that unlocks the full report. */
+    token: string | undefined;
+
+    /** Default per-check timeout. */
+    timeout: number | undefined;
+
+    /** Milliseconds a report is reused. */
+    cacheTtl: number | undefined;
+
+    /** Whether probe requests are traced. */
+    telemetry: boolean;
+  }
+
+  /**
    * Settings of the registry.
    */
   export interface RegistryOptions {

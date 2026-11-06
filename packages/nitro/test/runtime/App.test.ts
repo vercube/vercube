@@ -72,6 +72,13 @@ describe('createNitroApp', () => {
     });
   });
 
+  it('should pass the health option on', async () => {
+    await createNitroApp(makeNitroOpts(), { health: { path: '/probes' } });
+    expect(createApp).toHaveBeenCalledWith({
+      cfg: expect.objectContaining({ health: { path: '/probes' } }),
+    });
+  });
+
   it('should read the runtime config when the server starts', async () => {
     await createNitroApp({ dev: false, logLevel: 3 });
     expect(createApp).toHaveBeenCalledWith({

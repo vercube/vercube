@@ -12,9 +12,13 @@ import type { Nitro, NitroOptions } from 'nitro/types';
  * so `NITRO_*` environment overrides apply, unless one is passed explicitly.
  *
  * @param nitroOpts - Build flags of the Nitro instance.
+ * @param cfg - Configuration from the plugin options, such as `health`.
  * @returns The Vercube application.
  */
-export async function createNitroApp(nitroOpts: Partial<Pick<NitroOptions, 'dev' | 'logLevel' | 'runtimeConfig'>>): Promise<App> {
+export async function createNitroApp(
+  nitroOpts: Partial<Pick<NitroOptions, 'dev' | 'logLevel' | 'runtimeConfig'>>,
+  cfg: Pick<ConfigTypes.Config, 'health'> = {},
+): Promise<App> {
   const app = await createApp({
     cfg: {
       logLevel: getLogLevel(nitroOpts.logLevel),
@@ -23,6 +27,7 @@ export async function createNitroApp(nitroOpts: Partial<Pick<NitroOptions, 'dev'
       runtime: {
         ...(nitroOpts.runtimeConfig ?? useRuntimeConfig()),
       },
+      ...(cfg.health === undefined ? {} : { health: cfg.health }),
     },
   });
 

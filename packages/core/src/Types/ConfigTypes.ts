@@ -1,3 +1,4 @@
+import type { HealthTypes } from './HealthTypes';
 import type { VercubePluginInput } from './Plugin';
 import type { TelemetryTypes } from './TelemetryTypes';
 /* eslint-disable @typescript-eslint/no-empty-object-type */
@@ -184,7 +185,7 @@ export namespace ConfigTypes {
      * Close the application on these process signals and exit once it is
      * closed, `true` meaning `SIGTERM` and `SIGINT`. A second signal exits
      * right away.
-     * @default false
+     * @default true when `health` is on, false otherwise
      */
     handleSignals?: boolean | string[];
 
@@ -202,7 +203,7 @@ export namespace ConfigTypes {
      * `draining` meanwhile, so a readiness probe fails and a load balancer or
      * Kubernetes stops routing new requests here before they would be
      * refused. Skipped when the server never listened (serverless, Nitro).
-     * @default 0
+     * @default 5000 when `health` is on, 0 otherwise
      */
     drainDelay?: number;
   }
@@ -258,6 +259,21 @@ export namespace ConfigTypes {
      * @default true in development, false in production
      */
     telemetry?: boolean | TelemetryTypes.Options;
+
+    /**
+     * Liveness, readiness and startup endpoints for Kubernetes, a load
+     * balancer or any orchestrator: `/_health/live`, `/_health/ready` and
+     * `/_health/startup`. `true` uses the defaults.
+     *
+     * Turning it on also defaults `shutdown.drainDelay` to 5000 and
+     * `shutdown.handleSignals` to `true`, for zero-downtime rolling deploys.
+     *
+     * Checks registered with `app.health.register()` run either way, this only
+     * adds the routes.
+     *
+     * @default false
+     */
+    health?: boolean | HealthTypes.Options;
 
     /**
      * Server configuration options.

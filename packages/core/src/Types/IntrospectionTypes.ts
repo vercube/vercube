@@ -117,6 +117,13 @@ export namespace IntrospectionTypes {
     throws?: RouteThrows[];
     /** Set when an authentication middleware (`@Auth()`) guards the route. */
     secured?: true;
+
+    /**
+     * Set on infrastructure routes that opt out of application-wide
+     * middlewares: health probes, devtools, the scheduler trigger. Absent
+     * on application routes.
+     */
+    internal?: true;
   }
 
   /** One error a route answers with. */

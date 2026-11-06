@@ -1,4 +1,5 @@
 import { defu } from 'defu';
+import { resolveHealthOptions, resolveHealthPaths } from '../../Utils/Health';
 import type { ConfigTypes } from '../../Types/ConfigTypes';
 import type { TelemetryTypes } from '../../Types/TelemetryTypes';
 
@@ -66,14 +67,19 @@ export function resolveTelemetryOptions(
       ? { enabled: raw ?? defaultEnabled }
       : { ...raw, enabled: raw.enabled ?? defaultEnabled };
 
-  if (contributions.length === 0) {
+  // Kubernetes probes every few seconds on every replica: traced, they would
+  // bury real traffic in traces and the devtools Requests panel.
+  const probes = healthExclusions(config);
+  const extra = probes ? [...contributions, { exclude: probes }] : contributions;
+
+  if (extra.length === 0) {
     return base;
   }
 
   // `defu` gives the first argument priority and concatenates arrays, so the
   // application keeps every value it set and contributed `exclude` entries are
   // added to its own rather than replacing them.
-  return defu(base, ...contributions) as ReturnType<typeof resolveTelemetryOptions>;
+  return defu(base, ...extra) as ReturnType<typeof resolveTelemetryOptions>;
 }
 
 /**
@@ -84,4 +90,25 @@ export function resolveTelemetryOptions(
  */
 export function isTelemetryEnabled(config: ConfigTypes.Config): boolean {
   return resolveTelemetryOptions(config).enabled;
+}
+
+/**
+ * The probe paths to leave out of telemetry, unless `health.telemetry` asks
+ * for them. An invalid `health` option excludes nothing here: it fails the
+ * boot where the routes are mounted, with a better message.
+ *
+ * @param config - The application configuration
+ * @returns The paths, or null when there is nothing to exclude
+ */
+function healthExclusions(config: ConfigTypes.Config): string[] | null {
+  try {
+    if (resolveHealthOptions(config)?.telemetry !== false) {
+      return null;
+    }
+
+    // exclusion matches by prefix, and a probe on `/` would hide everything
+    return resolveHealthPaths(config).filter((path) => path !== '/');
+  } catch {
+    return null;
+  }
 }

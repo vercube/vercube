@@ -18,6 +18,8 @@ export interface TypegenRoute {
   handler: string;
   args: { idx: number; type: string; name?: string }[];
   sse?: boolean;
+  /** An infrastructure route (health probes, devtools); left out quietly when it has no source. */
+  internal?: boolean;
   /**
    * Errors the route answers with: class name, status, and for an implicit
    * one (core adds a 400, 401 or 403 nobody declared) the module to import it from.
@@ -219,6 +221,11 @@ export function generateRouteTypes(options: TypegenOptions): TypegenResult {
     const source = lookupController(controllers, route.controller, names);
 
     if (!source?.exportName) {
+      // a framework route, such as a health probe, is not the application's to type
+      if (route.internal && source === undefined) {
+        continue;
+      }
+
       skipped.push({ id, reason: whyNotImportable(route.controller, source, outFile) });
       continue;
     }

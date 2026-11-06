@@ -239,6 +239,20 @@ describe('generateRouteTypes', () => {
     expect(code).toContain('export interface VercubeRoutes {\n}');
   });
 
+  it('leaves out framework routes without a source quietly', () => {
+    const { code, skipped } = generateRouteTypes({
+      routes: [
+        { method: 'GET', path: '/_health/ready', controller: 'HealthController', handler: 'ready', args: [], internal: true },
+        { method: 'GET', path: '/x', controller: 'Missing', handler: 'x', args: [], internal: false },
+      ],
+      controllers,
+      outFile: out,
+    });
+
+    expect(skipped).toEqual([{ id: 'GET /x', reason: 'no source file found for Missing' }]);
+    expect(code).not.toContain('_health');
+  });
+
   it('finds a controller a bundler renamed, and keeps clear of the names the file declares', () => {
     const { code, skipped } = generateRouteTypes({
       routes: [

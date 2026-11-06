@@ -6,6 +6,7 @@ import { getTransformedRoutes } from '../setup/Routes';
 import { getTransformedServices } from '../setup/Services';
 import type { RouteInfo } from '../build/Routes';
 import type { ServiceInfo } from '../build/Services';
+import type { HealthTypes } from '@vercube/core';
 import type { NitroModule } from 'nitro/types';
 
 export interface PluginOptions {
@@ -28,6 +29,18 @@ export interface PluginOptions {
    * }
    */
   setupFile?: string;
+
+  /**
+   * Liveness, readiness and startup endpoints, the `health` option of
+   * `vercube.config.ts`. Set here because Nitro has to know the probe paths
+   * when it builds its route table. Register checks with
+   * `app.health.register()` in the `setupFile`.
+   *
+   * The drain delay does not apply: Nitro owns the server and its shutdown.
+   *
+   * @default false
+   */
+  health?: boolean | Omit<HealthTypes.Options, 'checks'>;
 }
 
 const defaultOptions: PluginOptions = {
@@ -72,7 +85,7 @@ export function vercubeNitro(options?: PluginOptions): NitroModule {
 
         export default definePlugin(async (nitroApp) => {
           // only build flags are baked in, the runtime config is read when the server starts
-          const app = await createNitroApp(${JSON.stringify({ dev: nitro.options.dev, logLevel: nitro.options.logLevel })});
+          const app = await createNitroApp(${JSON.stringify({ dev: nitro.options.dev, logLevel: nitro.options.logLevel })}${options?.health ? `, ${JSON.stringify({ health: options.health })}` : ''});
           nitroApp.__vercubeApp__ = app;
           globalThis.__vercubeApp__ = app;
 

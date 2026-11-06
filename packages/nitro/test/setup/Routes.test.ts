@@ -159,6 +159,26 @@ describe('setupRoutes', () => {
     expect(nitro.routing.sync).toHaveBeenCalled();
   });
 
+  it('should route the health probes to the vercube handler', async () => {
+    const nitro = makeMockNitro(tmpDir);
+    await setupRoutes(nitro, { health: { endpoints: { live: '/livez', startup: false } } });
+
+    expect(nitro.options.handlers.map((h: any) => `${h.method} ${h.route}`)).toEqual([
+      'GET /livez',
+      'HEAD /livez',
+      'GET /_health/ready',
+      'HEAD /_health/ready',
+    ]);
+    expect(nitro.options.handlers.every((h: any) => h.handler === '@vercube/nitro/runtime/handler')).toBe(true);
+  });
+
+  it('should add no probes without the health option', async () => {
+    const nitro = makeMockNitro(tmpDir);
+    await setupRoutes(nitro, {});
+
+    expect(nitro.options.handlers).toHaveLength(0);
+  });
+
   it('should clear existing vercube handlers before adding new ones', async () => {
     mkdirSync(join(tmpDir, 'api'));
     writeFileSync(join(tmpDir, 'api', 'FooController.ts'), controllerCode);

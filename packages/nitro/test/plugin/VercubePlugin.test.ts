@@ -48,6 +48,18 @@ describe('vercubeNitro', () => {
     expect(nitro.options.plugins).toContain('#internal/vercube-route-plugin');
   });
 
+  it('should pass the health option to the app', async () => {
+    const nitro = makeMockNitro();
+    await vercubeNitro({ health: { path: '/probes' } }).setup!(nitro);
+    expect(nitro.options.virtual['#internal/vercube-route-plugin']).toContain('{"health":{"path":"/probes"}}');
+  });
+
+  it('should pass no health option by default', async () => {
+    const nitro = makeMockNitro();
+    await vercubeNitro().setup!(nitro);
+    expect(nitro.options.virtual['#internal/vercube-route-plugin']).not.toContain('health');
+  });
+
   it('should include routes in the virtual plugin', async () => {
     vi.mocked(getTransformedRoutes).mockResolvedValue([
       {
