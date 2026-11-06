@@ -124,7 +124,8 @@ export function generateRouteTypes(options: TypegenOptions): TypegenResult {
     entries.set(id, `RouteDef<${route.controller}, ${quote(route.handler)}${describeArgs(route.args, path, route.sse)}>`);
   }
 
-  const lines = [TYPEGEN_HEADER, `import type { RouteDef } from ${quote(clientModule)};`];
+  // the blank line keeps formatters from treating the header as an import's comment
+  const lines = [TYPEGEN_HEADER, '', `import type { RouteDef } from ${quote(clientModule)};`];
 
   for (const specifier of [...imports.keys()].sort()) {
     const bindings = [...imports.get(specifier)!].sort();
@@ -216,7 +217,7 @@ export interface RouteTypesWriterOptions {
   root: string;
   /** Absolute path of the route map. */
   outFile: string;
-  /** Receives one warning per skipped route, and a note when the file is written. */
+  /** Receives one warning per reason routes were skipped for, and a note when the file is written. */
   logger?: ScanLogger & { success?(message: string): void };
 }
 
@@ -290,8 +291,13 @@ export function createRouteTypesWriter(
     const result = generateRouteTypes({ routes, controllers, outFile });
     const written = writeRouteTypes(outFile, result.code);
 
-    for (const { id, reason } of result.skipped) {
-      logger?.warn(`Skipped ${id}: ${reason}`);
+    // grouped by reason: a library controller (devtools, say) has dozens of routes
+    const byReason = Map.groupBy(result.skipped, (entry) => entry.reason);
+
+    for (const [reason, entries] of byReason) {
+      const more = entries.length > 1 ? ` and ${entries.length - 1} more route${entries.length > 2 ? 's' : ''}` : '';
+
+      logger?.warn(`Skipped ${entries[0].id}${more}: ${reason}`);
     }
 
     if (written) {

@@ -10,6 +10,7 @@
     ".github",
     "*.json", // json files are not supported by oxfmt yet
     "packages/devtools/src/Generated/**/*", // emitted by the devtools UI build
+    "**/.vercube/**", // route maps written by `vercube typegen`
   ],
 
   // Roles
