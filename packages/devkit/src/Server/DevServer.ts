@@ -1,6 +1,7 @@
 import { fork } from 'node:child_process';
 import { resolve } from 'node:path';
 import consola from 'consola';
+import { watchRouteTypes } from '../Typegen/Typegen';
 import type { DevKitTypes } from '../Types/DevKitTypes';
 import type { ChildProcess } from 'node:child_process';
 
@@ -15,6 +16,7 @@ export function createDevServer(app: DevKitTypes.App): DevKitTypes.DevServer {
   const forkEntry = resolve(process.cwd(), app.config.build?.output?.dir ?? 'dist', 'index.mjs');
   let reloadPromise: Promise<void> | undefined;
   let currentFork: ChildProcess | undefined;
+  const onRoutes = watchRouteTypes(app);
 
   /**
    * Terminates a worker and resolves only once it has fully exited, so the
@@ -59,8 +61,13 @@ export function createDevServer(app: DevKitTypes.App): DevKitTypes.DevServer {
       await killWorker(oldFork);
     }
 
-    // Create a new worker
-    currentFork = fork(forkEntry);
+    // Create a new worker; with typegen on, it reports its routes back
+    if (onRoutes) {
+      currentFork = fork(forkEntry, [], { env: { ...process.env, VERCUBE_DEV_ROUTES: '1' } });
+      currentFork.on('message', (message) => void onRoutes(message));
+    } else {
+      currentFork = fork(forkEntry);
+    }
   }
 
   /**

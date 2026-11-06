@@ -1,16 +1,10 @@
-import { spawn } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { basename, join, resolve } from 'node:path';
+import { basename, resolve } from 'node:path';
+import { inspectEntry } from '@vercube/scan';
 import type { DevKitTypes } from '../Types/DevKitTypes';
 
 /**
  * Runs the built application with introspection on and returns the sections.
- *
- * The application's own entry file is the only thing that knows what its
- * `setup` binds, so it is run, and stopped right before it would bind a port.
- * Its stdout goes to this process's stderr: an application may log while it
- * boots, and none of that belongs in the result. Build first.
+ * Build first. See `inspectEntry()` in `@vercube/scan`.
  *
  * @param app - The devkit app
  * @param sections - Section ids; every section when empty
@@ -18,80 +12,15 @@ import type { DevKitTypes } from '../Types/DevKitTypes';
  * @param timeout - Milliseconds before the run is stopped and the call rejects; 0 waits forever
  * @returns Section id to section
  */
-export async function inspect(
+export function inspect(
   app: DevKitTypes.App,
   sections: string[] = [],
   entry = builtEntry(app),
   timeout = 0,
 ): Promise<Record<string, DevKitTypes.InspectedSection>> {
   const root = app.config.build?.root ?? process.cwd();
-  const file = resolve(root, app.config.build?.output?.dir ?? 'dist', entry);
-  const directory = mkdtempSync(join(tmpdir(), 'vercube-inspect-'));
-  const output = join(directory, 'introspection.json');
 
-  try {
-    await new Promise<void>((done, fail) => {
-      const child = spawn(process.execPath, [file], {
-        cwd: root,
-        env: {
-          ...process.env,
-          VERCUBE_INSPECT: sections.length > 0 ? sections.join(',') : '*',
-          VERCUBE_INSPECT_OUT: output,
-        },
-        // piped rather than handed over: in a worker thread `process.stderr`
-        // has no file descriptor to give
-        stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
-      });
-      let finished = false;
-      const finish = (error?: Error): void => {
-        if (finished) {
-          return;
-        }
-
-        finished = true;
-        clearTimeout(timer);
-
-        if (error) {
-          fail(error);
-        } else {
-          done();
-        }
-      };
-
-      child.stdout!.pipe(process.stderr, { end: false });
-      child.stderr!.pipe(process.stderr, { end: false });
-
-      // an application whose setup waits on a service that never answers
-      const timer =
-        timeout > 0
-          ? setTimeout(() => {
-              child.kill('SIGKILL');
-              finish(new Error(`Inspect did not finish within ${timeout / 1000}s`));
-            }, timeout)
-          : undefined;
-
-      // core says so once the file is written: a setup that leaves a handle
-      // open (a database pool, say) would otherwise keep the process alive
-      child.on('message', (message: { type?: string }) => {
-        if (message?.type === 'vercube:inspected') {
-          child.kill('SIGKILL');
-          finish();
-        }
-      });
-      child.on('error', finish);
-      child.on('exit', (code) => {
-        if (code === 0) {
-          finish();
-        } else {
-          finish(new Error(`Inspect exited with code ${code}`));
-        }
-      });
-    });
-
-    return JSON.parse(readFileSync(output, 'utf8')) as Record<string, DevKitTypes.InspectedSection>;
-  } finally {
-    rmSync(directory, { recursive: true, force: true });
-  }
+  return inspectEntry(resolve(root, app.config.build?.output?.dir ?? 'dist', entry), sections, root, timeout);
 }
 
 /**

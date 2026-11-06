@@ -243,4 +243,37 @@ describe('dev-worker', () => {
 
     expect(() => worker.ipc.onClose()).not.toThrow();
   });
+  it('sends only the latest route report, and none without a routes section', async () => {
+    const sendMessage = vi.fn();
+    const route = (id: string) => ({ data: [{ id }] });
+    let finishOld!: () => void;
+    const oldEntry = {
+      fetch: async () => new Response(''),
+      inspect: (id: string) =>
+        id === 'routes' ? new Promise((resolve) => (finishOld = () => resolve(route('old')))) : Promise.resolve(undefined),
+    };
+    const newEntry = {
+      fetch: async () => new Response(''),
+      inspect: async (id: string) => (id === 'routes' ? route('new') : undefined),
+    };
+
+    moduleImport.mockResolvedValueOnce(oldEntry).mockResolvedValueOnce(newEntry);
+    worker.ipc.onOpen({ sendMessage });
+    worker.ipc.onMessage({ type: 'custom', event: 'vercube:vite-env', data: { name: 'vercube', entry: '/entry.mjs' } });
+    await vi.waitFor(() => expect(finishOld).toBeTypeOf('function'));
+
+    worker.ipc.onMessage({ type: 'full-reload' });
+    await vi.waitFor(() => expect(sendMessage).toHaveBeenCalledTimes(1));
+    finishOld();
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    const reports = () => sendMessage.mock.calls.map(([message]) => message).filter((m) => m?.type === 'vercube:routes');
+    expect(reports()).toEqual([{ type: 'vercube:routes', routes: [{ id: 'new' }], discovery: null }]);
+
+    moduleImport.mockResolvedValueOnce({ fetch: async () => new Response(''), inspect: async () => undefined });
+    worker.ipc.onMessage({ type: 'full-reload' });
+    await vi.waitFor(() => expect(moduleImport).toHaveBeenCalledTimes(3));
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(reports()).toHaveLength(1);
+  });
 });

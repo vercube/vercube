@@ -160,6 +160,12 @@ export class App {
       return;
     }
 
+    // `vercube dev` forks the application and writes the `@vercube/client`
+    // route map from what it reports, so nothing has to boot twice
+    if (process.env.VERCUBE_DEV_ROUTES && process.send) {
+      await this.reportRoutes();
+    }
+
     // Services that start with the application, such as the scheduler. Before
     // the port is bound, so a failure stops the boot instead of surfacing once
     // the server is already serving.
@@ -307,6 +313,41 @@ export class App {
     }
 
     process.stdout.write(json);
+  }
+
+  /**
+   * Sends the `routes` and `discovery` sections to the parent process, now
+   * and whenever either section is touched. The route map is a development
+   * aid, so a section that fails to describe itself is logged and the server
+   * keeps running.
+   *
+   * @returns {Promise<void>} Resolves once the first report is sent
+   */
+  private async reportRoutes(): Promise<void> {
+    const registry = this.container.get(IntrospectionRegistry);
+    const send = async (): Promise<void> => {
+      try {
+        const [routes, discovery] = await Promise.all([registry.describe('routes'), registry.describe('discovery')]);
+
+        // without the section there is nothing to say; an empty map would
+        // replace a good one
+        if (!Array.isArray(routes?.data)) {
+          return;
+        }
+
+        process.send?.({ type: 'vercube:routes', routes: routes.data, discovery: discovery?.data ?? null });
+      } catch (error) {
+        this.container.getOptional(Logger)?.warn('Vercube/App::Route types not reported', error);
+      }
+    };
+
+    registry.onInvalidate((id) => {
+      if (id === 'routes' || id === 'discovery') {
+        void send();
+      }
+    });
+
+    await send();
   }
 
   /**

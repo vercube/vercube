@@ -150,6 +150,7 @@ describe('generateRouteTypes', () => {
 
     expect(generateRouteTypes({ routes, controllers, outFile: out })).toEqual({
       skipped: [],
+      files: ['/app/src/Controllers/UserController.ts', '/app/src/Feed.mts'],
       code: [
         TYPEGEN_HEADER,
         "import type { RouteDef } from '@vercube/client';",
