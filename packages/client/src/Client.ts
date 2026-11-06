@@ -23,7 +23,7 @@ const METHODS: Method[] = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPT
  * Pass the generated route map to type every call:
  *
  * ```ts
- * import type { VercubeRoutes } from './.vercube/routes';
+ * import type { VercubeRoutes } from './.vercube/routes.js';
  *
  * const api = createClient<VercubeRoutes>({ baseURL: 'http://localhost:3000' });
  * const user = await api.get('/users/:id', { params: { id: '42' } });
@@ -42,9 +42,10 @@ export function createClient<R = Record<string, AnyRoute>>(options: ClientOption
     // unbound `fetch` throws "Illegal invocation" in browsers
     const fetcher = options.fetch ?? ((input: Request) => fetch(input));
     const merged = new Headers(typeof options.headers === 'function' ? await options.headers() : options.headers);
+    const own = new Headers(headers);
     let payload: BodyInit | undefined;
 
-    for (const [key, value] of new Headers(headers)) {
+    for (const [key, value] of own) {
       merged.set(key, value);
     }
 
@@ -55,6 +56,12 @@ export function createClient<R = Record<string, AnyRoute>>(options: ClientOption
     } else if (body !== undefined) {
       if (isRaw(body)) {
         payload = body as BodyInit;
+
+        // these carry their own content type (the multipart boundary, a form
+        // encoding), which a default `application/json` would replace
+        if ((body instanceof FormData || body instanceof URLSearchParams) && !own.has('content-type')) {
+          merged.delete('content-type');
+        }
       } else {
         payload = JSON.stringify(body);
 
@@ -80,7 +87,13 @@ export function createClient<R = Record<string, AnyRoute>>(options: ClientOption
 
     let res = await fetcher(req);
 
-    res = (await options.onResponse?.({ request: req, response: res })) ?? res;
+    if (options.onResponse) {
+      // the hook may read the body without returning a response; it gets a
+      // copy, except for an event stream, which a copy would buffer whole
+      const response = isEventStream(res) ? res : res.clone();
+
+      res = (await options.onResponse({ request: req, response })) ?? res;
+    }
 
     if (!res.ok) {
       throw new VercubeClientError(res, await readBody(res, true));
@@ -90,7 +103,7 @@ export function createClient<R = Record<string, AnyRoute>>(options: ClientOption
       return undefined;
     }
 
-    if (res.body && res.headers.get('content-type')?.startsWith('text/event-stream')) {
+    if (res.body && isEventStream(res)) {
       // the final request's signal: `onRequest` may have replaced it
       return parseSse(res.body, req.signal);
     }
@@ -164,22 +177,29 @@ function joinUrl(base: string, path: string, query: string): string {
  * @returns The path
  */
 function fillPath(path: string, params: Record<string, unknown> = {}): string {
-  return path.replace(SEGMENT, (_, wildcard: string | undefined, name: string) => {
-    const value = params[name];
+  // only the path has segments: `?at=12:30` is a query, not a parameter
+  const end = path.search(/[?#]/);
+  const template = end === -1 ? path : path.slice(0, end);
+  const rest = end === -1 ? '' : path.slice(end);
 
-    if (value === undefined || value === null) {
-      throw new TypeError(`Missing path parameter "${name}" for ${path}`);
-    }
+  return (
+    template.replace(SEGMENT, (_, wildcard: string | undefined, name: string) => {
+      const value = params[name];
 
-    const segments = wildcard ? String(value).split('/') : [String(value)];
+      if (value === undefined || value === null) {
+        throw new TypeError(`Missing path parameter "${name}" for ${path}`);
+      }
 
-    // the URL parser resolves these, so `../admin` would reach another route
-    if (segments.some((segment) => segment === '.' || segment === '..')) {
-      throw new TypeError(`Path parameter "${name}" cannot be "." or ".." in ${path}`);
-    }
+      const segments = wildcard ? String(value).split('/') : [String(value)];
 
-    return segments.map(encodeURIComponent).join('/');
-  });
+      // the URL parser resolves these, so `../admin` would reach another route
+      if (segments.some((segment) => segment === '.' || segment === '..')) {
+        throw new TypeError(`Path parameter "${name}" cannot be "." or ".." in ${path}`);
+      }
+
+      return segments.map(encodeURIComponent).join('/');
+    }) + rest
+  );
 }
 
 /**
@@ -222,6 +242,14 @@ function toFormData(fields: Record<string, unknown>): FormData {
   }
 
   return form;
+}
+
+/**
+ * @param response - Any response
+ * @returns True for `text/event-stream`
+ */
+function isEventStream(response: Response): boolean {
+  return response.headers.get('content-type')?.startsWith('text/event-stream') ?? false;
 }
 
 /**
