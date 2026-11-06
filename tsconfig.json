@@ -49,7 +49,9 @@
     "./playground/**/*.ts",
     "./tsdown.config.ts",
     "./examples/custom-plugin/**/*.ts",
-    "./examples/cli-commands/**/*.ts"
+    "./examples/cli-commands/**/*.ts",
+    "./examples/client/**/*.ts",
+    "./examples/client/.vercube/*.d.ts"
   ],
   "exclude": [
     "node_modules",
