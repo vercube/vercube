@@ -176,6 +176,9 @@ export class SchedulerManager {
   /** The mounted store */
   protected fStore: SchedulerTypes.MountedStore<any> | null = null;
 
+  /** Set by `close()`, so a late health probe does not connect the closed store again */
+  protected fClosed: boolean = false;
+
   /** Job defaults set through `configure()`, already parsed */
   protected fDefaults: Partial<ResolvedOptions> = {};
 
@@ -315,6 +318,7 @@ export class SchedulerManager {
     const store = typeof mount.store === 'function' ? this.gContainer.resolve(mount.store) : mount.store;
 
     this.fStore = { store: store as SchedulerStore<unknown>, initOptions: mount.initOptions };
+    this.fClosed = false;
 
     if (this.fStarted) {
       await this.ensureReady(this.fStore).catch(() => undefined);
@@ -523,6 +527,8 @@ export class SchedulerManager {
    * @returns {Promise<void>} Resolves once everything is closed
    */
   public async close(): Promise<void> {
+    this.fClosed = true;
+
     await this.stop();
 
     unregisterManager(this);
@@ -1979,6 +1985,10 @@ export class SchedulerManager {
    * @throws {SchedulerError} When no store is mounted, or its backend cannot be reached
    */
   public async ping(): Promise<void> {
+    if (this.fClosed) {
+      throw new SchedulerError('The scheduler is closed', 'ping', undefined, undefined, false);
+    }
+
     const store = await this.readyStore('ping');
 
     await store.ping?.();

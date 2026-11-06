@@ -95,6 +95,9 @@ export class KafkaStrategy extends QueueStrategy<KafkaStrategyOptions> {
   /** Admin client, opened only when counters are read */
   private fAdmin: Admin | null = null;
 
+  /** The admin connect in progress, shared by concurrent callers */
+  private fAdminConnecting: Promise<Admin> | null = null;
+
   /** Consumed topics and where their records go, indexed by topic */
   private fRoutes: Map<string, QueueTypes.ConsumeRequest> = new Map();
 
@@ -266,7 +269,7 @@ export class KafkaStrategy extends QueueStrategy<KafkaStrategyOptions> {
     }
 
     try {
-      const admin = await this.adminClient();
+      const admin = await this.adminClient('stats');
       const [ends, committed] = await Promise.all([
         admin.fetchTopicOffsets(queue),
         admin.fetchOffsets({ groupId: options.groupId, topics: [queue] }),
@@ -296,7 +299,7 @@ export class KafkaStrategy extends QueueStrategy<KafkaStrategyOptions> {
    * @throws {QueueError} When the strategy has not been initialized
    */
   public override async ping(): Promise<void> {
-    const admin = await this.adminClient();
+    const admin = await this.adminClient('ping');
 
     await admin.describeCluster();
   }
@@ -318,6 +321,7 @@ export class KafkaStrategy extends QueueStrategy<KafkaStrategyOptions> {
     this.fConsumer = null;
     this.fProducer = null;
     this.fAdmin = null;
+    this.fAdminConnecting = null;
 
     try {
       await Promise.all([consumer?.disconnect(), producer?.disconnect(), admin?.disconnect()]);
@@ -422,16 +426,52 @@ export class KafkaStrategy extends QueueStrategy<KafkaStrategyOptions> {
    * @returns {Promise<Admin>} The connected admin client
    * @throws {QueueError} When the strategy has not been initialized
    */
-  private async adminClient(): Promise<Admin> {
-    if (!this.fAdmin) {
-      const admin = this.requireClient('stats').admin();
-
-      // kept only once connected, so a failed connect is tried again next time
-      await admin.connect();
-      this.fAdmin = admin;
+  private adminClient(operation: string): Promise<Admin> {
+    if (this.fAdmin) {
+      return Promise.resolve(this.fAdmin);
     }
 
-    return this.fAdmin;
+    // Shared, so probes arriving while a slow broker is still being reached do
+    // not each open an admin that nothing would disconnect. A failed connect
+    // is dropped, so the next call tries again.
+    if (this.fAdminConnecting) {
+      return this.fAdminConnecting;
+    }
+
+    const admin = this.requireClient(operation).admin();
+    // read only after the first await, by when it is assigned
+    // oxlint-disable-next-line prefer-const
+    let connecting!: Promise<Admin>;
+
+    connecting = (async () => {
+      try {
+        await admin.connect();
+      } catch (error) {
+        if (this.fAdminConnecting === connecting) {
+          this.fAdminConnecting = null;
+        }
+
+        await admin.disconnect().catch(() => undefined);
+
+        throw error;
+      }
+
+      // closed while connecting: this admin belongs to nobody
+      if (this.fAdminConnecting !== connecting) {
+        await admin.disconnect().catch(() => undefined);
+
+        throw new QueueError('Kafka strategy was closed', operation, undefined, undefined, false);
+      }
+
+      this.fAdmin = admin;
+      this.fAdminConnecting = null;
+
+      return admin;
+    })();
+
+    this.fAdminConnecting = connecting;
+
+    return connecting;
   }
 
   /**

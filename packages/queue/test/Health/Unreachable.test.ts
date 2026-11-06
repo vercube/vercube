@@ -12,7 +12,9 @@ const UNREACHABLE = '127.0.0.1:1';
 
 /**
  * The checks against real clients pointed at a port nothing listens on, the
- * one failure CI can reproduce without a broker.
+ * one failure CI can reproduce without a broker. Most clients connect while
+ * initializing, so this proves a check fails when the first connect does;
+ * the unit tests of each strategy cover a ping failing once connected.
  */
 describe('queue health against an unreachable broker', () => {
   let manager: QueueManager;

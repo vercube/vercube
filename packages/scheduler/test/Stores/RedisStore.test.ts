@@ -26,6 +26,7 @@ const fake = vi.hoisted(() => {
 
     public disconnect = vi.fn(() => state.onDisconnect());
     public quit = vi.fn(async () => 'OK');
+    public ping = vi.fn(async () => 'PONG');
 
     public set = vi.fn(async (key: string, value: string, _px: string, _ttl: number, _nx: string) => {
       if (this.data.has(key)) {
@@ -94,6 +95,24 @@ describe('RedisStore', () => {
   beforeEach(() => {
     state.clients.length = 0;
     state.failNextConnect = false;
+  });
+
+  it('pings Redis', async () => {
+    const store = new RedisStore();
+
+    await store.initialize(undefined);
+    await store.ping();
+
+    expect(state.clients[0].ping).toHaveBeenCalledOnce();
+  });
+
+  it('fails the ping when Redis does not answer', async () => {
+    const store = new RedisStore();
+
+    await store.initialize(undefined);
+    state.clients[0].ping.mockRejectedValueOnce(new Error('Connection is closed.'));
+
+    await expect(store.ping()).rejects.toThrow('Connection is closed.');
   });
 
   it('is named and distributed', () => {

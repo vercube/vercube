@@ -8,7 +8,9 @@ import type { SchedulerTypes } from '../../src/Types/SchedulerTypes';
 
 /**
  * The checks against real clients pointed at a port nothing listens on, the
- * one failure CI can reproduce without a database.
+ * one failure CI can reproduce without a database. Both stores connect while
+ * initializing, so this proves a check fails when the first connect does;
+ * the store unit tests and the contract suites cover the ping itself.
  */
 describe('scheduler health against an unreachable store', () => {
   let manager: SchedulerManager;

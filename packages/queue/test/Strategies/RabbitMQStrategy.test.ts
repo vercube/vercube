@@ -208,6 +208,30 @@ describe('RabbitMQStrategy', () => {
     });
   });
 
+  describe('health', () => {
+    it('should ping by opening and closing a channel', async () => {
+      const before = state.connections[0].createChannel.mock.calls.length;
+
+      await strategy.ping();
+
+      expect(state.connections[0].createChannel.mock.calls.length).toBe(before + 1);
+      const channel = await state.connections[0].createChannel.mock.results.at(-1)!.value;
+      expect(channel.close).toHaveBeenCalled();
+    });
+
+    it('should fail the ping when the broker refuses a channel', async () => {
+      state.connections[0].createChannel.mockRejectedValueOnce(new Error('connection closed'));
+
+      await expect(strategy.ping()).rejects.toThrow('connection closed');
+    });
+
+    it('should fail the ping once closed', async () => {
+      await strategy.close();
+
+      await expect(strategy.ping()).rejects.toThrow('not connected');
+    });
+  });
+
   describe('connecting', () => {
     it('should connect with recovery enabled by default', () => {
       expect(state.connectArgs[0]).toEqual(['amqp://localhost', { recovery: {} }]);

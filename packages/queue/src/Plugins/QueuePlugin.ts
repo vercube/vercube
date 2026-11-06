@@ -59,7 +59,9 @@ export class QueuePlugin extends BasePlugin<QueueTypes.PluginOptions> {
    * @override
    */
   public override async use(app: App, options?: QueueTypes.PluginOptions): Promise<void> {
-    if (!app.container.getOptional(QueueManager)) {
+    const first = !app.container.getOptional(QueueManager);
+
+    if (first) {
       app.container.bind(QueueManager);
 
       // close with the application, once however many times the plugin is registered
@@ -73,34 +75,18 @@ export class QueuePlugin extends BasePlugin<QueueTypes.PluginOptions> {
 
     manager.configure(settings);
 
+    // the first registration turns the checks on by default, a later one only
+    // changes them when it says so
+    if (first || health !== undefined) {
+      manager.enableHealthChecks(resolveModuleHealth(health));
+    }
+
     for (const mount of strategies ?? []) {
       if (manager.getStrategy(mount.name)) {
         continue;
       }
 
       await manager.mount(mount as QueueTypes.Mount<never>);
-      this.registerCheck(app, manager, mount.name ?? 'default', health);
     }
-  }
-
-  /**
-   * Registers the readiness check of a mount whose strategy talks to a broker.
-   * Running it connects the strategy when nothing has yet, which is the first
-   * use anyway.
-   *
-   * @param {App} app - The application instance
-   * @param {QueueManager} manager - The queue manager
-   * @param {string} name - Mount name
-   * @param {QueueTypes.PluginOptions['health']} option - The plugin's `health` option
-   * @returns {void}
-   */
-  private registerCheck(app: App, manager: QueueManager, name: string, option: QueueTypes.PluginOptions['health']): void {
-    const settings = resolveModuleHealth(option);
-
-    if (!settings || typeof manager.getStrategy(name)?.ping !== 'function') {
-      return;
-    }
-
-    app.health.register({ name: `queue:${name}`, ...settings, check: () => manager.ping(name) });
   }
 }

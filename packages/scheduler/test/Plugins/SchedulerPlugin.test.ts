@@ -233,6 +233,13 @@ describe('SchedulerPlugin', () => {
       expect(app.health.size).toBe(0);
     });
 
+    it('should not connect a closed store again', async () => {
+      await plugin.use(app, { store: { store: PingStore }, autoStart: false });
+      await container.get(SchedulerManager).close();
+
+      expect((await app.health.check()).checks['scheduler:store'].error).toBe('The scheduler is closed');
+    });
+
     it('should mark the check non-critical', async () => {
       await plugin.use(app, { store: { store: PingStore }, autoStart: false, health: { critical: false } });
 

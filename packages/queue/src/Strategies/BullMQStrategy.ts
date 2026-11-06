@@ -299,10 +299,14 @@ export class BullMQStrategy extends QueueStrategy<BullMQStrategyOptions> {
     const options = this.requireOptions('ping');
 
     if (!this.fPingQueue) {
-      this.fPingQueue = new Queue('vercube-health', {
-        connection: options.connection,
-        prefix: options.prefix,
-      });
+      // Options rather than a client of the application's: fail a command at
+      // once while Redis is down instead of queueing one per probe until it
+      // is back. BullMQ setups usually set `maxRetriesPerRequest: null`.
+      const connection = isClient(options.connection)
+        ? options.connection
+        : { ...options.connection, maxRetriesPerRequest: 1, enableOfflineQueue: false };
+
+      this.fPingQueue = new Queue('vercube-health', { connection, prefix: options.prefix });
 
       // a refused connection is what the check reports; unhandled, the
       // emitter would throw it out of the process
@@ -312,8 +316,9 @@ export class BullMQStrategy extends QueueStrategy<BullMQStrategyOptions> {
     const client = await this.fPingQueue.getBackend().client;
 
     // BullMQ's client interface has no PING; a read of a key that never
-    // exists is the same round trip on every Redis-compatible server
-    await client.get('vercube:health');
+    // exists is the same round trip, under the prefix so a Redis ACL limited
+    // to the queue keys allows it
+    await client.get(`${options.prefix ?? 'bull'}:vercube-health`);
   }
 
   /**
@@ -331,6 +336,7 @@ export class BullMQStrategy extends QueueStrategy<BullMQStrategyOptions> {
     this.fWorkers.clear();
     this.fQueues.clear();
     this.fPingQueue = null;
+    this.fOptions = null;
 
     await Promise.all(closing);
   }
@@ -447,4 +453,14 @@ export class BullMQStrategy extends QueueStrategy<BullMQStrategyOptions> {
 
     return this.fOptions;
   }
+}
+
+/**
+ * Whether a BullMQ connection is an existing client rather than options.
+ *
+ * @param {ConnectionOptions} connection - The connection
+ * @returns {boolean} True for a client instance
+ */
+function isClient(connection: ConnectionOptions): boolean {
+  return typeof (connection as { duplicate?: unknown }).duplicate === 'function';
 }

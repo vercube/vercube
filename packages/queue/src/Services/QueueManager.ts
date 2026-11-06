@@ -1,4 +1,4 @@
-import { ValidationProvider } from '@vercube/core';
+import { HealthRegistry, ValidationProvider } from '@vercube/core';
 import { Container, Destroy, Init, Inject, InjectOptional } from '@vercube/di';
 import { Logger } from '@vercube/logger';
 import { countOutcome, injectTraceContext, traceProcess, tracePublish } from '../Common/Instrument';
@@ -66,6 +66,19 @@ export class QueueManager {
   /** Validation provider, needed only by handlers declaring a schema */
   @InjectOptional(ValidationProvider)
   protected gValidation!: ValidationProvider | null;
+
+  /** The application's health checks, absent outside an application */
+  @InjectOptional(HealthRegistry)
+  protected gHealth!: HealthRegistry | null;
+
+  /** How mounts register their health check, null while they register none */
+  protected fHealth: { critical: boolean; timeout?: number } | null = null;
+
+  /** Removes the health check of each mount that registered one */
+  protected fHealthChecks: Map<string, () => void> = new Map();
+
+  /** Set by `close()`, so a late health probe does not connect a closed strategy again */
+  protected fClosed: boolean = false;
 
   /** Mounted strategies, indexed by mount name */
   protected fStrategies: Map<string, QueueTypes.MountedStrategy<any>> = new Map();
@@ -157,11 +170,14 @@ export class QueueManager {
       await this.unmount(mountName);
     }
 
+    this.fClosed = false;
     this.fStrategies.set(mountName, {
       name: mountName,
       strategy: this.gContainer.resolve(strategy) as QueueStrategy<unknown>,
       initOptions,
     });
+
+    this.registerHealthCheck(mountName);
 
     if (this.fStarted) {
       await this.enqueue(() => this.startMount(mountName));
@@ -183,6 +199,8 @@ export class QueueManager {
     }
 
     this.fStrategies.delete(name);
+    this.fHealthChecks.get(name)?.();
+    this.fHealthChecks.delete(name);
 
     await this.enqueue(async () => {
       await this.stopConsumers(name);
@@ -201,12 +219,19 @@ export class QueueManager {
   }
 
   /**
-   * Names of the mounted strategies, in mount order.
+   * Registers a readiness check, `queue:<mount>`, for every mount whose
+   * strategy talks to a broker, now and for later mounts; `null` removes them.
+   * An unmounted strategy takes its check with it.
    *
-   * @returns {string[]} The mount names
+   * @param {{ critical: boolean; timeout?: number } | null} settings - How to register them
+   * @returns {void}
    */
-  public get mounts(): string[] {
-    return [...this.fStrategies.keys()];
+  public enableHealthChecks(settings: { critical: boolean; timeout?: number } | null): void {
+    this.fHealth = settings;
+
+    for (const name of this.fStrategies.keys()) {
+      this.registerHealthCheck(name);
+    }
   }
 
   /**
@@ -221,11 +246,23 @@ export class QueueManager {
   public async ping(name: string = DEFAULT_STRATEGY): Promise<void> {
     const mount = this.fStrategies.get(name);
 
-    if (!mount) {
-      throw new QueueError(`No queue strategy is mounted under "${name}"`, 'ping', undefined, undefined, false);
+    if (!mount || this.fClosed) {
+      throw new QueueError(
+        this.fClosed ? 'The queue manager is closed' : `No queue strategy is mounted under "${name}"`,
+        'ping',
+        undefined,
+        undefined,
+        false,
+      );
     }
 
     await this.ensureReady(mount);
+
+    // unmounted or closed meanwhile: the strategy belongs to nobody now
+    if (this.fStrategies.get(name) !== mount || this.fClosed) {
+      throw new QueueError(`The queue strategy "${name}" was closed`, 'ping', undefined, undefined, false);
+    }
+
     await mount.strategy.ping?.();
   }
 
@@ -441,6 +478,7 @@ export class QueueManager {
    */
   public async close(): Promise<void> {
     this.fStarted = false;
+    this.fClosed = true;
 
     return this.enqueue(async () => {
       for (const [name, mount] of this.fStrategies) {
@@ -1150,6 +1188,25 @@ export class QueueManager {
     }
 
     mount.ready = undefined;
+  }
+
+  /**
+   * Registers, replaces or removes the health check of a mount.
+   *
+   * @param {string} name - Mount name
+   * @returns {void}
+   */
+  protected registerHealthCheck(name: string): void {
+    this.fHealthChecks.get(name)?.();
+    this.fHealthChecks.delete(name);
+
+    const strategy = this.fStrategies.get(name)?.strategy;
+
+    if (!this.gHealth || !this.fHealth || typeof strategy?.ping !== 'function') {
+      return;
+    }
+
+    this.fHealthChecks.set(name, this.gHealth.register({ name: `queue:${name}`, ...this.fHealth, check: () => this.ping(name) }));
   }
 
   /**
