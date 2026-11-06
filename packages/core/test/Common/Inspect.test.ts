@@ -103,6 +103,35 @@ describe('App.inspect', () => {
 
       app.container.get(IntrospectionRegistry).touch('routes');
       await vi.waitFor(() => expect(sent).toHaveLength(2));
+
+      // a controller can move without any route changing
+      app.container.get(IntrospectionRegistry).touch('discovery');
+      await vi.waitFor(() => expect(sent).toHaveLength(3));
+    } finally {
+      process.send = original;
+      delete process.env.VERCUBE_DEV_ROUTES;
+      delete process.env.VERCUBE_LISTEN;
+    }
+  });
+
+  it('keeps serving when the routes cannot be reported, and never reports them as empty', async () => {
+    const sent: unknown[] = [];
+    const original = process.send;
+    const registry = app.container.get(IntrospectionRegistry);
+    const describe = vi.spyOn(registry, 'describe').mockRejectedValue(new Error('provider failed'));
+
+    process.env.VERCUBE_DEV_ROUTES = '1';
+    process.env.VERCUBE_LISTEN = '0';
+    process.send = ((message: unknown) => sent.push(message) > 0) as typeof process.send;
+
+    try {
+      await expect(app.listen()).resolves.toBeUndefined();
+
+      describe.mockResolvedValue(undefined);
+      registry.touch('routes');
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      expect(sent).toEqual([]);
     } finally {
       process.send = original;
       delete process.env.VERCUBE_DEV_ROUTES;
