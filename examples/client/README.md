@@ -23,11 +23,11 @@ Port 3000 taken? Start the server with `PORT=4000 pnpm dev` and point the script
 
 ## 📁 What is where
 
-| File                                | What it does                                                                            |
-| ----------------------------------- | --------------------------------------------------------------------------------------- |
-| `src/controller/TodoController.ts`  | CRUD routes with a param, a query field and a JSON body                                 |
-| `src/controller/ClockController.ts` | An `@Sse()` route that streams the time                                                 |
-| `.vercube/routes.d.ts`              | The route map: each route, the handler that serves it and where its arguments come from |
-| `client/main.ts`                    | The calls, including error handling and reading the event stream                        |
+| File                                | What it does                                                                                                                            |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/controller/TodoController.ts`  | CRUD routes with a param, a query field and a JSON body                                                                                 |
+| `src/controller/ClockController.ts` | An `@Sse()` route that streams the time                                                                                                 |
+| `.vercube/routes.d.ts`              | The route map: each route, the handler that serves it and where its arguments come from. `pnpm dev` and `pnpm build` keep it up to date |
+| `client/main.ts`                    | The calls, including error handling and reading the event stream                                                                        |
 
-Try breaking a call in `client/main.ts`, for example `api.get('/api/todos/:id')` without `params`, or `body: { name: 'x' }` on the POST: the editor flags it.
+Add a route to a controller while `pnpm dev` runs and it appears in the map, and in your editor's autocomplete for `api`. Try breaking a call in `client/main.ts`, for example `api.get('/api/todos/:id')` without `params`, or `body: { name: 'x' }` on the POST: the editor flags it.
