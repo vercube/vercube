@@ -170,6 +170,16 @@ describe('generateRouteTypes', () => {
     });
   });
 
+  it('keeps the root when the path is only slashes', () => {
+    const { code } = generateRouteTypes({
+      routes: [{ method: 'GET', path: '//', controller: 'UserController', handler: 'a', args: [] }],
+      controllers,
+      outFile: out,
+    });
+
+    expect(code).toContain("'GET /': RouteDef<UserController, 'a'>;");
+  });
+
   it('drops a trailing slash, which the router ignores', () => {
     const { code } = generateRouteTypes({
       routes: [
