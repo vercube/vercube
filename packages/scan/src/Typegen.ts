@@ -16,12 +16,13 @@ export interface TypegenRoute {
   path: string;
   controller: string;
   handler: string;
-  args: { idx: number; type: string; name?: string; validated?: boolean }[];
+  args: { idx: number; type: string; name?: string }[];
   sse?: boolean;
-  /** Errors declared with `@Throws()`: class name and status. */
-  throws?: { name: string; status: number }[];
-  /** True when an authentication middleware guards the route. */
-  secured?: boolean;
+  /**
+   * Errors the route answers with: class name, status, and for an implicit
+   * one (core adds a 400, 401 or 403 nobody declared) the module to import it from.
+   */
+  throws?: { name: string; status: number; module?: string }[];
 }
 
 /**
@@ -32,45 +33,6 @@ export interface TypegenImport {
   module: string;
   name: string;
 }
-
-/** An error a route answers with, as the route map types it. */
-export interface TypegenError extends TypegenImport {
-  status: number;
-}
-
-/**
- * Adds errors a route answers with that nobody declares, because the framework
- * throws them itself. Plugins can add their own (a rate limiter's 429, say).
- */
-export interface ImplicitErrorRule {
-  /** Identifies the rule. */
-  name: string;
-  /** The errors the route gets from this rule, none when it does not apply. */
-  errors(route: TypegenRoute): TypegenError[];
-}
-
-/** Errors the framework throws itself. 500 is left out on purpose: every route can answer with it. */
-export const IMPLICIT_ERRORS: readonly ImplicitErrorRule[] = [
-  {
-    // a validation schema rejecting the input, or a body that is not JSON or form data
-    name: 'validation',
-    errors: (route) =>
-      route.args.some((arg) => arg.validated || arg.type === 'body' || arg.type === 'multipart-form-data')
-        ? [{ status: 400, name: 'BadRequestError', module: '@vercube/core' }]
-        : [],
-  },
-  {
-    // `@Auth()`: no or invalid credentials, or credentials without the required role
-    name: 'auth',
-    errors: (route) =>
-      route.secured
-        ? [
-            { status: 401, name: 'UnauthorizedError', module: '@vercube/core' },
-            { status: 403, name: 'ForbiddenError', module: '@vercube/core' },
-          ]
-        : [],
-  },
-];
 
 /** Errors `@vercube/core` exports, found there when a controller file does not say where one comes from. */
 const CORE_ERRORS = new Set([
@@ -115,8 +77,6 @@ export interface TypegenOptions {
   outFile: string;
   /** Module `RouteDef` is imported from. */
   clientModule?: string;
-  /** Errors added without a declaration. Defaults to {@link IMPLICIT_ERRORS}. */
-  implicitErrors?: readonly ImplicitErrorRule[];
 }
 
 /** What {@link generateRouteTypes} produced. */
@@ -199,7 +159,7 @@ function localNames(controllers: string[]): Map<string, string> {
  * @returns The file and the routes it left out
  */
 export function generateRouteTypes(options: TypegenOptions): TypegenResult {
-  const { routes, controllers, outFile, clientModule = '@vercube/client', implicitErrors = IMPLICIT_ERRORS } = options;
+  const { routes, controllers, outFile, clientModule = '@vercube/client' } = options;
   const entries = new Map<string, string>();
   const imports = new Map<string, Set<string>>();
   const files = new Set<string>();
@@ -265,7 +225,7 @@ export function generateRouteTypes(options: TypegenOptions): TypegenResult {
 
     addImport(specifier, binding);
 
-    const throws = describeThrows(route, source, implicitErrors, importType, (message) => warnings.add(`${id}: ${message}`));
+    const throws = describeThrows(route, source, importType, (message) => warnings.add(`${id}: ${message}`));
     entries.set(id, `RouteDef<${local}, ${quote(route.handler)}${describeArgs(route.args, path, route.sse, throws)}>`);
   }
 
@@ -791,20 +751,18 @@ function resolveModule(from: string, specifier: string): string | null {
 }
 
 /**
- * The errors of one route, by status: the implicit ones, then those declared
- * with `@Throws()`, each imported from where the controller file says.
+ * The errors of one route, by status. An implicit error names its module; a
+ * declared one is imported from wherever the controller file imports it.
  *
  * @param route - The route
  * @param source - Its controller's source
- * @param rules - Implicit error rules
  * @param importType - Imports a type and returns its local name
  * @param warn - Reports an error that could not be imported
- * @returns Status to type expression
+ * @returns Status to type expressions
  */
 function describeThrows(
   route: TypegenRoute,
   source: ControllerSource,
-  rules: readonly ImplicitErrorRule[],
   importType: (type: TypegenImport, className: string) => string,
   warn: (message: string) => void,
 ): Map<number, string[]> {
@@ -819,16 +777,11 @@ function describeThrows(
     byStatus.set(status, types);
   };
 
-  for (const rule of rules) {
-    for (const error of rule.errors(route)) {
-      add(error.status, importType(error, error.name));
-    }
-  }
-
-  for (const { name, status } of route.throws ?? []) {
+  for (const { name, status, module } of route.throws ?? []) {
     // a bundler renames a class that collides with another
     const original = name.replace(/\$\d+$/, '');
     const type =
+      (module ? { module, name: original } : undefined) ??
       source.types?.[name] ??
       source.types?.[original] ??
       (CORE_ERRORS.has(original) ? { module: '@vercube/core', name: original } : undefined);

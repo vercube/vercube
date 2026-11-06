@@ -164,8 +164,7 @@ describe('generateRouteTypes', () => {
       },
     ];
 
-    // errors have their own tests below
-    expect(generateRouteTypes({ routes, controllers, outFile: out, implicitErrors: [] })).toEqual({
+    expect(generateRouteTypes({ routes, controllers, outFile: out })).toEqual({
       skipped: [],
       warnings: [],
       files: ['/app/src/Controllers/UserController.ts', '/app/src/Feed.mts'],
@@ -462,37 +461,27 @@ describe('route errors', () => {
     expect(warnings).toEqual([expect.stringMatching(/^GET \/users\/:id: cannot import the type of Hidden \(410\)/)]);
   });
 
-  it('adds 400 to routes that validate or parse a body, and 401 and 403 to secured ones', async () => {
-    write('src/UserController.ts', `@Controller('/users') export class UserController {}`);
-
-    const { code } = await generate([
-      route({ path: '/a', args: [{ idx: 0, type: 'query-param', name: 'q', validated: true }] }),
-      route({ path: '/b', args: [{ idx: 0, type: 'query-param', name: 'q' }] }),
-      route({ path: '/c', args: [{ idx: 0, type: 'multipart-form-data' }] }),
-      route({ path: '/d', secured: true }),
-    ]);
-
-    expect(code).toContain(`'GET /a': RouteDef<UserController, 'get', { query: { q: 0 }; throws: { 400: BadRequestError } }>`);
-    expect(code).toContain(`'GET /b': RouteDef<UserController, 'get', { query: { q: 0 } }>`);
-    expect(code).toContain(`'GET /c': RouteDef<UserController, 'get', { form: 0; throws: { 400: BadRequestError } }>`);
-    expect(code).toContain(
-      `'GET /d': RouteDef<UserController, 'get', { throws: { 401: UnauthorizedError; 403: ForbiddenError } }>`,
-    );
-  });
-
-  it('takes implicit error rules as data, and joins classes sharing a status', async () => {
+  it('imports an implicit error from the module core names, and joins classes sharing a status', async () => {
     write(
       'src/UserController.ts',
-      `import { ConflictError } from '@acme/errors';\n@Controller('/users') export class UserController {}`,
+      `import { BadRequestError } from './MyErrors';\n@Controller('/users') export class UserController {}`,
     );
+    write('src/MyErrors.ts', `export class BadRequestError {}`);
 
-    const { code } = await generate([route({ throws: [{ name: 'ConflictError', status: 429 }] })], {
-      implicitErrors: [
-        { name: 'rate-limit', errors: () => [{ status: 429, name: 'TooManyRequestsError', module: '@acme/rate-limit' }] },
-      ],
-    });
+    const { code } = await generate([
+      route({
+        throws: [
+          // core's own, whatever the controller file calls by that name
+          { name: 'BadRequestError', status: 400, module: '@vercube/core' },
+          { name: 'TooManyRequestsError', status: 429, module: '@acme/rate-limit' },
+          { name: 'BadRequestError', status: 429 },
+        ],
+      }),
+    ]);
 
-    expect(code).toContain(`throws: { 429: ConflictError | TooManyRequestsError }`);
+    expect(code).toContain(`import type { BadRequestError } from '@vercube/core';`);
+    expect(code).toContain(`import type { BadRequestError as BadRequestError_ } from '../src/MyErrors.js';`);
+    expect(code).toContain(`throws: { 400: BadRequestError; 429: BadRequestError_ | TooManyRequestsError }`);
   });
 
   it('gives an error a name no controller has', async () => {
