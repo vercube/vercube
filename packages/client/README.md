@@ -25,6 +25,7 @@
 - **Every body** - JSON by default, multipart forms, `Blob` and stream bodies passed through
 - **Server-Sent Events** - `@Sse()` routes resolve to a typed async iterable that honours `AbortSignal`
 - **Errors that carry the response** - any non-2xx status throws a `VercubeClientError` with the parsed body
+- **Typed errors** - errors declared with `@Throws()` come back from `api.safe.get()` as a union you can `switch` on by status
 
 ## 📦 Installation
 
