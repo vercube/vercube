@@ -34,7 +34,7 @@ pnpm add @vercube/client
 
 ## 📖 Usage
 
-The route map tells the client which routes exist. It lives in `.vercube/routes.d.ts` and can be written by hand:
+The route map tells the client which routes exist. `vercube typegen` and `vercube build` write it to `.vercube/routes.d.ts` from the routes the application registers; it can also be written by hand:
 
 ```ts
 // .vercube/routes.d.ts

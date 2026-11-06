@@ -227,6 +227,34 @@ describe('generateRouteTypes', () => {
     expect(code).toContain("'GET /b': RouteDef<RouteDef_, 'b'>;");
   });
 
+  it('gives a reserved controller a name no other controller has', () => {
+    const { code, skipped } = generateRouteTypes({
+      routes: [
+        { method: 'GET', path: '/a', controller: 'RouteDef', handler: 'a', args: [] },
+        { method: 'GET', path: '/b', controller: 'RouteDef_', handler: 'b', args: [] },
+        { method: 'GET', path: '/c', controller: 'VercubeRoutes', handler: 'c', args: [] },
+        { method: 'GET', path: '/d', controller: 'VercubeRoutes_', handler: 'd', args: [] },
+      ],
+      controllers: {
+        RouteDef: { file: '/app/src/A.ts', exportName: 'RouteDef' },
+        RouteDef_: { file: '/app/src/B.ts', exportName: 'RouteDef_' },
+        VercubeRoutes: { file: '/app/src/C.ts', exportName: 'VercubeRoutes' },
+        VercubeRoutes_: { file: '/app/src/D.ts', exportName: 'VercubeRoutes_' },
+      },
+      outFile: out,
+    });
+
+    expect(skipped).toEqual([]);
+    expect(code).toContain("import type { RouteDef as RouteDef__ } from '../src/A.js';");
+    expect(code).toContain("import type { RouteDef_ } from '../src/B.js';");
+    expect(code).toContain("import type { VercubeRoutes as VercubeRoutes__ } from '../src/C.js';");
+    expect(code).toContain("import type { VercubeRoutes_ } from '../src/D.js';");
+    expect(code).toContain("'GET /a': RouteDef<RouteDef__, 'a'>;");
+    expect(code).toContain("'GET /b': RouteDef<RouteDef_, 'b'>;");
+    expect(code).toContain("'GET /c': RouteDef<VercubeRoutes__, 'c'>;");
+    expect(code).toContain("'GET /d': RouteDef<VercubeRoutes_, 'd'>;");
+  });
+
   it('imports a re-exported controller under its class name', () => {
     const { code } = generateRouteTypes({
       routes: [{ method: 'GET', path: '/a', controller: 'AController', handler: 'a', args: [] }],

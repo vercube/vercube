@@ -74,6 +74,34 @@ const CONTROLLER_CALL = /Controller\s*\(/;
 const SEGMENT = /(?:\*\*)?:(\w+)/g;
 
 /**
+ * Picks the name each controller is imported as. The file's own names cannot be
+ * taken, so `RouteDef` becomes `RouteDef_`, or `RouteDef__` when a controller
+ * already has that name.
+ *
+ * @param controllers - Controller names from the route table
+ * @returns The local name of each
+ */
+function localNames(controllers: string[]): Map<string, string> {
+  const unique = [...new Set(controllers)];
+  const taken = new Set(RESERVED);
+  const locals = new Map<string, string>();
+
+  // a name that is free keeps it; only the reserved ones move
+  for (const name of [...unique.filter((n) => !RESERVED.has(n)), ...unique.filter((n) => RESERVED.has(n))]) {
+    let local = name;
+
+    while (taken.has(local)) {
+      local += '_';
+    }
+
+    taken.add(local);
+    locals.set(name, local);
+  }
+
+  return locals;
+}
+
+/**
  * Writes the type references `@vercube/client` turns into a typed route map.
  *
  * Nothing about the routes' types is printed: each entry names the controller
@@ -92,6 +120,7 @@ export function generateRouteTypes(options: TypegenOptions): TypegenResult {
   const entries = new Map<string, string>();
   const imports = new Map<string, Set<string>>();
   const skipped: TypegenResult['skipped'] = [];
+  const locals = localNames(routes.map((route) => route.controller));
 
   for (const route of routes) {
     // `@Get('/')` under `@Controller('/users')` registers `/users/`, which the
@@ -112,8 +141,7 @@ export function generateRouteTypes(options: TypegenOptions): TypegenResult {
     }
 
     const specifier = toSpecifier(outFile, source.file);
-    // the file's own names cannot be taken by a controller
-    const local = RESERVED.has(route.controller) ? `${route.controller}_` : route.controller;
+    const local = locals.get(route.controller)!;
     const binding = source.exportName === local ? local : `${source.exportName} as ${local}`;
 
     if (!imports.has(specifier)) {
