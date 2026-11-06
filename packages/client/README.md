@@ -51,7 +51,7 @@ export interface VercubeRoutes {
 
 ```ts
 import { createClient } from '@vercube/client';
-import type { VercubeRoutes } from './.vercube/routes';
+import type { VercubeRoutes } from './.vercube/routes.js';
 
 const api = createClient<VercubeRoutes>({ baseURL: 'http://localhost:3000' });
 
