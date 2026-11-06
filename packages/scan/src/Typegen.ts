@@ -775,15 +775,23 @@ function namedTypes(file: string, program: any): Record<string, TypegenImport | 
     const module = resolveModule(file, node.source.value);
 
     for (const specifier of node.specifiers ?? []) {
-      if (!module || specifier.importKind === 'type') {
+      if (specifier.importKind === 'type') {
         continue;
       }
 
-      if (specifier.type === 'ImportSpecifier') {
-        const imported = specifier.imported?.name ?? specifier.imported?.value;
+      const imported = specifier.type === 'ImportSpecifier' ? (specifier.imported?.name ?? specifier.imported?.value) : undefined;
 
+      if (!module) {
+        // a relative import that does not resolve: its names are known, not importable,
+        // so a custom `NotFoundError` from it is never mistaken for the core one
+        set(imported === undefined || imported === 'default' ? specifier.local.name : imported, null);
+        continue;
+      }
+
+      if (specifier.type === 'ImportSpecifier' && imported !== 'default') {
         set(imported, { module, name: imported });
-      } else if (specifier.type === 'ImportDefaultSpecifier') {
+      } else if (specifier.type === 'ImportDefaultSpecifier' || specifier.type === 'ImportSpecifier') {
+        // `import X from` and `import { default as X } from`
         // the class keeps its declared name at runtime, whatever this file calls it
         set(defaultClassName(module) ?? specifier.local.name, { module, name: 'default' });
       } else if (specifier.type === 'ImportNamespaceSpecifier') {
