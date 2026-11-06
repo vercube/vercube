@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { parseSync } from 'oxc-parser';
-import { dirname, join, relative, resolve } from 'pathe';
+import { dirname, isAbsolute, join, relative, resolve } from 'pathe';
 import { glob } from 'tinyglobby';
 import { GLOB_SCAN_PATTERN } from './Scan';
 import type { ScanLogger } from './Types';
@@ -16,9 +16,78 @@ export interface TypegenRoute {
   path: string;
   controller: string;
   handler: string;
-  args: { idx: number; type: string; name?: string }[];
+  args: { idx: number; type: string; name?: string; validated?: boolean }[];
   sse?: boolean;
+  /** Errors declared with `@Throws()`: class name and status. */
+  throws?: { name: string; status: number }[];
+  /** True when an authentication middleware guards the route. */
+  secured?: boolean;
 }
+
+/**
+ * A type the generated file imports: `import type { name } from module`.
+ * `module` is a package name or an absolute file path.
+ */
+export interface TypegenImport {
+  module: string;
+  name: string;
+}
+
+/** An error a route answers with, as the route map types it. */
+export interface TypegenError extends TypegenImport {
+  status: number;
+}
+
+/**
+ * Adds errors a route answers with that nobody declares, because the framework
+ * throws them itself. Plugins can add their own (a rate limiter's 429, say).
+ */
+export interface ImplicitErrorRule {
+  /** Identifies the rule. */
+  name: string;
+  /** The errors the route gets from this rule, none when it does not apply. */
+  errors(route: TypegenRoute): TypegenError[];
+}
+
+/** Errors the framework throws itself. 500 is left out on purpose: every route can answer with it. */
+export const IMPLICIT_ERRORS: readonly ImplicitErrorRule[] = [
+  {
+    // a validation schema rejecting the input, or a body that is not JSON or form data
+    name: 'validation',
+    errors: (route) =>
+      route.args.some((arg) => arg.validated || arg.type === 'body' || arg.type === 'multipart-form-data')
+        ? [{ status: 400, name: 'BadRequestError', module: '@vercube/core' }]
+        : [],
+  },
+  {
+    // `@Auth()`: no or invalid credentials, or credentials without the required role
+    name: 'auth',
+    errors: (route) =>
+      route.secured
+        ? [
+            { status: 401, name: 'UnauthorizedError', module: '@vercube/core' },
+            { status: 403, name: 'ForbiddenError', module: '@vercube/core' },
+          ]
+        : [],
+  },
+];
+
+/** Errors `@vercube/core` exports, found there when a controller file does not say where one comes from. */
+const CORE_ERRORS = new Set([
+  'HttpError',
+  'BadRequestError',
+  'UnauthorizedError',
+  'ForbiddenError',
+  'NotFoundError',
+  'MethodNotAllowedError',
+  'NotAcceptableError',
+  'PayloadTooLargeError',
+  'UnsupportedMediaTypeError',
+  'InternalServerError',
+]);
+
+/** What an error the generator cannot import is typed as. `RouteDef` adds the `status`. */
+const UNKNOWN_ERROR = '{ name: string; message?: string }';
 
 /** Where a controller class lives and how it is exported. */
 export interface ControllerSource {
@@ -26,6 +95,11 @@ export interface ControllerSource {
   file: string;
   /** The exported name, `default` for a default export, `null` when the class is not exported. */
   exportName: string | null;
+  /**
+   * Classes the file can name, by class name: what it imports and what it
+   * exports itself. Used to import the errors its routes declare.
+   */
+  types?: Record<string, TypegenImport>;
 }
 
 /** Options for {@link generateRouteTypes}. */
@@ -41,6 +115,8 @@ export interface TypegenOptions {
   outFile: string;
   /** Module `RouteDef` is imported from. */
   clientModule?: string;
+  /** Errors added without a declaration. Defaults to {@link IMPLICIT_ERRORS}. */
+  implicitErrors?: readonly ImplicitErrorRule[];
 }
 
 /** What {@link generateRouteTypes} produced. */
@@ -51,6 +127,8 @@ export interface TypegenResult {
   skipped: { id: string; reason: string }[];
   /** Absolute paths of the controller files the result imports. */
   files: string[];
+  /** Problems that did not stop a route from being typed, such as an error class that could not be imported. */
+  warnings: string[];
 }
 
 /** First line of every generated file, also how a generated file is recognised. */
@@ -121,13 +199,45 @@ function localNames(controllers: string[]): Map<string, string> {
  * @returns The file and the routes it left out
  */
 export function generateRouteTypes(options: TypegenOptions): TypegenResult {
-  const { routes, controllers, outFile, clientModule = '@vercube/client' } = options;
+  const { routes, controllers, outFile, clientModule = '@vercube/client', implicitErrors = IMPLICIT_ERRORS } = options;
   const entries = new Map<string, string>();
   const imports = new Map<string, Set<string>>();
   const files = new Set<string>();
   const skipped: TypegenResult['skipped'] = [];
+  const warnings = new Set<string>();
   const names = new Set(routes.map((route) => route.controller));
   const locals = localNames([...names]);
+  const taken = new Set([...RESERVED, ...locals.values()]);
+  const typeLocals = new Map<string, string>();
+  const addImport = (specifier: string, binding: string): void => {
+    if (!imports.has(specifier)) {
+      imports.set(specifier, new Set());
+    }
+
+    imports.get(specifier)!.add(binding);
+  };
+
+  // an error class, imported once under a name nothing else in the file has
+  const importType = (type: TypegenImport, className: string): string => {
+    const specifier = isAbsolute(type.module) ? toSpecifier(outFile, type.module) : type.module;
+    const key = `${specifier}\0${type.name}`;
+    let local = typeLocals.get(key);
+
+    if (!local) {
+      // a default export goes by its class name
+      local = type.name === 'default' ? className : type.name;
+
+      while (taken.has(local)) {
+        local += '_';
+      }
+
+      taken.add(local);
+      typeLocals.set(key, local);
+      addImport(specifier, type.name === local ? local : `${type.name} as ${local}`);
+    }
+
+    return local;
+  };
 
   for (const route of routes) {
     // `@Get('/')` under `@Controller('/users')` registers `/users/`, which the
@@ -153,12 +263,10 @@ export function generateRouteTypes(options: TypegenOptions): TypegenResult {
     const local = locals.get(route.controller)!;
     const binding = source.exportName === local ? local : `${source.exportName} as ${local}`;
 
-    if (!imports.has(specifier)) {
-      imports.set(specifier, new Set());
-    }
+    addImport(specifier, binding);
 
-    imports.get(specifier)!.add(binding);
-    entries.set(id, `RouteDef<${local}, ${quote(route.handler)}${describeArgs(route.args, path, route.sse)}>`);
+    const throws = describeThrows(route, source, implicitErrors, importType, (message) => warnings.add(`${id}: ${message}`));
+    entries.set(id, `RouteDef<${local}, ${quote(route.handler)}${describeArgs(route.args, path, route.sse, throws)}>`);
   }
 
   // the blank line keeps formatters from treating the header as an import's comment
@@ -187,7 +295,7 @@ export function generateRouteTypes(options: TypegenOptions): TypegenResult {
 
   lines.push('}', '');
 
-  return { code: lines.join('\n'), skipped, files: [...files].sort() };
+  return { code: lines.join('\n'), skipped, files: [...files].sort(), warnings: [...warnings].sort() };
 }
 
 /**
@@ -210,8 +318,10 @@ export async function findControllers(input: string | string[]): Promise<Record<
       continue;
     }
 
-    for (const [name, exportName] of extractControllerExports(file, code)) {
-      found[name] = name in found ? null : { file, exportName };
+    const { controllers, types } = extractControllerExports(file, code);
+
+    for (const [name, exportName] of controllers) {
+      found[name] = name in found ? null : { file, exportName, types };
     }
   }
 
@@ -368,6 +478,7 @@ export function createRouteTypesWriter(
 ): (routes: TypegenRoute[], discovery?: TypegenDiscovery | null) => Promise<RouteTypesWrite> {
   const { root, outFile, logger } = options;
   let warned: string | undefined;
+  let warnedTypes = new Set<string>();
 
   // Controllers are looked up on every report rather than cached by route
   // table: a controller can move, gain an export or stop being ambiguous
@@ -392,6 +503,15 @@ export function createRouteTypesWriter(
 
       warned = skipped;
     }
+
+    // each problem once, not again on every save
+    for (const warning of result.warnings) {
+      if (!warnedTypes.has(warning)) {
+        logger?.warn(warning);
+      }
+    }
+
+    warnedTypes = new Set(result.warnings);
 
     if (written) {
       logger?.success?.(`Route types written to ${outFile}`);
@@ -531,9 +651,13 @@ function whyNotImportable(name: string, source: ControllerSource | null | undefi
 /**
  * @param file - File name, for the parser to pick the syntax
  * @param code - Its source
- * @returns Controller class name to the name it is exported under (`null` when it is not)
+ * @returns Controller class name to the name it is exported under (`null` when
+ *   it is not), and the classes the file can name ({@link ControllerSource.types})
  */
-function extractControllerExports(file: string, code: string): Map<string, string | null> {
+function extractControllerExports(
+  file: string,
+  code: string,
+): { controllers: Map<string, string | null>; types: Record<string, TypegenImport> } {
   const program = parseSync(file, code).program as { body: any[] };
   const controllers = new Map<string, string | null>();
   const { names, namespaces } = controllerBindings(program.body);
@@ -579,7 +703,148 @@ function extractControllerExports(file: string, code: string): Map<string, strin
     }
   }
 
-  return controllers;
+  return { controllers, types: namedTypes(file, program.body) };
+}
+
+/**
+ * The classes a file can name and where to import each from: its imports, by
+ * the imported name (a class keeps its own name at runtime, whatever the local
+ * alias), and the classes it exports itself.
+ *
+ * @param file - Absolute path of the file
+ * @param body - Its top-level statements
+ * @returns Class name to import
+ */
+function namedTypes(file: string, body: any[]): Record<string, TypegenImport> {
+  const types: Record<string, TypegenImport> = {};
+  const declared = new Set<string>();
+
+  for (const node of body) {
+    const declaration =
+      node.type === 'ExportNamedDeclaration' || node.type === 'ExportDefaultDeclaration' ? node.declaration : node;
+
+    if ((declaration?.type === 'ClassDeclaration' || declaration?.type === 'Class') && declaration.id?.name) {
+      declared.add(declaration.id.name);
+
+      if (node.type === 'ExportNamedDeclaration') {
+        types[declaration.id.name] = { module: file, name: declaration.id.name };
+      } else if (node.type === 'ExportDefaultDeclaration') {
+        types[declaration.id.name] = { module: file, name: 'default' };
+      }
+    }
+  }
+
+  for (const node of body) {
+    if (node.type === 'ImportDeclaration' && node.importKind !== 'type') {
+      const module = resolveModule(file, node.source.value);
+
+      for (const specifier of node.specifiers ?? []) {
+        if (!module || specifier.importKind === 'type') {
+          continue;
+        }
+
+        if (specifier.type === 'ImportSpecifier') {
+          const imported = specifier.imported?.name ?? specifier.imported?.value;
+
+          types[imported] ??= { module, name: imported };
+        } else if (specifier.type === 'ImportDefaultSpecifier') {
+          types[specifier.local.name] ??= { module, name: 'default' };
+        }
+      }
+    } else if (node.type === 'ExportNamedDeclaration' && !node.source) {
+      // `export { ConflictError }` of a class declared above
+      for (const specifier of node.specifiers ?? []) {
+        const local = specifier.local?.name;
+
+        if (declared.has(local)) {
+          types[local] ??= { module: file, name: specifier.exported?.name ?? specifier.exported?.value ?? local };
+        }
+      }
+    }
+  }
+
+  return types;
+}
+
+/** Extensions tried, in order, for a relative import written without one. */
+const SOURCE_EXTENSIONS = ['.ts', '.tsx', '.mts', '.cts', '.js', '.mjs', '/index.ts', '/index.js'];
+
+/**
+ * Where an import points: the package name as it is, a relative path as the
+ * absolute file it resolves to.
+ *
+ * @param from - The importing file
+ * @param specifier - The import source
+ * @returns The module, `null` for a relative path that does not resolve
+ */
+function resolveModule(from: string, specifier: string): string | null {
+  if (!specifier.startsWith('.')) {
+    return specifier;
+  }
+
+  const base = resolve(dirname(from), specifier);
+  // `./Errors.js` in TypeScript source names `./Errors.ts`
+  const stem = base.replace(/\.(?:m|c)?js$/, '');
+  const candidates = [base, ...SOURCE_EXTENSIONS.map((ext) => stem + ext)];
+
+  return candidates.find((candidate) => existsSync(candidate) && !candidate.endsWith('/')) ?? null;
+}
+
+/**
+ * The errors of one route, by status: the implicit ones, then those declared
+ * with `@Throws()`, each imported from where the controller file says.
+ *
+ * @param route - The route
+ * @param source - Its controller's source
+ * @param rules - Implicit error rules
+ * @param importType - Imports a type and returns its local name
+ * @param warn - Reports an error that could not be imported
+ * @returns Status to type expression
+ */
+function describeThrows(
+  route: TypegenRoute,
+  source: ControllerSource,
+  rules: readonly ImplicitErrorRule[],
+  importType: (type: TypegenImport, className: string) => string,
+  warn: (message: string) => void,
+): Map<number, string[]> {
+  const byStatus = new Map<number, string[]>();
+  const add = (status: number, type: string): void => {
+    const types = byStatus.get(status) ?? [];
+
+    if (!types.includes(type)) {
+      types.push(type);
+    }
+
+    byStatus.set(status, types);
+  };
+
+  for (const rule of rules) {
+    for (const error of rule.errors(route)) {
+      add(error.status, importType(error, error.name));
+    }
+  }
+
+  for (const { name, status } of route.throws ?? []) {
+    // a bundler renames a class that collides with another
+    const original = name.replace(/\$\d+$/, '');
+    const type =
+      source.types?.[name] ??
+      source.types?.[original] ??
+      (CORE_ERRORS.has(original) ? { module: '@vercube/core', name: original } : undefined);
+
+    if (type) {
+      add(status, importType(type, original));
+    } else {
+      warn(
+        `cannot import the type of ${original} (${status}), so it is typed as a generic error. ` +
+          `Import it in the controller's file, or export it from there.`,
+      );
+      add(status, UNKNOWN_ERROR);
+    }
+  }
+
+  return byStatus;
 }
 
 /**
@@ -616,9 +881,15 @@ function controllerBindings(body: any[]): { names: Set<string>; namespaces: Set<
  * @param args - The handler's arguments
  * @param path - The route template
  * @param sse - Whether it is an `@Sse()` route
+ * @param throws - Error types by status
  * @returns `, { ... }` with every argument index the client needs, or nothing
  */
-function describeArgs(args: TypegenRoute['args'], path: string, sse: boolean | undefined): string {
+function describeArgs(
+  args: TypegenRoute['args'],
+  path: string,
+  sse: boolean | undefined,
+  throws: Map<number, string[]> = new Map(),
+): string {
   const param: Record<string, number | null> = {};
   const query: Record<string, number> = {};
   const header: Record<string, number> = {};
@@ -674,6 +945,12 @@ function describeArgs(args: TypegenRoute['args'], path: string, sse: boolean | u
 
   if (sse) {
     parts.push('sse: true');
+  }
+
+  if (throws.size > 0) {
+    const statuses = [...throws.keys()].sort((a, b) => a - b);
+
+    parts.push(`throws: { ${statuses.map((status) => `${status}: ${[...throws.get(status)!].sort().join(' | ')}`).join('; ')} }`);
   }
 
   return parts.length > 0 ? `, { ${parts.join('; ')} }` : '';

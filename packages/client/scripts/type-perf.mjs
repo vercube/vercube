@@ -3,12 +3,19 @@
 // Writes a fixture with N routes (default 500) over N/10 controllers, one call
 // per route, and runs `tsc --extendedDiagnostics` on it.
 //
-//   node packages/client/scripts/type-perf.mjs [routes]
+// With `--errors`, every route also gets the `throws` map the generator writes
+// (a declared 404, the implicit 400 of a body, the 401 and 403 of a secured route).
+//
+//   node packages/client/scripts/type-perf.mjs [routes] [--errors]
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
-const total = Number(process.argv[2] ?? 500);
+const args = process.argv.slice(2);
+const errors = args.includes('--errors');
+const total = Number(args.find((arg) => !arg.startsWith('--')) ?? 500);
+/** `; throws: { ... }` for a route, when errors are measured. */
+const throws = (map) => (errors ? `; throws: { ${map} }` : '');
 const root = resolve(import.meta.dirname, '../../..');
 // inside the repo, so `tslib` and the workspace packages resolve
 const dir = join(root, 'packages/client/node_modules/.type-perf');
@@ -33,7 +40,7 @@ for (let c = 0; c < controllerCount; c++) {
         methods.push(
           `  @Get('/r${n}/:id') public h${m}(@Param('id') id: string): Promise<{ id: string; at: Date; n: ${n} }> { return null!; }`,
         );
-        entries.push(`  'GET /c${c}/r${n}/:id': RouteDef<C${c}, 'h${m}', { param: { id: 0 } }>;`);
+        entries.push(`  'GET /c${c}/r${n}/:id': RouteDef<C${c}, 'h${m}', { param: { id: 0 }${throws('404: NotFoundError')} }>;`);
         calls.push(`  await api.get('/c${c}/r${n}/:id', { params: { id: '1' } });`);
         break;
       }
@@ -41,7 +48,7 @@ for (let c = 0; c < controllerCount; c++) {
         methods.push(
           `  @Get('/r${n}') public h${m}(@QueryParam({ name: 'page' }) page: number | undefined, @QueryParam({ name: 'sort' }) sort: 'a' | 'b'): { items: { id: string }[] } { return null!; }`,
         );
-        entries.push(`  'GET /c${c}/r${n}': RouteDef<C${c}, 'h${m}', { query: { page: 0; sort: 1 } }>;`);
+        entries.push(`  'GET /c${c}/r${n}': RouteDef<C${c}, 'h${m}', { query: { page: 0; sort: 1 }${throws('401: UnauthorizedError; 403: ForbiddenError')} }>;`);
         calls.push(`  await api.get('/c${c}/r${n}', { query: { sort: 'a' } });`);
         break;
       }
@@ -49,7 +56,7 @@ for (let c = 0; c < controllerCount; c++) {
         methods.push(
           `  @Post('/r${n}') public h${m}(@Body() body: { name: string; tags: string[] }): { ok: true } { return null!; }`,
         );
-        entries.push(`  'POST /c${c}/r${n}': RouteDef<C${c}, 'h${m}', { body: 0 }>;`);
+        entries.push(`  'POST /c${c}/r${n}': RouteDef<C${c}, 'h${m}', { body: 0${throws('400: BadRequestError')} }>;`);
         calls.push(`  await api.post('/c${c}/r${n}', { body: { name: 'x', tags: [] } });`);
         break;
       }
@@ -57,7 +64,7 @@ for (let c = 0; c < controllerCount; c++) {
         methods.push(
           `  @Put('/r${n}/:id') public h${m}(@Param('id') id: string, @Body() body: { name?: string }, @Header('x-t') t: string): void {}`,
         );
-        entries.push(`  'PUT /c${c}/r${n}/:id': RouteDef<C${c}, 'h${m}', { param: { id: 0 }; body: 1; header: { 'x-t': 2 } }>;`);
+        entries.push(`  'PUT /c${c}/r${n}/:id': RouteDef<C${c}, 'h${m}', { param: { id: 0 }; body: 1; header: { 'x-t': 2 }${throws('400: BadRequestError; 404: NotFoundError')} }>;`);
         calls.push(`  await api.put('/c${c}/r${n}/:id', { params: { id: '1' }, body: {}, headers: { 'x-t': 'a' } });`);
         break;
       }
@@ -78,7 +85,7 @@ writeFileSync(
 );
 writeFileSync(
   join(dir, 'routes.ts'),
-  `import type { RouteDef } from '@vercube/client';\nimport type { ${Array.from({ length: controllerCount }, (_, c) => `C${c}`).join(', ')} } from './controllers';\n\nexport interface VercubeRoutes {\n${entries.join('\n')}\n}\n`,
+  `import type { RouteDef } from '@vercube/client';\nimport type { BadRequestError, NotFoundError, UnauthorizedError, ForbiddenError } from '@vercube/core';\nimport type { ${Array.from({ length: controllerCount }, (_, c) => `C${c}`).join(', ')} } from './controllers';\n\nexport interface VercubeRoutes {\n${entries.join('\n')}\n}\n`,
 );
 writeFileSync(
   join(dir, 'calls.ts'),
@@ -114,7 +121,7 @@ try {
   const base = check(['controllers.ts']);
   const full = check(['controllers.ts', 'routes.ts', 'calls.ts']);
 
-  console.log(`${total} routes, one call each (client cost = full - controllers only)`);
+  console.log(`${total} routes${errors ? ' with errors' : ''}, one call each (client cost = full - controllers only)`);
   console.table({
     'controllers only': base,
     full,
