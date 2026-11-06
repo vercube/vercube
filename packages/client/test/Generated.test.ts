@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { createApp, IntrospectionRegistry, MetadataResolver } from '@vercube/core';
 import { findControllers, generateRouteTypes } from '@vercube/scan';
 import { describe, expect, it } from 'vitest';
-import { EventsController, MovedController, UserController } from './fixtures/Controllers';
+import { AccountController, EventsController, GuardMiddleware, MovedController, UserController } from './fixtures/Controllers';
 import type { IntrospectionTypes } from '@vercube/core';
 
 const fixtures = join(import.meta.dirname, 'fixtures');
@@ -22,6 +22,8 @@ describe('generated route map', () => {
         app.container.bind(UserController);
         app.container.bind(EventsController);
         app.container.bind(MovedController);
+        app.container.bind(AccountController);
+        app.container.bind(GuardMiddleware);
       },
     });
 
@@ -29,7 +31,7 @@ describe('generated route map', () => {
 
     await app.close();
 
-    const { code, skipped } = generateRouteTypes({
+    const { code, skipped, warnings } = generateRouteTypes({
       routes: routes!.data,
       controllers: await findControllers([join(fixtures, 'Controllers.ts')]),
       outFile,
@@ -38,6 +40,8 @@ describe('generated route map', () => {
     });
 
     expect(skipped).toEqual([]);
+    // `GoneError` is not exported from the controller file
+    expect(warnings).toEqual([expect.stringMatching(/^PUT \/account\/email: cannot import the type of GoneError \(410\)/)]);
 
     if (process.env.UPDATE_FIXTURES || !existsSync(outFile)) {
       writeFileSync(outFile, code);

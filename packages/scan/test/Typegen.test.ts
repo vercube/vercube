@@ -10,7 +10,7 @@ import {
   TYPEGEN_HEADER,
   writeRouteTypes,
 } from '../src/Typegen';
-import type { TypegenRoute } from '../src/Typegen';
+import type { ControllerSource, TypegenRoute } from '../src/Typegen';
 
 let root: string;
 
@@ -22,6 +22,15 @@ beforeEach(() => {
 afterEach(() => {
   rmSync(root, { recursive: true, force: true });
 });
+
+/** Sources without the classes each file can name, which these tests do not look at. */
+function withoutTypes<T extends Record<string, ControllerSource | null>>(
+  found: T,
+): Record<string, Omit<ControllerSource, 'types'> | null> {
+  return Object.fromEntries(
+    Object.entries(found).map(([name, source]) => [name, source && { file: source.file, exportName: source.exportName }]),
+  );
+}
 
 function write(path: string, code: string): string {
   const file = join(root, path);
@@ -42,7 +51,7 @@ describe('findControllers', () => {
 
     write('src/Services/S.ts', `export class NotAController {}`);
 
-    expect(await findControllers(root)).toEqual({
+    expect(withoutTypes(await findControllers(root))).toEqual({
       AController: { file: a, exportName: 'AController' },
       BController: { file: b, exportName: 'default' },
       CController: { file: c, exportName: 'Renamed' },
@@ -58,7 +67,7 @@ describe('findControllers', () => {
     write('dist/Z.mjs', `@Controller('/z') export class ZController {}`);
     write('node_modules/pkg/W.ts', `@Controller('/w') export class WController {}`);
 
-    expect(await findControllers(root)).toEqual({ XController: null });
+    expect(withoutTypes(await findControllers(root))).toEqual({ XController: null });
   });
 
   it('recognises aliased, namespaced and spaced decorators', async () => {
@@ -72,7 +81,7 @@ describe('findControllers', () => {
 
     write('src/D.ts', `import * as other from 'x';\n@other.Injectable() export class DService {}`);
 
-    expect(await findControllers(root)).toEqual({
+    expect(withoutTypes(await findControllers(root))).toEqual({
       AController: { file: a, exportName: 'AController' },
       BController: { file: b, exportName: 'BController' },
       CController: { file: c, exportName: 'CController' },
@@ -86,7 +95,7 @@ describe('findControllers', () => {
       `@Controller('/a') export class AController {}\n@Controller('/b') export class BController {}`,
     );
 
-    expect(await findControllers([file, file])).toEqual({
+    expect(withoutTypes(await findControllers([file, file]))).toEqual({
       AController: { file, exportName: 'AController' },
       BController: { file, exportName: 'BController' },
     });
@@ -157,6 +166,7 @@ describe('generateRouteTypes', () => {
 
     expect(generateRouteTypes({ routes, controllers, outFile: out })).toEqual({
       skipped: [],
+      warnings: [],
       files: ['/app/src/Controllers/UserController.ts', '/app/src/Feed.mts'],
       code: [
         TYPEGEN_HEADER,
@@ -365,8 +375,8 @@ describe('resolveControllers', () => {
     const found = await resolveControllers(routes, root, { root, controllers: [{ name: 'AController', path: 'src/Listed.ts' }] });
 
     // the scan alone would find AController twice
-    expect(found.AController).toEqual({ file: join(root, 'src/Listed.ts'), exportName: 'AController' });
-    expect(found.BController).toEqual({ file: bound, exportName: 'BController' });
+    expect(withoutTypes({ c: found.AController }).c).toEqual({ file: join(root, 'src/Listed.ts'), exportName: 'AController' });
+    expect(withoutTypes({ c: found.BController }).c).toEqual({ file: bound, exportName: 'BController' });
   });
 
   it('skips a listed file that is gone and finds the controller where it moved', async () => {
@@ -375,6 +385,251 @@ describe('resolveControllers', () => {
 
     const found = await resolveControllers(routes, root, { root, controllers: [{ name: 'AController', path: 'src/Gone.ts' }] });
 
-    expect(found.AController).toEqual({ file: moved, exportName: 'AController' });
+    expect(withoutTypes({ c: found.AController }).c).toEqual({ file: moved, exportName: 'AController' });
+  });
+});
+
+describe('route errors', () => {
+  const route = (overrides: Partial<TypegenRoute> = {}): TypegenRoute => ({
+    method: 'GET',
+    path: '/users/:id',
+    controller: 'UserController',
+    handler: 'get',
+    args: [],
+    ...overrides,
+  });
+
+  async function generate(routes: TypegenRoute[], extra: Partial<Parameters<typeof generateRouteTypes>[0]> = {}) {
+    return generateRouteTypes({
+      routes,
+      controllers: await findControllers(root),
+      outFile: join(root, '.vercube/routes.d.ts'),
+      ...extra,
+    });
+  }
+
+  it('imports each declared error from where the controller file imports it', async () => {
+    write('src/Errors/Conflict.ts', `export class ConflictError {}`);
+    write('src/Errors/Gone.ts', `export default class GoneError {}`);
+    write(
+      'src/UserController.ts',
+      [
+        `import { Controller, NotFoundError as Missing } from '@vercube/core';`,
+        `import { ConflictError } from './Errors/Conflict';`,
+        `import Gone from './Errors/Gone.js';`,
+        `import { PaymentError } from '@acme/errors';`,
+        `export class LocalError {}`,
+        `@Controller('/users') export class UserController {}`,
+      ].join('\n'),
+    );
+
+    const { code, warnings } = await generate([
+      route({
+        throws: [
+          { name: 'NotFoundError', status: 404 },
+          { name: 'ConflictError', status: 409 },
+          // `@Throws(Gone)` reports the class's own name
+          { name: 'GoneError', status: 410 },
+          { name: 'PaymentError', status: 402 },
+          { name: 'LocalError', status: 418 },
+        ],
+      }),
+    ]);
+
+    expect(warnings).toEqual([]);
+    expect(code).toContain(`import type { ConflictError } from '../src/Errors/Conflict.js';`);
+    // a default import is typed under the class name the route table reports
+    expect(code).toContain(`import type GoneError from '../src/Errors/Gone.js';`);
+    expect(code).toContain(`import type { LocalError, UserController } from '../src/UserController.js';`);
+    expect(code).toContain(`import type { PaymentError } from '@acme/errors';`);
+    expect(code).toContain(`import type { NotFoundError } from '@vercube/core';`);
+    expect(code).toContain(
+      `throws: { 402: PaymentError; 404: NotFoundError; 409: ConflictError; 410: GoneError; 418: LocalError }`,
+    );
+  });
+
+  it('falls back to @vercube/core for a built-in the file does not import, and to a generic type with a warning otherwise', async () => {
+    write('src/UserController.ts', `class Hidden {}\n@Controller('/users') export class UserController {}`);
+
+    const { code, warnings } = await generate([
+      route({
+        throws: [
+          { name: 'NotFoundError', status: 404 },
+          { name: 'Hidden', status: 410 },
+        ],
+      }),
+    ]);
+
+    expect(code).toContain(`throws: { 404: NotFoundError; 410: { name: string; message?: string } }`);
+    expect(warnings).toEqual([expect.stringMatching(/^GET \/users\/:id: cannot import the type of Hidden \(410\)/)]);
+  });
+
+  it('imports an implicit error from the module core names, and joins classes sharing a status', async () => {
+    write(
+      'src/UserController.ts',
+      `import { BadRequestError } from './MyErrors';\n@Controller('/users') export class UserController {}`,
+    );
+    write('src/MyErrors.ts', `export class BadRequestError {}`);
+
+    const { code } = await generate([
+      route({
+        throws: [
+          // core's own, whatever the controller file calls by that name
+          { name: 'BadRequestError', status: 400, module: '@vercube/core' },
+          { name: 'TooManyRequestsError', status: 429, module: '@acme/rate-limit' },
+          { name: 'BadRequestError', status: 429 },
+        ],
+      }),
+    ]);
+
+    expect(code).toContain(`import type { BadRequestError } from '@vercube/core';`);
+    expect(code).toContain(`import type { BadRequestError as BadRequestError_ } from '../src/MyErrors.js';`);
+    expect(code).toContain(`throws: { 400: BadRequestError; 429: BadRequestError_ | TooManyRequestsError }`);
+  });
+
+  it('gives an error a name no controller has', async () => {
+    write('src/UserController.ts', `@Controller('/users') export class UserController {}`);
+    write(
+      'src/Admin.ts',
+      `import { UserController } from '@acme/errors';\n@Controller('/admin') export class AdminController {}`,
+    );
+
+    const { code } = await generate([
+      route(),
+      route({ path: '/admin', controller: 'AdminController', throws: [{ name: 'UserController', status: 409 }] }),
+    ]);
+
+    expect(code).toContain(`import type { UserController as UserController_ } from '@acme/errors';`);
+    expect(code).toContain(`'GET /admin': RouteDef<AdminController, 'get', { throws: { 409: UserController_ } }>`);
+  });
+
+  it('warns about an error once, not on every write', async () => {
+    write('src/UserController.ts', `@Controller('/users') export class UserController {}`);
+
+    const warnings: string[] = [];
+    const writer = createRouteTypesWriter({
+      root,
+      outFile: join(root, '.vercube/routes.d.ts'),
+      logger: { warn: (m) => warnings.push(m) },
+    });
+    const routes = [route({ throws: [{ name: 'Unknown', status: 418 }] })];
+
+    await writer(routes);
+    await writer(routes);
+
+    expect(warnings).toHaveLength(1);
+  });
+
+  it('resolves namespace imports, `export default` of a local class and directory index files', async () => {
+    write('src/errors/index.ts', `export class GoneError {}`);
+    write('src/conflict.ts', `export class ConflictError {}`);
+    write(
+      'src/UserController.ts',
+      [
+        `import * as Errors from './conflict';`,
+        `import { GoneError } from './errors';`,
+        `class LocalError {}`,
+        `@Controller('/users') export class UserController {`,
+        `  @Throws(Errors.ConflictError) get() {}`,
+        `}`,
+        `export default LocalError;`,
+      ].join('\n'),
+    );
+
+    const { code, warnings } = await generate([
+      route({
+        throws: [
+          { name: 'ConflictError', status: 409 },
+          { name: 'GoneError', status: 410 },
+          { name: 'LocalError', status: 418 },
+        ],
+      }),
+    ]);
+
+    expect(warnings).toEqual([]);
+    expect(code).toContain(`import type { ConflictError } from '../src/conflict.js';`);
+    expect(code).toContain(`import type { GoneError } from '../src/errors/index.js';`);
+    expect(code).toContain(`import type LocalError from '../src/UserController.js';`);
+  });
+
+  it('does not guess between two imports of one name, or swap an unexported class for the core one', async () => {
+    write(
+      'src/UserController.ts',
+      [
+        `import { ConflictError } from '@acme/a';`,
+        `import { ConflictError as Other } from '@acme/b';`,
+        `class NotFoundError {}`,
+        `@Controller('/users') export class UserController {}`,
+      ].join('\n'),
+    );
+
+    const { code, warnings } = await generate([
+      route({
+        throws: [
+          { name: 'NotFoundError', status: 404 },
+          { name: 'ConflictError', status: 409 },
+        ],
+      }),
+    ]);
+
+    expect(code).toContain(`throws: { 404: { name: string; message?: string }; 409: { name: string; message?: string } }`);
+    expect(code).not.toContain('@vercube/core');
+    expect(warnings).toHaveLength(2);
+  });
+
+  it('looks up only names the file has, not inherited object properties', async () => {
+    write(
+      'src/UserController.ts',
+      `import { toString } from '@acme/errors';\n@Controller('/users') export class UserController {}`,
+    );
+
+    const { code } = await generate([
+      route({
+        throws: [
+          { name: 'toString', status: 409 },
+          { name: 'constructor', status: 410 },
+        ],
+      }),
+    ]);
+
+    expect(code).toContain(`throws: { 409: toString; 410: { name: string; message?: string } }`);
+  });
+
+  it('names imports the same way whatever order the routes come in', async () => {
+    write('src/A.ts', `import { ConflictError } from '@acme/a';\n@Controller('/a') export class AController {}`);
+    write('src/B.ts', `import { ConflictError } from '@acme/b';\n@Controller('/b') export class BController {}`);
+
+    const routes = [
+      route({ path: '/a', controller: 'AController', throws: [{ name: 'ConflictError', status: 409 }] }),
+      route({ path: '/b', controller: 'BController', throws: [{ name: 'ConflictError', status: 409 }] }),
+    ];
+
+    expect((await generate(routes)).code).toBe((await generate([...routes].reverse())).code);
+  });
+
+  it('reads `{ default as X }` as a default import, and never swaps an unresolved import for the core class', async () => {
+    write('src/Gone.ts', `export default class GoneError {}`);
+    write(
+      'src/UserController.ts',
+      [
+        `import { default as Gone } from './Gone';`,
+        `import { NotFoundError } from './missing';`,
+        `@Controller('/users') export class UserController {}`,
+      ].join('\n'),
+    );
+
+    const { code, warnings } = await generate([
+      route({
+        throws: [
+          { name: 'NotFoundError', status: 404 },
+          { name: 'GoneError', status: 410 },
+        ],
+      }),
+    ]);
+
+    expect(code).toContain(`import type GoneError from '../src/Gone.js';`);
+    expect(code).toContain(`throws: { 404: { name: string; message?: string }; 410: GoneError }`);
+    expect(code).not.toContain('@vercube/core');
+    expect(warnings).toHaveLength(1);
   });
 });

@@ -1,10 +1,16 @@
 import {
+  BadRequestError,
+  BaseMiddleware,
   Body,
   Controller,
   Delete,
+  ForbiddenError,
   Get,
   Header,
+  HttpError,
+  Middleware,
   MultipartFormData,
+  NotFoundError,
   Param,
   Post,
   Put,
@@ -12,7 +18,10 @@ import {
   QueryParams,
   Request,
   Sse,
+  Throws,
+  UnauthorizedError,
 } from '@vercube/core';
+import { ConflictError } from './Errors';
 import type { RouteDef } from '../../src';
 
 export interface User {
@@ -26,9 +35,22 @@ export interface CreateUser {
   role?: 'admin' | 'user';
 }
 
+/** Stands in for `@Auth()`: the marker is what makes a route secured. */
+export class GuardMiddleware extends BaseMiddleware {
+  public onRequest(): void {}
+}
+
+Object.defineProperty(GuardMiddleware, Symbol.for('vercube.auth.middleware'), { value: true });
+
+/** Not exported, so the generated file cannot import it. */
+class GoneError extends HttpError {
+  public static readonly status: number = 410;
+}
+
 @Controller('/users')
 export class UserController {
   @Get('/:id')
+  @Throws(NotFoundError)
   public async getUser(@Param('id') id: string): Promise<User> {
     return { id, name: `user-${id}`, createdAt: new Date(0) };
   }
@@ -114,21 +136,62 @@ export class MovedController {
   }
 }
 
+/** A secured controller with a class-level declaration. */
+@Controller('/account')
+@Middleware(GuardMiddleware)
+@Throws(ConflictError)
+export class AccountController {
+  @Get('/')
+  public me(): { id: string } {
+    return { id: '1' };
+  }
+
+  @Put('/email')
+  @Throws(GoneError)
+  public changeEmail(@Body() body: { email: string }): { email: string } {
+    return body;
+  }
+}
+
 /** The route map the generator writes for the controllers above, by hand. */
 export interface TestRoutes {
-  'GET /users/:id': RouteDef<UserController, 'getUser', { param: { id: 0 } }>;
-  'HEAD /users/:id': RouteDef<UserController, 'getUser', { param: { id: 0 } }>;
+  'GET /users/:id': RouteDef<UserController, 'getUser', { param: { id: 0 }; throws: { 404: NotFoundError } }>;
+  'HEAD /users/:id': RouteDef<UserController, 'getUser', { param: { id: 0 }; throws: { 404: NotFoundError } }>;
   'GET /users': RouteDef<UserController, 'list', { query: { page: 0; tag: 1; sort: 2 } }>;
-  'POST /users': RouteDef<UserController, 'create', { body: 0; header: { 'x-tenant': 1 } }>;
-  'PUT /users/:id': RouteDef<UserController, 'replace', { param: { id: 0 }; body: 1 }>;
+  'POST /users': RouteDef<UserController, 'create', { body: 0; header: { 'x-tenant': 1 }; throws: { 400: BadRequestError } }>;
+  'PUT /users/:id': RouteDef<UserController, 'replace', { param: { id: 0 }; body: 1; throws: { 400: BadRequestError } }>;
   'DELETE /users/:id': RouteDef<UserController, 'remove', { param: { id: null } }>;
   'GET /users/search': RouteDef<UserController, 'search', { queries: 0 }>;
   'GET /users/:id/avatar': RouteDef<UserController, 'avatar', { param: { id: null } }>;
-  'POST /users/:id/avatar': RouteDef<UserController, 'upload', { param: { id: 0 }; form: 1 }>;
+  'POST /users/:id/avatar': RouteDef<UserController, 'upload', { param: { id: 0 }; form: 1; throws: { 400: BadRequestError } }>;
   'POST /users/raw': RouteDef<UserController, 'raw'>;
   'GET /users/fail': RouteDef<UserController, 'fail'>;
   'GET /users/files/**:path': RouteDef<UserController, 'file', { param: { path: 0 } }>;
   'GET /events/ticks': RouteDef<EventsController, 'ticks', { sse: true }>;
   'GET /events/words': RouteDef<EventsController, 'words', { sse: true }>;
   'GET /v2/ping': RouteDef<MovedController, 'ping', { query: { echo: 0 } }>;
+  'GET /account': RouteDef<
+    AccountController,
+    'me',
+    { throws: { 401: UnauthorizedError; 403: ForbiddenError; 409: ConflictError } }
+  >;
+  'HEAD /account': RouteDef<
+    AccountController,
+    'me',
+    { throws: { 401: UnauthorizedError; 403: ForbiddenError; 409: ConflictError } }
+  >;
+  'PUT /account/email': RouteDef<
+    AccountController,
+    'changeEmail',
+    {
+      body: 0;
+      throws: {
+        400: BadRequestError;
+        401: UnauthorizedError;
+        403: ForbiddenError;
+        409: ConflictError;
+        410: { name: string; message?: string };
+      };
+    }
+  >;
 }

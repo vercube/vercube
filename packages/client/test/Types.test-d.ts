@@ -1,10 +1,11 @@
 // Type-level tests, checked by `pnpm test:tscheck` (vitest does not run `.test-d.ts` files).
-import { Controller, Get, Param } from '@vercube/core';
+import { Controller, Get, HttpError, NotFoundError, Param } from '@vercube/core';
 import { describe, expectTypeOf, it } from 'vitest';
 import { createClient } from '../src';
 import type { Jsonify, RouteDef, SseEvent, SseStream } from '../src';
 import type { TestRoutes } from './fixtures/Controllers';
 import type { VercubeRoutes } from './fixtures/routes';
+import type { BadRequestError } from '@vercube/core';
 
 const api = createClient<TestRoutes>({ baseURL: 'http://test', fetch: () => new Response() });
 
@@ -153,6 +154,66 @@ describe('types', () => {
     expectTypeOf<Pick<VercubeRoutes, Extract<keyof VercubeRoutes, `HEAD ${string}`>>>().toEqualTypeOf<ExpectedHeads>();
   });
 
+  describe('errors', () => {
+    type Errors<K extends keyof TestRoutes> = NonNullable<TestRoutes[K]['errors']>;
+
+    it('are a union discriminated by status', () => {
+      expectTypeOf<Errors<'GET /users/:id'>>().toEqualTypeOf<{ status: 404; name: string; message?: string }>();
+      expectTypeOf<Errors<'GET /account'>['status']>().toEqualTypeOf<401 | 403 | 409>();
+
+      const narrow = (error: Errors<'GET /account'>) => {
+        if (error.status === 409) {
+          expectTypeOf(error.existingId).toEqualTypeOf<string>();
+          expectTypeOf(error.name).toEqualTypeOf<'ConflictError'>();
+        } else {
+          // @ts-expect-error only the 409 has it
+          void error.existingId;
+        }
+      };
+      void narrow;
+    });
+
+    it('get an implicit 400 with the validation issues when the route reads a body or a form', () => {
+      type BadRequest = Extract<Errors<'POST /users'>, { status: 400 }>;
+
+      expectTypeOf<Errors<'POST /users'>['status']>().toEqualTypeOf<400>();
+      expectTypeOf<BadRequest['errors']>().toEqualTypeOf<Jsonify<NonNullable<BadRequestError['errors']>> | undefined>();
+      expectTypeOf<Errors<'POST /users/:id/avatar'>['status']>().toEqualTypeOf<400>();
+    });
+
+    it('get an implicit 401 and 403 on secured routes, plus the controller ones', () => {
+      expectTypeOf<Errors<'PUT /account/email'>['status']>().toEqualTypeOf<400 | 401 | 403 | 409 | 410>();
+    });
+
+    it('fall back to a generic body for a class the generator could not import', () => {
+      expectTypeOf<Extract<Errors<'PUT /account/email'>, { status: 410 }>>().toEqualTypeOf<{
+        status: 410;
+        name: string;
+        message?: string;
+      }>();
+    });
+
+    it('are never for a route without any', () => {
+      expectTypeOf<TestRoutes['GET /users/search']['errors']>().toBeNever();
+    });
+
+    it('read a status written as a string key', () => {
+      type Route = RouteDef<OrdersLike, 'get', { throws: { '404': NotFoundError } }>;
+      expectTypeOf<NonNullable<Route['errors']>['status']>().toEqualTypeOf<404>();
+    });
+
+    it('type several classes under one status as a union', () => {
+      class GoneError extends HttpError {
+        public static readonly status: number = 410;
+        public override name = 'GoneError' as const;
+      }
+
+      type Route = RouteDef<OrdersLike, 'get', { throws: { 404: NotFoundError; 410: GoneError | NotFoundError } }>;
+      expectTypeOf<NonNullable<Route['errors']>['status']>().toEqualTypeOf<404 | 410>();
+      expectTypeOf<Extract<NonNullable<Route['errors']>, { name: 'GoneError' }>['status']>().toEqualTypeOf<410>();
+    });
+  });
+
   it('changing a handler signature breaks the call site', () => {
     @Controller('/orders')
     class OrdersV1 {
@@ -179,3 +240,10 @@ describe('types', () => {
     expectTypeOf(v2.get('/orders/:orderId', { params: { orderId: '1' } })).resolves.not.toHaveProperty('id');
   });
 });
+
+/** A minimal controller for route definitions made up in a test. */
+class OrdersLike {
+  public get(): { id: string } {
+    return { id: '1' };
+  }
+}

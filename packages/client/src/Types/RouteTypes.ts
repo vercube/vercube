@@ -30,6 +30,12 @@ export interface RouteArgs {
   form?: number;
   /** Set on `@Sse()` routes. */
   sse?: true;
+  /**
+   * Errors the route answers with, by status: the error instance type, or a
+   * union of them when several classes share a status. Declared with
+   * `@Throws()`; the generator adds the ones the framework throws itself.
+   */
+  throws?: Record<number, object>;
 }
 
 /**
@@ -49,6 +55,13 @@ export interface Route {
   form: unknown;
   /** What a successful call resolves to. */
   response: unknown;
+  /**
+   * The bodies of the error responses the route declares, a union
+   * discriminated by `status`. `never` when it declares none. Optional, so a
+   * hand-written route map without it still fits; a route without it has
+   * `unknown` errors.
+   */
+  errors?: unknown;
 }
 
 /** A route map: `'GET /users/:id'` to its {@link Route}. */
@@ -91,6 +104,26 @@ export type Jsonify<T> =
 
 /** An array element: `JSON.stringify` writes `null` where an object would drop the key. */
 type JsonItem<T> = IsAny<T> extends true ? any : T extends undefined | void | Function | symbol ? null : Jsonify<T>;
+
+/** Fields `JSON.stringify` never writes for an error: `stack` and `cause` are not enumerable. */
+type HiddenErrorFields = 'status' | 'message' | 'stack' | 'cause';
+
+/**
+ * The JSON body of an error response: the error's own fields, with `status`
+ * fixed to the one it is declared under. `message` is only there when the
+ * error was created with one. Distributes over unions.
+ */
+export type ErrorBody<E, S extends number> = E extends unknown
+  ? Simplify<{ status: S } & Omit<Jsonify<E>, HiddenErrorFields> & { message?: string }>
+  : never;
+
+/** A `throws` key as a status: `404` and `'404'` alike. */
+type StatusOf<K> = K extends number ? K : K extends `${infer N extends number}` ? N : never;
+
+/** Every error body of a `throws` map, as one union. */
+type ErrorsOf<T> = {
+  [K in keyof T]-?: [StatusOf<K>] extends [never] ? never : ErrorBody<T[K], StatusOf<K>>;
+}[keyof T];
 
 /** What the handler returned, after `await`, without the error `Response`s. */
 type Returned<R> = Exclude<Awaited<R>, Response>;
@@ -230,5 +263,6 @@ export type RouteDef<C, M extends keyof C, A extends RouteArgs = Empty> = C[M] e
           FormObject<NonNullable<ArgAt<P, I>>> | (undefined extends ArgAt<P, I> ? undefined : never)
         : never;
       response: A extends { sse: true } ? SseStream<SseEventOf<YieldOf<R>>> : ResponseOf<R>;
+      errors: A extends { throws: infer T extends Record<number, object> } ? ErrorsOf<T> : never;
     }
   : never;
