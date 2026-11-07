@@ -108,6 +108,9 @@ export const queueRecipe = defineRecipe<{ driver: string }>({
         [driver.strategy]: `@vercube/queue/strategies/${driver.strategy}`,
       },
     });
+    // a broker connection keeps the process alive after the server closes,
+    // so SIGTERM and Ctrl-C have to close the application, consumers included
+    project.setConfig('shutdown', '{ handleSignals: true }');
     project.createFile('src/consumers/EmailConsumer.ts', CONSUMER);
     project.createFile('src/controller/JobsController.ts', CONTROLLER);
     project.bind({ name: 'JobsController', from: '@/controller/JobsController', default: true });
