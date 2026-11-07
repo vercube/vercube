@@ -52,7 +52,7 @@ export async function getRoutes(options: ScanProjectOptions): Promise<RouteInfo[
     r.flat(),
   );
 
-  const routes = await Promise.all(files.map((file) => transformRoute(file))).then((r) => r.flat());
+  const routes = await Promise.all(files.map((file) => transformRoute(file, logger))).then((r) => r.flat());
   return resolveImports(routes, IMPORT_SOURCE);
 }
 
@@ -155,7 +155,7 @@ export async function scanSource(options: ScanSourceOptions): Promise<{
     for (const controller of extractControllers(code)) {
       controllers.push({ ...controller, ...file, import: resolveImportSource(controller.import, IMPORT_SOURCE, file.fullPath) });
     }
-    for (const route of extractRoutes(code)) {
+    for (const route of extractRoutes(code, options.logger)) {
       routes.push({ ...route, ...file, import: resolveImportSource(route.import, IMPORT_SOURCE, file.fullPath) });
     }
     for (const service of extractServices(code)) {

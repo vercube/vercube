@@ -182,7 +182,7 @@ describe('extractRoutes', () => {
     expect(routes).toHaveLength(0);
   });
 
-  it('should use empty string as path when HTTP decorator has non-literal argument', () => {
+  it('should skip the route when HTTP decorator has non-literal argument', () => {
     const code = `
       @Controller('/api')
       export class FooController {
@@ -190,9 +190,7 @@ describe('extractRoutes', () => {
         foo() {}
       }
     `;
-    const routes = extractRoutes(code);
-    expect(routes).toHaveLength(1);
-    expect(routes[0].route).toBe('/api');
+    expect(extractRoutes(code)).toEqual([]);
   });
 
   it('should handle class with no decorators on class node', () => {
@@ -274,7 +272,7 @@ describe('extractRoutes', () => {
     expect(extractRoutes(code)).toEqual([]);
   });
 
-  it('should handle @Controller with non-literal argument', () => {
+  it('should skip routes when @Controller has non-literal argument', () => {
     const code = `
       @Controller(BASE_PATH)
       export class FooController {
@@ -282,9 +280,7 @@ describe('extractRoutes', () => {
         foo() {}
       }
     `;
-    const routes = extractRoutes(code);
-    expect(routes).toHaveLength(1);
-    expect(routes[0].route).toBe('/foo');
+    expect(extractRoutes(code)).toEqual([]);
   });
 
   it('should skip anonymous default-export class without a name', () => {

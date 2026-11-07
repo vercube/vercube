@@ -70,6 +70,19 @@ describe('extractDecoratorArg', () => {
     expect(extractDecoratorArg(noArg, 'Controller')).toBe('');
   });
 
+  it('reads a template literal without expressions', () => {
+    const tpl = [
+      {
+        expression: {
+          type: 'CallExpression',
+          callee: { name: 'Controller' },
+          arguments: [{ type: 'TemplateLiteral', expressions: [], quasis: [{ value: { cooked: '/users' } }] }],
+        },
+      },
+    ];
+    expect(extractDecoratorArg(tpl, 'Controller')).toBe('/users');
+  });
+
   it('returns null when the decorator is missing', () => {
     expect(extractDecoratorArg(decorators, 'Missing')).toBeNull();
     expect(extractDecoratorArg(undefined, 'Controller')).toBeNull();
