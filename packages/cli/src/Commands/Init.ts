@@ -22,7 +22,9 @@ import type { Choice, Prompter } from '../Scaffold/Plan';
 const logger = consola.withTag(colors.whiteBright(colors.bold(colors.bgGreenBright(' vercube '))));
 
 /** The flags of recipe questions, such as `--queue`, added below the class. */
-const RECIPE_FLAGS = [...new Map(RECIPES.flatMap((recipe) => recipe.prompts ?? []).map((prompt) => [prompt.flag, prompt])).values()];
+const RECIPE_FLAGS = [
+  ...new Map(RECIPES.flatMap((recipe) => recipe.prompts ?? []).map((prompt) => [prompt.flag, prompt])).values(),
+];
 
 /**
  * Scaffolds a new Vercube project: a base template, the chosen modules wired
@@ -225,14 +227,21 @@ function detectPackageManager(): string {
 /** Asks the questions in the terminal, through consola. */
 const prompter: Prompter = {
   text: (message, defaultValue) =>
-    logger.prompt(message, { type: 'text', placeholder: defaultValue, default: defaultValue, cancel: 'reject' }) as Promise<string>,
+    logger.prompt(message, {
+      type: 'text',
+      placeholder: defaultValue,
+      default: defaultValue,
+      cancel: 'reject',
+    }) as Promise<string>,
   select: async (message, choices, initial) =>
     value(await logger.prompt(message, { type: 'select', options: choices, initial, cancel: 'reject' })),
   multiselect: async (message, choices, initial) =>
-    ((await logger.prompt(message, { type: 'multiselect', options: choices, initial, required: false, cancel: 'reject' })) as (
-      | Choice
-      | string
-    )[]).map((choice) => value(choice)),
+    (
+      (await logger.prompt(message, { type: 'multiselect', options: choices, initial, required: false, cancel: 'reject' })) as (
+        | Choice
+        | string
+      )[]
+    ).map((choice) => value(choice)),
 };
 
 /**

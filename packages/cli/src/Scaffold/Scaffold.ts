@@ -68,6 +68,7 @@ export async function scaffoldProject(plan: InitPlan, options: ScaffoldOptions):
   }
 
   pinVercubePackages(options.dir, options.version);
+  usePackageManager(options.dir, plan.packageManager);
 
   // locked to whatever the template was last installed with, not to what the
   // project depends on now; the install writes a fresh one
@@ -115,11 +116,38 @@ export async function scaffoldProject(plan: InitPlan, options: ScaffoldOptions):
  */
 export function approveBuilds(root: string, packages: string[]): void {
   const path = join(root, 'pnpm-workspace.yaml');
-  const workspace = (existsSync(path) ? parseYAML(readFileSync(path, 'utf8')) : null) as { allowBuilds?: Record<string, boolean> } | null;
+  const workspace = (existsSync(path) ? parseYAML(readFileSync(path, 'utf8')) : null) as {
+    allowBuilds?: Record<string, boolean>;
+  } | null;
   const document = workspace ?? {};
 
   document.allowBuilds = { ...document.allowBuilds, ...Object.fromEntries(packages.map((name) => [name, true])) };
   writeFileSync(path, ensureNewline(stringifyYAML(document, { indent: 2 })));
+}
+
+/**
+ * Prepares a project for the package manager it is created with. The
+ * templates say `packageManager: pnpm@...`, which makes corepack refuse any
+ * other one, so the field goes when another is chosen. Yarn berry installs
+ * with Plug'n'Play by default, which neither TypeScript 7 nor the Vercube CLI
+ * can resolve through, so it gets a node_modules linker.
+ *
+ * @param {string} root - The project root
+ * @param {string} packageManager - The chosen package manager
+ * @returns {void}
+ */
+export function usePackageManager(root: string, packageManager: string): void {
+  const path = join(root, 'package.json');
+  const pkg = JSON.parse(readFileSync(path, 'utf8')) as { packageManager?: string };
+
+  if (pkg.packageManager && !pkg.packageManager.startsWith(`${packageManager}@`)) {
+    delete pkg.packageManager;
+    writeFileSync(path, `${JSON.stringify(pkg, null, 2)}\n`);
+  }
+
+  if (packageManager === 'yarn' && !existsSync(join(root, '.yarnrc.yml'))) {
+    writeFileSync(join(root, '.yarnrc.yml'), 'nodeLinker: node-modules\n');
+  }
 }
 
 /**
@@ -164,7 +192,8 @@ export function pinVercubePackages(root: string, version: string): void {
  * @returns {string[]} The lines
  */
 export function formatSummary(plan: InitPlan, summary: RecipeTypes.Summary, relativeDir: string): string[] {
-  const dev = { pnpm: 'pnpm dev', yarn: 'yarn dev', deno: 'deno task dev' }[plan.packageManager] ?? `${plan.packageManager} run dev`;
+  const dev =
+    { pnpm: 'pnpm dev', yarn: 'yarn dev', deno: 'deno task dev' }[plan.packageManager] ?? `${plan.packageManager} run dev`;
   const modules = summary.applied.filter((id) => id !== plan.deploy);
   const lines = [`Created ${relativeDir} from the ${plan.template.id} template`];
 

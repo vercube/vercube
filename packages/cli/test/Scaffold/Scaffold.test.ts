@@ -3,7 +3,13 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'pathe';
 import { afterEach, describe, expect, it } from 'vitest';
 import { RECIPES } from '../../src/Recipes/Catalog';
-import { approveBuilds, formatSummary, pinVercubePackages, scaffoldProject } from '../../src/Scaffold/Scaffold';
+import {
+  approveBuilds,
+  formatSummary,
+  pinVercubePackages,
+  scaffoldProject,
+  usePackageManager,
+} from '../../src/Scaffold/Scaffold';
 import { TEMPLATES } from '../../src/Scaffold/Templates';
 import { API_TEMPLATE, apiTemplate } from '../Fixtures';
 import type { InitPlan } from '../../src/Scaffold/Plan';
@@ -41,7 +47,13 @@ describe('scaffoldProject', () => {
 
     dirs.push(template);
 
-    const summary = await scaffoldProject(plan(), { dir, version: '1.5.0', recipes: RECIPES, templateDir: template, install: false });
+    const summary = await scaffoldProject(plan(), {
+      dir,
+      version: '1.5.0',
+      recipes: RECIPES,
+      templateDir: template,
+      install: false,
+    });
     const pkg = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8'));
 
     expect(pkg.dependencies['@vercube/core']).toBe('1.5.0');
@@ -92,10 +104,50 @@ describe('approveBuilds', () => {
     for (const packageManager of ['pnpm', 'npm']) {
       const dir = join(temp(), 'app');
 
-      await scaffoldProject(plan({ deploy: 'aws-lambda', packageManager }), { dir, version: '1.5.0', recipes: RECIPES, templateDir: template, install: false });
+      await scaffoldProject(plan({ deploy: 'aws-lambda', packageManager }), {
+        dir,
+        version: '1.5.0',
+        recipes: RECIPES,
+        templateDir: template,
+        install: false,
+      });
 
       expect(existsSync(join(dir, 'pnpm-workspace.yaml'))).toBe(packageManager === 'pnpm');
     }
+  });
+});
+
+describe('usePackageManager', () => {
+  const setup = (packageManager?: string) => {
+    const root = temp();
+
+    writeFileSync(join(root, 'package.json'), JSON.stringify({ name: 'app', ...(packageManager ? { packageManager } : {}) }));
+
+    return root;
+  };
+
+  it('should drop a packageManager field naming another one', () => {
+    const root = setup('pnpm@12.14.0');
+
+    usePackageManager(root, 'npm');
+
+    expect(JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))).toEqual({ name: 'app' });
+  });
+
+  it('should keep the field for the package manager it names', () => {
+    const root = setup('pnpm@12.14.0');
+
+    usePackageManager(root, 'pnpm');
+
+    expect(JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).packageManager).toBe('pnpm@12.14.0');
+  });
+
+  it('should give yarn a node_modules linker', () => {
+    const root = setup('pnpm@12.14.0');
+
+    usePackageManager(root, 'yarn');
+
+    expect(readFileSync(join(root, '.yarnrc.yml'), 'utf8')).toBe('nodeLinker: node-modules\n');
   });
 });
 
@@ -150,7 +202,11 @@ describe('formatSummary', () => {
 
   it('should use each package manager’s own command', () => {
     const next = (packageManager: string) =>
-      formatSummary(plan({ packageManager }), { applied: [], implied: [], created: [], updated: [], dependencies: [], services: [], notes: [], builds: [] }, '.').at(-1);
+      formatSummary(
+        plan({ packageManager }),
+        { applied: [], implied: [], created: [], updated: [], dependencies: [], services: [], notes: [], builds: [] },
+        '.',
+      ).at(-1);
 
     expect(next('pnpm')).toBe('Next: pnpm dev');
     expect(next('bun')).toBe('Next: bun run dev');
