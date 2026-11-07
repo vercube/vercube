@@ -3,13 +3,13 @@
 The devtools UI is a single self-contained document, so these typefaces are inlined
 as `data:` URIs at build time.
 
-| File                       | Family             | Source                                 | License                   |
-| -------------------------- | ------------------ | -------------------------------------- | ------------------------- |
-| `geist-400.woff2`          | Geist 400          | Google Fonts (latin subset)            | SIL Open Font License 1.1 |
-| `geist-500.woff2`          | Geist 500          | Google Fonts (latin subset)            | SIL Open Font License 1.1 |
-| `geist-mono-400.woff2`     | Geist Mono 400     | Google Fonts (latin subset)            | SIL Open Font License 1.1 |
-| `geist-mono-500.woff2`     | Geist Mono 500     | Google Fonts (latin subset)            | SIL Open Font License 1.1 |
-| `geist-pixel-circle.woff2` | Geist Pixel Circle | Vercube homepage (`home/public/fonts`) | SIL Open Font License 1.1 |
+| File                     | Family           | Source                                 | License                   |
+| ------------------------ | ---------------- | -------------------------------------- | ------------------------- |
+| `geist-400.woff2`        | Geist 400        | Google Fonts (latin subset)            | SIL Open Font License 1.1 |
+| `geist-500.woff2`        | Geist 500        | Google Fonts (latin subset)            | SIL Open Font License 1.1 |
+| `geist-mono-400.woff2`   | Geist Mono 400   | Google Fonts (latin subset)            | SIL Open Font License 1.1 |
+| `geist-mono-500.woff2`   | Geist Mono 500   | Google Fonts (latin subset)            | SIL Open Font License 1.1 |
+| `geist-pixel-line.woff2` | Geist Pixel Line | Vercube homepage (`home/public/fonts`) | SIL Open Font License 1.1 |
 
 Geist and Geist Mono are © Vercel, released under the SIL Open Font License 1.1.
 See <https://github.com/vercel/geist-font>.

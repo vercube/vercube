@@ -189,7 +189,7 @@ onBeforeUnmount(() => globalThis.clearInterval(timer));
 
 <template>
   <section class="band">
-    <figure class="chart">
+    <figure class="chart cross-tl">
       <figcaption class="head">
         <span class="label">Throughput</span>
         <span class="faint span">{{ span }}</span>
@@ -246,7 +246,7 @@ onBeforeUnmount(() => globalThis.clearInterval(timer));
       </template>
     </figure>
 
-    <figure class="chart latency">
+    <figure class="chart latency cross-tl">
       <figcaption class="head">
         <span class="label">Peak latency</span>
         <span class="faint span">{{ shown ? formatClock(shown.at) : formatMs(slowest) }} max</span>
@@ -307,6 +307,16 @@ onBeforeUnmount(() => globalThis.clearInterval(timer));
 </template>
 
 <style scoped>
+/* Section labels as on vercube.dev. */
+.label {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
 .band {
   flex: none;
   display: grid;
