@@ -25,6 +25,7 @@
 - **Auto-resolution** - picks up `@Body`, `@QueryParams`, `@QueryParam`, `@Header` and `@Param` (path params) automatically
 - **Runtime endpoint** - OpenAPI JSON available at `/_schema`
 - **Scalar UI** - Interactive API docs at `/_schema/docs` ([Scalar](https://github.com/scalar/scalar))
+- **Safe by default** - Endpoints are off in production unless `enabled`, with a configurable `path` and an optional `token`
 
 ## 📦 Installation
 
