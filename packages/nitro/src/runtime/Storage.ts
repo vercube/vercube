@@ -44,11 +44,59 @@ export class NitroStorageManager extends StorageManager {
       getKeys: storage.getKeys.bind(storage),
       clear: storage.clear.bind(storage),
       deleteItem: storage.removeItem.bind(storage),
-      size: () => {
-        this.gLogger?.warn('NitroStorageManager::size', 'getting size is not supported for Nitro Storage.');
-        return 0;
-      },
+      // unstorage has no count, so it is the length of the full key listing
+      size: async () => (await storage.getKeys()).length,
+      cheapSize: false,
     } as unknown as Storage;
+  }
+
+  /**
+   * Names of the storages mounted in nitro.config.ts, plus `default` for the
+   * root storage. Nitro owns the mount table, so it is read from `useStorage()`.
+   * @returns {string[]} Mount names, `default` first
+   */
+  public override get mounts(): string[] {
+    return ['default', ...this.nitroMounts().map((mount) => mount.name)];
+  }
+
+  /**
+   * Describes every storage nitro has mounted.
+   *
+   * Keys of the root storage exclude those held by a named mount, which is
+   * listed on its own. A mount whose keys cannot be listed reports `null`.
+   * @param {StorageTypes.DescribeOptions} [options] - Listing limits
+   * @returns {Promise<StorageTypes.Description>} One entry per mount
+   */
+  public override async describe(options: StorageTypes.DescribeOptions = {}): Promise<StorageTypes.Description> {
+    const maxKeys = options.maxKeys ?? 250;
+    const root = useStorage();
+    const named = this.nitroMounts();
+    const prefixes = named.map((mount) => mount.base);
+
+    const entries = [{ name: 'default', base: '', driver: root.getMount('').driver }, ...named];
+
+    const mounts = await Promise.all(
+      entries.map(async ({ name, base, driver }) => {
+        let keys: string[] | null = null;
+
+        try {
+          const listed = await this.getStorage(name)!.getKeys();
+          keys = base === '' ? listed.filter((key) => !prefixes.some((prefix) => key.startsWith(prefix))) : listed;
+        } catch {
+          keys = null;
+        }
+
+        return {
+          name,
+          driver: driver?.name ?? 'Storage',
+          size: keys ? keys.length : null,
+          keys: keys ? keys.slice(0, maxKeys) : null,
+          truncated: keys ? keys.length > maxKeys : false,
+        };
+      }),
+    );
+
+    return { mounts };
   }
 
   /**
@@ -154,5 +202,18 @@ export class NitroStorageManager extends StorageManager {
    */
   protected async init(): Promise<void> {
     // do nothing for Nitro Storage Manager
+  }
+
+  /**
+   * The storages mounted in nitro.config.ts, without the root storage.
+   * @returns Each mount's name, key prefix and driver
+   * @private
+   */
+  private nitroMounts(): { name: string; base: string; driver: { name?: string } | undefined }[] {
+    return useStorage()
+      .getMounts()
+      .filter((mount) => mount.base !== '')
+      .map((mount) => ({ name: mount.base.replace(/:$/, ''), base: mount.base, driver: mount.driver }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }
 }

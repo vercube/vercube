@@ -9,7 +9,11 @@ const mockStorage = {
   clear: vi.fn(),
   removeItem: vi.fn(),
   // only `mystore` is mounted in nitro.config.ts
-  getMount: vi.fn((name: string) => ({ base: name === 'mystore' ? 'mystore:' : '' })),
+  getMount: vi.fn((name: string) => ({ base: name === 'mystore' ? 'mystore:' : '', driver: { name: 'memory' } })),
+  getMounts: vi.fn(() => [
+    { base: 'mystore:', driver: { name: 'fs' } },
+    { base: '', driver: { name: 'memory' } },
+  ]),
 };
 
 vi.mock('nitro/storage', () => ({
@@ -72,15 +76,16 @@ describe('NitroStorageManager', () => {
       expect(useStorage).not.toHaveBeenCalledWith('typo');
     });
 
-    it('should warn and return 0 for size()', () => {
+    it('should count the keys for size()', async () => {
       const manager = makeManager();
       const storage = manager.getStorage()!;
-      const result = storage.size();
-      expect(result).toBe(0);
-      expect((manager as any)['gLogger'].warn).toHaveBeenCalledWith(
-        'NitroStorageManager::size',
-        expect.stringContaining('not supported'),
-      );
+      await expect(storage.size()).resolves.toBe(2);
+      expect((manager as any)['gLogger'].warn).not.toHaveBeenCalled();
+    });
+
+    it('should mark size() as expensive', () => {
+      const manager = makeManager();
+      expect(manager.getStorage()!.cheapSize).toBe(false);
     });
   });
 
@@ -148,10 +153,68 @@ describe('NitroStorageManager', () => {
   });
 
   describe('size()', () => {
-    it('should return 0', async () => {
+    it('should return the number of keys', async () => {
       const manager = makeManager();
-      const result = await manager.size({});
-      expect(result).toBe(0);
+      await expect(manager.size({})).resolves.toBe(2);
+      await expect(manager.size({ storage: 'mystore' })).resolves.toBe(2);
+      expect(useStorage).toHaveBeenCalledWith('mystore');
+    });
+
+    it('should return 0 for an empty storage', async () => {
+      mockStorage.getKeys.mockResolvedValue([]);
+      const manager = makeManager();
+      await expect(manager.size({})).resolves.toBe(0);
+    });
+  });
+
+  describe('mounts', () => {
+    it('should list the root storage and every mount from nitro.config.ts', () => {
+      const manager = makeManager();
+      expect(manager.mounts).toEqual(['default', 'mystore']);
+    });
+
+    it('should strip the separator from a nested mount', () => {
+      mockStorage.getMounts.mockReturnValueOnce([
+        { base: 'cache:nested:', driver: { name: 'memory' } },
+        { base: '', driver: { name: 'memory' } },
+      ]);
+      const manager = makeManager();
+      expect(manager.mounts).toEqual(['default', 'cache:nested']);
+    });
+  });
+
+  describe('describe()', () => {
+    it('should describe every nitro mount', async () => {
+      mockStorage.getKeys.mockImplementation(async () =>
+        (useStorage as any).mock.lastCall?.[0] === 'mystore' ? ['a', 'b', 'c'] : ['root1', 'mystore:a', 'mystore:b', 'mystore:c'],
+      );
+      const manager = makeManager();
+
+      const { mounts } = await manager.describe();
+
+      expect(mounts).toEqual([
+        { name: 'default', driver: 'memory', size: 1, keys: ['root1'], truncated: false },
+        { name: 'mystore', driver: 'fs', size: 3, keys: ['a', 'b', 'c'], truncated: false },
+      ]);
+    });
+
+    it('should cap the keys and keep the full count', async () => {
+      mockStorage.getKeys.mockResolvedValue(['k1', 'k2', 'k3']);
+      const manager = makeManager();
+
+      const { mounts } = await manager.describe({ maxKeys: 2 });
+
+      expect(mounts[1]).toEqual({ name: 'mystore', driver: 'fs', size: 3, keys: ['k1', 'k2'], truncated: true });
+    });
+
+    it('should report null when a mount cannot be listed', async () => {
+      mockStorage.getKeys.mockRejectedValue(new Error('down'));
+      const manager = makeManager();
+
+      const { mounts } = await manager.describe();
+
+      expect(mounts.map((mount) => mount.size)).toEqual([null, null]);
+      expect(mounts.map((mount) => mount.keys)).toEqual([null, null]);
     });
   });
 
@@ -161,11 +224,10 @@ describe('NitroStorageManager', () => {
       await expect(manager.mount({} as any)).resolves.toBeUndefined();
     });
 
-    it('size() inside getStorage should not throw when gLogger is null', () => {
+    it('size() inside getStorage should not throw when gLogger is null', async () => {
       const manager = new NitroStorageManager();
       const storage = manager.getStorage()!;
-      expect(() => storage.size()).not.toThrow();
-      expect(storage.size()).toBe(0);
+      await expect(storage.size()).resolves.toBe(2);
     });
   });
 
