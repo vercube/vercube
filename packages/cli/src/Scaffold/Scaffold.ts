@@ -6,6 +6,7 @@ import { join } from 'pathe';
 import { x } from 'tinyexec';
 import { applyRecipes } from '../Recipes/Apply';
 import { listFiles, Project } from '../Recipes/Project';
+import { RecipeError } from '../Recipes/RecipeError';
 import { DEFAULT_DEPLOY } from './Plan';
 import { TEMPLATE_REGISTRY } from './Templates';
 import type { RecipeTypes } from '../Recipes/RecipeTypes';
@@ -52,6 +53,10 @@ export interface ScaffoldOptions {
  */
 export async function scaffoldProject(plan: InitPlan, options: ScaffoldOptions): Promise<RecipeTypes.Summary> {
   const log = options.log ?? (() => {});
+
+  if (!options.force && existsSync(options.dir) && readdirSync(options.dir).length > 0) {
+    throw new RecipeError(`${options.dir} is not empty. Pass --force to replace its contents.`);
+  }
 
   // replace, not merge: files of an earlier project would outlive the new one.
   // The directory and its git history stay, `init . --force` must not lose them.
@@ -131,7 +136,8 @@ export function approveBuilds(root: string, packages: string[]): void {
   } | null;
   const document = workspace ?? {};
 
-  document.allowBuilds = { ...document.allowBuilds, ...Object.fromEntries(packages.map((name) => [name, true])) };
+  // an explicit denial stays: approving it here would run a script the project refused
+  document.allowBuilds = { ...Object.fromEntries(packages.map((name) => [name, true])), ...document.allowBuilds };
   writeFileSync(path, ensureNewline(stringifyYAML(document, { indent: 2 })));
 }
 
@@ -221,7 +227,10 @@ export function formatSummary(plan: InitPlan, summary: RecipeTypes.Summary, rela
     lines.push(note);
   }
 
-  lines.push(`Next: ${relativeDir === '.' ? '' : `cd ${relativeDir} && `}${dev}`);
+  // quoted when the shell would read the directory as more than one word
+  const cd = /^[\w./-]+$/.test(relativeDir) ? relativeDir : `'${relativeDir.replaceAll("'", String.raw`'\''`)}'`;
+
+  lines.push(`Next: ${relativeDir === '.' ? '' : `cd ${cd} && `}${dev}`);
 
   return lines;
 }

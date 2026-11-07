@@ -104,6 +104,38 @@ describe('resolveInitPlan', () => {
     ]);
   });
 
+  it('should answer the questions of a module another one requires', async () => {
+    const withRequires = [
+      ...recipes,
+      defineRecipe({
+        id: 'storage',
+        label: 'Storage',
+        prompts: [
+          {
+            name: 'driver',
+            flag: 'storage',
+            message: 'Storage driver?',
+            default: 'memory',
+            options: [
+              { value: 'memory', label: 'M' },
+              { value: 's3', label: 'S3' },
+            ],
+          },
+        ],
+        apply: () => {},
+      }),
+      defineRecipe({ id: 'cache', label: 'Cache', requires: ['storage'], apply: () => {} }),
+    ];
+
+    const result = await resolveInitPlan(
+      input({ yes: true, modules: 'cache', flags: { storage: 's3' } }),
+      { templates, recipes: withRequires },
+      noPrompts,
+    );
+
+    expect(result.answers.storage).toEqual({ driver: 's3' });
+  });
+
   it('should create a bare project with --modules none', async () => {
     expect((await plan({ yes: true, modules: 'none' })).modules).toEqual([]);
   });

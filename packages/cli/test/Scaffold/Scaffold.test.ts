@@ -112,11 +112,12 @@ describe('approveBuilds', () => {
   it('should add the approvals to pnpm-workspace.yaml, keeping what is there', () => {
     const root = temp();
 
-    writeFileSync(join(root, 'pnpm-workspace.yaml'), 'packages:\n  - apps/*\nallowBuilds:\n  esbuild: true\n');
+    writeFileSync(join(root, 'pnpm-workspace.yaml'), 'packages:\n  - apps/*\nallowBuilds:\n  esbuild: false\n');
     approveBuilds(root, ['serverless', 'esbuild']);
 
+    // the project's own denial wins
     expect(readFileSync(join(root, 'pnpm-workspace.yaml'), 'utf8')).toBe(
-      'packages:\n  - apps/*\nallowBuilds:\n  esbuild: true\n  serverless: true\n',
+      'packages:\n  - apps/*\nallowBuilds:\n  serverless: true\n  esbuild: false\n',
     );
   });
 

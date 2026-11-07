@@ -201,11 +201,18 @@ try {
   step(`Booting on port ${options.port}`);
   server = spawn('node', ['dist/index.mjs'], { cwd: app, stdio: 'inherit', env: { ...process.env, NODE_ENV: 'development' } });
 
+  // an answer while our server is not running comes from something else on the port
+  let gone = false;
+
+  server.once('exit', () => {
+    gone = true;
+  });
+
   const url = `http://localhost:${options.port}/api/foo`;
   const deadline = Date.now() + 30_000;
   let body = null;
 
-  while (Date.now() < deadline && body === null) {
+  while (Date.now() < deadline && body === null && !gone) {
     try {
       const response = await fetch(url);
 
@@ -219,6 +226,10 @@ try {
     if (body === null) {
       await new Promise((done) => setTimeout(done, 500));
     }
+  }
+
+  if (gone) {
+    throw new Error('The app exited before it answered');
   }
 
   if (body?.message !== 'Hello, world!') {
