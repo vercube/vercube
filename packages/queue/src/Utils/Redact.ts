@@ -16,10 +16,19 @@ const SECRET_WORDS: ReadonlySet<string> = new Set([
   'apikey',
   'accesskey',
   'secretkey',
-  'authorization',
-  'cookie',
   'dsn',
   'connectionstring',
+  'session',
+  'sid',
+  'jwt',
+  'cookie',
+  'auth',
+  'authorization',
+  'bearer',
+  'signature',
+  'passphrase',
+  'otp',
+  'salt',
 ]);
 
 /** What replaces the value of a key that names a credential. */
