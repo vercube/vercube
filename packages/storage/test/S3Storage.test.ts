@@ -85,6 +85,14 @@ describe('S3Storage', () => {
       expect(cmd.input.Key).toBe('key');
       expect(cmd.input.Body).toBe(JSON.stringify({ test: 'value' }));
     });
+
+    it('should delete the key instead of writing an empty body when value is undefined', async () => {
+      mockSend.mockResolvedValueOnce({});
+      await storage.setItem('key', undefined);
+
+      expect(mockSend).toHaveBeenCalledTimes(1);
+      expect(mockSend.mock.calls[0][0]).toBeInstanceOf(DeleteObjectCommand);
+    });
   });
 
   describe('getItem', () => {
@@ -100,6 +108,19 @@ describe('S3Storage', () => {
       mockSend.mockRejectedValueOnce({ name: 'NoSuchKey' });
       const result = await storage.getItem('missing');
       expect(result).toBeUndefined();
+    });
+
+    it.each([
+      ['empty', ''],
+      ['non-JSON', 'not json {'],
+    ])('should throw a StorageError naming the key for an %s body', async (_name, body) => {
+      mockSend.mockResolvedValueOnce({ Body: ReadableFromString(body) });
+
+      await expect(storage.getItem('my-key')).rejects.toMatchObject({
+        name: 'StorageError',
+        operation: 'getItem',
+        message: expect.stringMatching(/my-key.*not valid JSON/),
+      });
     });
 
     it('should throw StorageError for other errors', async () => {
