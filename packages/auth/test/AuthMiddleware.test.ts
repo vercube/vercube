@@ -99,4 +99,76 @@ describe('[auth] AuthMiddleware', () => {
       }),
     ).rejects.toThrow('auth provider "ErrorAuthProvider" is not registered');
   });
+
+  describe('validate() result', () => {
+    /**
+     * Runs the middleware against a provider whose validate() returns `value`.
+     */
+    function run(value: unknown, isAsync = false): Promise<void> {
+      class ResultProvider extends AuthProvider {
+        public validate(): any {
+          return isAsync ? Promise.resolve(value) : value;
+        }
+
+        public getCurrentUser(): null {
+          return null;
+        }
+      }
+
+      const testContainer = new Container();
+      testContainer.bind(AuthMiddleware);
+      testContainer.bindMock(Logger, mockLogger);
+      testContainer.bind(AuthProvider, ResultProvider);
+      initializeContainer(testContainer);
+
+      return testContainer.get(AuthMiddleware).onRequest(new Request('http://localhost'), new Response(), { middlewareArgs: {} });
+    }
+
+    it('should allow a legacy null', async () => {
+      await expect(run(null)).resolves.toBeUndefined();
+    });
+
+    it('should allow { user }', async () => {
+      await expect(run({ user: { id: 1 } })).resolves.toBeUndefined();
+    });
+
+    it('should allow { user } even when the user itself is falsy', async () => {
+      await expect(run({ user: null })).resolves.toBeUndefined();
+    });
+
+    it('should deny a string with UnauthorizedError', async () => {
+      await expect(run('nope')).rejects.toThrow(UnauthorizedError);
+      await expect(run('nope')).rejects.toThrow('nope');
+    });
+
+    it('should deny an empty string with UnauthorizedError', async () => {
+      await expect(run('')).rejects.toBeInstanceOf(UnauthorizedError);
+    });
+
+    it('should deny { error } with UnauthorizedError', async () => {
+      await expect(run({ error: 'bad token' })).rejects.toThrow('bad token');
+      await expect(run({ error: 'bad token' })).rejects.toBeInstanceOf(UnauthorizedError);
+    });
+
+    it.each([
+      ['false', false, 'boolean'],
+      ['undefined', undefined, 'undefined'],
+      ['0', 0, 'number'],
+      ['true', true, 'boolean'],
+      ['{}', {}, 'empty object'],
+      ['{ ok: false }', { ok: false }, 'object with keys: ok'],
+      ['{ authenticated: false }', { authenticated: false }, 'object with keys: authenticated'],
+      ['an array', [], 'array'],
+    ])('should fail closed on %s', async (_label, value, type) => {
+      for (const isAsync of [false, true]) {
+        const promise = run(value, isAsync);
+        await expect(promise).rejects.toBeInstanceOf(InternalServerError);
+        await expect(promise).rejects.toThrow(`auth provider "ResultProvider" returned an invalid validate() result (${type})`);
+      }
+    });
+
+    it('should not accept an inherited user property', async () => {
+      await expect(run(Object.create({ user: { id: 1 } }))).rejects.toBeInstanceOf(InternalServerError);
+    });
+  });
 });
