@@ -201,27 +201,59 @@ describe('S3Storage', () => {
   });
 
   describe('ping', () => {
-    it('should ask S3 about the bucket', async () => {
+    it('should send HeadObject for the sentinel key by default', async () => {
       mockSend.mockResolvedValueOnce({});
 
       await storage.ping();
 
-      expect(mockSend.mock.calls[0][0]).toBeInstanceOf(HeadBucketCommand);
-      expect((mockSend.mock.calls[0][0] as HeadBucketCommand).input.Bucket).toBe('test-bucket');
+      expect(mockSend.mock.calls[0][0]).toBeInstanceOf(HeadObjectCommand);
+      expect((mockSend.mock.calls[0][0] as HeadObjectCommand).input.Bucket).toBe('test-bucket');
+      expect((mockSend.mock.calls[0][0] as HeadObjectCommand).input.Key).toBe('.vercube-health');
     });
 
-    it('should count a 403 as reachable, HeadBucket needs s3:ListBucket', async () => {
-      mockSend.mockRejectedValueOnce({ name: 'Forbidden', $metadata: { httpStatusCode: 403 } });
+    it('should count a 404 as reachable, the credentials were accepted', async () => {
+      mockSend.mockRejectedValueOnce({ name: 'NotFound', $metadata: { httpStatusCode: 404 } });
 
       await expect(storage.ping()).resolves.toBeUndefined();
     });
 
-    it('should fail on a missing bucket or an unreachable endpoint', async () => {
-      mockSend.mockRejectedValueOnce({ name: 'NotFound', $metadata: { httpStatusCode: 404 } });
-      await expect(storage.ping()).rejects.toMatchObject({ name: 'NotFound' });
+    it('should fail on a 403, which includes invalid credentials', async () => {
+      mockSend.mockRejectedValueOnce({ name: 'Forbidden', $metadata: { httpStatusCode: 403 } });
 
+      await expect(storage.ping()).rejects.toMatchObject({ name: 'Forbidden' });
+    });
+
+    it('should fail on an unreachable endpoint', async () => {
       mockSend.mockRejectedValueOnce(new Error('connect ECONNREFUSED'));
+
       await expect(storage.ping()).rejects.toThrow('ECONNREFUSED');
+    });
+
+    describe('with probe: bucket', () => {
+      let bucketStorage: S3Storage;
+
+      beforeEach(async () => {
+        bucketStorage = new S3Storage();
+        await bucketStorage.initialize({ bucket: 'test-bucket', region: 'us-east-1', probe: 'bucket' });
+        (bucketStorage as any).s3 = { send: mockSend };
+      });
+
+      it('should ask S3 about the bucket', async () => {
+        mockSend.mockResolvedValueOnce({});
+
+        await bucketStorage.ping();
+
+        expect(mockSend.mock.calls[0][0]).toBeInstanceOf(HeadBucketCommand);
+        expect((mockSend.mock.calls[0][0] as HeadBucketCommand).input.Bucket).toBe('test-bucket');
+      });
+
+      it('should fail on a 403 and on a missing bucket', async () => {
+        mockSend.mockRejectedValueOnce({ name: 'Forbidden', $metadata: { httpStatusCode: 403 } });
+        await expect(bucketStorage.ping()).rejects.toMatchObject({ name: 'Forbidden' });
+
+        mockSend.mockRejectedValueOnce({ name: 'NotFound', $metadata: { httpStatusCode: 404 } });
+        await expect(bucketStorage.ping()).rejects.toMatchObject({ name: 'NotFound' });
+      });
     });
   });
 
