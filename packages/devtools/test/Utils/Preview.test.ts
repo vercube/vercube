@@ -39,4 +39,10 @@ describe('previewReplacer', () => {
     expect(text).toContain('[circular]');
     expect(JSON.parse(text).b.ref.parent.child).toBe('[circular]');
   });
+
+  it('describes bigint, function and typed array values', () => {
+    const out = JSON.parse(JSON.stringify({ n: 5n, f() {}, b: new Uint8Array(3), s: new Set([1]) }, previewReplacer()));
+
+    expect(out).toEqual({ n: '5n', f: '[function f]', b: '[Uint8Array 3 bytes]', s: { '[Set]': [1] } });
+  });
 });
