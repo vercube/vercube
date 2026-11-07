@@ -8,8 +8,8 @@ const gradientId = `vercube-mark-${Math.random().toString(36).slice(2, 9)}`;
   <svg viewBox="0 0 94 107" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Vercube">
     <defs v-if="tone === 'brand'">
       <linearGradient :id="gradientId" x1="0" y1="79.85" x2="94.28" y2="29.11" gradientUnits="userSpaceOnUse">
-        <stop stop-color="#BB4FFF" />
-        <stop offset="1" stop-color="#628BFF" />
+        <stop stop-color="#BC4EFF" />
+        <stop offset="1" stop-color="#BC4EFF" />
       </linearGradient>
     </defs>
     <path

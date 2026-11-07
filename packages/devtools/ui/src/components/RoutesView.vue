@@ -335,7 +335,7 @@ onMounted(reload);
 }
 
 .method.write {
-  color: var(--brand-2);
+  color: var(--info);
 }
 
 .method.destroy {

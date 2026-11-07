@@ -191,10 +191,10 @@ onUnmounted(() => {
   <div class="shell">
     <aside class="rail">
       <div class="brand">
-        <VercubeMark class="mark" />
+        <VercubeMark class="mark" tone="mono" />
         <div class="text">
-          <strong>Vercube</strong>
-          <span>Devtools</span>
+          <strong>vercube</strong>
+          <span>devtools</span>
         </div>
       </div>
 
@@ -341,9 +341,10 @@ onUnmounted(() => {
 }
 
 .mark {
-  width: 17px;
-  height: 19px;
+  width: 18px;
+  height: 20px;
   flex: none;
+  color: var(--text);
 }
 
 .text {
@@ -354,15 +355,16 @@ onUnmounted(() => {
 }
 
 .text strong {
-  font-size: 14px;
-  font-weight: 500;
-  letter-spacing: -0.015em;
+  font-family: var(--display);
+  font-size: 17px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
 }
 
 .text span {
-  font-size: 10.5px;
-  font-weight: 500;
-  letter-spacing: 0.07em;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-3);
 }
@@ -379,8 +381,6 @@ onUnmounted(() => {
 .legend {
   margin: 0 0 6px;
   padding: 0 8px;
-  font-size: 9.5px;
-  letter-spacing: 0.12em;
 }
 
 .item {
@@ -432,6 +432,14 @@ onUnmounted(() => {
 
 .item:hover .icon {
   color: var(--text-2);
+}
+
+.item .label,
+.status .label {
+  font-family: var(--sans);
+  letter-spacing: normal;
+  text-transform: none;
+  color: inherit;
 }
 
 .label {
@@ -547,7 +555,9 @@ onUnmounted(() => {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  /* Clip, but let the squares on the rail's rule show (they sit 4px over it). */
+  overflow: clip;
+  overflow-clip-margin: 4px;
 }
 
 @media (max-width: 860px) {

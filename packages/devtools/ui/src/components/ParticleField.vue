@@ -19,7 +19,8 @@ const props = withDefaults(
     focus: 3.8,
     aperture: 1.79,
     pointSize: 10,
-    opacity: 0.19,
+    // Same opacity as the vercube.dev hero field.
+    opacity: 0.8,
     spread: 15,
   },
 );
@@ -87,7 +88,7 @@ void main() {
   vWorld = position;
   vInitial = origin;
 
-  gl_PointSize = clamp(vDistance * uBlur * uPointSize, 1.0, 48.0) * uPixelRatio;
+  gl_PointSize = clamp(vDistance * uBlur * uPointSize, 3.0, 48.0) * uPixelRatio;
 }`;
 
 const FRAGMENT = /* glsl */ `#version 300 es
@@ -355,8 +356,9 @@ function init(): boolean {
   gl.uniform1f(uniforms.uPointSize, props.pointSize);
   gl.uniform1f(uniforms.uScale, props.planeScale);
   gl.uniform1f(uniforms.uOpacity, props.opacity);
-  gl.uniform3f(uniforms.uNear, 1, 0.93, 1);
-  gl.uniform3f(uniforms.uFar, 0.72, 0.82, 1);
+  // White points, as on vercube.dev.
+  gl.uniform3f(uniforms.uNear, 1, 1, 1);
+  gl.uniform3f(uniforms.uFar, 1, 1, 1);
 
   gl.disable(gl.DEPTH_TEST);
   gl.enable(gl.BLEND);
