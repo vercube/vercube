@@ -185,20 +185,22 @@ if (needsServices && !options.services) {
   process.exit(0);
 }
 
-if (needsServices) {
-  step('Starting the services');
-  run('docker', ['compose', 'up', '-d', '--wait'], root);
-}
-
-step(`Booting on port ${options.port}`);
-
 const config = join(app, 'vercube.config.ts');
 
 writeFileSync(config, readFileSync(config, 'utf8').replace(/port: \d+/, `port: ${options.port}`));
 
-const server = spawn('node', ['dist/index.mjs'], { cwd: app, stdio: 'inherit', env: { ...process.env, NODE_ENV: 'development' } });
+let server;
 
 try {
+  // inside the try: services that fail their health check are torn down too
+  if (needsServices) {
+    step('Starting the services');
+    run('docker', ['compose', 'up', '-d', '--wait'], root);
+  }
+
+  step(`Booting on port ${options.port}`);
+  server = spawn('node', ['dist/index.mjs'], { cwd: app, stdio: 'inherit', env: { ...process.env, NODE_ENV: 'development' } });
+
   const url = `http://localhost:${options.port}/api/foo`;
   const deadline = Date.now() + 30_000;
   let body = null;
@@ -225,7 +227,7 @@ try {
 
   console.log(`\n✔ GET /api/foo answered ${JSON.stringify(body)}`);
 } finally {
-  server.kill('SIGTERM');
+  server?.kill('SIGTERM');
 
   if (needsServices) {
     execFileSync('docker', ['compose', 'down', '-v'], {

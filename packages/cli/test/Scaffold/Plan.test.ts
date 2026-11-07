@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { defineRecipe } from '../../src/Recipes/Apply';
-import { parseList, resolveInitPlan } from '../../src/Scaffold/Plan';
+import { findUnexpectedArgs, parseList, resolveInitPlan } from '../../src/Scaffold/Plan';
 import type { InitInput, Prompter } from '../../src/Scaffold/Plan';
 
 const templates = [
@@ -115,6 +115,7 @@ describe('resolveInitPlan', () => {
     [{ deploy: 'heroku' }, 'Unknown deploy target "heroku". Available: node, aws-lambda.'],
     [{ packageManager: 'pip' }, 'Unknown package manager "pip"'],
     [{ packageManager: 'deno', template: 'fullstack-vue' }, 'Deno supports the api template only'],
+    [{ modules: 'none', flags: { queue: 'bullmq' } }, '--queue only applies to a module that is not selected'],
   ] as [Partial<InitInput>, string][])('should refuse %j', async (overrides, message) => {
     await expect(plan({ yes: true, ...overrides })).rejects.toThrow(message);
   });
@@ -125,5 +126,34 @@ describe('parseList', () => {
     expect(parseList(' schema, queue,,schema ')).toEqual(['schema', 'queue']);
     expect(parseList('none')).toEqual([]);
     expect(parseList('')).toEqual([]);
+  });
+});
+
+describe('findUnexpectedArgs', () => {
+  const flags = [
+    { name: 'template', boolean: false },
+    { name: 'packageManager', boolean: false },
+    { name: 'install', boolean: true },
+    { name: 'yes', boolean: true },
+  ];
+
+  it('should accept the declared flags in every spelling', () => {
+    expect(
+      findUnexpectedArgs(
+        ['my-app', '--template', 'api', '--package-manager=npm', '--packageManager', 'npm', '--no-install', '--yes'],
+        flags,
+        1,
+      ),
+    ).toBeNull();
+  });
+
+  it('should report a mistyped flag before its value becomes the directory', () => {
+    expect(findUnexpectedArgs(['--temlate', 'fullstack-vue', 'my-app'], flags, 1)).toBe(
+      'Unknown flag --temlate. Run with --help for the flags.',
+    );
+  });
+
+  it('should report a second positional', () => {
+    expect(findUnexpectedArgs(['my-app', 'other'], flags, 1)).toBe('Unexpected argument "other".');
   });
 });

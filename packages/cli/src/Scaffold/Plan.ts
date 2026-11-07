@@ -193,6 +193,22 @@ export async function resolveInitPlan(
       ),
   );
 
+  // a question flag for a module that is not added would be dropped without a word
+  const asked = new Set(
+    catalogs.recipes
+      .filter((recipe) => selected.includes(recipe.id) || recipe.id === deploy)
+      .flatMap((recipe) => (recipe.prompts ?? []).map((prompt) => prompt.flag)),
+  );
+  const unused = Object.entries(input.flags)
+    .filter(([flag, value]) => value !== undefined && !asked.has(flag))
+    .map(([flag]) => `--${flag}`);
+
+  if (unused.length > 0) {
+    throw new RecipeError(
+      `${unused.join(', ')} only applies to a module that is not selected. Add the module to --modules, or drop the flag.`,
+    );
+  }
+
   if (missing.length > 0) {
     throw new RecipeError(
       `Missing ${missing.join(', ')}. Pass them, or --yes for the defaults, when there is no terminal to ask in. Example: vercube init my-app --template api --modules schema,testing --deploy node --yes`,
@@ -265,4 +281,66 @@ export function parseList(value: string): string[] {
     .filter(Boolean);
 
   return items.length === 1 && items[0] === 'none' ? [] : [...new Set(items)];
+}
+
+/**
+ * Finds what the command line has that the command does not take: an unknown
+ * flag, or a second positional. citty reads an unknown \`--flag value\` as a
+ * boolean and its value as the next positional, so a typo would otherwise
+ * create the project somewhere else.
+ *
+ * @param {string[]} argv - The arguments after the command name
+ * @param {{ name: string; boolean: boolean }[]} flags - The flags the command declares
+ * @param {number} positionals - How many positionals it takes
+ * @returns {string | null} What is wrong, null when nothing is
+ */
+export function findUnexpectedArgs(
+  argv: string[],
+  flags: { name: string; boolean: boolean }[],
+  positionals: number,
+): string | null {
+  const kebab = (name: string): string => name.replaceAll(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
+  const known = new Map<string, boolean>();
+
+  for (const flag of flags) {
+    for (const name of new Set([flag.name, kebab(flag.name)])) {
+      known.set(name, flag.boolean);
+
+      if (flag.boolean) {
+        known.set(`no-${name}`, true);
+      }
+    }
+  }
+
+  let found = 0;
+
+  for (let index = 0; index < argv.length; index++) {
+    const arg = argv[index];
+
+    if (arg === '--') {
+      break;
+    }
+
+    if (!arg.startsWith('-')) {
+      found++;
+
+      if (found > positionals) {
+        return `Unexpected argument "${arg}".`;
+      }
+
+      continue;
+    }
+
+    const [name, inline] = arg.replace(/^--?/, '').split('=', 2);
+
+    if (!known.has(name)) {
+      return `Unknown flag --${name}. Run with --help for the flags.`;
+    }
+
+    if (!known.get(name) && inline === undefined) {
+      index++;
+    }
+  }
+
+  return null;
 }
