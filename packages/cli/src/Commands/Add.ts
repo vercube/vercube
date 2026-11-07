@@ -7,7 +7,7 @@ import { Command } from '../Decorators/Command';
 import { Flag } from '../Decorators/Flag';
 import { RECIPES } from '../Recipes/Catalog';
 import { RecipeError } from '../Recipes/RecipeError';
-import { addModules, projectPackageManager } from '../Scaffold/Add';
+import { addModules, findProjectRoot, projectPackageManager } from '../Scaffold/Add';
 import { parseList } from '../Scaffold/Plan';
 import { addRecipeFlags, logger, prompter, readRecipeFlags } from '../Scaffold/Prompter';
 
@@ -54,14 +54,16 @@ export class AddCommand extends BaseCommand {
    * @returns resolves once the modules are added
    */
   public override async run(): Promise<void> {
-    const root = resolve(this.cwd ?? process.cwd());
+    const root = findProjectRoot(resolve(this.cwd ?? process.cwd()));
+    const argv = process.argv.slice(process.argv.indexOf('add') + 1);
 
     try {
-      const summary = await addModules(parseList(this.modules ?? ''), {
+      const summary = await addModules(positionalModules(argv, this.modules), {
         root,
         version,
         recipes: RECIPES,
         flags: readRecipeFlags(this),
+        argv,
         yes: this.yes,
         interactive: hasTTY && !isCI,
         prompter,
@@ -100,3 +102,32 @@ export class AddCommand extends BaseCommand {
 
 // one string flag per recipe question, `--queue`, `--scheduler-store` and so on
 addRecipeFlags(AddCommand.prototype);
+
+/** Flags of the command that take no value. */
+const BOOLEAN_FLAGS = new Set(['--yes', '--install', '--no-install']);
+
+/**
+ * Every module named on the command line: `vercube add queue,ws cache` is
+ * three. citty keeps only the first positional, the rest are read here.
+ *
+ * @param {string[]} argv - The arguments after `add`
+ * @param {string | undefined} first - The positional citty parsed
+ * @returns {string[]} The modules
+ */
+function positionalModules(argv: string[], first: string | undefined): string[] {
+  const positionals: string[] = [];
+
+  for (let index = 0; index < argv.length; index++) {
+    const arg = argv[index];
+
+    if (arg.startsWith('-')) {
+      // a flag's value follows it, unless it takes none or is given as --flag=value
+      index += BOOLEAN_FLAGS.has(arg) || arg.includes('=') ? 0 : 1;
+      continue;
+    }
+
+    positionals.push(arg);
+  }
+
+  return [...new Set((positionals.length > 0 ? positionals : [first ?? '']).flatMap((item) => parseList(item)))];
+}

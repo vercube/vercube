@@ -57,6 +57,9 @@ export async function applyRecipes(
     try {
       await recipe.apply({ project, answers: resolvedAnswers[recipe.id], selected: ids, version: project.version });
     } catch (error) {
+      // all or nothing: a module half wired in is worse than none
+      project.rollback();
+
       if (error instanceof RecipeError) {
         throw new RecipeError(`${recipe.label}: ${error.message}`);
       }

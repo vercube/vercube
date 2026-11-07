@@ -1,8 +1,8 @@
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'pathe';
 import { afterEach, describe, expect, it } from 'vitest';
 import { RECIPES } from '../../src/Recipes/Catalog';
-import { addModules, projectPackageManager } from '../../src/Scaffold/Add';
+import { addModules, findProjectRoot, projectPackageManager } from '../../src/Scaffold/Add';
 import { apiTemplate } from '../Fixtures';
 import type { AddOptions } from '../../src/Scaffold/Add';
 import type { Prompter } from '../../src/Scaffold/Plan';
@@ -108,9 +108,88 @@ describe('addModules', () => {
     expect(JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).dependencies['@acme/vercube-search']).toBe('^1.0.0');
   });
 
+  const installPackage = (root: string, name: string, files: Record<string, string>) => {
+    const dir = join(root, 'node_modules', name);
+
+    mkdirSync(dir, { recursive: true });
+
+    for (const [file, content] of Object.entries(files)) {
+      writeFileSync(join(dir, file), content);
+    }
+  };
+
+  const RECIPE = `{ id: 'x', label: 'X', prompts: [{ name: 'engine', flag: 'search-engine', message: '', default: 'a', options: [{ value: 'a', label: 'A' }, { value: 'b', label: 'B' }] }], apply: ({ project, answers }) => project.addEnv({ ENGINE: answers.engine }) }`;
+
+  it.each([
+    [
+      'an ESM-only exports map',
+      {
+        'package.json': JSON.stringify({ name: 'p', exports: { './recipe': { import: './r.mjs' } } }),
+        'r.mjs': `export default ${RECIPE};`,
+      },
+    ],
+    [
+      'CommonJS exports.recipe',
+      {
+        'package.json': JSON.stringify({ name: 'p', exports: { './recipe': './r.cjs' } }),
+        'r.cjs': `exports.recipe = ${RECIPE};`,
+      },
+    ],
+    [
+      'transpiled CommonJS',
+      {
+        'package.json': JSON.stringify({ name: 'p' }),
+        'recipe.cjs': `Object.defineProperty(exports, '__esModule', { value: true }); exports.default = ${RECIPE};`,
+      },
+    ],
+  ])('should load a recipe from %s, answering its question from the command line', async (_label, files) => {
+    const root = project();
+
+    installPackage(root, 'p', files);
+
+    await addModules(['p'], options(root, { argv: ['p', '--search-engine', 'b'] }));
+
+    expect(readFileSync(join(root, '.env'), 'utf8')).toContain('ENGINE=b');
+  });
+
+  it('should leave the project as it was when a recipe fails', async () => {
+    const root = project();
+    const before = readFileSync(join(root, 'package.json'), 'utf8');
+
+    installPackage(root, 'broken', {
+      'package.json': JSON.stringify({ name: 'broken' }),
+      'recipe.mjs': `export default { id: 'b', label: 'B', apply: ({ project }) => { project.addDependencies({ zod: '^4.0.0' }); project.createFile('src/x.ts', 'x'); throw new Error('boom'); } };`,
+    });
+
+    await expect(addModules(['broken'], options(root))).rejects.toThrow('boom');
+
+    expect(readFileSync(join(root, 'package.json'), 'utf8')).toBe(before);
+    expect(existsSync(join(root, 'src/x.ts'))).toBe(false);
+  });
+
+  it('should accept a tsconfig that inherits its paths', async () => {
+    const root = project({ 'tsconfig.json': JSON.stringify({ extends: './tsconfig.base.json', compilerOptions: {} }) });
+
+    await expect(addModules(['schema'], options(root))).resolves.toMatchObject({ applied: ['schema'] });
+  });
+
   it('should explain a name that is neither a module nor an installed package', async () => {
     await expect(addModules(['nope'], options(project()))).rejects.toThrow('"nope" is not a built-in module');
     await expect(addModules([], options(project()))).rejects.toThrow('Name the modules to add');
+  });
+});
+
+describe('findProjectRoot', () => {
+  it('should find the workspace an app belongs to', () => {
+    const root = project({ 'pnpm-workspace.yaml': 'packages:\n  - apps/*\n', 'apps/api/package.json': '{}' });
+
+    expect(findProjectRoot(join(root, 'apps/api'))).toBe(root);
+  });
+
+  it('should keep a directory outside any workspace', () => {
+    const root = project();
+
+    expect(findProjectRoot(root)).toBe(root);
   });
 });
 
