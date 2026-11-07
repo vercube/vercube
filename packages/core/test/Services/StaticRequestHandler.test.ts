@@ -173,7 +173,7 @@ describe('StaticRequestHandler', () => {
         mtime: new Date('2023-01-01'),
       };
 
-      mockStat.mockRejectedValueOnce(new Error('Not found in first dir')).mockResolvedValue(mockStats);
+      mockStat.mockResolvedValue(mockStats);
       mockCreateReadStream.mockReturnValue({
         pipe: vi.fn(),
         on: vi.fn(),

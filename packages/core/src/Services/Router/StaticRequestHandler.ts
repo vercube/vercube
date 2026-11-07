@@ -38,7 +38,8 @@ export class StaticRequestHandler {
    */
   public async handleRequest(request: Request): Promise<void | Response> {
     // Get dirs that has to be static provided
-    const dirs = this.fOptions?.dirs ?? ([] as string[]);
+    // The default `public` merges into user dirs, so duplicates are common
+    const dirs = [...new Set(this.fOptions?.dirs ?? ([] as string[]))];
 
     // No static request was provided
     if (!dirs) {
@@ -63,20 +64,25 @@ export class StaticRequestHandler {
       return;
     }
 
-    // Strip the mount prefix, but only when it is a whole leading path segment
-    let relativePath = path;
+    // With several dirs each one is served only under its own mount prefix.
+    // A single dir also answers without the prefix.
+    const candidates: Array<{ dir: string; relativePath: string }> = [];
+
     for (const dir of dirs) {
       const prefix = `/${dir.replace(/^\/+|\/+$/g, '')}`;
 
-      if (relativePath === prefix || relativePath.startsWith(`${prefix}/`)) {
-        relativePath = relativePath.slice(prefix.length);
-        break;
+      if (path === prefix || path.startsWith(`${prefix}/`)) {
+        candidates.push({ dir, relativePath: path.slice(prefix.length) });
       }
     }
 
     const dotfiles = this.fOptions?.dotfiles ?? 'ignore';
 
-    for (const dir of dirs) {
+    if (candidates.length === 0 && dirs.length === 1) {
+      candidates.push({ dir: dirs[0], relativePath: path });
+    }
+
+    for (const { dir, relativePath } of candidates) {
       const root = join(process.cwd(), dir);
       const fullPath = join(root, relativePath);
 

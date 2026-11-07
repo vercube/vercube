@@ -1,6 +1,5 @@
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join, relative } from 'node:path';
+import { basename, join, relative } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import { BaseMiddleware, Controller, createApp, Get, GlobalMiddlewareRegistry } from '../../src';
 import type { App } from '../../src';
@@ -51,7 +50,7 @@ class UnmatchedController {
   }
 }
 
-const dir = mkdtempSync(join(tmpdir(), 'vercube-static-'));
+const dir = mkdtempSync(join(process.cwd(), '.vercube-static-'));
 writeFileSync(join(dir, 'file.txt'), 'hello');
 
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
@@ -118,30 +117,34 @@ describe('requests no route handles', () => {
   it('should serve static files through global middlewares, with HEAD and 304', async () => {
     const app = await boot();
 
-    const get = await app.fetch(new Request('http://localhost/file.txt'));
+    const get = await app.fetch(new Request(`http://localhost/${basename(dir)}/file.txt`));
     expect(get.status).toBe(200);
     expect(await get.text()).toBe('hello');
     expect(get.headers.get('access-control-allow-origin')).toBe('*');
 
-    const head = await app.fetch(new Request('http://localhost/file.txt', { method: 'HEAD' }));
+    const head = await app.fetch(new Request(`http://localhost/${basename(dir)}/file.txt`, { method: 'HEAD' }));
     expect(head.status).toBe(200);
     expect(head.headers.get('content-length')).toBe('5');
     expect(await head.text()).toBe('');
 
     const etag = get.headers.get('etag')!;
-    const cached = await app.fetch(new Request('http://localhost/file.txt', { headers: { 'if-none-match': etag } }));
+    const cached = await app.fetch(
+      new Request(`http://localhost/${basename(dir)}/file.txt`, { headers: { 'if-none-match': etag } }),
+    );
     expect(cached.status).toBe(304);
     expect(await cached.text()).toBe('');
 
     const listed = await app.fetch(
-      new Request('http://localhost/file.txt', { headers: { 'if-none-match': `"other", ${etag.slice(2)}` } }),
+      new Request(`http://localhost/${basename(dir)}/file.txt`, { headers: { 'if-none-match': `"other", ${etag.slice(2)}` } }),
     );
     expect(listed.status).toBe(304);
 
-    const any = await app.fetch(new Request('http://localhost/file.txt', { headers: { 'if-none-match': '*' } }));
+    const any = await app.fetch(new Request(`http://localhost/${basename(dir)}/file.txt`, { headers: { 'if-none-match': '*' } }));
     expect(any.status).toBe(304);
 
-    const stale = await app.fetch(new Request('http://localhost/file.txt', { headers: { 'if-none-match': '"other"' } }));
+    const stale = await app.fetch(
+      new Request(`http://localhost/${basename(dir)}/file.txt`, { headers: { 'if-none-match': '"other"' } }),
+    );
     expect(stale.status).toBe(200);
     // read the body, so the file is not opened after the directory is gone
     expect(await stale.text()).toBe('hello');
