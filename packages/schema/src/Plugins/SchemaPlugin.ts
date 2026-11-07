@@ -1,10 +1,11 @@
-import { BasePlugin, IntrospectionRegistry } from '@vercube/core';
+import { BasePlugin, IntrospectionRegistry, MetadataResolver } from '@vercube/core';
+import { Logger } from '@vercube/logger';
 import { defu } from 'defu';
-import { DEFAULT_SCHEMA_PLUGIN_OPTIONS } from '../Constants/SchemaDefaults';
+import { DEFAULT_SCHEMA_PATH, DEFAULT_SCHEMA_PLUGIN_OPTIONS } from '../Constants/SchemaDefaults';
 import { SchemaController } from '../Controllers/SchameController';
 import { SchemaRegistry } from '../Services/SchemaRegistry';
 import { $SchemaPluginOptions } from '../Symbols/SchemaSymbols';
-import type { SchemaPluginOptions } from '../Types/SchemaPluginOptions';
+import type { SchemaPluginOptions, SchemaResolvedOptions } from '../Types/SchemaPluginOptions';
 import type { App } from '@vercube/core';
 
 /**
@@ -13,8 +14,9 @@ import type { App } from '@vercube/core';
  * Provides OpenAPI/Swagger schema generation and validation capabilities:
  * - Automatic OpenAPI schema generation from Zod schemas
  * - Route-level schema validation via @Schema decorator
- * - Runtime schema access via /_schema endpoint
+ * - Runtime schema access via the /_schema endpoint (`path`), off in production unless `enabled`
  * - Scalar API Reference UI at /_schema/docs (https://github.com/scalar/scalar)
+ * - Optional access token (`token`) guarding both endpoints
  * - Seamless integration with request validation (@Body, @Query, etc)
  *
  * @example
@@ -45,11 +47,14 @@ export class SchemaPlugin extends BasePlugin<SchemaPluginOptions> {
    * @override
    */
   public override use(app: App, options?: SchemaPluginOptions): void | Promise<void> {
-    const mergedOptions = defu(options ?? {}, DEFAULT_SCHEMA_PLUGIN_OPTIONS) as SchemaPluginOptions;
+    const resolved = this.resolveOptions(app, options);
 
-    app.container.bindInstance($SchemaPluginOptions, mergedOptions);
+    app.container.bindInstance($SchemaPluginOptions, resolved);
     app.container.bind(SchemaRegistry);
-    app.container.bind(SchemaController);
+
+    if (resolved.enabled) {
+      this.mount(app, resolved);
+    }
 
     // Publish the generated document as an introspection section, so tooling
     // reads it the same way it reads routes or config instead of having to
@@ -65,5 +70,49 @@ export class SchemaPlugin extends BasePlugin<SchemaPluginOptions> {
       revision: () => registry.revision,
       describe: () => registry.generateSchema(),
     });
+  }
+
+  /**
+   * Serves the document and the Scalar UI under the configured path.
+   *
+   * Global middlewares stay attached: an application-wide auth middleware is a
+   * legitimate way to guard these endpoints.
+   *
+   * @param app - The application instance.
+   * @param resolved - Resolved plugin options.
+   */
+  private mount(app: App, resolved: SchemaResolvedOptions): void {
+    if (app.config.production === true && !resolved.token) {
+      app.container
+        .getOptional(Logger)
+        ?.warn(
+          `[SchemaPlugin] ${resolved.path}/ serves the full OpenAPI document in production without a token. ` +
+            'It is public unless an application middleware guards it. Set `token`, or `enabled: false` to stop serving it.',
+        );
+    }
+
+    // before the routes are registered, which reads the path once
+    app.container.get(MetadataResolver).setControllerPath(SchemaController, resolved.path);
+    app.container.bind(SchemaController);
+  }
+
+  /**
+   * Merges user options with the defaults and resolves `enabled` and `path`.
+   *
+   * @param app - The application instance.
+   * @param options - Plugin options.
+   * @returns Resolved options.
+   */
+  private resolveOptions(app: App, options?: SchemaPluginOptions): SchemaResolvedOptions {
+    const merged = defu(options ?? {}, DEFAULT_SCHEMA_PLUGIN_OPTIONS) as SchemaPluginOptions;
+
+    // An empty or slash-only path would claim the root, so fall back to the default.
+    const trimmed = (merged.path ?? '').replace(/^\/+|\/+$/g, '');
+
+    return {
+      ...merged,
+      enabled: typeof merged.enabled === 'boolean' ? merged.enabled : app.config.production !== true,
+      path: trimmed ? `/${trimmed}` : DEFAULT_SCHEMA_PATH,
+    };
   }
 }

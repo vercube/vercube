@@ -22,7 +22,7 @@ export type SchemaComponentsOptions = NonNullable<OpenAPIDocument['components']>
 export interface SchemaScalarOptions {
   /**
    * OpenAPI document URL passed to Scalar.
-   * @default '/_schema/'
+   * @default `${path}/`, so '/_schema/'
    */
   openApiUrl?: string;
 
@@ -41,9 +41,29 @@ export interface SchemaScalarOptions {
  */
 export interface SchemaPluginOptions {
   /**
-   * Scalar API Reference UI served at `/_schema/docs`.
+   * Serve the OpenAPI document and the Scalar UI over HTTP. The document is
+   * still generated and published to introspection when this is off.
+   * @default true, except when the application runs with `production: true`
+   */
+  enabled?: boolean;
+
+  /**
+   * Path the OpenAPI document is served at. The Scalar UI is served at `<path>/docs`.
+   * @default '/_schema'
+   */
+  path?: string;
+
+  /**
+   * Access token required by both endpoints. Sent as the `x-schema-token`
+   * header, or as `?token=` on the Scalar page, which then embeds the document
+   * so the browser never has to fetch it separately.
+   */
+  token?: string;
+
+  /**
+   * Scalar API Reference UI served at `<path>/docs`.
    * Pass `false` to disable.
-   * @default enabled with OpenAPI at `/_schema/`
+   * @default enabled with OpenAPI at `<path>/`
    */
   scalar?: false | SchemaScalarOptions;
 
@@ -94,3 +114,12 @@ export interface SchemaPluginOptions {
    */
   security?: Record<string, string[]>[];
 }
+
+/**
+ * {@link SchemaPluginOptions} after the plugin resolved its defaults.
+ * @internal
+ */
+export type SchemaResolvedOptions = SchemaPluginOptions & {
+  enabled: boolean;
+  path: string;
+};
