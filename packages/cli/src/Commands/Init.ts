@@ -11,9 +11,10 @@ import { Command } from '../Decorators/Command';
 import { Flag } from '../Decorators/Flag';
 import { RECIPES } from '../Recipes/Catalog';
 import { RecipeError } from '../Recipes/RecipeError';
-import { resolveInitPlan } from '../Scaffold/Plan';
+import { findUnexpectedArgs, resolveInitPlan } from '../Scaffold/Plan';
 import { formatSummary, scaffoldProject } from '../Scaffold/Scaffold';
 import { TEMPLATES } from '../Scaffold/Templates';
+import { getArgDefs } from '../Utils/CommandUtils';
 import { vercubeIcon } from '../Utils/Logo';
 import type { Choice, Prompter } from '../Scaffold/Plan';
 
@@ -76,7 +77,7 @@ export class InitCommand extends BaseCommand {
   public yes!: boolean;
 
   /** Overwrite existing directory without prompting. */
-  @Flag({ name: 'force', description: 'Override existing directory', default: false })
+  @Flag({ name: 'force', description: 'Replace the contents of an existing directory', default: false })
   public force!: boolean;
 
   /** Set to `false` to skip dependency installation. */
@@ -111,6 +112,25 @@ export class InitCommand extends BaseCommand {
     }
 
     try {
+      const unexpected = findUnexpectedArgs(
+        process.argv.slice(process.argv.indexOf('init') + 1),
+        getArgDefs(InitCommand)
+          .filter((def) => def.kind === 'flag')
+          .map((def) => ({ name: def.name, boolean: def.valueType === 'boolean' })),
+        1,
+      );
+
+      if (unexpected) {
+        throw new RecipeError(unexpected);
+      }
+
+      // known before any question, so a directory that is in the way is reported first
+      let force = this.force;
+
+      if (!force && this.dir) {
+        force = await this.confirmOverwrite(resolve(process.cwd(), this.dir), interactive && !this.yes);
+      }
+
       const plan = await resolveInitPlan(
         {
           dir: this.dir,
@@ -129,7 +149,9 @@ export class InitCommand extends BaseCommand {
 
       const cwd = resolve(process.cwd());
       const dir = resolve(cwd, plan.dir);
-      const force = this.force || (await this.confirmOverwrite(dir, interactive));
+      if (!force && !this.dir) {
+        force = await this.confirmOverwrite(dir, interactive && !this.yes);
+      }
 
       logger.start(`Creating ${colors.cyan(relative(cwd, dir) || '.')}...`);
 
@@ -150,7 +172,8 @@ export class InitCommand extends BaseCommand {
         startShell(dir);
       }
     } catch (error) {
-      if (error instanceof RecipeError || (error as Error)?.message === 'cancelled') {
+      // consola rejects a cancelled prompt (Ctrl-C) with this message
+      if (error instanceof RecipeError || (error as Error)?.message === 'Prompt cancelled.') {
         logger.error((error as Error).message);
         process.exit(1);
       }
@@ -179,10 +202,10 @@ export class InitCommand extends BaseCommand {
     }
 
     if (!interactive) {
-      throw new RecipeError(`${dir} is not empty. Pass --force to overwrite it.`);
+      throw new RecipeError(`${dir} is not empty. Pass --force to replace its contents.`);
     }
 
-    const overwrite = await logger.prompt(`${colors.cyan(dir)} is not empty. Overwrite its contents?`, {
+    const overwrite = await logger.prompt(`${colors.cyan(dir)} is not empty. Replace its contents?`, {
       type: 'confirm',
       initial: false,
       cancel: 'reject',

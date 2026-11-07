@@ -1,4 +1,4 @@
-import { cpSync, existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { parseYAML, stringifyYAML } from 'confbox/yaml';
 import { downloadTemplate } from 'giget';
 import { installDependencies } from 'nypm';
@@ -52,6 +52,16 @@ export interface ScaffoldOptions {
  */
 export async function scaffoldProject(plan: InitPlan, options: ScaffoldOptions): Promise<RecipeTypes.Summary> {
   const log = options.log ?? (() => {});
+
+  // replace, not merge: files of an earlier project would outlive the new one.
+  // The directory and its git history stay, `init . --force` must not lose them.
+  if (options.force && existsSync(options.dir)) {
+    for (const entry of readdirSync(options.dir)) {
+      if (entry !== '.git') {
+        rmSync(join(options.dir, entry), { recursive: true, force: true });
+      }
+    }
+  }
 
   if (options.templateDir) {
     cpSync(options.templateDir, options.dir, {
