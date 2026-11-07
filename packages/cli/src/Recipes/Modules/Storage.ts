@@ -1,13 +1,29 @@
 import { defineRecipe } from '../Apply';
+import { useApiKeyGuard } from './Services';
 import { VERSIONS } from './Versions';
 
-const CONTROLLER = `import { Body, Controller, Get, Param, Put } from '@vercube/core';
+const CONTROLLER = `import { BadRequestError, Body, Controller, Get, Header, Param, Put } from '@vercube/core';
 import { Inject } from '@vercube/di';
 import { StorageManager } from '@vercube/storage';
+import { requireApiKey } from '@/services/ApiKeyGuard';
+
+const KEY = /^[\\w-]{1,64}$/;
+
+function storageKey(key: string): string {
+  if (!KEY.test(key)) {
+    throw new BadRequestError('Invalid key');
+  }
+
+  return \`examples/\${key}\`;
+}
 
 /**
- * curl -X PUT localhost:3000/api/files/hello -H 'content-type: application/json' -d '{"text":"hi"}'
- * curl localhost:3000/api/files/hello
+ * Example only: add real auth before deploying. Requests need the API_KEY of
+ * .env in an x-api-key header, and keys are limited to letters, digits, \`-\`
+ * and \`_\`, stored under \`examples/\`.
+ *
+ * curl -X PUT localhost:3000/api/files/hello -H "x-api-key: <API_KEY from .env>" -H 'content-type: application/json' -d '{"text":"hi"}'
+ * curl localhost:3000/api/files/hello -H "x-api-key: <API_KEY from .env>"
  */
 @Controller('/api/files')
 export default class FilesController {
@@ -15,15 +31,25 @@ export default class FilesController {
   private gStorage!: StorageManager;
 
   @Put('/:key')
-  public async write(@Param('key') key: string, @Body() body: unknown): Promise<{ ok: true }> {
-    await this.gStorage.setItem({ key, value: body });
+  public async write(
+    @Param('key') key: string,
+    @Body() body: unknown,
+    @Header('x-api-key') apiKey?: string,
+  ): Promise<{ ok: true }> {
+    requireApiKey(apiKey);
+    await this.gStorage.setItem({ key: storageKey(key), value: body });
 
     return { ok: true };
   }
 
   @Get('/:key')
-  public async read(@Param('key') key: string): Promise<{ key: string; value: unknown }> {
-    return { key, value: await this.gStorage.getItem({ key }) };
+  public async read(
+    @Param('key') key: string,
+    @Header('x-api-key') apiKey?: string,
+  ): Promise<{ key: string; value: unknown }> {
+    requireApiKey(apiKey);
+
+    return { key, value: await this.gStorage.getItem({ key: storageKey(key) }) };
   }
 }
 `;
@@ -46,6 +72,8 @@ export const storageRecipe = defineRecipe<{ driver: string }>({
   ],
   apply: ({ project, answers }) => {
     project.addDependencies({ '@vercube/storage': 'latest' });
+    useApiKeyGuard(project);
+    project.note('FilesController is an example guarded by API_KEY: add real auth before deploying');
     project.createFile('src/controller/FilesController.ts', CONTROLLER);
     project.bind({ name: 'StorageManager', from: '@vercube/storage' });
 
