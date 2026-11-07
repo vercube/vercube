@@ -254,4 +254,80 @@ describe('[Framework][IOC] Decorators', () => {
       expect(decorator.propertyIndex).toBe(1);
     });
   });
+
+  describe('flushQueue retry', () => {
+    class Counter extends BaseDecorator<{ calls: string[] }> {
+      public override created(): void {
+        this.options.calls.push(this.instance.constructor.name);
+      }
+    }
+
+    const MISSING = Symbol('Missing');
+
+    it('should not initialize decorators twice when a previous flush failed', () => {
+      const calls: string[] = [];
+      const Count = (): Function => createDecorator(Counter, { calls });
+
+      class A {
+        @Count()
+        run() {}
+      }
+
+      class B {
+        @Inject(MISSING)
+        public missing!: unknown;
+
+        @Count()
+        run() {}
+      }
+
+      container.bind(A);
+      container.bind(B);
+
+      expect(() => container.flushQueue()).toThrow(/Unresolved dependency/);
+      expect(calls).toEqual(['A']);
+
+      container.bindInstance(MISSING, {});
+      container.flushQueue();
+
+      expect(calls).toEqual(['A', 'B']);
+    });
+
+    it('should not initialize decorators twice when a decorator expands the container', () => {
+      const calls: string[] = [];
+      const Count = (): Function => createDecorator(Counter, { calls });
+
+      class Late {
+        @Count()
+        run() {}
+      }
+
+      class Expander extends BaseDecorator<{ container: Container }> {
+        public override created(): void {
+          this.options.container.expand((c) => c.bind(Late));
+        }
+      }
+
+      class First {
+        @Count()
+        @createDecorator(Expander, {
+          get container() {
+            return container;
+          },
+        })
+        run() {}
+      }
+
+      class Second {
+        @Count()
+        run() {}
+      }
+
+      container.bind(First);
+      container.bind(Second);
+      container.flushQueue();
+
+      expect(calls.toSorted()).toEqual(['First', 'Late', 'Second']);
+    });
+  });
 });
