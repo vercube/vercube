@@ -43,11 +43,9 @@ export const awsLambdaRecipe = defineRecipe({
     project.addDependencies({ '@vercube/serverless': 'latest' });
     project.addDependencies({ serverless: VERSIONS.serverless, 'serverless-offline': VERSIONS.serverlessOffline }, { dev: true });
     // app.listen() stays: \`vercube dev\` needs it, and it binds nothing on Lambda
-    project.addToEntry('export const handler: ServerlessHandler = toServerlessHandler(app);', {
-      imports: {
-        toServerlessHandler: '@vercube/serverless/aws-lambda',
-        ServerlessHandler: { from: '@vercube/serverless', type: true },
-      },
+    // the event types come from @types/aws-lambda, which the project does not need otherwise
+    project.addToEntry('export const handler: ReturnType<typeof toServerlessHandler> = toServerlessHandler(app);', {
+      imports: { toServerlessHandler: '@vercube/serverless/aws-lambda' },
     });
     project.createFile('serverless.yml', SERVERLESS_YML);
     project.addScript('offline', 'vercube build && serverless offline');
