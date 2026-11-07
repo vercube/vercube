@@ -463,6 +463,8 @@ export class RabbitMQStrategy extends QueueStrategy<RabbitMQStrategyOptions> {
 
     consumer.active++;
 
+    let succeeded = false;
+
     try {
       await request.dispatch({
         id: message.properties.messageId ?? generateJobId(),
@@ -472,11 +474,21 @@ export class RabbitMQStrategy extends QueueStrategy<RabbitMQStrategyOptions> {
         attempt: readNumericHeader(headers[ATTEMPT_HEADER], 1),
         raw: message,
       });
-
-      consumer.channel.ack(message);
+      succeeded = true;
     } catch {
       // the manager owns the retry policy, so requeueing here would only loop
-      consumer.channel.nack(message, false, false);
+    }
+
+    // Settled on its own so a dead channel is logged instead of escaping: the
+    // broker redelivers unacked messages once the connection is back.
+    try {
+      if (succeeded) {
+        consumer.channel.ack(message);
+      } else {
+        consumer.channel.nack(message, false, false);
+      }
+    } catch (error) {
+      this.gLogger?.warn('Vercube/RabbitMQStrategy::Failed to settle the message', error);
     } finally {
       consumer.active--;
     }
