@@ -283,6 +283,107 @@ describe('WebsocketService', () => {
     expect(await (response as Response).text()).toBe('Unknown error');
   });
 
+  describe('origin check', () => {
+    const upgrade = async (
+      options: WebsocketTypes.Options | undefined,
+      headers: Record<string, string> = {},
+      url = 'http://app.example/chat',
+    ) => {
+      const callback = vi.fn().mockResolvedValue(true);
+      service.registerHandler(WebsocketTypes.HandlerAction.CONNECTION, '/chat', { callback });
+      service.initialize(options);
+
+      const request = new Request(url, { headers });
+      if (headers.origin) expect(request.headers.get('origin')).toBe(headers.origin);
+
+      const result = await getHooks(service, container.get(HttpServer))?.upgrade?.(request);
+      return { result, callback };
+    };
+
+    it('rejects a cross-site origin by default before the connection handler runs', async () => {
+      const { result, callback } = await upgrade(undefined, { origin: 'https://evil.example' });
+
+      expect((result as Response).status).toBe(403);
+      expect(await (result as Response).text()).toBe('Origin not allowed');
+      expect(callback).not.toHaveBeenCalled();
+    });
+
+    it('accepts a same-origin request by default, ignoring the scheme', async () => {
+      const { result, callback } = await upgrade(undefined, { origin: 'https://app.example' });
+
+      expect(result).toMatchObject({ namespace: '/chat' });
+      expect(callback).toHaveBeenCalled();
+    });
+
+    it('compares the port of a same-origin request', async () => {
+      const { result } = await upgrade(undefined, { origin: 'http://app.example:5173' }, 'http://app.example:3000/chat');
+
+      expect((result as Response).status).toBe(403);
+    });
+
+    it('accepts an origin matching the forwarded host', async () => {
+      const { result } = await upgrade(
+        undefined,
+        { origin: 'https://public.example', 'x-forwarded-host': 'public.example' },
+        'http://internal:3000/chat',
+      );
+
+      expect(result).toMatchObject({ namespace: '/chat' });
+    });
+
+    it('accepts requests without an Origin header (non-browser clients)', async () => {
+      const { result } = await upgrade(undefined);
+
+      expect(result).toMatchObject({ namespace: '/chat' });
+    });
+
+    it('rejects the opaque "null" origin by default', async () => {
+      const { result } = await upgrade(undefined, { origin: 'null' });
+
+      expect((result as Response).status).toBe(403);
+    });
+
+    it('accepts only listed origins when allowedOrigins is a list', async () => {
+      const options = { allowedOrigins: ['https://Front.example/'] };
+
+      const allowed = await upgrade(options, { origin: 'https://front.example' });
+      expect(allowed.result).toMatchObject({ namespace: '/chat' });
+
+      const sameHost = await upgrade(options, { origin: 'http://app.example' });
+      expect((sameHost.result as Response).status).toBe(403);
+    });
+
+    it('accepts any origin with "*"', async () => {
+      const { result } = await upgrade({ allowedOrigins: '*' }, { origin: 'https://evil.example' });
+
+      expect(result).toMatchObject({ namespace: '/chat' });
+    });
+
+    it('delegates to an allowedOrigins function', async () => {
+      const allowedOrigins = vi.fn(async (origin: string) => origin.endsWith('.trusted.example'));
+
+      const allowed = await upgrade({ allowedOrigins }, { origin: 'https://a.trusted.example' });
+      expect(allowed.result).toMatchObject({ namespace: '/chat' });
+      expect(allowedOrigins).toHaveBeenCalledWith('https://a.trusted.example', expect.any(Request));
+
+      const denied = await upgrade({ allowedOrigins }, { origin: 'https://evil.example' });
+      expect((denied.result as Response).status).toBe(403);
+    });
+
+    it('rejects when the allowedOrigins function throws', async () => {
+      const { result } = await upgrade(
+        {
+          allowedOrigins: () => {
+            throw new Error('boom');
+          },
+        },
+        { origin: 'https://a.example' },
+      );
+
+      expect((result as Response).status).toBe(403);
+    });
+  });
+
   it('routes incoming messages through the message hook', async () => {
     const handler = { callback: vi.fn() };
     service.registerHandler(WebsocketTypes.HandlerAction.MESSAGE, '/room', {
