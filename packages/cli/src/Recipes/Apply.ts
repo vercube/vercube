@@ -57,8 +57,12 @@ export async function applyRecipes(
     try {
       await recipe.apply({ project, answers: resolvedAnswers[recipe.id], selected: ids, version: project.version });
     } catch (error) {
-      if (error instanceof RecipeError) {
-        throw new RecipeError(`${recipe.label}: ${error.message}`);
+      // all or nothing: a module half wired in is worse than none
+      const unrestored = project.rollback();
+      const left = unrestored.length > 0 ? ` These files could not be restored: ${unrestored.join(', ')}.` : '';
+
+      if (error instanceof RecipeError || left) {
+        throw new RecipeError(`${recipe.label}: ${(error as Error).message}${left}`, { cause: error });
       }
 
       throw error;

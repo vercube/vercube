@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { parseYAML, stringifyYAML } from 'confbox/yaml';
 import { builders, generateCode, parseModule } from 'magicast';
 import { getDefaultExportOptions } from 'magicast/helpers';
@@ -59,17 +59,24 @@ export class Project {
     builds: [],
   };
 
+  /** Each file's content before this project first changed it, `null` for a file it created. */
+  private readonly fOriginals: Map<string, string | null> = new Map();
+
   /**
    * @param {string} root - The project root
    * @param {object} options - Project settings
    * @param {string} options.version - The version `@vercube/*` packages are pinned to
+   * @param {string} [options.appDir] - The application, when it is not where the templates put it, such as `services/api` of a workspace
    * @throws {RecipeError} When the directory holds no Vercube application
    */
-  constructor(root: string, options: { version: string }) {
+  constructor(root: string, options: { version: string; appDir?: string }) {
     this.root = root;
     this.version = options.version;
 
-    if (existsSync(join(root, FULLSTACK_APP_DIR, 'package.json'))) {
+    if (options.appDir) {
+      this.appDir = options.appDir;
+      this.webDir = existsSync(join(root, FULLSTACK_WEB_DIR, 'package.json')) ? join(root, FULLSTACK_WEB_DIR) : null;
+    } else if (existsSync(join(root, FULLSTACK_APP_DIR, 'package.json'))) {
       this.appDir = join(root, FULLSTACK_APP_DIR);
       this.webDir = existsSync(join(root, FULLSTACK_WEB_DIR, 'package.json')) ? join(root, FULLSTACK_WEB_DIR) : null;
     } else if (existsSync(join(root, 'package.json'))) {
@@ -536,6 +543,34 @@ export class Project {
   }
 
   /**
+   * Puts every file this project changed back as it was, and removes the ones
+   * it created. Used when a recipe fails halfway, so a project is never left
+   * with some of a module's edits.
+   *
+   * @returns {string[]} The files that could not be restored
+   */
+  public rollback(): string[] {
+    const failed: string[] = [];
+
+    // every file is tried: one that cannot be restored must not keep the others changed
+    for (const [path, content] of [...this.fOriginals].toReversed()) {
+      try {
+        if (content === null) {
+          rmSync(path, { force: true });
+        } else {
+          writeFileSync(path, content);
+        }
+      } catch {
+        failed.push(relative(this.root, path));
+      }
+    }
+
+    this.fOriginals.clear();
+
+    return failed;
+  }
+
+  /**
    * Leaves a one-line note for the summary, such as a command to run.
    *
    * @param {string} note - The note
@@ -647,6 +682,11 @@ export class Project {
 
     if (exists && readFileSync(path, 'utf8') === content) {
       return;
+    }
+
+    // what it held before the first change, for rollback()
+    if (!this.fOriginals.has(path)) {
+      this.fOriginals.set(path, exists ? readFileSync(path, 'utf8') : null);
     }
 
     mkdirSync(dirname(path), { recursive: true });
