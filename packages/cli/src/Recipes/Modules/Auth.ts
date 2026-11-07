@@ -1,4 +1,8 @@
+import { randomBytes } from 'node:crypto';
 import { defineRecipe } from '../Apply';
+
+/** The value \`.env.example\` shows for the key, refused by the provider. */
+const PLACEHOLDER = 'change-me';
 
 const PROVIDER = `import { AuthProvider } from '@vercube/auth';
 import type { AuthTypes } from '@vercube/auth';
@@ -28,9 +32,15 @@ export class ApiKeyAuthProvider extends AuthProvider<ApiUser> {
   }
 
   public getCurrentUser(request: Request): ApiUser | null {
+    const expected = process.env.API_KEY;
     const key = request.headers.get('x-api-key');
 
-    return key && key === process.env.API_KEY ? { id: 'api', roles: ['admin'] } : null;
+    // no key configured, or the placeholder from .env.example: nobody gets in
+    if (!expected || expected === '${PLACEHOLDER}') {
+      return null;
+    }
+
+    return key === expected ? { id: 'api', roles: ['admin'] } : null;
   }
 }
 `;
@@ -40,7 +50,7 @@ import { Controller, Get } from '@vercube/core';
 import type { ApiUser } from '@/services/ApiKeyAuthProvider';
 
 /**
- * curl localhost:3000/api/profile -H "x-api-key: $API_KEY"
+ * curl localhost:3000/api/profile -H "x-api-key: <API_KEY from .env>"
  */
 @Controller('/api/profile')
 export default class ProfileController {
@@ -65,6 +75,7 @@ export const authRecipe = defineRecipe({
       ApiKeyAuthProvider: '@/services/ApiKeyAuthProvider',
     });
     project.bind({ name: 'ProfileController', from: '@/controller/ProfileController', default: true });
-    project.addEnv({ API_KEY: 'change-me' }, 'Auth');
+    // a key of its own for this project's .env, the placeholder in the committed example
+    project.addEnv({ API_KEY: randomBytes(24).toString('base64url') }, 'Auth', { API_KEY: PLACEHOLDER });
   },
 });

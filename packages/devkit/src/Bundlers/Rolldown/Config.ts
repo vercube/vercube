@@ -49,7 +49,12 @@ export async function getRolldownConfig(ctx?: ConfigTypes.BuildOptions): Promise
       // a dependency and its subpaths: \`@vercube/storage/drivers/MemoryStorage\`
       // bundled while \`@vercube/storage\` stays external would give the app two
       // copies of the storage classes, and two copies of a DI token
-      ...dependencyPatterns([...Object.keys(pkg.dependencies || {}), '@vercube/cli']),
+      ...dependencyPatterns([
+        ...Object.keys(pkg.dependencies || {}),
+        ...Object.keys(pkg.optionalDependencies || {}),
+        ...Object.keys(pkg.peerDependencies || {}),
+        '@vercube/cli',
+      ]),
     ],
 
     transform: {

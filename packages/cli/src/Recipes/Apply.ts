@@ -25,6 +25,20 @@ export async function applyRecipes(
   });
 
   const resolvedAnswers = Object.fromEntries(catalog.map((recipe) => [recipe.id, withDefaults(recipe)]));
+
+  // an answer no prompt offers would make a recipe write a setup nobody tested
+  for (const recipe of catalog.filter((candidate) => answers[candidate.id])) {
+    for (const prompt of recipe.prompts ?? []) {
+      const value = resolvedAnswers[recipe.id][prompt.name];
+
+      if (prompt.options.length > 0 && !prompt.options.some((option) => option.value === value)) {
+        throw new RecipeError(
+          `--${prompt.flag} must be one of ${prompt.options.map((option) => option.value).join(', ')}, got ${value}.`,
+        );
+      }
+    }
+  }
+
   const { recipes, implied } = resolveRecipes(selected, catalog, resolvedAnswers);
   const ids = new Set(recipes.map((recipe) => recipe.id));
 
@@ -35,6 +49,9 @@ export async function applyRecipes(
       throw new RecipeError(`${recipe.label} cannot be added to this project: ${reason}`);
     }
   }
+
+  // a project applied to before reports only what this call changed
+  const before = project.summary;
 
   for (const recipe of recipes) {
     try {
@@ -48,7 +65,18 @@ export async function applyRecipes(
     }
   }
 
-  return { applied: recipes.map((recipe) => recipe.id), implied, ...project.summary };
+  const after = project.summary;
+  const since = <T>(list: T[], earlier: T[]): T[] => list.slice(earlier.length);
+
+  return {
+    applied: recipes.map((recipe) => recipe.id),
+    implied,
+    created: since(after.created, before.created),
+    updated: after.updated.filter((file) => !before.updated.includes(file)),
+    dependencies: since(after.dependencies, before.dependencies),
+    services: since(after.services, before.services),
+    notes: since(after.notes, before.notes),
+  };
 }
 
 /**

@@ -55,8 +55,8 @@ export const storageRecipe = defineRecipe<{ driver: string }>({
         `void container.get(StorageManager).mount({
           storage: S3Storage,
           initOptions: {
-            bucket: process.env.S3_BUCKET ?? 'uploads',
-            region: process.env.AWS_REGION ?? 'us-east-1',
+            bucket: process.env.S3_BUCKET || 'uploads',
+            region: process.env.AWS_REGION || 'us-east-1',
             endpoint: process.env.S3_ENDPOINT || undefined,
             forcePathStyle: !!process.env.S3_ENDPOINT,
           },

@@ -33,11 +33,28 @@ describe('Project', () => {
   });
 
   it('should find the apps of a fullstack project', () => {
-    const fullstack = project({ 'apps/api/package.json': '{}', 'apps/web/package.json': '{}' });
+    const api = JSON.stringify({ dependencies: { '@vercube/core': 'latest' } });
+    const fullstack = project({ 'apps/api/package.json': api, 'apps/web/package.json': '{}' });
+    const workspace = project({ 'apps/api/package.json': api });
 
     expect(fullstack.layout).toBe('fullstack');
     expect(fullstack.appDir).toBe(join(fullstack.root, 'apps/api'));
     expect(fullstack.webDir).toBe(join(fullstack.root, 'apps/web'));
+    expect(workspace.layout).toBe('workspace');
+    expect(workspace.webDir).toBeNull();
+  });
+
+  it('should refuse a package that is not a Vercube app', () => {
+    expect(() => project({ 'package.json': JSON.stringify({ name: 'other', dependencies: { express: '^5.0.0' } }) })).toThrow(
+      'package.json does not depend on @vercube/core',
+    );
+  });
+
+  it('should refuse a file outside the application', () => {
+    const api = project();
+
+    expect(() => api.createFile('../../outside.txt', 'x')).toThrow('outside the application');
+    expect(() => api.read('/etc/hosts')).not.toThrow();
   });
 
   it('should refuse a directory without a package.json', () => {
@@ -59,12 +76,17 @@ describe('Project', () => {
       expect(api.summary.dependencies).toEqual(['@vercube/queue', 'bullmq', 'vitest']);
     });
 
-    it('should not add a devDependency as a dependency', () => {
+    it('should move a devDependency a recipe needs at runtime', () => {
       const api = project();
 
       api.addDependencies({ oxlint: '^9.0.0' });
+      api.addDependencies({ typescript: '^9.0.0' }, { dev: true });
 
-      expect(JSON.parse(read(api, 'package.json')).dependencies.oxlint).toBeUndefined();
+      const pkg = JSON.parse(read(api, 'package.json'));
+
+      expect(pkg.dependencies.oxlint).toBe('^1.92.0');
+      expect(pkg.devDependencies.oxlint).toBeUndefined();
+      expect(pkg.devDependencies.typescript).toBe('^7.0.2');
     });
   });
 
@@ -86,6 +108,19 @@ describe('Project', () => {
 
       expect(read(api, '.env.example')).toBe('# Queue\nREDIS_URL=redis://localhost:6379\nQUEUE_PREFIX=app\n');
       expect(read(api, '.env')).toBe('REDIS_URL=redis://prod:6379\n\n# Queue\nQUEUE_PREFIX=app\n');
+    });
+
+    it('should write a placeholder to .env.example where the value is a secret', () => {
+      const api = project();
+
+      api.addEnv({ API_KEY: 'generated-secret' }, 'Auth', { API_KEY: 'change-me' });
+
+      expect(read(api, '.env')).toBe('# Auth\nAPI_KEY=generated-secret\n');
+      expect(read(api, '.env.example')).toBe('# Auth\nAPI_KEY=change-me\n');
+    });
+
+    it('should refuse a value spanning lines', () => {
+      expect(() => project().addEnv({ A: 'x\nADMIN=true' })).toThrow('spans lines');
     });
   });
 
@@ -141,6 +176,14 @@ describe('Project', () => {
       expect(api.summary.updated).toEqual([]);
     });
 
+    it('should refuse a plugins option it cannot extend', () => {
+      const api = project({
+        'vercube.config.ts': `import { defineConfig } from '@vercube/core';\n\nconst plugins = [];\n\nexport default defineConfig({ plugins });\n`,
+      });
+
+      expect(() => api.addPlugin({ name: 'QueuePlugin', from: '@vercube/queue' })).toThrow('is not an array literal');
+    });
+
     it('should fail clearly without a config object', () => {
       const api = project({ 'vercube.config.ts': `const config = {};\n\nexport default config;\n` });
       const noConfig = project({ 'vercube.config.ts': null });
@@ -185,6 +228,28 @@ describe('Project', () => {
       expect(read(api, 'src/boot/Container.ts')).toContain('c.bind(Jobs)');
     });
 
+    it('should refuse a name imported from another module', () => {
+      const api = project({
+        'src/boot/Container.ts': `import { Container } from '@vercube/di';\nimport { Jobs } from './legacy';\n\nexport function useContainer(container: Container): void {}\n`,
+      });
+
+      expect(() => api.bind({ name: 'Jobs', from: '@/jobs/Jobs' })).toThrow(
+        'Jobs is already imported from ./legacy, not @/jobs/Jobs',
+      );
+    });
+
+    it('should bind in the exported setup, not a local helper', () => {
+      const api = project({
+        'src/boot/Container.ts': `import { Container } from '@vercube/di';\n\nfunction useContainer(container: Container): void {}\n\nexport function setup(container: Container): void {\n  useContainer(container);\n}\n`,
+      });
+
+      api.bind({ name: 'Jobs', from: '@/jobs/Jobs' });
+
+      expect(read(api, 'src/boot/Container.ts')).toMatch(
+        /export function setup\(container: Container\): void \{\s*useContainer\(container\);\s*container\.bind\(Jobs\);/,
+      );
+    });
+
     it('should fail clearly when there is no setup function', () => {
       const api = project({ 'src/boot/Container.ts': `export const nothing = 1;\n` });
 
@@ -201,10 +266,13 @@ describe('Project', () => {
       api.addToContainer('container.bind(StorageManager);', imports);
       api.addToContainer(mount, imports);
       api.addToContainer('void container.get(StorageManager).mount({storage: MemoryStorage})', imports);
+      // a different literal is a different statement
+      api.addToContainer("void container.get(StorageManager).mount({ name: 'a b', storage: MemoryStorage });", imports);
+      api.addToContainer("void container.get(StorageManager).mount({ name: 'ab', storage: MemoryStorage });", imports);
 
       const container = read(api, 'src/boot/Container.ts');
 
-      expect(container.match(/\.mount\(/g)).toHaveLength(1);
+      expect(container.match(/\.mount\(/g)).toHaveLength(3);
       expect(container.indexOf('container.bind(StorageManager)')).toBeLessThan(container.indexOf('.mount('));
       expect(container).toContain(`import { StorageManager } from '@vercube/storage'`);
     });
@@ -214,9 +282,10 @@ describe('Project', () => {
         'src/boot/Container.ts': `import { Container } from '@vercube/di';\n\nexport function setup(c: Container): void {}\n`,
       });
 
-      api.addToContainer('container.get(X).configure({ container: 1 });', { X: '@/X' });
+      api.addToContainer("container.get(X).configure({ container: 1, label: 'container' });", { X: '@/X' });
 
-      expect(read(api, 'src/boot/Container.ts')).toContain('c.get(X).configure({ c: 1 })');
+      // the variable is renamed; a property name and a string are not
+      expect(read(api, 'src/boot/Container.ts')).toContain("c.get(X).configure({ container: 1, label: 'container' })");
     });
   });
 
@@ -243,6 +312,16 @@ describe('Project', () => {
       });
 
       expect(read(api, 'src/index.ts').trimEnd().endsWith('export const handler = toServerlessHandler(app);')).toBe(true);
+    });
+
+    it('should find createApp() by its call, not by its text', () => {
+      const api = project({
+        'src/index.ts': `const note = 'createApp( is called below';\nconst app = await createApp ();\n`,
+      });
+
+      api.addToEntry('init();', { position: 'before-create-app' });
+
+      expect(read(api, 'src/index.ts')).toMatch(/note = [^\n]+\n+init\(\);\s*const app/);
     });
 
     it('should fail clearly without createApp()', () => {

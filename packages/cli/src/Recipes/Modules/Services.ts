@@ -9,7 +9,8 @@ import type { Project } from '../Project';
  * @returns {void}
  */
 export function useRedis(project: Project): void {
-  project.addComposeService('redis', { image: IMAGES.redis, ports: ['6379:6379'] });
+  // published on localhost only: neither runs with a password here
+  project.addComposeService('redis', { image: IMAGES.redis, ports: ['127.0.0.1:6379:6379'] });
   project.addEnv({ REDIS_URL: 'redis://127.0.0.1:6379' }, 'Redis');
   project.note('Start the local services with `docker compose up -d`');
 }
@@ -23,7 +24,7 @@ export function useRedis(project: Project): void {
 export function usePostgres(project: Project): void {
   project.addComposeService('postgres', {
     image: IMAGES.postgres,
-    ports: ['5432:5432'],
+    ports: ['127.0.0.1:5432:5432'],
     environment: { POSTGRES_PASSWORD: 'postgres', POSTGRES_DB: 'app' },
   });
   project.addEnv({ DATABASE_URL: 'postgres://postgres:postgres@127.0.0.1:5432/app' }, 'Postgres');
