@@ -70,7 +70,16 @@ import type { Readable } from 'node:stream';
 export interface S3BaseOptions extends S3ClientConfig {
   bucket: string;
   logger?: Logger;
+  /**
+   * What the readiness probe asks S3. `'object'` (default) sends `HeadObject` for a
+   * sentinel key and treats 404 as healthy; `'bucket'` sends `HeadBucket`
+   * (needs `s3:ListBucket`). A 403 fails the probe in both modes.
+   */
+  probe?: 'object' | 'bucket';
 }
+
+/** Key the readiness probe asks about; it does not need to exist. */
+const HEALTH_PROBE_KEY = '.vercube-health';
 
 /**
  * S3 storage implementation of the Storage interface.
@@ -110,6 +119,7 @@ export class S3Storage implements Storage<S3BaseOptions> {
   private logger?: Logger;
   private s3!: S3Client;
   private bucket!: string;
+  private probe: 'object' | 'bucket' = 'object';
 
   /**
    * Initializes the S3 storage client.
@@ -132,25 +142,39 @@ export class S3Storage implements Storage<S3BaseOptions> {
    * When credentials are explicitly provided in options, they take precedence over all other sources.
    */
   public async initialize(options: S3BaseOptions): Promise<void> {
-    const { bucket, logger, ...s3Options } = options;
+    const { bucket, logger, probe, ...s3Options } = options;
     this.s3 = new S3Client(s3Options);
     this.bucket = bucket;
+    this.probe = probe ?? 'object';
     this.logger = logger;
   }
 
   /**
-   * Asks S3 about the bucket, for the readiness probe. A 403 still counts as
-   * reachable: `HeadBucket` needs `s3:ListBucket`, which a least-privilege
-   * policy granting only object access leaves out, while storage works.
+   * Asks S3 whether it is reachable with the configured credentials, for the
+   * readiness probe. A 403 is never treated as healthy: S3 also answers it for
+   * an unknown access key, a bad signature, a disabled key or a bucket owned by
+   * another account, and a HEAD response carries no body to tell them apart.
    *
-   * @returns {Promise<void>} Resolves once S3 answered
-   * @throws {Error} When S3 cannot be reached, the bucket does not exist, or S3 fails
+   * With `probe: 'object'` (the default) it sends `HeadObject` for a sentinel key
+   * and accepts success or 404. With `probe: 'bucket'` it sends `HeadBucket`,
+   * which needs `s3:ListBucket`. Without `s3:ListBucket`, S3 answers 403 for a
+   * missing object too, so grant it or make sure the sentinel key exists.
+   *
+   * @returns {Promise<void>} Resolves once S3 answered with proof the credentials were accepted
+   * @throws {Error} When S3 cannot be reached, access is denied, or S3 fails
    */
   public async ping(): Promise<void> {
-    try {
+    if (this.probe === 'bucket') {
       await this.s3.send(new HeadBucketCommand({ Bucket: this.bucket }));
+      return;
+    }
+
+    try {
+      await this.s3.send(new HeadObjectCommand({ Bucket: this.bucket, Key: HEALTH_PROBE_KEY }));
     } catch (error) {
-      if ((error as { $metadata?: { httpStatusCode?: number } })?.$metadata?.httpStatusCode === 403) {
+      const e = error as { name?: string; $metadata?: { httpStatusCode?: number } };
+
+      if (e?.$metadata?.httpStatusCode === 404 || e?.name === 'NotFound' || e?.name === 'NoSuchKey') {
         return;
       }
 
