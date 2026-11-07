@@ -57,6 +57,47 @@ describe('BaseLogger', () => {
       expect(arg.error.stack).toBeDefined();
     });
 
+    it('keeps every Error argument, cause and custom fields', () => {
+      const wrapped = Object.assign(new Error('publish failed', { cause: new Error('connection refused') }), {
+        operation: 'publish',
+      });
+      logger.error('Failed to schedule retry', wrapped, new Error('original'));
+      const arg = log.error.mock.calls[0][0];
+      expect(arg.error).toMatchObject({
+        message: 'publish failed',
+        operation: 'publish',
+        cause: { message: 'connection refused' },
+      });
+      expect(arg.errors.map((e: { message: string }) => e.message)).toEqual(['publish failed', 'original']);
+    });
+
+    it('does not set errors for a single Error and survives cause cycles', () => {
+      const a = new Error('a');
+      const b = new Error('b', { cause: a });
+      (a as { cause?: unknown }).cause = b;
+      logger.error(a);
+      const arg = log.error.mock.calls[0][0];
+      expect(arg.errors).toBeUndefined();
+      expect(arg.error.cause.cause).toEqual({ name: 'Error', message: 'a' });
+    });
+
+    it('keeps non-Error causes and caps cause depth', () => {
+      logger.error(new Error('x', { cause: 'plain' }));
+      expect(log.error.mock.calls[0][0].error.cause).toBe('plain');
+
+      let deep: Error = new Error('e0');
+      for (let i = 1; i < 10; i++) deep = new Error(`e${i}`, { cause: deep });
+      logger.error(deep);
+      let node = log.error.mock.calls[1][0].error;
+      let levels = 0;
+      while (node.cause) {
+        node = node.cause;
+        levels++;
+      }
+      expect(levels).toBe(5);
+      expect(node.stack).toBeUndefined();
+    });
+
     it('merges a tag with an Error', () => {
       logger.error('Storage::init', new Error('disk'));
       const arg = log.error.mock.calls[0][0];
