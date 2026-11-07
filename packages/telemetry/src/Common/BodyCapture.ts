@@ -1,3 +1,4 @@
+import { redactJson, redactQuery } from './Redaction';
 import type { Span } from '@opentelemetry/api';
 
 /** Content types whose bodies are safe to decode as text. */
@@ -136,11 +137,15 @@ async function readBody(message: Request | Response, headers: Headers, maxBytes:
 
   if (size > maxBytes) {
     // The cap can land mid-codepoint; drop the replacement characters it leaves.
-    return { contentType, size, text: new TextDecoder().decode(bytes).replace(/�+$/, ''), truncated: true };
+    const text = new TextDecoder().decode(bytes).replace(/�+$/, '');
+
+    return { contentType, size, text: redactBody(text, contentType), truncated: true };
   }
 
   try {
-    return { contentType, size, text: new TextDecoder('utf-8', { fatal: true }).decode(bytes), truncated: false };
+    const text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+
+    return { contentType, size, text: redactBody(text, contentType), truncated: false };
   } catch {
     return omitted(contentType, 'binary', size);
   }
@@ -196,6 +201,31 @@ async function readCapped(message: Request | Response, maxBytes: number): Promis
   }
 
   return { bytes, size };
+}
+
+/**
+ * Withholds credential-named values from a decoded body.
+ *
+ * JSON and urlencoded bodies are masked by key, with the rule `url.query` uses.
+ * A body without a content type is treated as JSON when it looks like JSON.
+ * Other textual bodies have no keys to match and are kept as they are.
+ *
+ * @param text - Decoded body, possibly truncated
+ * @param contentType - Declared content type, when any
+ * @returns The text with secret values replaced
+ */
+export function redactBody(text: string, contentType: string | null): string {
+  const normalized = contentType?.toLowerCase();
+
+  if (normalized?.includes('application/x-www-form-urlencoded')) {
+    return redactQuery(text);
+  }
+
+  if (normalized ? normalized.includes('json') : /^\s*[[{]/.test(text)) {
+    return redactJson(text);
+  }
+
+  return text;
 }
 
 /**
