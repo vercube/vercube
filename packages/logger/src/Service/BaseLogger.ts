@@ -243,15 +243,24 @@ export class BaseLogger extends Logger {
     const messageParts: string[] = [];
     let tag: string | undefined;
 
+    const errors: Record<string, unknown>[] = [];
+
     for (const arg of args) {
       if (arg instanceof Error) {
-        event.error = { name: arg.name, message: arg.message, stack: arg.stack };
+        errors.push(serializeError(arg));
       } else if (arg !== null && typeof arg === 'object') {
         Object.assign(event, arg as Record<string, unknown>);
       } else if (typeof arg === 'string' && tag === undefined) {
         tag = arg;
       } else {
         messageParts.push(String(arg));
+      }
+    }
+
+    if (errors.length > 0) {
+      event.error = errors[0];
+      if (errors.length > 1) {
+        event.errors = errors;
       }
     }
 
@@ -269,4 +278,34 @@ export class BaseLogger extends Logger {
 
     log[level](event);
   }
+}
+
+const MAX_CAUSE_DEPTH = 5;
+
+/**
+ * Serializes an error with its own enumerable fields and `cause` chain (depth capped, cycle safe).
+ * @param err - The error to serialize
+ * @param depth - Current cause depth
+ * @param seen - Errors already visited
+ */
+function serializeError(err: Error, depth = 0, seen: Set<unknown> = new Set()): Record<string, unknown> {
+  seen.add(err);
+  const out: Record<string, unknown> = { ...(err as unknown as Record<string, unknown>) };
+  out.name = err.name;
+  out.message = err.message;
+  out.stack = err.stack;
+
+  const cause = (err as { cause?: unknown }).cause;
+  if (cause !== undefined) {
+    if (cause instanceof Error) {
+      out.cause =
+        depth + 1 >= MAX_CAUSE_DEPTH || seen.has(cause)
+          ? { name: cause.name, message: cause.message }
+          : serializeError(cause, depth + 1, seen);
+    } else {
+      out.cause = cause;
+    }
+  }
+
+  return out;
 }
