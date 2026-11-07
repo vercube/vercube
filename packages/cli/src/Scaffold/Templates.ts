@@ -19,7 +19,10 @@ export interface Template {
  * The base templates. `api` is the starter `vercube init` has always created;
  * it keeps the registry name `vercube` so existing links still work.
  */
-export const TEMPLATES: readonly Template[] = [{ id: 'api', label: 'API only', registryName: 'vercube' }];
+export const TEMPLATES: readonly Template[] = [
+  { id: 'api', label: 'API only', registryName: 'vercube' },
+  { id: 'fullstack-vue', label: 'Fullstack: Vercube + Vue (Vite, workspace, typed client)', registryName: 'fullstack-vue' },
+];
 
 /**
  * Finds a template by id.

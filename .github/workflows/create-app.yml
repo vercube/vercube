@@ -1,0 +1,78 @@
+name: Create App
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [main, v1, '[0-9]+.[0-9]+']
+    paths: ['packages/**', 'scripts/create-smoke.mjs', '.github/workflows/create-app.yml']
+  pull_request:
+    branches: [main, v1, '[0-9]+.[0-9]+']
+    paths: ['packages/**', 'scripts/create-smoke.mjs', '.github/workflows/create-app.yml']
+
+concurrency:
+  group: create-app-${{ github.ref }}
+  cancel-in-progress: true
+
+# Creates a project with the CLI and the packages of this commit, then installs,
+# lints, typechecks, builds, tests and boots it (see scripts/create-smoke.mjs).
+# Rows with `services` start the project's docker-compose.yml to boot against
+# real brokers and databases; the others need none.
+jobs:
+  smoke:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: bare, template: api, args: '--modules none' }
+          - { name: schema, template: api, args: '--modules schema' }
+          - { name: auth, template: api, args: '--modules auth' }
+          - { name: storage, template: api, args: '--modules storage' }
+          - { name: storage s3 (build only), template: api, args: '--modules storage --storage s3' }
+          - { name: cache, template: api, args: '--modules cache' }
+          - { name: queue memory, template: api, args: '--modules queue --queue memory' }
+          - { name: queue bullmq, template: api, args: '--modules queue --queue bullmq --services' }
+          - { name: queue rabbitmq, template: api, args: '--modules queue --queue rabbitmq --services' }
+          - { name: queue kafka, template: api, args: '--modules queue --queue kafka --services' }
+          - { name: scheduler memory, template: api, args: '--modules scheduler --scheduler-store memory' }
+          - { name: scheduler redis, template: api, args: '--modules scheduler --scheduler-store redis --services' }
+          - { name: scheduler postgres, template: api, args: '--modules scheduler --scheduler-store postgres --services' }
+          - { name: ws, template: api, args: '--modules ws' }
+          - { name: telemetry, template: api, args: '--modules telemetry' }
+          - { name: devtools, template: api, args: '--modules devtools' }
+          - { name: testing, template: api, args: '--modules testing' }
+          - { name: aws-lambda, template: api, args: '--modules none --deploy aws-lambda' }
+          - { name: azure-functions, template: api, args: '--modules none --deploy azure-functions' }
+          - {
+              name: kitchen sink,
+              template: api,
+              args: '--modules schema,auth,storage,cache,queue,scheduler,ws,telemetry,devtools,testing --queue bullmq --scheduler-store postgres --services',
+            }
+          - { name: fullstack-vue, template: fullstack-vue, args: '--modules schema,testing' }
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Check out the template
+        uses: actions/checkout@v6
+        with:
+          repository: vercube/starter
+          ref: ${{ matrix.template == 'api' && 'template' || format('template-{0}', matrix.template) }}
+          path: .template
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm build
+
+      - name: Create, build and boot
+        run: node scripts/create-smoke.mjs --template ${{ matrix.template }} --template-dir .template ${{ matrix.args }}

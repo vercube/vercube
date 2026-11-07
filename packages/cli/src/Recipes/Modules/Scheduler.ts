@@ -58,6 +58,8 @@ export const schedulerRecipe = defineRecipe<{ store: string }>({
   ],
   apply: ({ project, answers }) => {
     project.addDependencies({ '@vercube/scheduler': 'latest' });
+    // reaches BullMQ's native MessagePack decoder through the module's optional queue support
+    project.allowBuilds(['msgpackr-extract']);
 
     let store = 'defineSchedulerStore({ store: MemoryStore })';
     let storeClass = 'MemoryStore';

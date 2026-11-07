@@ -42,6 +42,7 @@ export const awsLambdaRecipe = defineRecipe({
   apply: ({ project }) => {
     project.addDependencies({ '@vercube/serverless': 'latest' });
     project.addDependencies({ serverless: VERSIONS.serverless, 'serverless-offline': VERSIONS.serverlessOffline }, { dev: true });
+    project.allowBuilds(['serverless', 'esbuild']);
     // app.listen() stays: \`vercube dev\` needs it, and it binds nothing on Lambda
     project.addToEntry('export const handler: ServerlessHandler = toServerlessHandler(app);', {
       imports: {
