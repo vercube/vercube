@@ -6,10 +6,23 @@ permissions:
 on:
   push:
     branches: [main, v1, '[0-9]+.[0-9]+']
-    paths: ['packages/**', 'scripts/create-smoke.mjs', '.github/workflows/create-app.yml']
+    paths:
+      - 'packages/**'
+      - 'scripts/create-smoke.mjs'
+      - '.github/workflows/create-app.yml'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
   pull_request:
     branches: [main, v1, '[0-9]+.[0-9]+']
-    paths: ['packages/**', 'scripts/create-smoke.mjs', '.github/workflows/create-app.yml']
+    paths:
+      - 'packages/**'
+      - 'scripts/create-smoke.mjs'
+      - '.github/workflows/create-app.yml'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+  workflow_dispatch:
 
 concurrency:
   group: create-app-${{ github.ref }}

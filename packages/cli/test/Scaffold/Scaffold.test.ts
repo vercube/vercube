@@ -64,6 +64,30 @@ describe('scaffoldProject', () => {
     expect(readFileSync(join(dir, 'src/boot/Container.ts'), 'utf8')).toBe(API_TEMPLATE['src/boot/Container.ts']);
   });
 
+  it('should replace the contents of a directory with force, keeping its git history', async () => {
+    const template = apiTemplate();
+    const dir = join(temp(), 'app');
+
+    dirs.push(template);
+    mkdirSync(join(dir, 'src/jobs'), { recursive: true });
+    mkdirSync(join(dir, '.git'), { recursive: true });
+    writeFileSync(join(dir, 'src/jobs/Old.ts'), 'old');
+    writeFileSync(join(dir, '.git/HEAD'), 'ref: refs/heads/main');
+
+    await scaffoldProject(plan(), {
+      dir,
+      version: '1.5.0',
+      recipes: RECIPES,
+      templateDir: template,
+      install: false,
+      force: true,
+    });
+
+    expect(existsSync(join(dir, 'src/jobs/Old.ts'))).toBe(false);
+    expect(existsSync(join(dir, '.git/HEAD'))).toBe(true);
+    expect(existsSync(join(dir, 'src/index.ts'))).toBe(true);
+  });
+
   it('should apply the modules, then the deploy target', async () => {
     const template = apiTemplate();
     const dir = join(temp(), 'app');

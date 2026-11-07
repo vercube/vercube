@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { parseYAML, stringifyYAML } from 'confbox/yaml';
 import { builders, generateCode, parseModule } from 'magicast';
 import { getDefaultExportOptions } from 'magicast/helpers';
@@ -58,6 +58,9 @@ export class Project {
     notes: [],
     builds: [],
   };
+
+  /** Each file's content before this project first changed it, `null` for a file it created. */
+  private readonly fOriginals: Map<string, string | null> = new Map();
 
   /**
    * @param {string} root - The project root
@@ -536,6 +539,25 @@ export class Project {
   }
 
   /**
+   * Puts every file this project changed back as it was, and removes the ones
+   * it created. Used when a recipe fails halfway, so a project is never left
+   * with some of a module's edits.
+   *
+   * @returns {void}
+   */
+  public rollback(): void {
+    for (const [path, content] of [...this.fOriginals].toReversed()) {
+      if (content === null) {
+        rmSync(path, { force: true });
+      } else {
+        writeFileSync(path, content);
+      }
+    }
+
+    this.fOriginals.clear();
+  }
+
+  /**
    * Leaves a one-line note for the summary, such as a command to run.
    *
    * @param {string} note - The note
@@ -647,6 +669,11 @@ export class Project {
 
     if (exists && readFileSync(path, 'utf8') === content) {
       return;
+    }
+
+    // what it held before the first change, for rollback()
+    if (!this.fOriginals.has(path)) {
+      this.fOriginals.set(path, exists ? readFileSync(path, 'utf8') : null);
     }
 
     mkdirSync(dirname(path), { recursive: true });
