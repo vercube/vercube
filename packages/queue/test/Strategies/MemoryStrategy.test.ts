@@ -175,6 +175,11 @@ describe('MemoryStrategy', () => {
     }
   });
 
+  it('should reject a delay that can never elapse', async () => {
+    await expect(strategy.publish(request({ options: { delay: Infinity } }))).rejects.toThrow('Invalid job delay');
+    expect(await strategy.stats('emails')).toMatchObject({ delayed: 0, waiting: 0 });
+  });
+
   it('should report progress back to the job', async () => {
     const dispatch = vi.fn().mockImplementation(async (job: QueueTypes.IncomingJob) => {
       await job.updateProgress?.(50);
