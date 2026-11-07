@@ -4,5 +4,5 @@ import defaultConfig from '../../tsdown.config.ts';
 
 export default defineConfig({
   ...defaultConfig,
-  entry: ['./src/index.ts', './src/toolkit.ts'],
+  entry: ['./src/index.ts', './src/toolkit.ts', './src/recipe.ts'],
 });

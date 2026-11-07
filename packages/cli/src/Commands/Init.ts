@@ -10,14 +10,13 @@ import { BaseCommand } from '../BaseCommand';
 import { Arg } from '../Decorators/Arg';
 import { Command } from '../Decorators/Command';
 import { Flag } from '../Decorators/Flag';
+import { findTemplate, TEMPLATE_REGISTRY } from '../Scaffold/Templates';
 import { vercubeIcon } from '../Utils/Logo';
 import type { PackageManagerName } from 'nypm';
 
 /* eslint-disable unicorn/no-process-exit */
 
 const logger = consola.withTag(colors.whiteBright(colors.bold(colors.bgGreenBright(' vercube '))));
-const DEFAULT_REGISTRY = 'https://raw.githubusercontent.com/vercube/starter/main/templates';
-const DEFAULT_TEMPLATE_NAME = 'vercube';
 
 const pms: Record<PackageManagerName, undefined> = {
   npm: undefined,
@@ -138,10 +137,10 @@ export class InitCommand extends BaseCommand {
     let template: any;
 
     try {
-      template = await downloadTemplate(DEFAULT_TEMPLATE_NAME, {
+      template = await downloadTemplate(findTemplate('api')!.registryName, {
         dir: templateDownloadPath,
         force: shouldForce,
-        registry: DEFAULT_REGISTRY,
+        registry: TEMPLATE_REGISTRY,
       });
     } catch (error) {
       if (process.env.DEBUG) {
