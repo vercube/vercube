@@ -16,6 +16,8 @@ describe('DefaultErrorHandlerProvider', () => {
 
     errorHandler = app.container.get(ErrorHandlerProvider) as DefaultErrorHandlerProvider;
     logger = app.container.get(Logger);
+    // the message of an unexpected error is only shown in dev, so pin it
+    Object.defineProperty(errorHandler, 'gConfigProvider', { value: { dev: true }, configurable: true });
   });
 
   it('should handle HttpError and return appropriate response', async () => {
