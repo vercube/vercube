@@ -184,6 +184,26 @@ describe('header capture', () => {
       'x-safe': 'ok',
     });
   });
+
+  it('withholds headers whose name looks like a credential', () => {
+    const span = trace.getTracer('test').startSpan('secret-headers');
+    const names = ['x-xsrf-token', 'x-access-token', 'x-amz-security-token', 'x-goog-api-key'];
+
+    addHeadersEvent(
+      span,
+      REQUEST_HEADERS_EVENT,
+      new Headers({ ...Object.fromEntries(names.map((name) => [name, 'abc'])), 'x-safe': 'ok' }),
+      new Set(),
+    );
+    span.end();
+
+    const event = telemetry.span('secret-headers')!.events.find((entry) => entry.name === REQUEST_HEADERS_EVENT)!;
+
+    for (const name of names) {
+      expect(event.attributes![name]).toBe('<redacted>');
+    }
+    expect(event.attributes!['x-safe']).toBe('ok');
+  });
 });
 
 describe('propagation carriers', () => {

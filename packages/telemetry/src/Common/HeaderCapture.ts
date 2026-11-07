@@ -1,7 +1,10 @@
+import { isSecretKey } from '@vercube/core';
 import type { Attributes, Span } from '@opentelemetry/api';
 
 /**
  * Headers whose values are never recorded, whatever the configuration says.
+ * Any other header whose name looks like a credential (see `isSecretKey`) is
+ * withheld as well.
  *
  * A recorded `Authorization` header is a leaked credential the moment the trace
  * leaves the process, and an inspector screenshot is enough. The names are
@@ -44,7 +47,7 @@ export function addHeadersEvent(span: Span, name: string, headers: Headers, extr
   for (const [key, value] of headers) {
     const lower = key.toLowerCase();
 
-    attributes[lower] = ALWAYS_REDACTED.has(lower) || extraRedacted.has(lower) ? REDACTED : value;
+    attributes[lower] = ALWAYS_REDACTED.has(lower) || isSecretKey(lower) || extraRedacted.has(lower) ? REDACTED : value;
   }
 
   span.addEvent(name, attributes);
