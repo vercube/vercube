@@ -1,6 +1,7 @@
 import { BasePlugin } from '@vercube/core';
 import { WebsocketService } from '../Services/WebsocketService';
 import { $WebsocketService } from '../Symbols/WebsocketSymbols';
+import type { WebsocketTypes } from '../Types/WebsocketTypes';
 import type { App } from '@vercube/core';
 
 /**
@@ -16,14 +17,14 @@ import type { App } from '@vercube/core';
  *
  * const app = createApp({
  *   setup: async (app) => {
- *     app.addPlugin(WebsocketPlugin);
+ *     app.addPlugin(WebsocketPlugin, { allowedOrigins: ['https://app.example.com'] });
  *   }
  * });
  * ```
  *
  * @see {@link https://vercube.dev} for full documentation
  */
-export class WebsocketPlugin<T = unknown> extends BasePlugin<T> {
+export class WebsocketPlugin<T extends WebsocketTypes.Options = WebsocketTypes.Options> extends BasePlugin<T> {
   /**
    * The name of the plugin.
    * @override
@@ -36,9 +37,9 @@ export class WebsocketPlugin<T = unknown> extends BasePlugin<T> {
    * @returns {void | Promise<void>}
    * @override
    */
-  public override use(app: App, options: T): void | Promise<void> {
+  public override use(app: App, options?: T): void | Promise<void> {
     // bind and initialize the websocket service
     app.container.bind($WebsocketService, WebsocketService);
-    app.container.get<WebsocketService>($WebsocketService).initialize();
+    app.container.get<WebsocketService>($WebsocketService).initialize(options);
   }
 }

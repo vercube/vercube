@@ -207,13 +207,29 @@ export class WebsocketService {
   }
 
   /**
+   * Origins allowed to open a websocket, `undefined` meaning same-origin only.
+   */
+  private fAllowedOrigins?: WebsocketTypes.AllowedOrigins;
+
+  /**
    * Initialize the websocket service and attach the server plugin.
    *
+   * @param {WebsocketTypes.Options} options - Websocket options
    * @returns {void}
    */
-  public initialize(): void {
+  public initialize(options: WebsocketTypes.Options = {}): void {
+    this.fAllowedOrigins = options.allowedOrigins;
+
     const hooks = defineHooks({
       upgrade: async (request: Request) => {
+        if (!(await this.isOriginAllowed(request))) {
+          this.gLogger?.warn(
+            'WebsocketService::initialize',
+            `Origin "${request.headers.get('origin')}" is not allowed. Connection rejected.`,
+          );
+          return new Response('Origin not allowed', { status: 403 });
+        }
+
         const url = new URL(request.url);
         const namespace = url.pathname;
         const unsafeParameters = Object.fromEntries(url.searchParams);
@@ -286,6 +302,54 @@ export class WebsocketService {
       this.fNodeAdapter ??= (await import('crossws/adapters/node')).default({ hooks });
       await this.fNodeAdapter.handleUpgrade(req, socket, head);
     };
+  }
+
+  /**
+   * Checks the `Origin` header of an upgrade request. Browsers attach cookies to
+   * a cross-site websocket handshake and no CORS preflight runs, so this is the
+   * only guard against cross-site websocket hijacking.
+   *
+   * @param {Request} request - The upgrade request
+   * @returns {Promise<boolean>} Whether the request may continue
+   * @private
+   */
+  private async isOriginAllowed(request: Request): Promise<boolean> {
+    const origin = request.headers.get('origin');
+
+    // non-browser clients do not send an Origin and cannot carry a victim's cookies
+    if (origin === null) return true;
+
+    const allowed = this.fAllowedOrigins;
+
+    if (allowed === '*') return true;
+    if (typeof allowed === 'function') {
+      try {
+        return (await allowed(origin, request)) === true;
+      } catch (error) {
+        this.gLogger?.error('WebsocketService::isOriginAllowed', `allowedOrigins threw: ${error}`);
+        return false;
+      }
+    }
+
+    const normalized = origin.trim().replace(/\/+$/, '').toLowerCase();
+
+    if (Array.isArray(allowed)) {
+      return allowed.some((o) => o.trim().replace(/\/+$/, '').toLowerCase() === normalized);
+    }
+
+    // default: same origin, compared by host so a TLS-terminating proxy does not break it
+    let originHost: string;
+    try {
+      originHost = new URL(normalized).host;
+    } catch {
+      return false;
+    }
+
+    if (!originHost) return false;
+
+    const hosts = [request.headers.get('host'), request.headers.get('x-forwarded-host'), new URL(request.url).host];
+
+    return hosts.some((host) => !!host && host.split(',')[0].trim().toLowerCase() === originHost);
   }
 
   /**
