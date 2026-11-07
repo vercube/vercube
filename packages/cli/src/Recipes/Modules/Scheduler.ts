@@ -82,6 +82,9 @@ export const schedulerRecipe = defineRecipe<{ store: string }>({
       options: `{ store: ${store} }`,
       imports: { defineSchedulerStore: '@vercube/scheduler', [storeClass]: `@vercube/scheduler/stores/${storeClass}` },
     });
+    // timers and a store connection keep the process alive after the server
+    // closes, so SIGTERM and Ctrl-C have to close the application
+    project.setConfig('shutdown', '{ handleSignals: true }');
     project.createFile('src/jobs/ReportJobs.ts', answers.store === 'memory' ? INSTANCE_JOBS : CLUSTER_JOBS);
     project.bind({ name: 'ReportJobs', from: '@/jobs/ReportJobs', default: true });
   },

@@ -226,8 +226,24 @@ try {
   }
 
   console.log(`\n✔ GET /api/foo answered ${JSON.stringify(body)}`);
+
+  // a deployment stops it with SIGTERM: it has to exit, not hang on an open connection
+  step('Stopping with SIGTERM');
+
+  const exited = new Promise((done) => server.once('exit', () => done(true)));
+
+  server.kill('SIGTERM');
+
+  if (!(await Promise.race([exited, new Promise((done) => setTimeout(() => done(false), 15_000))]))) {
+    throw new Error('The app did not exit within 15s of SIGTERM');
+  }
+
+  console.log('✔ Exited on SIGTERM');
 } finally {
-  server?.kill('SIGTERM');
+  // whatever happened above, nothing outlives the run
+  if (server && server.exitCode === null && server.signalCode === null) {
+    server.kill('SIGKILL');
+  }
 
   if (needsServices) {
     execFileSync('docker', ['compose', 'down', '-v'], {
