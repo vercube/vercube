@@ -48,6 +48,11 @@ export class MemoryStorage implements Storage {
    * @param {T} value - The value to store
    */
   public setItem<T = unknown, U = unknown>(key: string, value: T, options?: U): void {
+    if (value === undefined) {
+      this.storage.delete(key);
+      return;
+    }
+
     this.storage.set(key, value);
   }
 

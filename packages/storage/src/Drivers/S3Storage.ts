@@ -205,10 +205,27 @@ export class S3Storage implements Storage<S3BaseOptions> {
       }
 
       const body = await this.streamToString(result.Body as Readable);
-      return JSON.parse(body) as T;
+
+      try {
+        return JSON.parse(body) as T;
+      } catch (parseError) {
+        throw new StorageError(
+          `Failed to parse item "${key}" from S3: the object is not valid JSON`,
+          'getItem',
+          parseError as Error,
+          {
+            bucket: this.bucket,
+            errorName: 'SyntaxError',
+          },
+        );
+      }
     } catch (error: any) {
       if (error.name === 'NoSuchKey') {
         return undefined as T;
+      }
+
+      if (error instanceof StorageError) {
+        throw error;
       }
 
       // Log sanitized error information
@@ -254,8 +271,15 @@ export class S3Storage implements Storage<S3BaseOptions> {
    * @param {T} value - The value to store (will be JSON serialized).
    * @param {U} [options] - Additional options (currently unused).
    * @returns {Promise<void>} A promise that resolves when the value has been stored.
+   *
+   * Storing `undefined` removes the key, since it has no JSON form and would otherwise leave an unreadable empty object.
    */
   public async setItem<T = unknown, U = unknown>(key: string, value: T, options?: U): Promise<void> {
+    if (value === undefined) {
+      await this.deleteItem(key);
+      return;
+    }
+
     await this.s3.send(
       new PutObjectCommand({
         Bucket: this.bucket,

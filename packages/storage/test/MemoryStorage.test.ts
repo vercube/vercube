@@ -35,6 +35,13 @@ describe('MemoryStorage', () => {
       }
     });
 
+    it('should treat undefined as missing and remove the key', () => {
+      storage.setItem('key', 'value');
+      storage.setItem('key', undefined);
+      expect(storage.hasItem('key')).toBe(false);
+      expect(storage.getItem('key')).toBeUndefined();
+    });
+
     it('should overwrite existing values', () => {
       storage.setItem('key', 'oldValue');
       storage.setItem('key', 'newValue');
