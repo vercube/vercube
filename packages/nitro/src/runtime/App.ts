@@ -42,29 +42,26 @@ export async function createNitroApp(
 }
 
 /**
- * Get the Vercube log level from a Nitro log level.
+ * Get the Vercube log level from a Nitro (consola) log level.
+ *
+ * Consola counts up with verbosity: 0 errors only, 1 warnings, 2 logs, 3 info, 4 and above debug.
  * @param logLevel - The Nitro log level.
  * @returns The Vercube log level.
  */
 function getLogLevel(logLevel: Nitro['options']['logLevel'] | undefined): ConfigTypes.Config['logLevel'] {
-  switch (logLevel) {
-    case 0: {
-      return 'debug';
-    }
-    case 1: {
-      return 'error';
-    }
-    case 2: {
-      return 'warn';
-    }
-    case 3: {
-      return 'info';
-    }
-    default:
-    case 4: {
-      return 'debug';
-    }
+  if (logLevel === undefined) {
+    return 'debug';
   }
+  if (logLevel <= 0) {
+    return 'error';
+  }
+  if (logLevel === 1) {
+    return 'warn';
+  }
+  if (logLevel <= 3) {
+    return 'info';
+  }
+  return 'debug';
 }
 
 /**
