@@ -174,6 +174,13 @@ export namespace ConfigTypes {
       maxAge?: number;
       immutable?: boolean;
       etag?: boolean;
+      /**
+       * How to treat a path with a segment starting with a dot, such as `.env`
+       * or `.git/config`: `ignore` answers 404, `deny` answers 403, `allow`
+       * serves it.
+       * @default 'ignore'
+       */
+      dotfiles?: 'allow' | 'deny' | 'ignore';
     };
   }
 
