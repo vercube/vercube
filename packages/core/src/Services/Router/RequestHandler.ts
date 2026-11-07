@@ -78,6 +78,15 @@ const JSON_RESPONSE_INIT: ResponseInit = Object.freeze({
 });
 
 /**
+ * Shared response init for a handler that returned `undefined`: no body, so no
+ * content type either. Reused across requests, see {@link JSON_RESPONSE_INIT}.
+ */
+const NO_CONTENT_RESPONSE_INIT: ResponseInit = Object.freeze({
+  status: 204,
+  statusText: 'No Content',
+});
+
+/**
  * Dispatch modes, resolved once on the first request and cached.
  *
  * Reading two lazily-resolved services per request measurably cost throughput
@@ -704,6 +713,11 @@ export class RequestHandler {
       return handlerResponse;
     }
 
+    // `JSON.stringify(undefined)` is not JSON, so a void handler answers 204
+    if (handlerResponse === undefined) {
+      return new FastResponse(null, NO_CONTENT_RESPONSE_INIT);
+    }
+
     return new FastResponse(JSON.stringify(handlerResponse), JSON_RESPONSE_INIT);
   }
 
@@ -917,6 +931,25 @@ export class RequestHandler {
       'body' in fakeResponse && (fakeResponse as { body?: string | null }).body != null
         ? (fakeResponse as { body: string | null }).body
         : null;
+
+    // A void handler has no body: `JSON.stringify(undefined)` is not JSON. It
+    // answers 204 unless an action or middleware picked another status, and
+    // drops the default JSON content type, which would describe nothing.
+    if (fakeResponseBody === null && handlerResponse === undefined) {
+      const headers = fakeResponse.headers;
+      if (headers.get('content-type') === DEFAULT_CONTENT_TYPE) {
+        headers.delete('content-type');
+      }
+
+      const noContent = fakeResponse.status === 200;
+
+      return new FastResponse(null, {
+        status: noContent ? 204 : fakeResponse.status,
+        statusText: noContent ? 'No Content' : fakeResponse.statusText,
+        headers,
+      });
+    }
+
     const body = fakeResponseBody ?? JSON.stringify(handlerResponse);
 
     // FastResponse leaves the body untouched until it is written to the socket,
