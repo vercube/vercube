@@ -32,6 +32,11 @@ export class ConfigProvider implements IntrospectionTypes.Provider<Introspection
     this.fConfig = config;
   }
 
+  /** Whether the application runs in development mode. */
+  public get dev(): boolean {
+    return this.fConfig.dev === true;
+  }
+
   /** @inheritdoc */
   public revision(): number {
     return this.gRuntimeConfig?.revision ?? 1;

@@ -75,6 +75,24 @@ describe('DefaultErrorHandlerProvider', () => {
     expect(responseData).toBeDefined();
   });
 
+  it('should not leak the message or the cause of an unexpected error', async () => {
+    vi.spyOn(logger, 'error').mockImplementation(() => {});
+    Object.defineProperty(errorHandler, 'gConfigProvider', { value: { dev: false }, configurable: true });
+    const cause = Object.assign(new Error('duplicate key'), { detail: 'Key (email)=(victim@x.io)', host: '10.0.3.7' });
+    const response = errorHandler.handleError(new Error('password=hunter2 at /srv/app', { cause }));
+
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({ status: 500, name: 'InternalServerError', message: 'Internal Server Error' });
+  });
+
+  it('should expose the message of an unexpected error only in dev mode', async () => {
+    vi.spyOn(logger, 'error').mockImplementation(() => {});
+    Object.defineProperty(errorHandler, 'gConfigProvider', { value: { dev: true }, configurable: true });
+    const response = errorHandler.handleError(new Error('boom detail'));
+
+    expect((await response.json()).message).toBe('boom detail');
+  });
+
   it('should handle error with null message', async () => {
     const errorWithNullMessage = new Error('Original message');
     errorWithNullMessage.message = null as any;

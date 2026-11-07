@@ -1,8 +1,9 @@
-import { Inject } from '@vercube/di';
+import { Inject, InjectOptional } from '@vercube/di';
 import { Logger } from '@vercube/logger';
 import { InternalServerError } from '../../Errors/Http/InternalServerError';
 import { HttpError } from '../../Errors/HttpError';
 import { FastResponse } from '../../Types/CommonTypes';
+import { ConfigProvider } from '../Introspection/Providers/ConfigProvider';
 import { ErrorHandlerProvider } from './ErrorHandlerProvider';
 
 /**
@@ -14,6 +15,9 @@ export class DefaultErrorHandlerProvider extends ErrorHandlerProvider {
   @Inject(Logger)
   private gLogger!: Logger;
 
+  @InjectOptional(ConfigProvider)
+  private gConfigProvider!: ConfigProvider | null;
+
   /**
    * Handles an error that occurred during request processing
    *
@@ -21,7 +25,10 @@ export class DefaultErrorHandlerProvider extends ErrorHandlerProvider {
    * @returns Promise<Response> | Response - The response to be sent to the client
    */
   public handleError(error: Error): Response {
-    const _internalError = new InternalServerError(error?.message ?? 'Internal server error');
+    // the real message can hold paths, queries or credentials: it only leaves
+    // the process in dev mode
+    const detail = this.gConfigProvider?.dev === true ? (error?.message ?? 'Internal server error') : undefined;
+    const _internalError = new InternalServerError(detail ?? 'Internal Server Error');
     const status = resolveStatus(error);
 
     // check if the error is known error type and return it.
@@ -34,7 +41,7 @@ export class DefaultErrorHandlerProvider extends ErrorHandlerProvider {
 
     this.gLogger.error(error);
 
-    return new FastResponse(JSON.stringify({ ...(error?.cause ?? _internalError) }, undefined, 2), {
+    return new FastResponse(JSON.stringify({ ..._internalError }, undefined, 2), {
       status,
       headers: JSON_HEADERS,
     });
