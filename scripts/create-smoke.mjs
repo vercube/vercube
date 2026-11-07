@@ -196,7 +196,11 @@ const config = join(app, 'vercube.config.ts');
 
 writeFileSync(config, readFileSync(config, 'utf8').replace(/port: \d+/, `port: ${options.port}`));
 
-const server = spawn('node', ['dist/index.mjs'], { cwd: app, stdio: 'inherit', env: { ...process.env, NODE_ENV: 'development' } });
+const server = spawn('node', ['dist/index.mjs'], {
+  cwd: app,
+  stdio: 'inherit',
+  env: { ...process.env, NODE_ENV: 'development' },
+});
 
 try {
   const url = `http://localhost:${options.port}/api/foo`;
