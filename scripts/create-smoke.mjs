@@ -61,9 +61,16 @@ for (let index = 2; index < process.argv.length; index++) {
 
 const step = (title) => console.log(`\n▶ ${title}`);
 
+// docker compose names a project after its directory; runs side by side must not share one
+const composeProject = `vercube-smoke-${process.pid}`;
+
 const run = (command, args, cwd, env = {}) => {
   console.log(`$ ${command} ${args.join(' ')}`);
-  execFileSync(command, args, { cwd, stdio: 'inherit', env: { ...process.env, CI: '1', ...env } });
+  execFileSync(command, args, {
+    cwd,
+    stdio: 'inherit',
+    env: { ...process.env, CI: '1', COMPOSE_PROJECT_NAME: composeProject, ...env },
+  });
 };
 
 // 1. the packages of this repository, packed as they would be published
@@ -221,6 +228,10 @@ try {
   server.kill('SIGTERM');
 
   if (needsServices) {
-    execFileSync('docker', ['compose', 'down', '-v'], { cwd: root, stdio: 'ignore' });
+    execFileSync('docker', ['compose', 'down', '-v'], {
+      cwd: root,
+      stdio: 'ignore',
+      env: { ...process.env, COMPOSE_PROJECT_NAME: composeProject },
+    });
   }
 }
