@@ -103,19 +103,29 @@ export class StorageManager {
     const mounts = await Promise.all(
       [...this.fStorages.entries()].map(async ([name, mount]) => {
         const driver = mount.storage as unknown as {
-          getKeys?: () => string[] | Promise<string[]>;
+          getKeys?: (options?: { limit?: number }) => string[] | Promise<string[]>;
           size?: () => number | Promise<number>;
+          cheapSize?: boolean;
         };
 
-        const keys = typeof driver.getKeys === 'function' ? await safely(() => driver.getKeys!()) : null;
-        const size = typeof driver.size === 'function' ? await safely(() => driver.size!()) : (keys?.length ?? null);
+        // one key past the cap tells whether the list was cut short
+        const keys = typeof driver.getKeys === 'function' ? await safely(() => driver.getKeys!({ limit: maxKeys + 1 })) : null;
+        const truncated = keys ? keys.length > maxKeys : false;
+
+        let size: number | null = null;
+
+        if (keys && !truncated) {
+          size = keys.length;
+        } else if (typeof driver.size === 'function' && driver.cheapSize !== false) {
+          size = await safely(() => driver.size!());
+        }
 
         return {
           name,
           driver: (mount.storage as object)?.constructor?.name ?? 'Storage',
-          size: size ?? null,
+          size,
           keys: keys ? keys.slice(0, maxKeys) : null,
-          truncated: keys ? keys.length > maxKeys : false,
+          truncated,
         };
       }),
     );

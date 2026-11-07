@@ -63,9 +63,11 @@ export abstract class Storage<InitOptions = undefined> {
 
   /**
    * Retrieves all keys currently stored in storage
-   * @returns {MaybePromise<string[]>} A promise that resolves with an array of all stored keys
+   * @param {object} [options] - Optional listing options
+   * @param {number} [options.limit] - Stop after this many keys. A driver that cannot stop early may ignore it.
+   * @returns {MaybePromise<string[]>} A promise that resolves with an array of stored keys
    */
-  public abstract getKeys(): MaybePromise<string[]>;
+  public abstract getKeys(options?: { limit?: number }): MaybePromise<string[]>;
 
   /**
    * Removes all stored values from storage
@@ -78,6 +80,12 @@ export abstract class Storage<InitOptions = undefined> {
    * @returns {Promise<number>} A promise that resolves with the number of stored items
    */
   public abstract size(): MaybePromise<number>;
+
+  /**
+   * Set to `false` when `size()` has to list the whole backend. `describe()`
+   * then derives the count from the keys it already fetched instead of calling it.
+   */
+  public readonly cheapSize?: boolean;
 
   /**
    * Checks that the backend answers, for the readiness probe. Resolves when it

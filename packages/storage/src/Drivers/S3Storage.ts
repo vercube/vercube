@@ -1,5 +1,6 @@
 import {
   DeleteObjectCommand,
+  DeleteObjectsCommand,
   GetObjectCommand,
   HeadBucketCommand,
   HeadObjectCommand,
@@ -322,19 +323,32 @@ export class S3Storage implements Storage<S3BaseOptions> {
   }
 
   /**
-   * Retrieves a list of all keys stored in the S3 bucket.
-   *
-   * @returns {Promise<string[]>} An array of all stored keys.
+   * Counting means listing the whole bucket, so `describe()` leaves the count
+   * out when the keys were cut short.
    */
-  public async getKeys(): Promise<string[]> {
+  public readonly cheapSize = false;
+
+  /**
+   * Retrieves the keys stored in the S3 bucket.
+   *
+   * @param {object} [options] - `limit` stops paging once that many keys were collected
+   * @returns {Promise<string[]>} The stored keys, at most `limit` of them
+   */
+  public async getKeys(options: { limit?: number } = {}): Promise<string[]> {
+    const limit = options.limit;
     const keys: string[] = [];
     let continuationToken: string | undefined = undefined;
+
+    if (limit !== undefined && limit <= 0) {
+      return keys;
+    }
 
     do {
       const result: ListObjectsV2CommandOutput = await this.s3.send(
         new ListObjectsV2Command({
           Bucket: this.bucket,
           ContinuationToken: continuationToken,
+          ...(limit === undefined ? {} : { MaxKeys: Math.min(1000, limit - keys.length) }),
         }),
       );
 
@@ -344,6 +358,10 @@ export class S3Storage implements Storage<S3BaseOptions> {
         }
       }
 
+      if (limit !== undefined && keys.length >= limit) {
+        return keys.slice(0, limit);
+      }
+
       continuationToken = result.NextContinuationToken;
     } while (continuationToken);
 
@@ -351,15 +369,36 @@ export class S3Storage implements Storage<S3BaseOptions> {
   }
 
   /**
-   * Deletes all items from S3 storage.
+   * Deletes all items from S3 storage, one page of up to 1000 keys per request.
    *
    * @returns {Promise<void>} A promise that resolves when all items have been deleted.
+   * @throws {StorageError} When S3 reports keys it could not delete.
    */
   public async clear(): Promise<void> {
-    const keys = await this.getKeys();
-    for (const key of keys) {
-      await this.deleteItem(key);
-    }
+    let continuationToken: string | undefined = undefined;
+
+    do {
+      const result: ListObjectsV2CommandOutput = await this.s3.send(
+        new ListObjectsV2Command({ Bucket: this.bucket, ContinuationToken: continuationToken }),
+      );
+
+      const objects = (result.Contents ?? []).filter((obj) => obj.Key).map((obj) => ({ Key: obj.Key! }));
+
+      if (objects.length > 0) {
+        const deleted = await this.s3.send(
+          new DeleteObjectsCommand({ Bucket: this.bucket, Delete: { Objects: objects, Quiet: true } }),
+        );
+
+        if (deleted?.Errors?.length) {
+          throw new StorageError(`Failed to delete ${deleted.Errors.length} items from S3`, 'clear', undefined, {
+            bucket: this.bucket,
+            errorName: deleted.Errors[0]?.Code,
+          });
+        }
+      }
+
+      continuationToken = result.NextContinuationToken;
+    } while (continuationToken);
   }
 
   /**
