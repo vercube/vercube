@@ -37,3 +37,16 @@ describe('Utils', () => {
     });
   });
 });
+
+describe('dependencyPatterns', () => {
+  it('should match a dependency and its subpaths only', async () => {
+    const { dependencyPatterns } = await import('../src/Bundlers/Rolldown/Config');
+    const [storage, dotted] = dependencyPatterns(['@vercube/storage', 'lodash.get']);
+
+    expect(storage.test('@vercube/storage')).toBe(true);
+    expect(storage.test('@vercube/storage/drivers/MemoryStorage')).toBe(true);
+    expect(storage.test('@vercube/storage-extra')).toBe(false);
+    expect(dotted.test('lodash.get')).toBe(true);
+    expect(dotted.test('lodashxget')).toBe(false);
+  });
+});

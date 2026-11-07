@@ -121,8 +121,9 @@ describe('Project', () => {
       expect(config).toContain(`import { QueuePlugin } from '@vercube/queue'`);
       expect(config).toContain(`import { MemoryStrategy } from '@vercube/queue/strategies/MemoryStrategy'`);
       // the project's formatter tidies the layout after install
-      expect(config.replaceAll(/\s+/g, '').replaceAll(',]', ']')).toContain(
-        'plugins:[[QueuePlugin,{strategies:[{strategy:MemoryStrategy}]}]]',
+      expect(config).toContain(`import { defineConfig, withPluginOptions } from '@vercube/core'`);
+      expect(config.replaceAll(/\s+/g, '').replaceAll(/,([)\]}])/g, '$1')).toContain(
+        'plugins:[withPluginOptions(QueuePlugin,{strategies:[{strategy:MemoryStrategy}]})]',
       );
       // the rest of the file is untouched
       expect(config).toContain("logLevel: 'debug'");
@@ -189,6 +190,78 @@ describe('Project', () => {
 
       expect(() => api.bind({ name: 'Jobs', from: '@/Jobs' })).toThrow(/Bind Jobs yourself with container\.bind\(Jobs\)/);
     });
+  });
+
+  describe('addToContainer', () => {
+    it('should add a statement once, with its imports', () => {
+      const api = project();
+      const mount = 'void container.get(StorageManager).mount({ storage: MemoryStorage });';
+      const imports = { StorageManager: '@vercube/storage', MemoryStorage: '@vercube/storage/drivers/MemoryStorage' };
+
+      api.addToContainer('container.bind(StorageManager);', imports);
+      api.addToContainer(mount, imports);
+      api.addToContainer('void container.get(StorageManager).mount({storage: MemoryStorage})', imports);
+
+      const container = read(api, 'src/boot/Container.ts');
+
+      expect(container.match(/\.mount\(/g)).toHaveLength(1);
+      expect(container.indexOf('container.bind(StorageManager)')).toBeLessThan(container.indexOf('.mount('));
+      expect(container).toContain(`import { StorageManager } from '@vercube/storage'`);
+    });
+
+    it('should use the setup function’s own parameter name', () => {
+      const api = project({
+        'src/boot/Container.ts': `import { Container } from '@vercube/di';\n\nexport function setup(c: Container): void {}\n`,
+      });
+
+      api.addToContainer('container.get(X).configure({ container: 1 });', { X: '@/X' });
+
+      expect(read(api, 'src/boot/Container.ts')).toContain('c.get(X).configure({ c: 1 })');
+    });
+  });
+
+  describe('addToEntry', () => {
+    it('should add a statement before createApp() once', () => {
+      const api = project();
+      const start = 'await startNodeTelemetry({ serviceName: "api" });';
+
+      api.addToEntry(start, { position: 'before-create-app', imports: { startNodeTelemetry: '@vercube/telemetry/sdk' } });
+      api.addToEntry(start, { position: 'before-create-app' });
+
+      const entry = read(api, 'src/index.ts');
+
+      expect(entry.match(/startNodeTelemetry\(/g)).toHaveLength(1);
+      expect(entry.indexOf('startNodeTelemetry(')).toBeLessThan(entry.indexOf('createApp('));
+      expect(entry).toContain(`import { startNodeTelemetry } from '@vercube/telemetry/sdk'`);
+    });
+
+    it('should add a statement at the end', () => {
+      const api = project();
+
+      api.addToEntry('export const handler = toServerlessHandler(app);', {
+        imports: { toServerlessHandler: '@vercube/serverless/aws-lambda' },
+      });
+
+      expect(read(api, 'src/index.ts').trimEnd().endsWith('export const handler = toServerlessHandler(app);')).toBe(true);
+    });
+
+    it('should fail clearly without createApp()', () => {
+      const api = project({ 'src/index.ts': 'export {};\n' });
+
+      expect(() => api.addToEntry('init();', { position: 'before-create-app' })).toThrow('Could not find the createApp() call');
+    });
+  });
+
+  it('should edit a JSON file and refuse one with comments', () => {
+    const api = project({ 'with-comments.json': '{ // no\n}' });
+
+    api.updateJson('tsconfig.json', (json) => {
+      json.include.push('./test/**/*.ts');
+      return true;
+    });
+
+    expect(JSON.parse(read(api, 'tsconfig.json')).include).toEqual(['./src/**/*.ts', './test/**/*.ts']);
+    expect(() => api.updateJson('with-comments.json', () => true)).toThrow('not plain JSON');
   });
 
   it('should create a file once and never overwrite the user’s', () => {

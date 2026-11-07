@@ -15,6 +15,12 @@ const CONFIG_FILE = 'vercube.config.ts';
 /** Where the starter templates set up the container. */
 const CONTAINER_FILE = 'src/boot/Container.ts';
 
+/** The entry the starter templates build and run. */
+const ENTRY_FILE = 'src/index.ts';
+
+/** A name a statement needs imported: the module, whether it is its default export, whether it is a type. */
+export type ImportSpec = string | { from: string; default?: boolean; type?: boolean };
+
 /** Where a fullstack template keeps the Vercube app. */
 const FULLSTACK_APP_DIR = 'apps/api';
 
@@ -259,11 +265,11 @@ export class Project {
    * @param {string} plugin.name - The class name, such as `QueuePlugin`
    * @param {string} plugin.from - The module it is imported from
    * @param {string} [plugin.options] - The options, as code: `{ autoStart: false }`
-   * @param {Record<string, string>} [plugin.imports] - Other names the options use, name to module
+   * @param {Record<string, ImportSpec>} [plugin.imports] - Other names the options use, name to module
    * @returns {void}
    * @throws {RecipeError} When there is no `vercube.config.ts` with a config object
    */
-  public addPlugin(plugin: { name: string; from: string; options?: string; imports?: Record<string, string> }): void {
+  public addPlugin(plugin: { name: string; from: string; options?: string; imports?: Record<string, ImportSpec> }): void {
     this.editModule(CONFIG_FILE, (mod) => {
       const config = this.configObject(mod);
 
@@ -279,12 +285,15 @@ export class Project {
       }
 
       addImport(mod, plugin.name, plugin.from);
+      addImports(mod, plugin.imports);
 
-      for (const [name, from] of Object.entries(plugin.imports ?? {})) {
-        addImport(mod, name, from);
+      // `withPluginOptions` type-checks the options against the plugin, a
+      // `[Plugin, options]` tuple would take anything
+      if (plugin.options) {
+        addImport(mod, 'withPluginOptions', '@vercube/core');
       }
 
-      plugins.push(builders.raw(plugin.options ? `[${plugin.name}, ${plugin.options}]` : plugin.name));
+      plugins.push(builders.raw(plugin.options ? `withPluginOptions(${plugin.name}, ${plugin.options})` : plugin.name));
 
       return true;
     });
@@ -342,6 +351,128 @@ export class Project {
 
       return true;
     });
+  }
+
+  /**
+   * Adds a statement to the end of the container setup in
+   * `src/boot/Container.ts`, such as mounting a storage. A statement that is
+   * there already, ignoring whitespace, is not added again.
+   *
+   * @param {string} code - The statement; `container` is the setup's container parameter
+   * @param {Record<string, ImportSpec>} [imports] - Names it uses, name to module
+   * @returns {void}
+   * @throws {RecipeError} When the container setup cannot be found
+   */
+  public addToContainer(code: string, imports?: Record<string, ImportSpec>): void {
+    this.editModule(CONTAINER_FILE, (mod) => {
+      const setup = findContainerSetup(mod);
+
+      if (!setup) {
+        throw new RecipeError(
+          `Could not find the container setup in ${CONTAINER_FILE}: a function taking the container. Add this to it yourself: ${code}`,
+        );
+      }
+
+      const statement = code.replaceAll(/\bcontainer\b/g, setup.param);
+
+      if (hasStatement(setup.body, statement)) {
+        return false;
+      }
+
+      addImports(mod, imports);
+      setup.body.push(...parseStatements(statement));
+
+      return true;
+    });
+  }
+
+  /**
+   * Adds a statement to the entry, `src/index.ts`: right before the
+   * `createApp()` call, or at the end. A statement that is there already,
+   * ignoring whitespace, is not added again.
+   *
+   * @param {string} code - The statement
+   * @param {object} [options] - Where and what it needs
+   * @param {'before-create-app' | 'end'} [options.position] - Where it goes, the end by default
+   * @param {Record<string, ImportSpec>} [options.imports] - Names it uses, name to module
+   * @returns {void}
+   * @throws {RecipeError} When the entry or its `createApp()` call cannot be found
+   */
+  public addToEntry(
+    code: string,
+    options: { position?: 'before-create-app' | 'end'; imports?: Record<string, ImportSpec> } = {},
+  ): void {
+    this.editModule(ENTRY_FILE, (mod) => {
+      const body = (mod.$ast as any).body as any[];
+
+      if (hasStatement(body, code)) {
+        return false;
+      }
+
+      const statements = parseStatements(code);
+
+      if (options.position === 'before-create-app') {
+        const index = body.findIndex((statement) => generate(statement).includes('createApp('));
+
+        if (index === -1) {
+          throw new RecipeError(`Could not find the createApp() call in ${ENTRY_FILE}. Add this before it yourself: ${code}`);
+        }
+
+        body.splice(index, 0, ...statements);
+      } else {
+        body.push(...statements);
+      }
+
+      addImports(mod, options.imports);
+
+      return true;
+    });
+  }
+
+  /**
+   * Edits a JSON file of the application, such as tsconfig.json. Written back
+   * only when `edit` reports a change. Comments are not kept.
+   *
+   * @param {string} file - Path relative to the application
+   * @param {(json: Record<string, any>) => boolean} edit - Returns whether it changed something
+   * @returns {void}
+   * @throws {RecipeError} When the file is missing or is not plain JSON
+   */
+  public updateJson(file: string, edit: (json: Record<string, any>) => boolean): void {
+    const path = join(this.appDir, file);
+
+    if (!existsSync(path)) {
+      throw new RecipeError(`${relative(this.root, path)} not found.`);
+    }
+
+    try {
+      this.editJson(path, edit);
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        throw new RecipeError(`${relative(this.root, path)} is not plain JSON (comments?), edit it yourself.`);
+      }
+
+      throw error;
+    }
+  }
+
+  /**
+   * Appends lines to a text file of the application, such as `.gitignore`,
+   * leaving out the ones it has. The file is created when missing.
+   *
+   * @param {string} file - Path relative to the application
+   * @param {string[]} lines - The lines
+   * @returns {void}
+   */
+  public addLines(file: string, lines: string[]): void {
+    const path = join(this.appDir, file);
+    const current = existsSync(path) ? readFileSync(path, 'utf8') : '';
+    const present = new Set(current.split('\n').map((line) => line.trim()));
+    const missing = lines.filter((line) => !present.has(line.trim()));
+
+    if (missing.length > 0) {
+      this.write(path, `${current}${separatorAfter(current)}${missing.join('\n')}\n`);
+    }
   }
 
   /**
@@ -473,23 +604,105 @@ export function listFiles(dir: string): string[] {
  * @param {boolean} [isDefault] - Whether it is the default export
  * @returns {void}
  */
-function addImport(mod: Module, name: string, from: string, isDefault?: boolean): void {
+function addImport(mod: Module, name: string, from: string, isDefault?: boolean, isType?: boolean): void {
   if (mod.imports[name]) {
     return;
   }
 
-  mod.imports.$append({ imported: isDefault ? 'default' : name, local: name, from });
+  if (!isType) {
+    mod.imports.$append({ imported: isDefault ? 'default' : name, local: name, from });
+
+    return;
+  }
+
+  // \`import type\`, which magicast cannot write: \`verbatimModuleSyntax\` needs it
+  // for a type, and a value import of a type-only export fails at runtime
+  const body = (mod.$ast as any).body as any[];
+  const last = body.findLastIndex((statement) => statement.type === 'ImportDeclaration');
+  const statement = isDefault ? `import type ${name} from '${from}';` : `import type { ${name} } from '${from}';`;
+
+  body.splice(last + 1, 0, ...parseStatements(statement));
 }
 
 /**
- * The class name of a `plugins` entry: `Plugin` or `[Plugin, options]`.
+ * Imports names into a module, unless they are imported already.
+ *
+ * @param {Module} mod - The module
+ * @param {Record<string, ImportSpec>} [imports] - Name to module
+ * @returns {void}
+ */
+function addImports(mod: Module, imports?: Record<string, ImportSpec>): void {
+  for (const [name, spec] of Object.entries(imports ?? {})) {
+    const {
+      from,
+      default: isDefault,
+      type: isType,
+    } = typeof spec === 'string' ? { from: spec, default: false, type: false } : spec;
+
+    addImport(mod, name, from, isDefault, isType);
+  }
+}
+
+/**
+ * Parses statements to AST nodes.
+ *
+ * @param {string} code - The statements
+ * @returns {any[]} The nodes
+ */
+function parseStatements(code: string): any[] {
+  return (parseModule(code).$ast as any).body;
+}
+
+/**
+ * Prints an AST node.
+ *
+ * @param {any} node - The node
+ * @returns {string} Its code
+ */
+function generate(node: any): string {
+  const mod = parseModule('');
+
+  (mod.$ast as any).body.push(node);
+
+  return generateCode(mod).code;
+}
+
+/**
+ * Whether a list of statements holds the given code, ignoring whitespace and
+ * trailing commas.
+ *
+ * @param {any[]} body - The statements
+ * @param {string} code - The code to look for
+ * @returns {boolean} True when it is there
+ */
+function hasStatement(body: any[], code: string): boolean {
+  const normalize = (text: string): string =>
+    text
+      .replaceAll(/\s+/g, '')
+      .replaceAll(/,([)\]}])/g, '$1')
+      .replace(/;$/, '');
+  const wanted = parseStatements(code).map((statement) => normalize(generate(statement)));
+  const present = new Set(body.map((statement) => normalize(generate(statement))));
+
+  return wanted.every((statement) => present.has(statement));
+}
+
+/**
+ * The class name of a `plugins` entry: `Plugin`, `[Plugin, options]` or
+ * `withPluginOptions(Plugin, options)`.
  *
  * @param {unknown} entry - The entry, proxied by magicast
  * @returns {string | undefined} The name
  */
 function pluginName(entry: unknown): string | undefined {
   const node = (entry as { $ast?: any })?.$ast ?? entry;
-  const target = node?.type === 'ArrayExpression' ? node.elements[0] : node;
+  let target = node;
+
+  if (node?.type === 'ArrayExpression') {
+    target = node.elements[0];
+  } else if (node?.type === 'CallExpression') {
+    target = node.arguments[0];
+  }
 
   return target?.type === 'Identifier' ? target.name : undefined;
 }

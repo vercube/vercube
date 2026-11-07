@@ -46,8 +46,10 @@ export async function getRolldownConfig(ctx?: ConfigTypes.BuildOptions): Promise
     external: [
       ...builtinModules,
       ...builtinModules.map((m) => `node:${m}`),
-      ...Object.keys(pkg.dependencies || {}),
-      '@vercube/cli',
+      // a dependency and its subpaths: \`@vercube/storage/drivers/MemoryStorage\`
+      // bundled while \`@vercube/storage\` stays external would give the app two
+      // copies of the storage classes, and two copies of a DI token
+      ...dependencyPatterns([...Object.keys(pkg.dependencies || {}), '@vercube/cli']),
     ],
 
     transform: {
@@ -76,4 +78,14 @@ export async function getRolldownConfig(ctx?: ConfigTypes.BuildOptions): Promise
   };
 
   return defu(ctx?.rolldownConfig ?? {}, baseOptions);
+}
+
+/**
+ * Matches each package and every subpath export of it.
+ *
+ * @param names - Package names
+ * @returns One pattern per package
+ */
+export function dependencyPatterns(names: string[]): RegExp[] {
+  return names.map((name) => new RegExp(`^${name.replaceAll(/[$()*+.?[\\\]^{|}]/g, String.raw`\$&`)}(?:/|$)`));
 }
