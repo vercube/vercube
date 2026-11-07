@@ -1,4 +1,5 @@
-import { relative, resolve } from 'pathe';
+import { existsSync, readFileSync } from 'node:fs';
+import { join, relative, resolve } from 'pathe';
 import { hasTTY, isCI } from 'std-env';
 import { version } from '../../package.json';
 import { BaseCommand } from '../BaseCommand';
@@ -54,12 +55,16 @@ export class AddCommand extends BaseCommand {
    * @returns resolves once the modules are added
    */
   public override async run(): Promise<void> {
-    const root = findProjectRoot(resolve(this.cwd ?? process.cwd()));
+    const cwd = resolve(this.cwd ?? process.cwd());
+    const root = findProjectRoot(cwd);
+    // run inside a workspace member that is a Vercube app: that app, wherever it lives
+    const appDir = cwd !== root && isVercubeApp(cwd) ? cwd : undefined;
     const argv = process.argv.slice(process.argv.indexOf('add') + 1);
 
     try {
       const summary = await addModules(positionalModules(argv, this.modules), {
         root,
+        appDir,
         version,
         recipes: RECIPES,
         flags: readRecipeFlags(this),
@@ -104,7 +109,7 @@ export class AddCommand extends BaseCommand {
 addRecipeFlags(AddCommand.prototype);
 
 /** Flags of the command that take no value. */
-const BOOLEAN_FLAGS = new Set(['--yes', '--install', '--no-install']);
+const BOOLEAN_FLAGS = new Set(['--yes', '--no-yes', '--install', '--no-install']);
 
 /**
  * Every module named on the command line: `vercube add queue,ws cache` is
@@ -120,6 +125,12 @@ function positionalModules(argv: string[], first: string | undefined): string[] 
   for (let index = 0; index < argv.length; index++) {
     const arg = argv[index];
 
+    // everything after -- is a positional
+    if (arg === '--') {
+      positionals.push(...argv.slice(index + 1));
+      break;
+    }
+
     if (arg.startsWith('-')) {
       // a flag's value follows it, unless it takes none or is given as --flag=value
       index += BOOLEAN_FLAGS.has(arg) || arg.includes('=') ? 0 : 1;
@@ -130,4 +141,22 @@ function positionalModules(argv: string[], first: string | undefined): string[] 
   }
 
   return [...new Set((positionals.length > 0 ? positionals : [first ?? '']).flatMap((item) => parseList(item)))];
+}
+
+/**
+ * Whether a directory is a Vercube application: its package.json depends on core.
+ *
+ * @param {string} dir - The directory
+ * @returns {boolean} True when it is
+ */
+function isVercubeApp(dir: string): boolean {
+  const path = join(dir, 'package.json');
+
+  if (!existsSync(path)) {
+    return false;
+  }
+
+  const pkg = JSON.parse(readFileSync(path, 'utf8')) as Record<string, Record<string, string> | undefined>;
+
+  return Boolean(pkg.dependencies?.['@vercube/core'] ?? pkg.devDependencies?.['@vercube/core']);
 }

@@ -154,8 +154,24 @@ export async function resolveInitPlan(
 
   const answers: Record<string, Record<string, string>> = {};
 
-  for (const recipe of modules.filter((candidate) => selected.includes(candidate.id))) {
+  // the selected modules and every one they require, answered in the order
+  // they are found: \`--modules cache --storage s3\` reaches the storage it pulls in
+  const pending = modules.filter((candidate) => selected.includes(candidate.id)).map((recipe) => recipe.id);
+
+  while (pending.length > 0) {
+    const id = pending.shift();
+    const recipe = catalogs.recipes.find((candidate) => candidate.id === id);
+
+    if (!recipe || answers[recipe.id]) {
+      continue;
+    }
+
     answers[recipe.id] = await answerPrompts(recipe, input, answer, prompter);
+
+    const required =
+      typeof recipe.requires === 'function' ? recipe.requires(answers[recipe.id] as never) : (recipe.requires ?? []);
+
+    pending.push(...required.filter((id) => !answers[id]));
   }
 
   const deploy = await answer(input.deploy, '--deploy', DEFAULT_DEPLOY, () =>
@@ -196,7 +212,7 @@ export async function resolveInitPlan(
   // a question flag for a module that is not added would be dropped without a word
   const asked = new Set(
     catalogs.recipes
-      .filter((recipe) => selected.includes(recipe.id) || recipe.id === deploy)
+      .filter((recipe) => answers[recipe.id] !== undefined)
       .flatMap((recipe) => (recipe.prompts ?? []).map((prompt) => prompt.flag)),
   );
   const unused = Object.entries(input.flags)

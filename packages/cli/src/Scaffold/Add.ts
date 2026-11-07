@@ -18,6 +18,9 @@ export interface AddOptions {
   /** The project root. */
   root: string;
 
+  /** The application, when it is a workspace member other than \`apps/api\`. */
+  appDir?: string;
+
   /** The version `@vercube/*` packages are pinned to. */
   version: string;
 
@@ -67,9 +70,10 @@ export async function addModules(ids: string[], options: AddOptions): Promise<Re
     );
   }
 
-  const project = new Project(options.root, { version: options.version });
+  const project = new Project(options.root, { version: options.version, appDir: options.appDir });
 
   assertAlias(project);
+  assertVersion(project, options.version);
 
   const recipes = [...options.recipes];
 
@@ -82,7 +86,17 @@ export async function addModules(ids: string[], options: AddOptions): Promise<Re
   const answers: Record<string, Record<string, string>> = {};
   const missing: string[] = [];
 
-  for (const recipe of recipes.filter((candidate) => ids.includes(candidate.id))) {
+  // the named recipes and every one they require: a flag for the required one counts too
+  const pending = [...ids];
+
+  while (pending.length > 0) {
+    const id = pending.shift();
+    const recipe = recipes.find((candidate) => candidate.id === id);
+
+    if (!recipe || answers[recipe.id]) {
+      continue;
+    }
+
     answers[recipe.id] = {};
 
     for (const prompt of recipe.prompts ?? []) {
@@ -96,6 +110,11 @@ export async function addModules(ids: string[], options: AddOptions): Promise<Re
 
       answers[recipe.id][prompt.name] = value ?? prompt.default;
     }
+
+    const required =
+      typeof recipe.requires === 'function' ? recipe.requires(answers[recipe.id] as never) : (recipe.requires ?? []);
+
+    pending.push(...required);
   }
 
   if (missing.length > 0) {
@@ -157,7 +176,20 @@ function assertAlias(project: Project): void {
   }
 
   // paths inherited through `extends` cannot be told from here; the build will
-  if (!paths?.['@/*'] && !JSON.parse(source).extends) {
+  if (!paths?.['@/*'] && JSON.parse(source).extends) {
+    return;
+  }
+
+  // the recipes write their files under src/ and import them through @/
+  const target = paths?.['@/*']?.[0]?.replace(/^\.\//, '');
+
+  if (target && target !== 'src/*') {
+    throw new RecipeError(
+      `tsconfig.json maps @/* to ${paths!['@/*'][0]}, the recipes write their files under src/. Map @/* to ./src/*, or add the module by hand.`,
+    );
+  }
+
+  if (!paths?.['@/*']) {
     throw new RecipeError(
       'The recipes import project files as @/..., which tsconfig.json does not map. Add "paths": { "@/*": ["./src/*"] } to its compilerOptions.',
     );
@@ -174,7 +206,7 @@ function assertAlias(project: Project): void {
  * @throws {RecipeError} When the package is not installed or ships no recipe
  */
 async function loadPackageRecipe(project: Project, name: string): Promise<RecipeTypes.Recipe<any>> {
-  if (!/^(@[\w.-]+\/)?[\w.-]+$/.test(name)) {
+  if (!/^(@[\w.-]+\/)?[\w.-]+$/.test(name) || name.split('/').some((segment) => /^\.+$/.test(segment) || segment === '@')) {
     throw new RecipeError(`Unknown module "${name}".`);
   }
 
@@ -259,8 +291,29 @@ function recipeEntry(dir: string): string | null {
     return null;
   };
 
-  if (pkg.exports && typeof pkg.exports === 'object' && !Array.isArray(pkg.exports) && './recipe' in pkg.exports) {
-    return pick((pkg.exports as Record<string, unknown>)['./recipe']);
+  if (pkg.exports !== undefined) {
+    const exports =
+      pkg.exports && typeof pkg.exports === 'object' && !Array.isArray(pkg.exports)
+        ? (pkg.exports as Record<string, unknown>)
+        : {};
+
+    if ('./recipe' in exports) {
+      return pick(exports['./recipe']);
+    }
+
+    // a subpath pattern such as "./*": "./dist/*.mjs"
+    for (const [key, target] of Object.entries(exports)) {
+      const star = key.indexOf('*');
+
+      if (star !== -1 && './recipe'.startsWith(key.slice(0, star)) && './recipe'.endsWith(key.slice(star + 1))) {
+        const match = './recipe'.slice(star, './recipe'.length - (key.length - star - 1));
+
+        return pick(target)?.replaceAll('*', match) ?? null;
+      }
+    }
+
+    // an exports map that does not list ./recipe hides every other file
+    return null;
   }
 
   // no exports map: a file next to package.json
@@ -280,8 +333,15 @@ function flagFromArgv(argv: string[], name: string): string | undefined {
       return arg.slice(name.length + 3);
     }
 
-    if (arg === `--${name}` && argv[index + 1] && !argv[index + 1].startsWith('-')) {
-      return argv[index + 1];
+    if (arg === `--${name}`) {
+      const next = argv[index + 1];
+
+      // given without a value: an error, not the default --yes would pick
+      if (next === undefined || next.startsWith('-')) {
+        throw new RecipeError(`--${name} needs a value.`);
+      }
+
+      return next;
     }
   }
 
@@ -353,4 +413,25 @@ export function projectPackageManager(root: string): string {
   ];
 
   return lockfiles.find(([file]) => existsSync(join(root, file)))?.[1] ?? 'npm';
+}
+
+/**
+ * Fails when the project pins Vercube to another version than this CLI's:
+ * a module of this version next to a core of another would run two copies of
+ * core. A range (\`^1.4.0\`, \`latest\`) is left to the package manager.
+ *
+ * @param {Project} project - The project
+ * @param {string} version - The CLI's version
+ * @returns {void}
+ * @throws {RecipeError} When an exact other version is pinned
+ */
+function assertVersion(project: Project, version: string): void {
+  const pkg = JSON.parse(project.read('package.json') ?? '{}') as Record<string, Record<string, string> | undefined>;
+  const core = pkg.dependencies?.['@vercube/core'] ?? pkg.devDependencies?.['@vercube/core'];
+
+  if (core && /^\d+\.\d+\.\d+/.test(core) && core !== version) {
+    throw new RecipeError(
+      `The project uses @vercube/core ${core}, this CLI is ${version}. Run the project's own CLI (\`npx vercube add\`), or upgrade every @vercube package to ${version} first.`,
+    );
+  }
 }

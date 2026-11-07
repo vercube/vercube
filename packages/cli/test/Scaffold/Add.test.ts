@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { join } from 'pathe';
+import { dirname, join } from 'pathe';
 import { afterEach, describe, expect, it } from 'vitest';
 import { RECIPES } from '../../src/Recipes/Catalog';
 import { addModules, findProjectRoot, projectPackageManager } from '../../src/Scaffold/Add';
@@ -114,6 +114,7 @@ describe('addModules', () => {
     mkdirSync(dir, { recursive: true });
 
     for (const [file, content] of Object.entries(files)) {
+      mkdirSync(dirname(join(dir, file)), { recursive: true });
       writeFileSync(join(dir, file), content);
     }
   };
@@ -171,6 +172,55 @@ describe('addModules', () => {
     const root = project({ 'tsconfig.json': JSON.stringify({ extends: './tsconfig.base.json', compilerOptions: {} }) });
 
     await expect(addModules(['schema'], options(root))).resolves.toMatchObject({ applied: ['schema'] });
+  });
+
+  it('should refuse a project pinned to another Vercube version', async () => {
+    const root = project({ 'package.json': JSON.stringify({ dependencies: { '@vercube/core': '1.3.3' } }) });
+
+    await expect(addModules(['schema'], options(root))).rejects.toThrow('uses @vercube/core 1.3.3, this CLI is 1.5.0');
+  });
+
+  it('should refuse an @/ alias that does not point at src/', async () => {
+    const root = project({ 'tsconfig.json': JSON.stringify({ compilerOptions: { paths: { '@/*': ['./lib/*'] } } }) });
+
+    await expect(addModules(['schema'], options(root))).rejects.toThrow('maps @/* to ./lib/*');
+  });
+
+  it('should answer a required module from its flag', async () => {
+    const root = project();
+
+    await addModules(['cache'], options(root, { flags: { storage: 's3' } }));
+
+    expect(readFileSync(join(root, 'src/boot/Container.ts'), 'utf8')).toContain('S3Storage');
+  });
+
+  it('should load a recipe exported through a subpath pattern, and nothing an exports map hides', async () => {
+    const root = project();
+
+    installPackage(root, 'pattern', {
+      'package.json': JSON.stringify({ name: 'pattern', exports: { './*': './dist/*.mjs' } }),
+      'dist/recipe.mjs': `export default ${RECIPE};`,
+    });
+    installPackage(root, 'hidden', {
+      'package.json': JSON.stringify({ name: 'hidden', exports: { '.': './index.mjs' } }),
+      'recipe.mjs': `export default ${RECIPE};`,
+    });
+
+    await expect(addModules(['pattern'], options(root, { yes: true }))).resolves.toMatchObject({ applied: ['pattern'] });
+    await expect(addModules(['hidden'], options(root, { yes: true }))).rejects.toThrow(
+      'does not export a recipe at hidden/recipe',
+    );
+  });
+
+  it('should refuse a package flag without a value, and a dot-only name', async () => {
+    const root = project();
+
+    installPackage(root, 'p', { 'package.json': JSON.stringify({ name: 'p' }), 'recipe.mjs': `export default ${RECIPE};` });
+
+    await expect(addModules(['p'], options(root, { yes: true, argv: ['p', '--search-engine'] }))).rejects.toThrow(
+      '--search-engine needs a value.',
+    );
+    await expect(addModules(['..'], options(root))).rejects.toThrow('Unknown module ".."');
   });
 
   it('should explain a name that is neither a module nor an installed package', async () => {

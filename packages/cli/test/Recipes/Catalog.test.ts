@@ -76,7 +76,9 @@ describe('module recipes', () => {
     expect(files['src/boot/Container.ts'].indexOf('bind(StorageManager)')).toBeLessThan(
       files['src/boot/Container.ts'].indexOf('.mount('),
     );
-    expect(files['src/index.ts']).toContain('export const handler: ReturnType<typeof toServerlessHandler> = toServerlessHandler(app);');
+    expect(files['src/index.ts']).toContain(
+      'export const handler: ReturnType<typeof toServerlessHandler> = toServerlessHandler(app);',
+    );
   });
 
   it('adds storage for the cache and reports it', async () => {
