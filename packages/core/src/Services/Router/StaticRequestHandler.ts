@@ -1,6 +1,6 @@
 import { createReadStream } from 'node:fs';
-import { stat as statAsync } from 'node:fs/promises';
-import { extname, join, normalize, sep } from 'node:path';
+import { realpath, stat as statAsync } from 'node:fs/promises';
+import { extname, join, normalize, relative, sep } from 'node:path';
 import { mime } from '../../Utils/Mine';
 import type { ConfigTypes } from '../../Types/ConfigTypes';
 
@@ -74,24 +74,39 @@ export class StaticRequestHandler {
       }
     }
 
+    const dotfiles = this.fOptions?.dotfiles ?? 'ignore';
+
     for (const dir of dirs) {
       const root = join(process.cwd(), dir);
       const fullPath = join(root, relativePath);
 
       // Never serve anything outside the static directory
-      if (fullPath !== root && !fullPath.startsWith(root.endsWith(sep) ? root : root + sep)) {
+      if (!isInside(root, fullPath)) {
         continue;
       }
 
       try {
-        const stats = await statAsync(fullPath);
+        // Resolve symlinks so a link inside the directory cannot reach a file outside it
+        const realRoot = await realpath(root);
+        const realFile = await realpath(fullPath);
+
+        if (!isInside(realRoot, realFile)) {
+          continue;
+        }
+
+        // Checked on the requested path and on the resolved one, as a link to a dotfile is still a dotfile
+        if (dotfiles !== 'allow' && (hasDotSegment(relativePath) || hasDotSegment(relative(realRoot, realFile)))) {
+          return dotfiles === 'deny' ? new Response(null, { status: 403 }) : undefined;
+        }
+
+        const stats = await statAsync(realFile);
 
         if (stats.isDirectory()) {
           continue;
         }
 
         if (stats.isFile()) {
-          return this.serveFile(request, fullPath, stats);
+          return this.serveFile(request, realFile, stats);
         }
       } catch {
         // silent catch
@@ -149,6 +164,27 @@ export class StaticRequestHandler {
       headers,
     });
   }
+}
+
+/**
+ * Whether a path is the root itself or lies inside it.
+ *
+ * @param {string} root - The directory
+ * @param {string} path - The path to check
+ * @returns {boolean} True when the path does not leave the root
+ */
+function isInside(root: string, path: string): boolean {
+  return path === root || path.startsWith(root.endsWith(sep) ? root : root + sep);
+}
+
+/**
+ * Whether any segment of a path starts with a dot, such as `.env` or `.git/config`.
+ *
+ * @param {string} path - The path relative to the static directory
+ * @returns {boolean} True when the path names a dotfile or goes through a dot directory
+ */
+function hasDotSegment(path: string): boolean {
+  return path.split(/[\\/]/).some((segment) => segment.length > 1 && segment.startsWith('.'));
 }
 
 /**

@@ -12,12 +12,14 @@ vi.mock('node:fs', () => ({
 
 vi.mock('node:fs/promises', () => ({
   stat: vi.fn(),
+  realpath: vi.fn(async (path: string) => path),
 }));
 
 vi.mock('node:path', () => ({
   sep: '/',
   normalize: vi.fn((path: string) => path),
   join: vi.fn((...paths: string[]) => paths.join('/')),
+  relative: vi.fn((from: string, to: string) => to.slice(from.length + 1)),
   extname: vi.fn((path: string) => {
     const ext = path.split('.').pop();
     return ext ? `.${ext}` : '';
