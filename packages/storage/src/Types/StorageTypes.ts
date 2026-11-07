@@ -69,7 +69,7 @@ export namespace StorageTypes {
     name: string;
     /** Driver class name, e.g. `MemoryStorage`. */
     driver: string;
-    /** Number of stored items, or null when the driver could not be counted. */
+    /** Number of stored items, or null when the driver could not be counted or counting would list the whole backend. */
     size: number | null;
     /** Keys currently held, capped; null when the driver cannot enumerate them. */
     keys: string[] | null;

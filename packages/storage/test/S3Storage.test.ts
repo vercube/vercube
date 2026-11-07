@@ -1,6 +1,7 @@
 import { Readable } from 'node:stream';
 import {
   DeleteObjectCommand,
+  DeleteObjectsCommand,
   HeadBucketCommand,
   HeadObjectCommand,
   ListObjectsV2Command,
@@ -312,6 +313,30 @@ describe('S3Storage', () => {
       expect(keys).toEqual(['a', 'b', 'c']);
     });
 
+    it('should stop paging once the limit is reached', async () => {
+      mockSend.mockResolvedValueOnce({
+        Contents: [{ Key: 'a' }, { Key: 'b' }, { Key: 'c' }],
+        NextContinuationToken: 'more',
+      });
+
+      const keys = await storage.getKeys({ limit: 2 });
+
+      expect(keys).toEqual(['a', 'b']);
+      expect(mockSend).toHaveBeenCalledTimes(1);
+      expect((mockSend.mock.calls[0][0] as ListObjectsV2Command).input.MaxKeys).toBe(2);
+    });
+
+    it('should ask for the keys still missing on the next page', async () => {
+      mockSend
+        .mockResolvedValueOnce({ Contents: [{ Key: 'a' }], NextContinuationToken: 't' })
+        .mockResolvedValueOnce({ Contents: [{ Key: 'b' }], NextContinuationToken: 'u' });
+
+      const keys = await storage.getKeys({ limit: 2 });
+
+      expect(keys).toEqual(['a', 'b']);
+      expect((mockSend.mock.calls[1][0] as ListObjectsV2Command).input.MaxKeys).toBe(1);
+    });
+
     it('should return empty array if no objects', async () => {
       mockSend.mockResolvedValueOnce({});
       const keys = await storage.getKeys();
@@ -320,7 +345,7 @@ describe('S3Storage', () => {
   });
 
   describe('clear', () => {
-    it('should delete all items', async () => {
+    it('should delete a page of keys with one DeleteObjects request', async () => {
       mockSend
         .mockResolvedValueOnce({
           Contents: [{ Key: 'x' }, { Key: 'y' }],
@@ -330,9 +355,38 @@ describe('S3Storage', () => {
 
       await storage.clear();
 
-      expect(mockSend).toHaveBeenCalledWith(expect.any(ListObjectsV2Command));
-      expect(mockSend).toHaveBeenCalledWith(expect.any(DeleteObjectCommand));
-      expect(mockSend).toHaveBeenCalledTimes(3); // 1 list + 2 deletes
+      expect(mockSend).toHaveBeenCalledTimes(2); // 1 list + 1 batch delete
+      expect(mockSend.mock.calls[0][0]).toBeInstanceOf(ListObjectsV2Command);
+      const cmd = mockSend.mock.calls[1][0] as DeleteObjectsCommand;
+      expect(cmd).toBeInstanceOf(DeleteObjectsCommand);
+      expect(cmd.input.Delete?.Objects).toEqual([{ Key: 'x' }, { Key: 'y' }]);
+    });
+
+    it('should delete each listed page separately', async () => {
+      mockSend
+        .mockResolvedValueOnce({ Contents: [{ Key: 'a' }], NextContinuationToken: 't' })
+        .mockResolvedValueOnce({})
+        .mockResolvedValueOnce({ Contents: [{ Key: 'b' }] })
+        .mockResolvedValueOnce({});
+
+      await storage.clear();
+
+      expect(mockSend).toHaveBeenCalledTimes(4);
+      expect((mockSend.mock.calls[2][0] as ListObjectsV2Command).input.ContinuationToken).toBe('t');
+    });
+
+    it('should send nothing to delete for an empty bucket', async () => {
+      mockSend.mockResolvedValueOnce({});
+      await storage.clear();
+      expect(mockSend).toHaveBeenCalledTimes(1);
+    });
+
+    it('should throw when S3 reports keys it could not delete', async () => {
+      mockSend
+        .mockResolvedValueOnce({ Contents: [{ Key: 'x' }] })
+        .mockResolvedValueOnce({ Errors: [{ Key: 'x', Code: 'AccessDenied' }] });
+
+      await expect(storage.clear()).rejects.toBeInstanceOf(StorageError);
     });
   });
 
