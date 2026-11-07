@@ -9,7 +9,7 @@ import {
   SERVICE_IMPORT_SOURCE,
 } from './Extract';
 import { scanFiles } from './Scan';
-import { resolveImports, transformMiddleware, transformRoute, transformService } from './Transform';
+import { resolveImports, resolveImportSource, transformMiddleware, transformRoute, transformService } from './Transform';
 import type { MiddlewareInfo, RouteInfo, ScanLogger, ServiceInfo } from './Types';
 
 /**
@@ -153,16 +153,20 @@ export async function scanSource(options: ScanSourceOptions): Promise<{
     const code = readFileSync(file.fullPath, 'utf8');
 
     for (const controller of extractControllers(code)) {
-      controllers.push({ ...controller, ...file, import: controller.import.replace(IMPORT_SOURCE, file.fullPath) });
+      controllers.push({ ...controller, ...file, import: resolveImportSource(controller.import, IMPORT_SOURCE, file.fullPath) });
     }
     for (const route of extractRoutes(code)) {
-      routes.push({ ...route, ...file, import: route.import.replace(IMPORT_SOURCE, file.fullPath) });
+      routes.push({ ...route, ...file, import: resolveImportSource(route.import, IMPORT_SOURCE, file.fullPath) });
     }
     for (const service of extractServices(code)) {
-      services.push({ ...service, ...file, import: service.import.replace(SERVICE_IMPORT_SOURCE, file.fullPath) });
+      services.push({ ...service, ...file, import: resolveImportSource(service.import, SERVICE_IMPORT_SOURCE, file.fullPath) });
     }
     for (const middleware of extractMiddlewares(code)) {
-      middlewares.push({ ...middleware, ...file, import: middleware.import.replace(MIDDLEWARE_IMPORT_SOURCE, file.fullPath) });
+      middlewares.push({
+        ...middleware,
+        ...file,
+        import: resolveImportSource(middleware.import, MIDDLEWARE_IMPORT_SOURCE, file.fullPath),
+      });
     }
   }
 

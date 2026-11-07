@@ -45,5 +45,21 @@ export async function transformMiddleware(file: FileInfo): Promise<MiddlewareInf
  * @returns The entries with resolved `import` statements.
  */
 export function resolveImports<T extends { import: string; fullPath: string }>(entries: T[], placeholder: string): T[] {
-  return entries.map((entry) => ({ ...entry, import: entry.import.replace(placeholder, entry.fullPath) }));
+  return entries.map((entry) => ({ ...entry, import: resolveImportSource(entry.import, placeholder, entry.fullPath) }));
+}
+
+/**
+ * Swaps the quoted placeholder specifier in an import statement for the real file path.
+ *
+ * The path is emitted as a JSON string literal, so quotes, backslashes and `$` sequences
+ * in it cannot break (or inject into) the generated statement.
+ *
+ * @param statement - Import statement containing the placeholder specifier.
+ * @param placeholder - The placeholder module specifier to replace.
+ * @param fullPath - The real absolute file path.
+ * @returns The import statement pointing at `fullPath`.
+ */
+export function resolveImportSource(statement: string, placeholder: string, fullPath: string): string {
+  const literal = JSON.stringify(fullPath);
+  return statement.replace(`'${placeholder}'`, () => literal);
 }

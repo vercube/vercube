@@ -1,3 +1,4 @@
+import { resolveImportSource } from '@vercube/scan';
 import { scanFiles, type FileInfo } from '../_internal/scan';
 import { MIDDLEWARE_IMPORT_SOURCE, transformMiddleware, type MiddlewareInfo } from '../build/Middleware';
 import type { Nitro } from 'nitro/types';
@@ -9,7 +10,7 @@ export async function getTransformedMiddlewares(nitro: Nitro): Promise<Middlewar
   const files = await scanMiddlewares(nitro);
   return (await Promise.all(files.map((file) => transformMiddleware(file))).then((r) => r.flat())).map((middleware) => ({
     ...middleware,
-    import: middleware.import.replace(MIDDLEWARE_IMPORT_SOURCE, middleware.fullPath),
+    import: resolveImportSource(middleware.import, MIDDLEWARE_IMPORT_SOURCE, middleware.fullPath),
   }));
 }
 
