@@ -187,7 +187,7 @@ describe('header capture', () => {
 
   it('withholds headers whose name looks like a credential', () => {
     const span = trace.getTracer('test').startSpan('secret-headers');
-    const names = ['x-xsrf-token', 'x-access-token', 'x-amz-security-token', 'x-goog-api-key'];
+    const names = ['x-xsrf-token', 'x-access-token', 'x-amz-security-token', 'x-goog-api-key', 'x-accessToken'];
 
     addHeadersEvent(
       span,

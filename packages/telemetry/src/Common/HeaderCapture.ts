@@ -20,6 +20,13 @@ const ALWAYS_REDACTED: ReadonlySet<string> = new Set([
   'x-csrf-token',
 ]);
 
+/**
+ * Header names reach us lowercased, so the camelCase boundaries `isSecretKey`
+ * relies on are gone (`x-accessToken` arrives as `x-accesstoken`). This matches
+ * credential words as plain substrings to catch those.
+ */
+const SECRET_SUBSTRING = /token|secret|passw(?:or)?d|credential|api-?key|access-?key|private-?key|secret-?key/;
+
 /** Placeholder written in place of a withheld value. */
 const REDACTED = '<redacted>';
 
@@ -47,7 +54,10 @@ export function addHeadersEvent(span: Span, name: string, headers: Headers, extr
   for (const [key, value] of headers) {
     const lower = key.toLowerCase();
 
-    attributes[lower] = ALWAYS_REDACTED.has(lower) || isSecretKey(lower) || extraRedacted.has(lower) ? REDACTED : value;
+    attributes[lower] =
+      ALWAYS_REDACTED.has(lower) || isSecretKey(lower) || SECRET_SUBSTRING.test(lower) || extraRedacted.has(lower)
+        ? REDACTED
+        : value;
   }
 
   span.addEvent(name, attributes);
