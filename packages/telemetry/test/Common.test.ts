@@ -200,7 +200,7 @@ describe('header capture', () => {
     const event = telemetry.span('secret-headers')!.events.find((entry) => entry.name === REQUEST_HEADERS_EVENT)!;
 
     for (const name of names) {
-      expect(event.attributes![name]).toBe('<redacted>');
+      expect(event.attributes![name.toLowerCase()]).toBe('<redacted>');
     }
     expect(event.attributes!['x-safe']).toBe('ok');
   });
