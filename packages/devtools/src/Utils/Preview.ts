@@ -40,10 +40,16 @@ function describeType(value: unknown): string {
  * Replacer for `JSON.stringify` that handles non-JSON values.
  * @returns a stateful replacer; construct one per `describeValue` call
  */
-function previewReplacer(): (key: string, value: unknown) => unknown {
-  const seen = new WeakSet<object>();
+export function previewReplacer(): (this: unknown, key: string, value: unknown) => unknown {
+  // Ancestor chain only: a shared reference is not a cycle.
+  const ancestors: Array<{ holder: unknown; original: object }> = [];
 
-  return (_key: string, value: unknown): unknown => {
+  return function (this: unknown, _key: string, value: unknown): unknown {
+    // `this` is the object holding the current key; drop finished subtrees.
+    while (ancestors.length > 0 && ancestors[ancestors.length - 1]!.holder !== this) {
+      ancestors.pop();
+    }
+
     if (typeof value === 'bigint') {
       return `${value}n`;
     }
@@ -52,27 +58,28 @@ function previewReplacer(): (key: string, value: unknown) => unknown {
       return `[function ${value.name || 'anonymous'}]`;
     }
 
-    if (value instanceof Map) {
-      return { '[Map]': Object.fromEntries(value) };
-    }
-
-    if (value instanceof Set) {
-      return { '[Set]': [...value] };
-    }
-
     if (ArrayBuffer.isView(value) && !(value instanceof DataView)) {
       return `[${value.constructor.name} ${value.byteLength} bytes]`;
     }
 
-    if (value !== null && typeof value === 'object') {
-      if (seen.has(value)) {
-        return '[circular]';
-      }
-
-      seen.add(value);
+    if (value === null || typeof value !== 'object') {
+      return value;
     }
 
-    return value;
+    if (ancestors.some((entry) => entry.original === value)) {
+      return '[circular]';
+    }
+
+    let replaced: unknown = value;
+
+    if (value instanceof Map) {
+      replaced = { '[Map]': Object.fromEntries(value) };
+    } else if (value instanceof Set) {
+      replaced = { '[Set]': [...value] };
+    }
+
+    ancestors.push({ holder: replaced, original: value });
+    return replaced;
   };
 }
 
