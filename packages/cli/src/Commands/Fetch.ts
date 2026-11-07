@@ -4,6 +4,7 @@ import { BaseCommand } from '../BaseCommand';
 import { Arg } from '../Decorators/Arg';
 import { Command } from '../Decorators/Command';
 import { Flag } from '../Decorators/Flag';
+import { splitHeaders } from '../Utils/SplitHeaders';
 
 /**
  * Builds the app, then sends an HTTP request and prints the response.
@@ -33,7 +34,7 @@ export class FetchCommand extends BaseCommand {
   @Flag({ name: 'method', description: 'HTTP method', default: 'GET' })
   public method!: string;
 
-  /** Request headers as `"Name: Value, Name: Value"`. */
+  /** Request headers as `"Name: Value, Name: Value"`. Commas inside a value are kept. */
   @Flag({ name: 'headers', description: 'Add header (format: "Name: Value, ...")', type: 'string' })
   public headers!: string | undefined;
 
@@ -58,7 +59,7 @@ export class FetchCommand extends BaseCommand {
       entry: this.entry,
       url: this.url,
       method: this.method,
-      header: this.headers?.split(',') ?? [],
+      header: splitHeaders(this.headers),
       data: this.data,
     });
   }
