@@ -151,6 +151,30 @@ describe('MemoryStrategy', () => {
     expect(dispatch).toHaveBeenCalledTimes(1);
   });
 
+  it('should wait out a delay longer than the timer limit instead of running at once', async () => {
+    vi.useFakeTimers();
+
+    try {
+      const dispatch = vi.fn().mockResolvedValue(undefined);
+      const delay = 30 * 86_400_000;
+
+      await strategy.consume({ queue: 'emails', concurrency: 1, dispatch });
+      await strategy.publish(request({ options: { delay } }));
+
+      await vi.advanceTimersByTimeAsync(2 ** 31 - 1);
+      expect(dispatch).not.toHaveBeenCalled();
+      expect(await strategy.stats('emails')).toMatchObject({ delayed: 1, waiting: 0 });
+
+      await vi.advanceTimersByTimeAsync(delay - (2 ** 31 - 1) - 1);
+      expect(dispatch).not.toHaveBeenCalled();
+
+      await vi.advanceTimersByTimeAsync(1);
+      expect(dispatch).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('should report progress back to the job', async () => {
     const dispatch = vi.fn().mockImplementation(async (job: QueueTypes.IncomingJob) => {
       await job.updateProgress?.(50);
