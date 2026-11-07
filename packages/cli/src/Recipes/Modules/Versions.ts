@@ -9,6 +9,7 @@ export const VERSIONS = {
   azureFunctions: '^4.17.0',
   bullmq: '^6.7.1',
   ioredis: '^6.0.0',
+  otlpTraceExporter: '^0.301.0',
   kafkajs: '^2.2.4',
   pg: '^8.23.1',
   serverless: '^4.46.0',

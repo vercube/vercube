@@ -56,7 +56,7 @@ const DRIVERS: Record<string, { strategy: string; options?: string; setup?: (pro
     options: `{ url: process.env.RABBITMQ_URL ?? 'amqp://127.0.0.1:5672' }`,
     setup: (project) => {
       project.addDependencies({ amqplib: VERSIONS.amqplib });
-      project.addComposeService('rabbitmq', { image: IMAGES.rabbitmq, ports: ['5672:5672', '15672:15672'] });
+      project.addComposeService('rabbitmq', { image: IMAGES.rabbitmq, ports: ['127.0.0.1:5672:5672', '127.0.0.1:15672:15672'] });
       project.addEnv({ RABBITMQ_URL: 'amqp://guest:guest@127.0.0.1:5672' }, 'RabbitMQ');
       project.note('Start the local services with `docker compose up -d`');
     },
@@ -66,7 +66,7 @@ const DRIVERS: Record<string, { strategy: string; options?: string; setup?: (pro
     options: `{ client: { clientId: 'app', brokers: (process.env.KAFKA_BROKERS ?? '127.0.0.1:9092').split(',') }, groupId: 'app-workers' }`,
     setup: (project) => {
       project.addDependencies({ kafkajs: VERSIONS.kafkajs });
-      project.addComposeService('kafka', { image: IMAGES.kafka, ports: ['9092:9092'] });
+      project.addComposeService('kafka', { image: IMAGES.kafka, ports: ['127.0.0.1:9092:9092'] });
       project.addEnv({ KAFKA_BROKERS: '127.0.0.1:9092' }, 'Kafka');
       project.note('Start the local services with `docker compose up -d`');
     },

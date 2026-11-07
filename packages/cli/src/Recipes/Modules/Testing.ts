@@ -40,14 +40,16 @@ export const testingRecipe = defineRecipe({
     project.addScript('test', 'vitest run');
     project.createFile('vitest.config.ts', VITEST_CONFIG);
 
-    if (project.exists('src/controller/FooController.ts')) {
+    // the example tests the starter's controller, so only while it still says hello
+    if (project.read('src/controller/FooController.ts')?.includes("'Hello, world!'")) {
       project.createFile('test/FooController.test.ts', TEST);
     }
 
     project.updateJson('tsconfig.json', (tsconfig) => {
-      const include: string[] = tsconfig.include ?? [];
+      const include: string[] | undefined = tsconfig.include;
 
-      if (include.includes('./test/**/*.ts')) {
+      // without \`include\` every file is in already, and adding one would drop the rest
+      if (!include || include.includes('./test/**/*.ts')) {
         return false;
       }
 

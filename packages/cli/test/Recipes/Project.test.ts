@@ -266,10 +266,13 @@ describe('Project', () => {
       api.addToContainer('container.bind(StorageManager);', imports);
       api.addToContainer(mount, imports);
       api.addToContainer('void container.get(StorageManager).mount({storage: MemoryStorage})', imports);
+      // a different literal is a different statement
+      api.addToContainer("void container.get(StorageManager).mount({ name: 'a b', storage: MemoryStorage });", imports);
+      api.addToContainer("void container.get(StorageManager).mount({ name: 'ab', storage: MemoryStorage });", imports);
 
       const container = read(api, 'src/boot/Container.ts');
 
-      expect(container.match(/\.mount\(/g)).toHaveLength(1);
+      expect(container.match(/\.mount\(/g)).toHaveLength(3);
       expect(container.indexOf('container.bind(StorageManager)')).toBeLessThan(container.indexOf('.mount('));
       expect(container).toContain(`import { StorageManager } from '@vercube/storage'`);
     });
@@ -279,9 +282,10 @@ describe('Project', () => {
         'src/boot/Container.ts': `import { Container } from '@vercube/di';\n\nexport function setup(c: Container): void {}\n`,
       });
 
-      api.addToContainer('container.get(X).configure({ container: 1 });', { X: '@/X' });
+      api.addToContainer("container.get(X).configure({ container: 1, label: 'container' });", { X: '@/X' });
 
-      expect(read(api, 'src/boot/Container.ts')).toContain('c.get(X).configure({ c: 1 })');
+      // the variable is renamed; a property name and a string are not
+      expect(read(api, 'src/boot/Container.ts')).toContain("c.get(X).configure({ container: 1, label: 'container' })");
     });
   });
 
@@ -308,6 +312,16 @@ describe('Project', () => {
       });
 
       expect(read(api, 'src/index.ts').trimEnd().endsWith('export const handler = toServerlessHandler(app);')).toBe(true);
+    });
+
+    it('should find createApp() by its call, not by its text', () => {
+      const api = project({
+        'src/index.ts': `const note = 'createApp( is called below';\nconst app = await createApp ();\n`,
+      });
+
+      api.addToEntry('init();', { position: 'before-create-app' });
+
+      expect(read(api, 'src/index.ts')).toMatch(/note = [^\n]+\n+init\(\);\s*const app/);
     });
 
     it('should fail clearly without createApp()', () => {

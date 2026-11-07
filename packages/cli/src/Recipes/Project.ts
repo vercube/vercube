@@ -412,14 +412,15 @@ export class Project {
         );
       }
 
-      const statement = code.replaceAll(/\bcontainer\b/g, setup.param);
+      // the variable, not a property or a string that happens to say "container"
+      const statements = parseStatements(code).map((statement) => renameIdentifier(statement, 'container', setup.param));
 
-      if (hasStatement(setup.body, statement)) {
+      if (hasStatements(setup.body, statements)) {
         return false;
       }
 
       addImports(mod, imports);
-      setup.body.push(...parseStatements(statement));
+      setup.body.push(...statements);
 
       return true;
     });
@@ -444,14 +445,14 @@ export class Project {
     this.editModule(ENTRY_FILE, (mod) => {
       const body = (mod.$ast as any).body as any[];
 
-      if (hasStatement(body, code)) {
+      const statements = parseStatements(code);
+
+      if (hasStatements(body, statements)) {
         return false;
       }
 
-      const statements = parseStatements(code);
-
       if (options.position === 'before-create-app') {
-        const index = body.findIndex((statement) => generate(statement).includes('createApp('));
+        const index = body.findIndex((statement) => callsFunction(statement, 'createApp'));
 
         if (index === -1) {
           throw new RecipeError(`Could not find the createApp() call in ${ENTRY_FILE}. Add this before it yourself: ${code}`);
@@ -720,38 +721,110 @@ function parseStatements(code: string): any[] {
   return (parseModule(code).$ast as any).body;
 }
 
+/** Node properties that say where code is, not what it is. */
+const POSITION_KEYS = new Set([
+  'loc',
+  'start',
+  'end',
+  'range',
+  'extra',
+  'comments',
+  'leadingComments',
+  'trailingComments',
+  'innerComments',
+  'tokens',
+  'original',
+]);
+
 /**
- * Prints an AST node.
+ * A key that is equal for two nodes holding the same code, whatever their
+ * formatting: the node without its positions and comments.
  *
  * @param {any} node - The node
- * @returns {string} Its code
+ * @returns {string} The key
  */
-function generate(node: any): string {
-  const mod = parseModule('');
-
-  (mod.$ast as any).body.push(node);
-
-  return generateCode(mod).code;
+function astKey(node: any): string {
+  return JSON.stringify(node, (key, value) => (POSITION_KEYS.has(key) ? undefined : value));
 }
 
 /**
- * Whether a list of statements holds the given code, ignoring whitespace and
- * trailing commas.
+ * Whether a list of statements already holds every given statement, compared
+ * by syntax, so formatting differs freely while a different literal does not.
  *
  * @param {any[]} body - The statements
- * @param {string} code - The code to look for
- * @returns {boolean} True when it is there
+ * @param {any[]} statements - The statements to look for
+ * @returns {boolean} True when they are all there
  */
-function hasStatement(body: any[], code: string): boolean {
-  const normalize = (text: string): string =>
-    text
-      .replaceAll(/\s+/g, '')
-      .replaceAll(/,([)\]}])/g, '$1')
-      .replace(/;$/, '');
-  const wanted = parseStatements(code).map((statement) => normalize(generate(statement)));
-  const present = new Set(body.map((statement) => normalize(generate(statement))));
+function hasStatements(body: any[], statements: any[]): boolean {
+  const present = new Set(body.map((statement) => astKey(statement)));
 
-  return wanted.every((statement) => present.has(statement));
+  return statements.every((statement) => present.has(astKey(statement)));
+}
+
+/**
+ * Renames an identifier used as a variable within a node, leaving property
+ * names and strings alone.
+ *
+ * @param {any} node - The node, changed in place
+ * @param {string} from - The name
+ * @param {string} to - The new name
+ * @returns {any} The node
+ */
+function renameIdentifier(node: any, from: string, to: string): any {
+  if (from === to) {
+    return node;
+  }
+
+  const visit = (current: any, parent: any, key: string): void => {
+    if (!current || typeof current !== 'object') {
+      return;
+    }
+
+    if (Array.isArray(current)) {
+      for (const item of current) {
+        visit(item, parent, key);
+      }
+
+      return;
+    }
+
+    const isPropertyName =
+      (parent?.type === 'MemberExpression' && key === 'property' && !parent.computed) ||
+      ((parent?.type === 'ObjectProperty' || parent?.type === 'Property') && key === 'key' && !parent.computed);
+
+    if (current.type === 'Identifier' && current.name === from && !isPropertyName) {
+      current.name = to;
+    }
+
+    for (const [childKey, child] of Object.entries(current)) {
+      if (!POSITION_KEYS.has(childKey)) {
+        visit(child, current, childKey);
+      }
+    }
+  };
+
+  visit(node, null, '');
+
+  return node;
+}
+
+/**
+ * Whether a node calls a function by name somewhere inside it.
+ *
+ * @param {any} node - The node
+ * @param {string} name - The function name
+ * @returns {boolean} True when it does
+ */
+function callsFunction(node: any, name: string): boolean {
+  if (!node || typeof node !== 'object') {
+    return false;
+  }
+
+  if (node.type === 'CallExpression' && node.callee?.type === 'Identifier' && node.callee.name === name) {
+    return true;
+  }
+
+  return Object.entries(node).some(([key, child]) => !POSITION_KEYS.has(key) && callsFunction(child, name));
 }
 
 /**
