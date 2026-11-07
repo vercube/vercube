@@ -1,7 +1,12 @@
 import { renderApiReference } from '@scalar/client-side-rendering';
 import { Controller, Get, Middleware } from '@vercube/core';
 import { Inject } from '@vercube/di';
-import { DEFAULT_SCHEMA_PATH, DEFAULT_SCHEMA_PLUGIN_OPTIONS } from '../Constants/SchemaDefaults';
+import {
+  DEFAULT_SCALAR_CDN,
+  DEFAULT_SCHEMA_PATH,
+  DEFAULT_SCHEMA_PLUGIN_OPTIONS,
+  SCALAR_INTEGRITY,
+} from '../Constants/SchemaDefaults';
 import { SchemaAuthMiddleware } from '../Middleware/SchemaAuthMiddleware';
 import { SchemaRegistry } from '../Services/SchemaRegistry';
 import { $SchemaPluginOptions } from '../Symbols/SchemaSymbols';
@@ -57,18 +62,41 @@ export class SchemaController {
         ? { content: await this.gSchemaRegistry.generateSchema() }
         : { url: scalar.openApiUrl ?? `${options.path}/` };
 
-    const html = renderApiReference({
+    const cdn = scalar.cdn ?? DEFAULT_SCALAR_CDN;
+    const nonce = btoa(String.fromCodePoint(...crypto.getRandomValues(new Uint8Array(16))));
+
+    let html = renderApiReference({
       config: {
         ...source,
         ...scalar.config,
       },
       pageTitle: scalar.pageTitle,
-      cdn: scalar.cdn,
+      cdn,
+      nonce,
     });
+
+    // Only the pinned default has a known hash, a custom `cdn` is the caller's to trust.
+    if (cdn === DEFAULT_SCALAR_CDN) {
+      html = html.replace(`<script src="${cdn}"`, `<script src="${cdn}" integrity="${SCALAR_INTEGRITY}" crossorigin="anonymous"`);
+    }
 
     return new Response(html, {
       status: 200,
-      headers: { 'Content-Type': 'text/html; charset=utf-8' },
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Content-Security-Policy': `script-src 'nonce-${nonce}' ${this.scriptOrigin(cdn)}; object-src 'none'; base-uri 'none'`,
+      },
     });
+  }
+
+  /**
+   * Origin the Scalar bundle is loaded from, `'self'` for a relative URL.
+   */
+  private scriptOrigin(cdn: string): string {
+    try {
+      return new URL(cdn).origin;
+    } catch {
+      return "'self'";
+    }
   }
 }

@@ -19,6 +19,55 @@ describe('SchemaPlugin', () => {
     expect(html).toContain('/_schema/');
   });
 
+  describe('docs page script', () => {
+    it('should load a pinned bundle with an integrity hash', async () => {
+      await using app = await createTestApp({ plugins: [SchemaPlugin] });
+
+      const html = await (await app.get('/_schema/docs').expect(200)).text();
+
+      expect(html).toMatch(/<script src="https:\/\/cdn\.jsdelivr\.net\/npm\/@scalar\/api-reference@\d+\.\d+\.\d+\/[^"]+"/);
+      expect(html).toMatch(/integrity="sha384-[^"]+" crossorigin="anonymous"/);
+    });
+
+    it('should send a CSP that allows only the bundle origin and a matching nonce', async () => {
+      await using app = await createTestApp({ plugins: [SchemaPlugin] });
+
+      const res = await app.get('/_schema/docs').expect(200);
+      const csp = res.headers.get('content-security-policy') ?? '';
+      const html = await res.text();
+      const nonce = /'nonce-([^']+)'/.exec(csp)?.[1];
+
+      expect(nonce).toBeTruthy();
+      expect(csp).toContain('script-src');
+      expect(csp).toContain('https://cdn.jsdelivr.net');
+      expect(csp).toContain("object-src 'none'");
+      expect(html).toContain(`nonce="${nonce}"`);
+    });
+
+    it('should use a fresh nonce per response', async () => {
+      await using app = await createTestApp({ plugins: [SchemaPlugin] });
+
+      const a = (await app.get('/_schema/docs').expect(200)).headers.get('content-security-policy');
+      const b = (await app.get('/_schema/docs').expect(200)).headers.get('content-security-policy');
+
+      expect(a).not.toBe(b);
+    });
+
+    it('should honour a self-hosted cdn without an integrity hash', async () => {
+      await using app = await createTestApp({
+        plugins: [[SchemaPlugin, { scalar: { cdn: '/assets/scalar.js' } }]],
+      });
+
+      const res = await app.get('/_schema/docs').expect(200);
+      const html = await res.text();
+
+      expect(html).toContain('<script src="/assets/scalar.js"');
+      expect(html).not.toContain('integrity=');
+      expect(html).not.toContain('jsdelivr');
+      expect(res.headers.get('content-security-policy')).toContain("'self'");
+    });
+  });
+
   it('should not serve Scalar when disabled in plugin options', async () => {
     await using app = await createTestApp({ plugins: [[SchemaPlugin, { scalar: false }]] });
 
