@@ -58,10 +58,11 @@ export async function applyRecipes(
       await recipe.apply({ project, answers: resolvedAnswers[recipe.id], selected: ids, version: project.version });
     } catch (error) {
       // all or nothing: a module half wired in is worse than none
-      project.rollback();
+      const unrestored = project.rollback();
+      const left = unrestored.length > 0 ? ` These files could not be restored: ${unrestored.join(', ')}.` : '';
 
-      if (error instanceof RecipeError) {
-        throw new RecipeError(`${recipe.label}: ${error.message}`);
+      if (error instanceof RecipeError || left) {
+        throw new RecipeError(`${recipe.label}: ${(error as Error).message}${left}`, { cause: error });
       }
 
       throw error;
