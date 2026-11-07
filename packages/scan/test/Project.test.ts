@@ -44,11 +44,11 @@ describe('getRoutes', () => {
     expect(user.method).toBe('GET');
     expect(user.params).toEqual(['id']);
     // import is resolved to the real file path (placeholder replaced)
-    expect(user.import).toBe(`import { UserController } from '${apiFile}';`);
+    expect(user.import).toBe(`import { UserController } from ${JSON.stringify(apiFile)};`);
 
     const home = routes.find((r) => r.importClassName === 'HomeController')!;
     expect(home.route).toBe('/login');
-    expect(home.import).toContain(`import HomeController from '`);
+    expect(home.import).toContain(`import HomeController from "`);
   });
 });
 
@@ -119,6 +119,6 @@ describe('scanSource', () => {
     const { middlewares } = await scanSource({ dirs: [baseDir] });
 
     expect(middlewares.map((m) => m.importClassName)).toEqual(['AuthMiddleware']);
-    expect(middlewares[0].import).toContain(`import { AuthMiddleware } from '`);
+    expect(middlewares[0].import).toContain(`import { AuthMiddleware } from "`);
   });
 });

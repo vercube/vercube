@@ -1,3 +1,4 @@
+import { resolveImportSource } from '@vercube/scan';
 import { nitroHealthPaths } from '../_internal/health';
 import { scanFiles, type FileInfo } from '../_internal/scan';
 import { IMPORT_SOURCE, transformRoute, type RouteInfo } from '../build/Routes';
@@ -60,7 +61,7 @@ export async function getTransformedRoutes(nitro: Nitro): Promise<RouteInfo[]> {
   const routes = await scanRoutes(nitro);
   return (await Promise.all(routes.map(async (route) => await transformRoute(route))).then((r) => r.flat())).map((route) => ({
     ...route,
-    import: route.import.replace(IMPORT_SOURCE, route.fullPath),
+    import: resolveImportSource(route.import, IMPORT_SOURCE, route.fullPath),
   }));
 }
 

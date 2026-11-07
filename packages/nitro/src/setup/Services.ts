@@ -1,3 +1,4 @@
+import { resolveImportSource } from '@vercube/scan';
 import { scanFiles, type FileInfo } from '../_internal/scan';
 import { SERVICE_IMPORT_SOURCE, transformService, type ServiceInfo } from '../build/Services';
 import type { Nitro } from 'nitro/types';
@@ -10,7 +11,7 @@ export async function getTransformedServices(nitro: Nitro, scanDirs?: string[]):
   const files = await scanServices(nitro, scanDirs);
   return (await Promise.all(files.map((file) => transformService(file))).then((r) => r.flat())).map((service) => ({
     ...service,
-    import: service.import.replace(SERVICE_IMPORT_SOURCE, service.fullPath),
+    import: resolveImportSource(service.import, SERVICE_IMPORT_SOURCE, service.fullPath),
   }));
 }
 
