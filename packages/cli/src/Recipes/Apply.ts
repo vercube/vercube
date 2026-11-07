@@ -76,6 +76,7 @@ export async function applyRecipes(
     dependencies: since(after.dependencies, before.dependencies),
     services: since(after.services, before.services),
     notes: since(after.notes, before.notes),
+    builds: since(after.builds, before.builds),
   };
 }
 

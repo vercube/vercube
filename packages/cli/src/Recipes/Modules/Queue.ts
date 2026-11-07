@@ -96,6 +96,8 @@ export const queueRecipe = defineRecipe<{ driver: string }>({
     const strategy = `defineQueueStrategy({ strategy: ${driver.strategy}${driver.options ? `, initOptions: ${driver.options}` : ''} })`;
 
     project.addDependencies({ '@vercube/queue': 'latest' });
+    // the native MessagePack decoder of BullMQ, an optional dependency of the module whatever the driver
+    project.allowBuilds(['msgpackr-extract']);
     driver.setup?.(project);
     project.addPlugin({
       name: 'QueuePlugin',

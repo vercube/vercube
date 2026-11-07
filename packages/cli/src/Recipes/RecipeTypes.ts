@@ -120,5 +120,8 @@ export namespace RecipeTypes {
 
     /** One-line notes recipes left for the summary. */
     notes: string[];
+
+    /** Packages allowed to run their install scripts, for package managers that ask (pnpm). */
+    builds: string[];
   }
 }

@@ -56,6 +56,7 @@ export class Project {
     dependencies: [],
     services: [],
     notes: [],
+    builds: [],
   };
 
   /**
@@ -113,6 +114,7 @@ export class Project {
       dependencies: [...this.fSummary.dependencies],
       services: [...this.fSummary.services],
       notes: [...this.fSummary.notes],
+      builds: [...this.fSummary.builds],
     };
   }
 
@@ -286,7 +288,9 @@ export class Project {
     }
 
     document.services = { ...document.services, [name]: service };
-    this.write(path, stringifyYAML(document, { indent: 2 }));
+    const yaml = stringifyYAML(document, { indent: 2 });
+
+    this.write(path, yaml.endsWith('\n') ? yaml : `${yaml}\n`);
     this.fSummary.services.push(name);
   }
 
@@ -512,6 +516,22 @@ export class Project {
 
     if (missing.length > 0) {
       this.write(path, `${current}${separatorAfter(current)}${missing.join('\n')}\n`);
+    }
+  }
+
+  /**
+   * Allows packages a recipe adds to run their install scripts. pnpm refuses to
+   * install a package with an unapproved build script; the CLI writes the
+   * approvals to pnpm-workspace.yaml when the project uses pnpm.
+   *
+   * @param {string[]} packages - Package names
+   * @returns {void}
+   */
+  public allowBuilds(packages: string[]): void {
+    for (const name of packages) {
+      if (!this.fSummary.builds.includes(name)) {
+        this.fSummary.builds.push(name);
+      }
     }
   }
 
