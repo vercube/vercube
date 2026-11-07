@@ -33,11 +33,28 @@ describe('Project', () => {
   });
 
   it('should find the apps of a fullstack project', () => {
-    const fullstack = project({ 'apps/api/package.json': '{}', 'apps/web/package.json': '{}' });
+    const api = JSON.stringify({ dependencies: { '@vercube/core': 'latest' } });
+    const fullstack = project({ 'apps/api/package.json': api, 'apps/web/package.json': '{}' });
+    const workspace = project({ 'apps/api/package.json': api });
 
     expect(fullstack.layout).toBe('fullstack');
     expect(fullstack.appDir).toBe(join(fullstack.root, 'apps/api'));
     expect(fullstack.webDir).toBe(join(fullstack.root, 'apps/web'));
+    expect(workspace.layout).toBe('workspace');
+    expect(workspace.webDir).toBeNull();
+  });
+
+  it('should refuse a package that is not a Vercube app', () => {
+    expect(() => project({ 'package.json': JSON.stringify({ name: 'other', dependencies: { express: '^5.0.0' } }) })).toThrow(
+      'package.json does not depend on @vercube/core',
+    );
+  });
+
+  it('should refuse a file outside the application', () => {
+    const api = project();
+
+    expect(() => api.createFile('../../outside.txt', 'x')).toThrow('outside the application');
+    expect(() => api.read('/etc/hosts')).not.toThrow();
   });
 
   it('should refuse a directory without a package.json', () => {
@@ -59,12 +76,17 @@ describe('Project', () => {
       expect(api.summary.dependencies).toEqual(['@vercube/queue', 'bullmq', 'vitest']);
     });
 
-    it('should not add a devDependency as a dependency', () => {
+    it('should move a devDependency a recipe needs at runtime', () => {
       const api = project();
 
       api.addDependencies({ oxlint: '^9.0.0' });
+      api.addDependencies({ typescript: '^9.0.0' }, { dev: true });
 
-      expect(JSON.parse(read(api, 'package.json')).dependencies.oxlint).toBeUndefined();
+      const pkg = JSON.parse(read(api, 'package.json'));
+
+      expect(pkg.dependencies.oxlint).toBe('^1.92.0');
+      expect(pkg.devDependencies.oxlint).toBeUndefined();
+      expect(pkg.devDependencies.typescript).toBe('^7.0.2');
     });
   });
 
@@ -86,6 +108,19 @@ describe('Project', () => {
 
       expect(read(api, '.env.example')).toBe('# Queue\nREDIS_URL=redis://localhost:6379\nQUEUE_PREFIX=app\n');
       expect(read(api, '.env')).toBe('REDIS_URL=redis://prod:6379\n\n# Queue\nQUEUE_PREFIX=app\n');
+    });
+
+    it('should write a placeholder to .env.example where the value is a secret', () => {
+      const api = project();
+
+      api.addEnv({ API_KEY: 'generated-secret' }, 'Auth', { API_KEY: 'change-me' });
+
+      expect(read(api, '.env')).toBe('# Auth\nAPI_KEY=generated-secret\n');
+      expect(read(api, '.env.example')).toBe('# Auth\nAPI_KEY=change-me\n');
+    });
+
+    it('should refuse a value spanning lines', () => {
+      expect(() => project().addEnv({ A: 'x\nADMIN=true' })).toThrow('spans lines');
     });
   });
 
@@ -141,6 +176,14 @@ describe('Project', () => {
       expect(api.summary.updated).toEqual([]);
     });
 
+    it('should refuse a plugins option it cannot extend', () => {
+      const api = project({
+        'vercube.config.ts': `import { defineConfig } from '@vercube/core';\n\nconst plugins = [];\n\nexport default defineConfig({ plugins });\n`,
+      });
+
+      expect(() => api.addPlugin({ name: 'QueuePlugin', from: '@vercube/queue' })).toThrow('is not an array literal');
+    });
+
     it('should fail clearly without a config object', () => {
       const api = project({ 'vercube.config.ts': `const config = {};\n\nexport default config;\n` });
       const noConfig = project({ 'vercube.config.ts': null });
@@ -183,6 +226,28 @@ describe('Project', () => {
       api.bind({ name: 'Jobs', from: '@/Jobs' });
 
       expect(read(api, 'src/boot/Container.ts')).toContain('c.bind(Jobs)');
+    });
+
+    it('should refuse a name imported from another module', () => {
+      const api = project({
+        'src/boot/Container.ts': `import { Container } from '@vercube/di';\nimport { Jobs } from './legacy';\n\nexport function useContainer(container: Container): void {}\n`,
+      });
+
+      expect(() => api.bind({ name: 'Jobs', from: '@/jobs/Jobs' })).toThrow(
+        'Jobs is already imported from ./legacy, not @/jobs/Jobs',
+      );
+    });
+
+    it('should bind in the exported setup, not a local helper', () => {
+      const api = project({
+        'src/boot/Container.ts': `import { Container } from '@vercube/di';\n\nfunction useContainer(container: Container): void {}\n\nexport function setup(container: Container): void {\n  useContainer(container);\n}\n`,
+      });
+
+      api.bind({ name: 'Jobs', from: '@/jobs/Jobs' });
+
+      expect(read(api, 'src/boot/Container.ts')).toMatch(
+        /export function setup\(container: Container\): void \{\s*useContainer\(container\);\s*container\.bind\(Jobs\);/,
+      );
     });
 
     it('should fail clearly when there is no setup function', () => {

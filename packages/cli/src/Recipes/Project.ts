@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { parseYAML, stringifyYAML } from 'confbox/yaml';
 import { builders, generateCode, parseModule } from 'magicast';
 import { getDefaultExportOptions } from 'magicast/helpers';
-import { dirname, join, relative } from 'pathe';
+import { dirname, isAbsolute, join, relative } from 'pathe';
 import { RecipeError } from './RecipeError';
 import type { RecipeTypes } from './RecipeTypes';
 
@@ -77,14 +77,30 @@ export class Project {
     } else {
       throw new RecipeError(`No package.json in ${root}. Run this in the root of a Vercube project.`);
     }
+
+    // a recipe must not wire Vercube into a package that is something else
+    const pkg = JSON.parse(readFileSync(join(this.appDir, 'package.json'), 'utf8')) as Record<
+      string,
+      Record<string, string> | undefined
+    >;
+
+    if (!pkg.dependencies?.['@vercube/core'] && !pkg.devDependencies?.['@vercube/core']) {
+      throw new RecipeError(
+        `${relative(root, join(this.appDir, 'package.json'))} does not depend on @vercube/core. Run this in a Vercube project.`,
+      );
+    }
   }
 
   /**
-   * The layout of the project: a single API, or a workspace with `apps/api`
-   * and `apps/web`.
+   * The layout of the project: a single API, a workspace with the API in
+   * `apps/api`, or such a workspace with a web app in `apps/web` too.
    */
-  public get layout(): 'api' | 'fullstack' {
-    return this.appDir === this.root ? 'api' : 'fullstack';
+  public get layout(): 'api' | 'workspace' | 'fullstack' {
+    if (this.appDir === this.root) {
+      return 'api';
+    }
+
+    return this.webDir ? 'fullstack' : 'workspace';
   }
 
   /**
@@ -107,7 +123,7 @@ export class Project {
    * @returns {boolean} True when it exists
    */
   public exists(file: string): boolean {
-    return existsSync(join(this.appDir, file));
+    return existsSync(this.appPath(file));
   }
 
   /**
@@ -117,7 +133,7 @@ export class Project {
    * @returns {string | null} Its content, null when it does not exist
    */
   public read(file: string): string | null {
-    const path = join(this.appDir, file);
+    const path = this.appPath(file);
 
     return existsSync(path) ? readFileSync(path, 'utf8') : null;
   }
@@ -131,7 +147,7 @@ export class Project {
    * @returns {boolean} Whether the file was created
    */
   public createFile(file: string, content: string): boolean {
-    const path = join(this.appDir, file);
+    const path = this.appPath(file);
 
     if (existsSync(path)) {
       return false;
@@ -152,25 +168,33 @@ export class Project {
    * @returns {void}
    */
   public addDependencies(dependencies: RecipeTypes.Dependencies, options: { dev?: boolean } = {}): void {
-    const field = options.dev ? 'devDependencies' : 'dependencies';
-
     this.editJson(join(this.appDir, 'package.json'), (pkg) => {
-      const existing = { ...(pkg.dependencies as object), ...(pkg.devDependencies as object) } as Record<string, string>;
-      const target = { ...(pkg[field] as Record<string, string> | undefined) };
+      const runtime = { ...(pkg.dependencies as Record<string, string> | undefined) };
+      const dev = { ...(pkg.devDependencies as Record<string, string> | undefined) };
       let changed = false;
 
       for (const [name, range] of Object.entries(dependencies)) {
-        if (existing[name] !== undefined) {
+        if (runtime[name] !== undefined || (options.dev && dev[name] !== undefined)) {
           continue;
         }
 
-        target[name] = name.startsWith('@vercube/') ? this.version : range;
+        // needed at runtime but only installed for development: a production
+        // install would leave it out, so it moves
+        if (dev[name] !== undefined) {
+          runtime[name] = dev[name];
+          delete dev[name];
+          changed = true;
+          continue;
+        }
+
+        (options.dev ? dev : runtime)[name] = name.startsWith('@vercube/') ? this.version : range;
         this.fSummary.dependencies.push(name);
         changed = true;
       }
 
       if (changed) {
-        pkg[field] = Object.fromEntries(Object.entries(target).toSorted(([a], [b]) => a.localeCompare(b)));
+        pkg.dependencies = sortKeys(runtime);
+        pkg.devDependencies = sortKeys(dev);
       }
 
       return changed;
@@ -206,10 +230,19 @@ export class Project {
    *
    * @param {Record<string, string>} variables - Name to value
    * @param {string} [comment] - Line written above them, such as the module name
+   * @param {Record<string, string>} [example] - Values for `.env.example` where they differ, such as a placeholder for a generated secret
    * @returns {void}
+   * @throws {RecipeError} When a value spans lines, which would write a second variable
    */
-  public addEnv(variables: Record<string, string>, comment?: string): void {
+  public addEnv(variables: Record<string, string>, comment?: string, example: Record<string, string> = {}): void {
+    for (const [name, value] of Object.entries({ ...variables, ...example })) {
+      if (/[\n\r]/.test(value)) {
+        throw new RecipeError(`The value of ${name} spans lines, which .env cannot hold.`);
+      }
+    }
+
     for (const file of ['.env.example', '.env']) {
+      const values = file === '.env.example' ? { ...variables, ...example } : variables;
       const path = join(this.appDir, file);
       const current = existsSync(path) ? readFileSync(path, 'utf8') : '';
       const present = new Set(
@@ -218,7 +251,7 @@ export class Project {
           .map((line) => /^\s*(?:export\s+)?([\w.]+)\s*=/.exec(line)?.[1])
           .filter(Boolean),
       );
-      const missing = Object.entries(variables).filter(([name]) => !present.has(name));
+      const missing = Object.entries(values).filter(([name]) => !present.has(name));
 
       if (missing.length === 0) {
         continue;
@@ -278,7 +311,13 @@ export class Project {
         config.plugins = [];
       }
 
-      const plugins = config.plugins as unknown[];
+      const plugins = config.plugins as unknown[] & { $type?: string };
+
+      if (plugins.$type !== 'array') {
+        throw new RecipeError(
+          `the \`plugins\` option of ${CONFIG_FILE} is not an array literal. Add ${plugin.name} from ${plugin.from} to it yourself.`,
+        );
+      }
 
       if (plugins.map((entry) => pluginName(entry)).includes(plugin.name)) {
         return false;
@@ -488,6 +527,24 @@ export class Project {
   }
 
   /**
+   * Resolves a path of the application, refusing one that leaves it.
+   *
+   * @param {string} file - Path relative to the application
+   * @returns {string} The absolute path
+   * @throws {RecipeError} When the path is outside the application
+   */
+  private appPath(file: string): string {
+    const path = join(this.appDir, file);
+    const inside = relative(this.appDir, path);
+
+    if (inside.startsWith('..') || isAbsolute(inside)) {
+      throw new RecipeError(`${file} is outside the application.`);
+    }
+
+    return path;
+  }
+
+  /**
    * The config object of `vercube.config.ts`, `defineConfig({ ... })` or a
    * plain default export.
    *
@@ -602,10 +659,20 @@ export function listFiles(dir: string): string[] {
  * @param {string} name - The local name
  * @param {string} from - The module it comes from
  * @param {boolean} [isDefault] - Whether it is the default export
+ * @param {boolean} [isType] - Whether it is a type, imported with `import type`
  * @returns {void}
  */
 function addImport(mod: Module, name: string, from: string, isDefault?: boolean, isType?: boolean): void {
-  if (mod.imports[name]) {
+  const existing = mod.imports[name] as { from?: string; imported?: string } | undefined;
+
+  if (existing) {
+    // the same name from another module would bind or register the wrong class
+    if (existing.from !== from || (existing.imported === 'default') !== Boolean(isDefault)) {
+      throw new RecipeError(
+        `${name} is already imported from ${existing.from}, not ${from}. Rename one of them and add it yourself.`,
+      );
+    }
+
     return;
   }
 
@@ -615,7 +682,7 @@ function addImport(mod: Module, name: string, from: string, isDefault?: boolean,
     return;
   }
 
-  // \`import type\`, which magicast cannot write: \`verbatimModuleSyntax\` needs it
+  // `import type`, which magicast cannot write: `verbatimModuleSyntax` needs it
   // for a type, and a value import of a type-only export fails at runtime
   const body = (mod.$ast as any).body as any[];
   const last = body.findLastIndex((statement) => statement.type === 'ImportDeclaration');
@@ -715,18 +782,20 @@ function pluginName(entry: unknown): string | undefined {
  * @returns {{ body: any[]; param: string } | null} Its statements and the parameter name
  */
 function findContainerSetup(mod: Module): { body: any[]; param: string } | null {
-  const candidates: any[] = [];
+  const exported: any[] = [];
+  const local: any[] = [];
 
   for (const statement of (mod.$ast as any).body) {
-    const declaration =
-      statement.type === 'ExportNamedDeclaration' || statement.type === 'ExportDefaultDeclaration'
-        ? statement.declaration
-        : statement;
+    const isExport = statement.type === 'ExportNamedDeclaration' || statement.type === 'ExportDefaultDeclaration';
+    const declaration = isExport ? statement.declaration : statement;
 
     if (declaration?.type === 'FunctionDeclaration') {
-      candidates.push(declaration);
+      (isExport ? exported : local).push(declaration);
     }
   }
+
+  // the exported setup is the one the entry calls; a local helper only when nothing is exported
+  const candidates = exported.length > 0 ? exported : local;
 
   const setup =
     candidates.find((fn) => fn.id?.name === 'useContainer') ??
@@ -770,4 +839,14 @@ function separatorAfter(current: string): string {
   }
 
   return current.endsWith('\n') ? '\n' : '\n\n';
+}
+
+/**
+ * Sorts an object by key, as package managers keep dependency lists.
+ *
+ * @param {Record<string, string>} object - The object
+ * @returns {Record<string, string>} A sorted copy
+ */
+function sortKeys(object: Record<string, string>): Record<string, string> {
+  return Object.fromEntries(Object.entries(object).toSorted(([a], [b]) => a.localeCompare(b)));
 }

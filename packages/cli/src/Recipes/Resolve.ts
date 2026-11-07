@@ -18,6 +18,21 @@ export function resolveRecipes(
   answers: Record<string, Record<string, string>> = {},
 ): { recipes: RecipeTypes.Recipe<any>[]; implied: string[] } {
   const byId = new Map(catalog.map((recipe) => [recipe.id, recipe]));
+  const duplicates = catalog.filter((recipe, index) => catalog.findIndex((other) => other.id === recipe.id) !== index);
+
+  if (duplicates.length > 0) {
+    throw new RecipeError(`Two recipes share the id ${[...new Set(duplicates.map((recipe) => recipe.id))].join(', ')}.`);
+  }
+
+  // asked once per recipe, so both passes below see the same answer
+  const required = new Map<string, string[]>();
+  const requirementsOf = (recipe: RecipeTypes.Recipe<any>): string[] => {
+    if (!required.has(recipe.id)) {
+      required.set(recipe.id, requirements(recipe, answers[recipe.id] ?? {}));
+    }
+
+    return required.get(recipe.id)!;
+  };
   const unknown = selected.filter((id) => !byId.has(id));
 
   if (unknown.length > 0) {
@@ -50,7 +65,7 @@ export function resolveRecipes(
       implied.push(id);
     }
 
-    pending.push(...requirements(recipe, answers[id] ?? {}));
+    pending.push(...requirementsOf(recipe));
   }
 
   const deploys = [...included].filter((id) => byId.get(id)!.kind === 'deploy');
@@ -76,7 +91,7 @@ export function resolveRecipes(
     state.set(id, 'visiting');
 
     const recipe = byId.get(id)!;
-    const before = [...requirements(recipe, answers[id] ?? {}), ...(recipe.after ?? []).filter((other) => included.has(other))];
+    const before = [...requirementsOf(recipe), ...(recipe.after ?? []).filter((other) => included.has(other))];
 
     for (const other of before) {
       visit(other, [...path, id]);
