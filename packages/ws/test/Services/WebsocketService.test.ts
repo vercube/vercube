@@ -255,6 +255,19 @@ describe('WebsocketService', () => {
     expect(await (response as Response).text()).toBe('Unauthorized');
   });
 
+  it.each(['/CHAT', '/Chat'])('runs the connection guard for a differently cased path %s', async (path) => {
+    const callback = vi.fn().mockResolvedValue(false);
+    service.registerNamespace('/Chat');
+    service.registerHandler(WebsocketTypes.HandlerAction.CONNECTION, '/Chat', { callback });
+    service.initialize();
+
+    const hooks = getHooks(service, container.get(HttpServer));
+    const response = await hooks?.upgrade?.(new Request(`http://localhost${path}`));
+
+    expect(callback).toHaveBeenCalledTimes(1);
+    expect((response as Response).status).toBe(403);
+  });
+
   it('rejects upgrade when the connection handler throws', async () => {
     service.registerNamespace('/chat');
     service.registerHandler(WebsocketTypes.HandlerAction.CONNECTION, '/chat', {

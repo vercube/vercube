@@ -226,7 +226,7 @@ export class WebsocketService {
           return new Response('Namespace not registered', { status: 403 });
         }
 
-        const handler = this.fHandlers[WebsocketTypes.HandlerAction.CONNECTION]?.[namespace];
+        const handler = this.fHandlers[WebsocketTypes.HandlerAction.CONNECTION]?.[namespace.toLowerCase()];
 
         if (handler) {
           try {
