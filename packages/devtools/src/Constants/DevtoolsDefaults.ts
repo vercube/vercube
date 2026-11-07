@@ -20,6 +20,12 @@ export const DEFAULT_DEVTOOLS_OPTIONS: Omit<DevtoolsTypes.ResolvedOptions, 'enab
 export const DEVTOOLS_TOKEN_COOKIE = 'vercube_devtools_token';
 
 /**
+ * Header every state-changing devtools request must carry. A browser cannot
+ * add it to a cross-site request without a CORS preflight.
+ */
+export const DEVTOOLS_REQUEST_HEADER = 'x-devtools-request';
+
+/**
  * Content types previewed as text. Everything else is recorded as binary.
  */
 export const TEXT_CONTENT_TYPES: readonly string[] = [

@@ -159,12 +159,13 @@ export class DevtoolsController {
   }
 
   /**
-   * Empties a signal buffer.
+   * Empties a signal buffer. POST, because it changes something: a GET could
+   * be fired cross-site by any `<img>` tag.
    *
    * @param kind - `traces`, `metrics` or `logs`
    * @returns Acknowledgement
    */
-  @Get('/api/signals/:kind/clear')
+  @Post('/api/signals/:kind/clear')
   @SetHeader('Cache-Control', 'no-store')
   public clearSignals(@Param('kind') kind: string): { ok: boolean } {
     this.assertSignal(kind);

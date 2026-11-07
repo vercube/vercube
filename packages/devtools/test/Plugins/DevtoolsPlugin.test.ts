@@ -107,6 +107,57 @@ describe('DevtoolsPlugin', () => {
     expect(withHeader.status).toBe(200);
   });
 
+  it('should reject tokens shorter or longer than the configured one', async () => {
+    const app = await createDevtoolsApp({ token: 's3cret' });
+
+    for (const candidate of ['s', 's3cre', 's3cret!', 's3cret'.repeat(20)]) {
+      const response = await devtoolsFetch(app, '/_devtools/api/overview', { headers: { 'x-devtools-token': candidate } });
+      expect(response.status).toBe(401);
+    }
+  });
+
+  it('should reject state-changing calls that lack the devtools header, even without a token', async () => {
+    const app = await createDevtoolsApp();
+
+    const response = await devtoolsFetch(app, '/_devtools/api/signals/logs/clear', { method: 'POST' });
+
+    expect(response.status).toBe(403);
+  });
+
+  it('should reject state-changing calls that a browser marks as cross-site', async () => {
+    const app = await createDevtoolsApp();
+    const write = (headers: Record<string, string>): Promise<Response> =>
+      devtoolsFetch(app, '/_devtools/api/signals/logs/clear', {
+        method: 'POST',
+        headers: { 'x-devtools-request': '1', ...headers },
+      });
+
+    expect((await write({ 'sec-fetch-site': 'cross-site' })).status).toBe(403);
+    expect((await write({ 'sec-fetch-site': 'same-site' })).status).toBe(403);
+    expect((await write({ origin: 'https://evil.example' })).status).toBe(403);
+    expect((await write({ origin: 'null' })).status).toBe(403);
+
+    expect((await write({ 'sec-fetch-site': 'same-origin', origin: 'http://localhost' })).status).toBe(200);
+    expect((await write({ origin: 'http://localhost' })).status).toBe(200);
+    expect((await write({})).status).toBe(200);
+  });
+
+  it('should accept the token header in place of the devtools header on writes', async () => {
+    const app = await createDevtoolsApp({ token: 's3cret' });
+
+    const viaCookie = await devtoolsFetch(app, '/_devtools/api/signals/logs/clear', {
+      method: 'POST',
+      headers: { cookie: 'vercube_devtools_token=s3cret' },
+    });
+    expect(viaCookie.status).toBe(403);
+
+    const viaHeader = await devtoolsFetch(app, '/_devtools/api/signals/logs/clear', {
+      method: 'POST',
+      headers: { 'x-devtools-token': 's3cret' },
+    });
+    expect(viaHeader.status).toBe(200);
+  });
+
   it('should answer unknown devtools endpoints with a 404', async () => {
     const app = await createDevtoolsApp();
 
