@@ -12,19 +12,12 @@ import { Flag } from '../Decorators/Flag';
 import { RECIPES } from '../Recipes/Catalog';
 import { RecipeError } from '../Recipes/RecipeError';
 import { resolveInitPlan } from '../Scaffold/Plan';
+import { addRecipeFlags, logger, prompter, readRecipeFlags } from '../Scaffold/Prompter';
 import { formatSummary, scaffoldProject } from '../Scaffold/Scaffold';
 import { TEMPLATES } from '../Scaffold/Templates';
 import { vercubeIcon } from '../Utils/Logo';
-import type { Choice, Prompter } from '../Scaffold/Plan';
 
 /* eslint-disable unicorn/no-process-exit */
-
-const logger = consola.withTag(colors.whiteBright(colors.bold(colors.bgGreenBright(' vercube '))));
-
-/** The flags of recipe questions, such as `--queue`, added below the class. */
-const RECIPE_FLAGS = [
-  ...new Map(RECIPES.flatMap((recipe) => recipe.prompts ?? []).map((prompt) => [prompt.flag, prompt])).values(),
-];
 
 /**
  * Scaffolds a new Vercube project: a base template, the chosen modules wired
@@ -118,7 +111,7 @@ export class InitCommand extends BaseCommand {
           modules: this.modules,
           deploy: this.deploy,
           packageManager: this.packageManager,
-          flags: Object.fromEntries(RECIPE_FLAGS.map((prompt) => [prompt.flag, (this as any)[recipeFlagProperty(prompt.flag)]])),
+          flags: readRecipeFlags(this),
           yes: this.yes,
           interactive,
         },
@@ -196,24 +189,8 @@ export class InitCommand extends BaseCommand {
   }
 }
 
-/**
- * The property a recipe flag is stored under on the command.
- *
- * @param {string} flag - The flag name
- * @returns {string} The property
- */
-function recipeFlagProperty(flag: string): string {
-  return `recipe:${flag}`;
-}
-
 // one string flag per recipe question, `--queue`, `--scheduler-store` and so on
-for (const prompt of RECIPE_FLAGS) {
-  Flag({
-    name: prompt.flag,
-    description: `${prompt.message.replace(/\?$/, '')} (${prompt.options.map((option) => option.value).join(', ')})`,
-    type: 'string',
-  })(InitCommand.prototype, recipeFlagProperty(prompt.flag));
-}
+addRecipeFlags(InitCommand.prototype);
 
 /**
  * The package manager running the CLI, from the user agent it sets.
@@ -222,34 +199,4 @@ for (const prompt of RECIPE_FLAGS) {
  */
 function detectPackageManager(): string {
   return process.env.npm_config_user_agent?.split('/')[0] || 'pnpm';
-}
-
-/** Asks the questions in the terminal, through consola. */
-const prompter: Prompter = {
-  text: (message, defaultValue) =>
-    logger.prompt(message, {
-      type: 'text',
-      placeholder: defaultValue,
-      default: defaultValue,
-      cancel: 'reject',
-    }) as Promise<string>,
-  select: async (message, choices, initial) =>
-    value(await logger.prompt(message, { type: 'select', options: choices, initial, cancel: 'reject' })),
-  multiselect: async (message, choices, initial) =>
-    (
-      (await logger.prompt(message, { type: 'multiselect', options: choices, initial, required: false, cancel: 'reject' })) as (
-        | Choice
-        | string
-      )[]
-    ).map((choice) => value(choice)),
-};
-
-/**
- * The value of an answer, which consola returns as the option or its value.
- *
- * @param {Choice | string} choice - The answer
- * @returns {string} The value
- */
-function value(choice: Choice | string): string {
-  return typeof choice === 'string' ? choice : choice.value;
 }

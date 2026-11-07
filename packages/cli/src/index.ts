@@ -5,6 +5,7 @@ import { BaseCommand } from './BaseCommand';
 import { createCliContainer } from './CliContainer';
 import { loadUserCommands } from './CommandLoader';
 import { CommandRegistry } from './CommandRegistry';
+import { AddCommand } from './Commands/Add';
 import { BuildCommand } from './Commands/Build';
 import { DevCommand } from './Commands/Dev';
 import { FetchCommand } from './Commands/Fetch';
@@ -16,6 +17,7 @@ const container = createCliContainer();
 const registry = container.resolve(CommandRegistry);
 
 // Register built-in commands
+registry.register(AddCommand);
 registry.register(BuildCommand);
 registry.register(DevCommand);
 registry.register(InitCommand);
