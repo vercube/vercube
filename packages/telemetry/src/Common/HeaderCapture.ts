@@ -1,7 +1,10 @@
+import { isSecretKey } from '@vercube/core';
 import type { Attributes, Span } from '@opentelemetry/api';
 
 /**
  * Headers whose values are never recorded, whatever the configuration says.
+ * Any other header whose name looks like a credential (see `isSecretKey`) is
+ * withheld as well.
  *
  * A recorded `Authorization` header is a leaked credential the moment the trace
  * leaves the process, and an inspector screenshot is enough. The names are
@@ -16,6 +19,13 @@ const ALWAYS_REDACTED: ReadonlySet<string> = new Set([
   'x-auth-token',
   'x-csrf-token',
 ]);
+
+/**
+ * Header names reach us lowercased, so the camelCase boundaries `isSecretKey`
+ * relies on are gone (`x-accessToken` arrives as `x-accesstoken`). This matches
+ * credential words as plain substrings to catch those.
+ */
+const SECRET_SUBSTRING = /token|secret|passw(?:or)?d|credential|api-?key|access-?key|private-?key|secret-?key/;
 
 /** Placeholder written in place of a withheld value. */
 const REDACTED = '<redacted>';
@@ -44,7 +54,10 @@ export function addHeadersEvent(span: Span, name: string, headers: Headers, extr
   for (const [key, value] of headers) {
     const lower = key.toLowerCase();
 
-    attributes[lower] = ALWAYS_REDACTED.has(lower) || extraRedacted.has(lower) ? REDACTED : value;
+    attributes[lower] =
+      ALWAYS_REDACTED.has(lower) || isSecretKey(lower) || SECRET_SUBSTRING.test(lower) || extraRedacted.has(lower)
+        ? REDACTED
+        : value;
   }
 
   span.addEvent(name, attributes);
