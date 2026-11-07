@@ -94,7 +94,7 @@ describe('BaseLogger', () => {
         node = node.cause;
         levels++;
       }
-      expect(levels).toBe(4);
+      expect(levels).toBe(5);
       expect(node.stack).toBeUndefined();
     });
 
