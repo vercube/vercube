@@ -339,18 +339,26 @@ export class Container {
       return;
     }
 
-    // auto-initialize all singletons to make sure @Listen() decorator will work on those types
-    const values = [...this.fNewQueue.values()];
-    for (const def of values) {
+    // auto-initialize all singletons to make sure @Listen() decorator will work on those types.
+    // Each entry leaves the queue as soon as it is done, so when a service throws, a later
+    // flush only does the work that is left instead of initializing decorators twice.
+    const entries = [...this.fNewQueue.entries()];
+    for (const [key, def] of entries) {
+      // already handled by a nested flush, or rebound since the snapshot
+      if (this.fNewQueue.get(key) !== def) {
+        continue;
+      }
+
       if (def.type !== IOC.ServiceFactoryType.CLASS_SINGLETON) {
+        this.fNewQueue.delete(key);
         continue;
       }
 
       const instance = this.internalResolve(def);
+      // dequeue before the decorators run, so a decorator that flushes again does not revisit it
+      this.fNewQueue.delete(key);
       initializeDecorators(instance, this);
     }
-
-    this.fNewQueue.clear();
   }
 
   /**
