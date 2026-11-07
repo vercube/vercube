@@ -5,7 +5,6 @@ import PageHeader from './PageHeader.vue';
 import ParticleField from './ParticleField.vue';
 import ProcessBand from './ProcessBand.vue';
 import TrafficBand from './TrafficBand.vue';
-import VercubeMark from './VercubeMark.vue';
 import type { LogEntry, MetricsSample, Overview, RequestRecord } from '../api';
 
 const props = defineProps<{
@@ -187,14 +186,19 @@ onMounted(reloadAll);
       <div class="veil" />
 
       <div class="content">
-        <span class="eyebrow slug">Inspecting</span>
+        <p class="kicker">
+          <span>Inspecting</span>
+          <template v-if="data?.version">
+            <span class="sep">·</span>
+            <span>v{{ data.version }}</span>
+          </template>
+          <template v-if="mode">
+            <span class="sep">·</span>
+            <b :class="{ prod: data?.production }">{{ mode }}</b>
+          </template>
+        </p>
 
-        <div class="name">
-          <VercubeMark class="mark" />
-          <h2 class="display">{{ data?.name ?? 'Vercube' }}</h2>
-          <span v-if="data?.version" class="tag">v{{ data.version }}</span>
-          <span v-if="mode" class="tag" :class="data?.production ? 'amber' : 'accent'">{{ mode }}</span>
-        </div>
+        <h2 class="display title">{{ data?.name ?? 'Vercube' }}<span class="dot">.</span></h2>
 
         <dl v-if="data" class="facts">
           <div>
@@ -219,7 +223,13 @@ onMounted(reloadAll);
 
     <template v-if="data">
       <section class="strip">
-        <button v-for="group in groups" :key="group.label" class="cell" type="button" @click="$emit('navigate', group.tab)">
+        <button
+          v-for="group in groups"
+          :key="group.label"
+          class="cell cross-tl"
+          type="button"
+          @click="$emit('navigate', group.tab)"
+        >
           <span class="label">
             {{ group.label }}
             <svg viewBox="0 0 24 24" class="go" aria-hidden="true">
@@ -242,7 +252,7 @@ onMounted(reloadAll);
           </span>
         </button>
 
-        <div class="cell static">
+        <div class="cell static cross-tl">
           <span class="label">Extensions</span>
 
           <span class="rows wide">
@@ -259,7 +269,7 @@ onMounted(reloadAll);
       <ProcessBand :samples="metrics" />
 
       <section class="split">
-        <div class="surface feed">
+        <div class="surface feed cross-tl">
           <div class="surface-head">
             <span class="label">Recent requests</span>
             <button class="btn ghost" type="button" @click="$emit('navigate', 'requests')">Open inspector</button>
@@ -296,7 +306,7 @@ onMounted(reloadAll);
           </div>
         </div>
 
-        <div class="surface feed">
+        <div class="surface feed cross-tl">
           <div class="surface-head">
             <span class="label">Recent logs</span>
             <button class="btn ghost" type="button" @click="$emit('navigate', 'logs')">Open logs</button>
@@ -339,7 +349,8 @@ onMounted(reloadAll);
   display: flex;
   flex-direction: column;
   padding: 0;
-  overflow: hidden;
+  overflow: clip;
+  overflow-clip-margin: 4px;
 }
 
 p.error {
@@ -356,61 +367,87 @@ p.error {
   position: relative;
   flex: none;
   overflow: hidden;
-  height: 172px;
+  height: 212px;
   display: flex;
   align-items: flex-end;
   border-bottom: 1px solid var(--edge);
-  background: #060608;
+  background: #000;
 }
 
-.particles {
-  mask-image: radial-gradient(ellipse 78% 96% at 62% 42%, #000 34%, transparent 100%);
+/* Drawn on a canvas as tall as the vercube.dev hero and cropped by the band,
+   so the dots and waves come out at the same scale as on the site. */
+.masthead .particles {
+  inset: auto 0 auto 0;
+  top: -280px;
+  height: 640px;
 }
 
 .veil {
   position: absolute;
   inset: 0;
+  /* The veil of the vercube.dev heroes: flat black over the field, deeper
+     under the text. */
   background:
-    linear-gradient(90deg, rgba(6, 6, 8, 0.94) 8%, rgba(6, 6, 8, 0.6) 44%, transparent 78%),
-    linear-gradient(0deg, rgba(6, 6, 8, 0.7), transparent 55%);
+    radial-gradient(ellipse 50% 90% at 18% 70%, rgb(0 0 0 / 0.75), transparent 80%),
+    linear-gradient(0deg, rgb(0 0 0 / 0.55), transparent 60%), rgb(0 0 0 / 0.45);
 }
 
 .content {
   position: relative;
-  padding: 16px 20px;
+  padding: 20px 24px 22px;
   width: 100%;
 }
 
-.name {
+/* Same as the kicker of the vercube.dev page heroes. */
+.kicker {
   display: flex;
-  align-items: center;
   gap: 10px;
-  flex-wrap: wrap;
-  margin-top: 7px;
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-2);
 }
 
-.mark {
-  width: 19px;
-  height: 22px;
-  flex: none;
+.kicker .sep {
+  color: var(--text-3);
 }
 
-.name h2 {
-  font-size: 25px;
-  line-height: 1.1;
-  color: #ffffff;
+.kicker b {
+  font-weight: 400;
+  color: var(--brand);
+}
+
+.kicker b.prod {
+  color: var(--warn);
+}
+
+.title {
+  margin-top: 10px;
+  font-size: 44px;
+  line-height: 1.05;
+  color: #fafafa;
+  text-shadow: 0 4px 24px rgb(0 0 0 / 0.5);
+}
+
+.title .dot {
+  color: var(--brand);
 }
 
 .facts {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 28px;
-  margin: 14px 0 0;
+  gap: 4px 32px;
+  margin: 18px 0 0;
 }
 
 .facts dt {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.42);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
 }
 
 .facts dd {
@@ -430,8 +467,8 @@ p.error {
 }
 
 :root[data-theme='light'] .masthead .accent {
-  background: rgba(187, 79, 255, 0.22);
-  border-color: rgba(187, 79, 255, 0.5);
+  background: rgba(188, 78, 255, 0.22);
+  border-color: rgba(188, 78, 255, 0.5);
   color: #e9c9ff;
 }
 
@@ -444,6 +481,7 @@ p.error {
 }
 
 .cell {
+  position: relative;
   display: grid;
   gap: 10px;
   padding: 12px 16px 14px;
@@ -468,10 +506,13 @@ p.error {
 .label {
   display: flex;
   align-items: center;
-  gap: 5px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-2);
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
 }
 
 .go {
@@ -559,6 +600,7 @@ p.error {
 }
 
 .feed {
+  position: relative;
   border-right: 1px solid var(--edge);
 }
 
@@ -646,8 +688,8 @@ p.error {
     gap: 4px 20px;
   }
 
-  .name h2 {
-    font-size: 21px;
+  .title {
+    font-size: 30px;
   }
 }
 </style>

@@ -9,7 +9,7 @@ defineEmits<{ reload: [] }>();
 </script>
 
 <template>
-  <header class="topbar">
+  <header class="topbar cross-bl">
     <div class="title">
       <h1>{{ title }}</h1>
       <span v-if="meta" class="meta">{{ meta }}</span>
@@ -55,13 +55,16 @@ defineEmits<{ reload: [] }>();
 }
 
 .title h1 {
-  font-size: 15px;
-  font-weight: 500;
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
   white-space: nowrap;
 }
 
 .meta {
-  font-size: 11.5px;
+  font-family: var(--mono);
+  font-size: 11px;
   color: var(--text-3);
   white-space: nowrap;
   overflow: hidden;
