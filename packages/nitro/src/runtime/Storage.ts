@@ -62,39 +62,47 @@ export class NitroStorageManager extends StorageManager {
   /**
    * Describes every storage nitro has mounted.
    *
-   * Keys of the root storage exclude those held by a named mount, which is
-   * listed on its own. A mount whose keys cannot be listed reports `null`.
+   * The root storage lists every mount's keys under its prefix, so it is
+   * listed once and each key goes to the mount with the longest matching
+   * prefix: a nested mount's keys are not counted again in its parent.
+   * unstorage cannot stop a listing early, so `maxKeys` only caps the result.
+   * When the listing fails, every mount reports `null`.
    * @param {StorageTypes.DescribeOptions} [options] - Listing limits
    * @returns {Promise<StorageTypes.Description>} One entry per mount
    */
   public override async describe(options: StorageTypes.DescribeOptions = {}): Promise<StorageTypes.Description> {
     const maxKeys = options.maxKeys ?? 250;
     const root = useStorage();
-    const named = this.nitroMounts();
-    const prefixes = named.map((mount) => mount.base);
+    const entries = [{ name: 'default', base: '', driver: root.getMount('').driver }, ...this.nitroMounts()];
 
-    const entries = [{ name: 'default', base: '', driver: root.getMount('').driver }, ...named];
+    let owned: Map<string, string[]> | null = null;
 
-    const mounts = await Promise.all(
-      entries.map(async ({ name, base, driver }) => {
-        let keys: string[] | null = null;
+    try {
+      const listed = await root.getKeys();
+      // longest prefix first, so a key lands in the most specific mount
+      const byPrefix = [...entries].sort((a, b) => b.base.length - a.base.length);
 
-        try {
-          const listed = await this.getStorage(name)!.getKeys();
-          keys = base === '' ? listed.filter((key) => !prefixes.some((prefix) => key.startsWith(prefix))) : listed;
-        } catch {
-          keys = null;
-        }
+      owned = new Map(entries.map((entry) => [entry.name, []]));
 
-        return {
-          name,
-          driver: driver?.name ?? 'Storage',
-          size: keys ? keys.length : null,
-          keys: keys ? keys.slice(0, maxKeys) : null,
-          truncated: keys ? keys.length > maxKeys : false,
-        };
-      }),
-    );
+      for (const key of listed) {
+        const mount = byPrefix.find((entry) => key.startsWith(entry.base))!;
+        owned.get(mount.name)!.push(key.slice(mount.base.length));
+      }
+    } catch {
+      owned = null;
+    }
+
+    const mounts = entries.map(({ name, driver }) => {
+      const keys = owned?.get(name) ?? null;
+
+      return {
+        name,
+        driver: driver?.name ?? 'Storage',
+        size: keys ? keys.length : null,
+        keys: keys ? keys.slice(0, maxKeys) : null,
+        truncated: keys ? keys.length > maxKeys : false,
+      };
+    });
 
     return { mounts };
   }
@@ -205,14 +213,16 @@ export class NitroStorageManager extends StorageManager {
   }
 
   /**
-   * The storages mounted in nitro.config.ts, without the root storage.
+   * The storages mounted in nitro.config.ts, without the root storage. A mount
+   * named `default` is left out too: `getStorage('default')` reads the root
+   * storage, so its keys are listed there under their `default:` prefix.
    * @returns Each mount's name, key prefix and driver
    * @private
    */
   private nitroMounts(): { name: string; base: string; driver: { name?: string } | undefined }[] {
     return useStorage()
       .getMounts()
-      .filter((mount) => mount.base !== '')
+      .filter((mount) => mount.base !== '' && mount.base !== 'default:')
       .map((mount) => ({ name: mount.base.replace(/:$/, ''), base: mount.base, driver: mount.driver }))
       .sort((a, b) => a.name.localeCompare(b.name));
   }

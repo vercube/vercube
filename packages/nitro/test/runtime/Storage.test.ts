@@ -40,6 +40,10 @@ describe('NitroStorageManager', () => {
     mockStorage.getItems.mockResolvedValue([{ value: 'a' }, { value: 'b' }]);
     mockStorage.hasItem.mockResolvedValue(true);
     mockStorage.getKeys.mockResolvedValue(['key1', 'key2']);
+    mockStorage.getMounts.mockReturnValue([
+      { base: 'mystore:', driver: { name: 'fs' } },
+      { base: '', driver: { name: 'memory' } },
+    ]);
   });
 
   describe('mount()', () => {
@@ -184,10 +188,8 @@ describe('NitroStorageManager', () => {
   });
 
   describe('describe()', () => {
-    it('should describe every nitro mount', async () => {
-      mockStorage.getKeys.mockImplementation(async () =>
-        (useStorage as any).mock.lastCall?.[0] === 'mystore' ? ['a', 'b', 'c'] : ['root1', 'mystore:a', 'mystore:b', 'mystore:c'],
-      );
+    it('should describe every nitro mount from a single listing', async () => {
+      mockStorage.getKeys.mockResolvedValue(['root1', 'mystore:a', 'mystore:b', 'mystore:c']);
       const manager = makeManager();
 
       const { mounts } = await manager.describe();
@@ -196,10 +198,42 @@ describe('NitroStorageManager', () => {
         { name: 'default', driver: 'memory', size: 1, keys: ['root1'], truncated: false },
         { name: 'mystore', driver: 'fs', size: 3, keys: ['a', 'b', 'c'], truncated: false },
       ]);
+      expect(mockStorage.getKeys).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not count a nested mount in its parent', async () => {
+      mockStorage.getMounts.mockReturnValue([
+        { base: 'cache:nested:', driver: { name: 'redis' } },
+        { base: 'cache:', driver: { name: 'memory' } },
+        { base: '', driver: { name: 'memory' } },
+      ]);
+      mockStorage.getKeys.mockResolvedValue(['cache:a', 'cache:nested:b', 'cache:nested:c']);
+      const manager = makeManager();
+
+      const { mounts } = await manager.describe();
+
+      expect(mounts.map(({ name, size, keys }) => ({ name, size, keys }))).toEqual([
+        { name: 'default', size: 0, keys: [] },
+        { name: 'cache', size: 1, keys: ['a'] },
+        { name: 'cache:nested', size: 2, keys: ['b', 'c'] },
+      ]);
+    });
+
+    it('should list a mount named default under the root storage', async () => {
+      mockStorage.getMounts.mockReturnValue([
+        { base: 'default:', driver: { name: 'fs' } },
+        { base: '', driver: { name: 'memory' } },
+      ]);
+      mockStorage.getKeys.mockResolvedValue(['root1', 'default:a']);
+      const manager = makeManager();
+
+      expect(manager.mounts).toEqual(['default']);
+      const { mounts } = await manager.describe();
+      expect(mounts).toEqual([{ name: 'default', driver: 'memory', size: 2, keys: ['root1', 'default:a'], truncated: false }]);
     });
 
     it('should cap the keys and keep the full count', async () => {
-      mockStorage.getKeys.mockResolvedValue(['k1', 'k2', 'k3']);
+      mockStorage.getKeys.mockResolvedValue(['mystore:k1', 'mystore:k2', 'mystore:k3']);
       const manager = makeManager();
 
       const { mounts } = await manager.describe({ maxKeys: 2 });
@@ -207,7 +241,7 @@ describe('NitroStorageManager', () => {
       expect(mounts[1]).toEqual({ name: 'mystore', driver: 'fs', size: 3, keys: ['k1', 'k2'], truncated: true });
     });
 
-    it('should report null when a mount cannot be listed', async () => {
+    it('should report null when the storage cannot be listed', async () => {
       mockStorage.getKeys.mockRejectedValue(new Error('down'));
       const manager = makeManager();
 
