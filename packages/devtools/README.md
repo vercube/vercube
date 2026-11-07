@@ -123,6 +123,10 @@ cookie and drops it from the URL, so it is not repeated in later requests,
 the UI page — API endpoints require the header or the cookie, so the token
 never reaches an API URL in an access log.
 
+Endpoints that change state (clearing a buffer, running a scheduled job) are
+`POST` only and require an `x-devtools-request` or `x-devtools-token` header
+from the same origin, even without a token, so another site cannot trigger them.
+
 Check out the full [documentation](https://vercube.dev/docs/modules/devtools/overview) and the [configuration reference](https://vercube.dev/docs/modules/devtools/configuration).
 
 ## 📜 License

@@ -263,9 +263,21 @@ describe('devtools API', () => {
 
     expect(spansOf(await devtoolsJson(app, '/_devtools/api/signals/traces')).length).toBeGreaterThan(0);
 
-    await devtoolsFetch(app, '/_devtools/api/signals/traces/clear');
+    await devtoolsFetch(app, '/_devtools/api/signals/traces/clear', { method: 'POST', headers: { 'x-devtools-request': '1' } });
 
     expect(spansOf(await devtoolsJson(app, '/_devtools/api/signals/traces'))).toEqual([]);
+  });
+
+  it('does not clear a signal buffer over GET or without the devtools header', async () => {
+    const app = await createDemoApp();
+    await app.fetch(new Request('http://localhost/demo/ok'));
+    await settle();
+
+    // An <img src> pointing at the old GET endpoint must not wipe anything.
+    expect((await devtoolsFetch(app, '/_devtools/api/signals/traces/clear')).status).toBe(405);
+    expect((await devtoolsFetch(app, '/_devtools/api/signals/traces/clear', { method: 'POST' })).status).toBe(403);
+
+    expect(spansOf(await devtoolsJson(app, '/_devtools/api/signals/traces')).length).toBeGreaterThan(0);
   });
 
   it('clears the log and metric buffers too', async () => {
@@ -273,8 +285,18 @@ describe('devtools API', () => {
     await app.fetch(new Request('http://localhost/demo/chatty'));
     await settle();
 
-    expect((await devtoolsFetch(app, '/_devtools/api/signals/logs/clear')).status).toBe(200);
-    expect((await devtoolsFetch(app, '/_devtools/api/signals/metrics/clear')).status).toBe(200);
+    expect(
+      (await devtoolsFetch(app, '/_devtools/api/signals/logs/clear', { method: 'POST', headers: { 'x-devtools-request': '1' } }))
+        .status,
+    ).toBe(200);
+    expect(
+      (
+        await devtoolsFetch(app, '/_devtools/api/signals/metrics/clear', {
+          method: 'POST',
+          headers: { 'x-devtools-request': '1' },
+        })
+      ).status,
+    ).toBe(200);
 
     const payload = (await devtoolsJson(app, '/_devtools/api/signals/logs')) as { resourceLogs: unknown[] };
 
@@ -443,13 +465,20 @@ describe('devtools API', () => {
       setup.container.get(SchedulerManager);
     });
 
-    const response = await devtoolsFetch(app, '/_devtools/api/scheduler/run/reports.build', { method: 'POST' });
+    const response = await devtoolsFetch(app, '/_devtools/api/scheduler/run/reports.build', {
+      method: 'POST',
+      headers: { 'x-devtools-request': '1' },
+    });
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ outcome: 'completed', occurrenceId: 'reports.build@manual:1', durationMs: 3 });
     expect(triggered).toEqual(['reports.build']);
 
     expect((await devtoolsFetch(app, '/_devtools/api/scheduler/run/reports.build')).status).toBe(405);
+    expect(triggered).toHaveLength(1);
+
+    // A plain cross-site form post carries no custom header and must not run the job.
+    expect((await devtoolsFetch(app, '/_devtools/api/scheduler/run/reports.build', { method: 'POST' })).status).toBe(403);
     expect(triggered).toHaveLength(1);
   });
 });
