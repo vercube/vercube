@@ -29,7 +29,12 @@ export interface SchemaScalarOptions {
   /** HTML page title. @default 'API Reference' */
   pageTitle?: string;
 
-  /** CDN URL for the Scalar bundle. Uses Scalar default when omitted. */
+  /**
+   * URL of the Scalar bundle (`@scalar/api-reference` standalone build). Point
+   * it at your own host to serve the UI without a public CDN. The script is
+   * allowed by the page's Content-Security-Policy through this URL's origin.
+   * @default a pinned jsDelivr URL, loaded with an integrity hash
+   */
   cdn?: string;
 
   /** Additional Scalar configuration (theme, layout, etc.). */
