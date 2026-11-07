@@ -81,6 +81,23 @@ describe('BaseLogger', () => {
       expect(arg.error.cause.cause).toEqual({ name: 'Error', message: 'a' });
     });
 
+    it('keeps non-Error causes and caps cause depth', () => {
+      logger.error(new Error('x', { cause: 'plain' }));
+      expect(log.error.mock.calls[0][0].error.cause).toBe('plain');
+
+      let deep: Error = new Error('e0');
+      for (let i = 1; i < 10; i++) deep = new Error(`e${i}`, { cause: deep });
+      logger.error(deep);
+      let node = log.error.mock.calls[1][0].error;
+      let levels = 0;
+      while (node.cause) {
+        node = node.cause;
+        levels++;
+      }
+      expect(levels).toBe(4);
+      expect(node.stack).toBeUndefined();
+    });
+
     it('merges a tag with an Error', () => {
       logger.error('Storage::init', new Error('disk'));
       const arg = log.error.mock.calls[0][0];
