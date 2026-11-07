@@ -3,12 +3,14 @@ import {
   buildImport,
   extendsSuperClass,
   extractDecoratorArg,
+  findDecoratorArg,
   extractParams,
   getClassNode,
   hasDecorator,
   normalizePath,
+  readStaticString,
 } from './Ast';
-import type { MiddlewareInfo, RouteInfo, ServiceInfo } from './Types';
+import type { MiddlewareInfo, RouteInfo, ScanLogger, ServiceInfo } from './Types';
 
 /**
  * Placeholder module specifier embedded in generated route imports.
@@ -49,10 +51,14 @@ const HTTP_METHODS: Record<string, string> = {
  * `@Patch`, `@Options`, `@Head`) and constructs full route paths by concatenating
  * the controller base path with the method-level path.
  *
+ * Paths given as string literals or template literals without expressions are supported.
+ * A route whose controller or method path cannot be read statically is skipped with a warning.
+ *
  * @param code - The raw TypeScript or JavaScript source code string to analyze.
+ * @param logger - Optional logger used to warn about paths that cannot be read statically.
  * @returns An array of {@link RouteInfo} objects representing all discovered routes.
  */
-export function extractRoutes(code: string): RouteInfo[] {
+export function extractRoutes(code: string, logger?: ScanLogger): RouteInfo[] {
   const ast = parseSync('file.ts', code).program;
   const routes: RouteInfo[] = [];
 
@@ -62,11 +68,17 @@ export function extractRoutes(code: string): RouteInfo[] {
 
     const { classNode, isDefault } = classInfo;
 
-    const basePath = extractDecoratorArg(classNode.decorators, 'Controller');
-    if (basePath === null) continue;
+    const controller = findDecoratorArg(classNode.decorators, 'Controller');
+    if (controller === null) continue;
 
     const className = classNode.id?.name;
     if (!className) continue;
+
+    const basePath = controller.value;
+    if (basePath === null) {
+      (logger ?? console).warn(`Path of controller ${className} is not a string literal, its routes are skipped.`);
+      continue;
+    }
 
     const importStatement = buildImport(className, IMPORT_SOURCE, isDefault);
 
@@ -81,7 +93,12 @@ export function extractRoutes(code: string): RouteInfo[] {
         if (!method) continue;
 
         const arg = expr.arguments?.[0];
-        const path = arg?.type === 'Literal' && typeof arg.value === 'string' ? arg.value : '';
+        const path = arg === undefined ? '' : readStaticString(arg);
+        if (path === null) {
+          const methodName = member.key?.name ?? 'method';
+          (logger ?? console).warn(`Path of ${className}.${methodName} is not a string literal, route skipped.`);
+          continue;
+        }
         const fullRoute = normalizePath(basePath + path);
 
         routes.push({
