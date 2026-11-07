@@ -107,7 +107,7 @@ describe('DevtoolsPlugin', () => {
     expect(withHeader.status).toBe(200);
   });
 
-  it('should reject a token of a different length without short-circuiting', async () => {
+  it('should reject tokens shorter or longer than the configured one', async () => {
     const app = await createDevtoolsApp({ token: 's3cret' });
 
     for (const candidate of ['s', 's3cre', 's3cret!', 's3cret'.repeat(20)]) {
