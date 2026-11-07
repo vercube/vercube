@@ -57,6 +57,14 @@ describe('resolveRecipes', () => {
       'cycle: a -> b -> a',
     );
     expect(() => resolveRecipes(['a'], [recipe('a', { requires: ['ghost'] })])).toThrow('requires "ghost"');
+    expect(() => resolveRecipes(['a'], [recipe('a'), recipe('a')])).toThrow('Two recipes share the id a');
+  });
+
+  it('should ask a recipe for its requirements once', () => {
+    let calls = 0;
+    const flaky = recipe('flaky', { requires: () => (calls++ === 0 ? ['schema'] : ['ghost']) });
+
+    expect(resolveRecipes(['flaky'], [recipe('schema'), flaky]).recipes.map((r) => r.id)).toEqual(['schema', 'flaky']);
   });
 });
 
@@ -121,6 +129,31 @@ describe('applyRecipes', () => {
       snapshot,
     );
     expect(summary).toMatchObject({ created: [], updated: [], dependencies: [], services: [] });
+  });
+
+  it('should refuse an answer no prompt offers', async () => {
+    const offered = defineRecipe({
+      id: 'queue',
+      label: 'Queue',
+      prompts: [
+        { name: 'driver', flag: 'queue', message: '', options: [{ value: 'memory', label: 'Memory' }], default: 'memory' },
+      ],
+      apply: () => {},
+    });
+
+    await expect(applyRecipes(project(), ['queue'], [offered], { queue: { driver: 'sqs' } })).rejects.toThrow(
+      '--queue must be one of memory, got sqs.',
+    );
+  });
+
+  it('should report what each call changed', async () => {
+    const api = project();
+
+    await applyRecipes(api, ['queue'], [queue]);
+
+    const second = await applyRecipes(api, ['queue'], [queue]);
+
+    expect(second).toMatchObject({ created: [], updated: [], dependencies: [], services: [], notes: [] });
   });
 
   it('should refuse a recipe that does not fit the project before applying anything', async () => {
