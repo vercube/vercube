@@ -81,6 +81,36 @@ describe('module recipes', () => {
     );
   });
 
+  it('guards the storage and queue example endpoints with API_KEY', async () => {
+    const dir = apiTemplate();
+
+    dirs.push(dir);
+
+    await applyRecipes(new Project(dir, { version: '1.5.0' }), ['storage', 'queue'], RECIPES, {
+      queue: { driver: 'memory' },
+    });
+
+    const files = snapshot(dir);
+
+    expect(files['src/services/ApiKeyGuard.ts']).toContain('UnauthorizedError');
+    expect(files['src/controller/FilesController.ts']).toContain('requireApiKey(apiKey)');
+    expect(files['src/controller/FilesController.ts']).toContain('BadRequestError');
+    expect(files['src/controller/FilesController.ts']).toContain('examples/');
+    expect(files['src/controller/JobsController.ts']).toContain('requireApiKey(apiKey)');
+    expect(files['.env.example'].match(/^API_KEY=change-me$/gm)).toHaveLength(1);
+    expect(files['.env']).not.toContain('API_KEY=change-me');
+  });
+
+  it('shares one API_KEY with the auth recipe', async () => {
+    const dir = apiTemplate();
+
+    dirs.push(dir);
+
+    await applyRecipes(new Project(dir, { version: '1.5.0' }), ['storage', 'auth'], RECIPES);
+
+    expect(snapshot(dir)['.env'].match(/^API_KEY=/gm)).toHaveLength(1);
+  });
+
   it('adds storage for the cache and reports it', async () => {
     const dir = apiTemplate();
 

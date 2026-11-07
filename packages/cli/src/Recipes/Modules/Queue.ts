@@ -1,5 +1,5 @@
 import { defineRecipe } from '../Apply';
-import { useRedis } from './Services';
+import { useApiKeyGuard, useRedis } from './Services';
 import { IMAGES, VERSIONS } from './Versions';
 import type { Project } from '../Project';
 
@@ -19,13 +19,17 @@ export default class EmailConsumer {
 }
 `;
 
-const CONTROLLER = `import { Body, Controller, Post } from '@vercube/core';
+const CONTROLLER = `import { Body, Controller, Header, Post } from '@vercube/core';
 import { Inject } from '@vercube/di';
 import { QueueManager } from '@vercube/queue';
 import type { QueueTypes } from '@vercube/queue';
+import { requireApiKey } from '@/services/ApiKeyGuard';
 
 /**
- * curl -X POST localhost:3000/api/jobs/welcome -H 'content-type: application/json' -d '{"userId":"u-42"}'
+ * Example only: add real auth before deploying. Requests need the API_KEY of
+ * .env in an x-api-key header.
+ *
+ * curl -X POST localhost:3000/api/jobs/welcome -H "x-api-key: <API_KEY from .env>" -H 'content-type: application/json' -d '{"userId":"u-42"}'
  */
 @Controller('/api/jobs')
 export default class JobsController {
@@ -33,7 +37,12 @@ export default class JobsController {
   private gQueue!: QueueManager;
 
   @Post('/welcome')
-  public async welcome(@Body() body: { userId?: string }): Promise<QueueTypes.JobRef> {
+  public async welcome(
+    @Body() body: { userId?: string },
+    @Header('x-api-key') apiKey?: string,
+  ): Promise<QueueTypes.JobRef> {
+    requireApiKey(apiKey);
+
     return this.gQueue.add({ queue: 'emails', job: 'welcome', payload: { userId: body?.userId ?? 'anonymous' } });
   }
 }
@@ -112,6 +121,8 @@ export const queueRecipe = defineRecipe<{ driver: string }>({
     // so SIGTERM and Ctrl-C have to close the application, consumers included
     project.setConfig('shutdown', '{ handleSignals: true }');
     project.createFile('src/consumers/EmailConsumer.ts', CONSUMER);
+    useApiKeyGuard(project);
+    project.note('JobsController is an example guarded by API_KEY: add real auth before deploying');
     project.createFile('src/controller/JobsController.ts', CONTROLLER);
     project.bind({ name: 'JobsController', from: '@/controller/JobsController', default: true });
     project.bind({ name: 'EmailConsumer', from: '@/consumers/EmailConsumer', default: true });

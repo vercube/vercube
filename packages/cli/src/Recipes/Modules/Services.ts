@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { IMAGES } from './Versions';
 import type { Project } from '../Project';
 
@@ -29,4 +30,35 @@ export function usePostgres(project: Project): void {
   });
   project.addEnv({ DATABASE_URL: 'postgres://postgres:postgres@127.0.0.1:5432/app' }, 'Postgres');
   project.note('Start the local services with `docker compose up -d`');
+}
+
+/** The value `.env.example` shows for `API_KEY`, refused by the guard. */
+export const API_KEY_PLACEHOLDER = 'change-me';
+
+const API_KEY_GUARD = `import { UnauthorizedError } from '@vercube/core';
+
+/**
+ * Lets a request in when its \`x-api-key\` header matches API_KEY. A guard for
+ * the generated examples: replace it with real auth before deploying.
+ */
+export function requireApiKey(key: string | undefined): void {
+  const expected = process.env.API_KEY;
+
+  // no key configured, or the placeholder from .env.example: nobody gets in
+  if (!expected || expected === '${API_KEY_PLACEHOLDER}' || key !== expected) {
+    throw new UnauthorizedError('Invalid or missing API key');
+  }
+}
+`;
+
+/**
+ * Adds the `API_KEY` guard the generated example controllers call, and the key
+ * itself to the env files. Shared, so it is added once.
+ *
+ * @param {Project} project - The project
+ * @returns {void}
+ */
+export function useApiKeyGuard(project: Project): void {
+  project.createFile('src/services/ApiKeyGuard.ts', API_KEY_GUARD);
+  project.addEnv({ API_KEY: randomBytes(24).toString('base64url') }, 'Auth', { API_KEY: API_KEY_PLACEHOLDER });
 }

@@ -1,8 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import { defineRecipe } from '../Apply';
-
-/** The value \`.env.example\` shows for the key, refused by the provider. */
-const PLACEHOLDER = 'change-me';
+import { API_KEY_PLACEHOLDER as PLACEHOLDER } from './Services';
 
 const PROVIDER = `import { AuthProvider } from '@vercube/auth';
 import type { AuthTypes } from '@vercube/auth';
