@@ -38,7 +38,8 @@ export class StaticRequestHandler {
    */
   public async handleRequest(request: Request): Promise<void | Response> {
     // Get dirs that has to be static provided
-    const dirs = this.fOptions?.dirs ?? ([] as string[]);
+    // The default `public` merges into user dirs, so duplicates are common
+    const dirs = [...new Set(this.fOptions?.dirs ?? ([] as string[]))];
 
     // No static request was provided
     if (!dirs) {

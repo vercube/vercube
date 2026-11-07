@@ -45,4 +45,8 @@ describe('StaticRequestHandler mount prefixes', () => {
     expect(await (await get('/public/a.txt'))?.text()).toBe('a');
     expect(await get('/b.txt')).toBeUndefined();
   });
+
+  it('treats a repeated dir as a single dir', async () => {
+    expect(await (await handler(['public', 'public'])('/a.txt'))?.text()).toBe('a');
+  });
 });
