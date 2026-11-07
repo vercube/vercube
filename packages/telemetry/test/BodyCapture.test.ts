@@ -13,6 +13,11 @@ class EchoController {
     return body;
   }
 
+  @Post('/form')
+  public form(): string {
+    return 'ok';
+  }
+
   @Get('/stream')
   public stream(): Response {
     return new Response(new ReadableStream(), { headers: { 'content-type': 'text/event-stream' } });
@@ -74,6 +79,56 @@ describe('request body capture', () => {
       'body.truncated': false,
     });
     expect(bodyEvent('POST /echo/json', 'http.response.body')).toMatchObject({ 'body.text': '{"hi":true}' });
+  });
+
+  it('masks credential-named keys in a JSON request and response body', async () => {
+    await app.fetch(
+      new Request('http://localhost/echo/json', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ password: 'hunter2' }),
+      }),
+    );
+    await telemetry.settle();
+
+    expect(bodyEvent('POST /echo/json', 'http.request.body')).toMatchObject({
+      'body.text': '{"password":"<redacted>"}',
+      'body.size': 22,
+    });
+    expect(bodyEvent('POST /echo/json', 'http.response.body')).toMatchObject({
+      'body.text': '{"password":"<redacted>"}',
+    });
+  });
+
+  it('masks a secret value cut off by the cap', async () => {
+    await app.fetch(
+      new Request('http://localhost/echo/json', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ user: 'ann', password: 'hunter2-hunter2-hunter2' }),
+      }),
+    );
+    await telemetry.settle();
+
+    const event = bodyEvent('POST /echo/json', 'http.request.body')!;
+
+    expect(event['body.truncated']).toBe(true);
+    expect(event['body.text']).toBe('{"user":"ann","password":"<redacted>"');
+  });
+
+  it('masks credential-named fields in a urlencoded body', async () => {
+    await app.fetch(
+      new Request('http://localhost/echo/form', {
+        method: 'POST',
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+        body: 'grant_type=x&client_secret=s3',
+      }),
+    );
+    await telemetry.settle();
+
+    expect(bodyEvent('POST /echo/form', 'http.request.body')).toMatchObject({
+      'body.text': 'grant_type=x&client_secret=%3Credacted%3E',
+    });
   });
 
   it('truncates a body past the cap and still reports its real size', async () => {
