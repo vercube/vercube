@@ -9,7 +9,7 @@
     "build": "vercube build",
     "dev": "vercube dev",
     "plugin-info": "vercube plugin-info",
-    "tscheck": "tsc --noEmit"
+    "tscheck": "tsrs --noEmit --fast"
   },
   "license": "MIT",
   "dependencies": {
