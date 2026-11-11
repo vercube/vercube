@@ -1,3 +1,4 @@
+import { IntrospectionRegistry } from '@vercube/core';
 import { createTestApp } from '@vercube/testing';
 import { describe, expect, it } from 'vitest';
 import { SchemaPlugin } from '../../src';
@@ -16,6 +17,55 @@ describe('SchemaPlugin', () => {
     const html = await docs.text();
     expect(html).toContain('Scalar API Reference');
     expect(html).toContain('/_schema/');
+  });
+
+  describe('docs page script', () => {
+    it('should load a pinned bundle with an integrity hash', async () => {
+      await using app = await createTestApp({ plugins: [SchemaPlugin] });
+
+      const html = await (await app.get('/_schema/docs').expect(200)).text();
+
+      expect(html).toMatch(/<script src="https:\/\/cdn\.jsdelivr\.net\/npm\/@scalar\/api-reference@\d+\.\d+\.\d+\/[^"]+"/);
+      expect(html).toMatch(/integrity="sha384-[^"]+" crossorigin="anonymous"/);
+    });
+
+    it('should send a CSP that allows only the bundle origin and a matching nonce', async () => {
+      await using app = await createTestApp({ plugins: [SchemaPlugin] });
+
+      const res = await app.get('/_schema/docs').expect(200);
+      const csp = res.headers.get('content-security-policy') ?? '';
+      const html = await res.text();
+      const nonce = /'nonce-([^']+)'/.exec(csp)?.[1];
+
+      expect(nonce).toBeTruthy();
+      expect(csp).toContain('script-src');
+      expect(csp).toContain('https://cdn.jsdelivr.net');
+      expect(csp).toContain("object-src 'none'");
+      expect(html).toContain(`nonce="${nonce}"`);
+    });
+
+    it('should use a fresh nonce per response', async () => {
+      await using app = await createTestApp({ plugins: [SchemaPlugin] });
+
+      const a = (await app.get('/_schema/docs').expect(200)).headers.get('content-security-policy');
+      const b = (await app.get('/_schema/docs').expect(200)).headers.get('content-security-policy');
+
+      expect(a).not.toBe(b);
+    });
+
+    it('should honour a self-hosted cdn without an integrity hash', async () => {
+      await using app = await createTestApp({
+        plugins: [[SchemaPlugin, { scalar: { cdn: '/assets/scalar.js' } }]],
+      });
+
+      const res = await app.get('/_schema/docs').expect(200);
+      const html = await res.text();
+
+      expect(html).toContain('<script src="/assets/scalar.js"');
+      expect(html).not.toContain('integrity=');
+      expect(html).not.toContain('jsdelivr');
+      expect(res.headers.get('content-security-policy')).toContain("'self'");
+    });
   });
 
   it('should not serve Scalar when disabled in plugin options', async () => {
@@ -63,6 +113,96 @@ describe('SchemaPlugin', () => {
     expect(doc.tags).toEqual([{ name: 'pages' }]);
     expect(doc.components.securitySchemes).toEqual({
       bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+    });
+  });
+
+  describe('exposure', () => {
+    it('should not serve the endpoints in production by default', async () => {
+      await using app = await createTestApp({ config: { production: true }, plugins: [SchemaPlugin] });
+
+      await app.get('/_schema/').expect(404);
+      await app.get('/_schema/docs').expect(404);
+      expect(app.logs.find('warn', /SchemaPlugin/)).toBeUndefined();
+    });
+
+    it('should keep publishing the document to introspection when the endpoints are off', async () => {
+      await using app = await createTestApp({ plugins: [[SchemaPlugin, { enabled: false }]] });
+
+      await app.get('/_schema/').expect(404);
+
+      const section = await app.resolve(IntrospectionRegistry).describe<any>('openapi');
+      expect(section?.data.openapi).toBe('3.0.0');
+    });
+
+    it('should serve the endpoints in production when enabled and warn that they are public', async () => {
+      await using app = await createTestApp({
+        config: { production: true },
+        plugins: [[SchemaPlugin, { enabled: true }]],
+      });
+
+      await app.get('/_schema/').expect(200);
+      expect(app.logs.find('warn', /without a token/)).toBeDefined();
+    });
+
+    it('should not warn in production when a token guards the endpoints', async () => {
+      await using app = await createTestApp({
+        config: { production: true },
+        plugins: [[SchemaPlugin, { enabled: true, token: 'secret' }]],
+      });
+
+      expect(app.logs.find('warn', /without a token/)).toBeUndefined();
+    });
+
+    it('should serve the endpoints under a custom path', async () => {
+      await using app = await createTestApp({ plugins: [[SchemaPlugin, { path: '/internal/openapi/' }]] });
+
+      await app.get('/_schema/').expect(404);
+      await app.get('/internal/openapi/').expect(200);
+
+      const html = await (await app.get('/internal/openapi/docs').expect(200)).text();
+      expect(html).toContain('/internal/openapi/');
+      expect(html).not.toContain('/_schema/');
+    });
+
+    it('should fall back to the default path when the path is empty', async () => {
+      await using app = await createTestApp({ plugins: [[SchemaPlugin, { path: '/' }]] });
+
+      await app.get('/_schema/').expect(200);
+    });
+  });
+
+  describe('token', () => {
+    it('should reject requests without the token', async () => {
+      await using app = await createTestApp({ plugins: [[SchemaPlugin, { token: 'secret' }]] });
+
+      await app.get('/_schema/').expect(401);
+      await app.get('/_schema/docs').expect(401);
+      await app.get('/_schema/').header('x-schema-token', 'wrong').expect(401);
+    });
+
+    it('should accept the token in the header', async () => {
+      await using app = await createTestApp({ plugins: [[SchemaPlugin, { token: 'secret' }]] });
+
+      await app.get('/_schema/').header('x-schema-token', 'secret').expect(200);
+    });
+
+    it('should accept the token as a query parameter on the docs page only', async () => {
+      await using app = await createTestApp({ plugins: [[SchemaPlugin, { token: 'secret' }]] });
+
+      await app.get('/_schema/?token=secret').expect(401);
+
+      const html = await (await app.get('/_schema/docs?token=secret').expect(200)).text();
+      // the page carries the document, since the browser cannot fetch it without the token
+      expect(html).toMatch(/"openapi": ?"3.0.0"/);
+    });
+
+    it('should keep an explicit openApiUrl behind a token', async () => {
+      await using app = await createTestApp({
+        plugins: [[SchemaPlugin, { token: 'secret', scalar: { openApiUrl: '/proxied/openapi.json' } }]],
+      });
+
+      const html = await (await app.get('/_schema/docs').header('x-schema-token', 'secret').expect(200)).text();
+      expect(html).toContain('/proxied/openapi.json');
     });
   });
 

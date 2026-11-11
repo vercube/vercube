@@ -25,7 +25,7 @@ const AUTH_OUTCOME = 'vercube.auth.outcome';
  * request for something that usually takes microseconds buys nothing. No
  * principal, token or header ever leaves this function.
  *
- * @param {string} outcome - `allowed`, `denied` or `unconfigured`
+ * @param {string} outcome - `allowed`, `denied`, `unconfigured` or `invalid`
  * @returns {void}
  */
 function recordOutcome(outcome: string): void {
@@ -81,30 +81,73 @@ export class AuthMiddleware implements BaseMiddleware<AuthTypes.MiddlewareOption
       throw new InternalServerError(`AuthMiddleware: auth provider "${providerKey.name}" is not registered in the container`);
     }
 
-    const result = await provider.validate(request, args.middlewareArgs);
+    const result: unknown = await provider.validate(request, args.middlewareArgs);
 
-    // the shape providers returned before ValidationResult: an error message,
-    // or nothing on success, so there is no user to hand to @User()
-    if (!result || typeof result === 'string') {
-      if (result) {
-        recordOutcome('denied');
-        throw new UnauthorizedError(result);
-      }
-
+    // the shape providers returned before ValidationResult: `null` on success,
+    // so there is no user to hand to @User()
+    if (result === null) {
       recordOutcome('allowed');
       return;
     }
 
-    if ('error' in result) {
+    // ...or an error message
+    if (typeof result === 'string') {
       recordOutcome('denied');
-      throw new UnauthorizedError(result.error);
+      throw new UnauthorizedError(result);
     }
 
-    recordOutcome('allowed');
-    rememberUser(this.gRequestContext, providerKey, result.user);
+    if (typeof result === 'object' && Object.hasOwn(result, 'error')) {
+      recordOutcome('denied');
+      const { error } = result as { error: unknown };
+      throw new UnauthorizedError(typeof error === 'string' ? error : undefined);
+    }
+
+    if (typeof result === 'object' && Object.hasOwn(result, 'user')) {
+      recordOutcome('allowed');
+      rememberUser(this.gRequestContext, providerKey, (result as { user: unknown }).user);
+      return;
+    }
+
+    // anything else (`false`, `undefined`, a forgotten `return`, an object
+    // without `user` or `error`) is a provider bug; fail closed, never open
+    recordOutcome('invalid');
+    throw new InternalServerError(
+      `AuthMiddleware: auth provider "${providerName(provider, providerKey)}" returned an invalid validate() result (${describeValue(result)}); expected null, a string, { user } or { error }`,
+    );
   }
 }
 
+/**
+ * Names the provider in error messages.
+ *
+ * @param {object} provider - The resolved provider instance
+ * @param {Function} providerKey - The key it was resolved with
+ * @returns {string} The provider's class name
+ */
+function providerName(provider: object, providerKey: { readonly name: string }): string {
+  return provider.constructor?.name || providerKey.name || 'unknown';
+}
+
+/**
+ * Describes a value's type for an error message, without its contents (it may
+ * hold a token or a principal).
+ *
+ * @param {unknown} value - The value to describe
+ * @returns {string} e.g. `boolean`, `undefined`, `object with keys: ok`
+ */
+function describeValue(value: unknown): string {
+  if (Array.isArray(value)) {
+    return 'array';
+  }
+
+  if (typeof value === 'object' && value !== null) {
+    const keys = Object.keys(value);
+    return keys.length > 0 ? `object with keys: ${keys.join(', ')}` : 'empty object';
+  }
+
+  return typeof value;
+}
+
 // Marks the middleware as an authentication requirement, so tools that
-// describe routes (the OpenAPI generator) find it without importing this package.
+// describe routes (introspection, the OpenAPI generator) find it with `isAuthMiddleware()` without importing this package.
 Object.defineProperty(AuthMiddleware, Symbol.for('vercube.auth.middleware'), { value: true });

@@ -1,5 +1,5 @@
 import { type Worker as _Worker } from 'node:worker_threads';
-import type { ConfigTypes } from '@vercube/core';
+import type { ConfigTypes, IntrospectionTypes } from '@vercube/core';
 import type { Hookable } from 'hookable';
 
 export namespace DevKitTypes {
@@ -35,6 +35,45 @@ export namespace DevKitTypes {
   /**
    * Represents a development server.
    */
+  /** One section as `inspect()` returns it. */
+  export interface InspectedSection {
+    id: string;
+    title: string;
+    revision: string | number;
+    data: unknown;
+  }
+
+  /** Options for one `typegen()` run. */
+  export interface TypegenRunOptions {
+    /** Routes to use instead of running the built application. */
+    routes?: IntrospectionTypes.RouteDescription[];
+    /** The discovery section that goes with `routes`. */
+    discovery?: IntrospectionTypes.DiscoveryDescription | null;
+    /** Write the file even when the project does not depend on `@vercube/client`. */
+    force?: boolean;
+  }
+
+  /** What `typegen()` did. */
+  export interface TypegenResult {
+    /** Absolute path of the route map. */
+    file: string;
+    /** False when the content was already up to date. */
+    written: boolean;
+    /** Number of route registrations read. */
+    routes: number;
+    /** Routes left out, with the reason. */
+    skipped: { id: string; reason: string }[];
+    /** Controller files the route map imports. */
+    files: string[];
+  }
+
+  /** What a forked application reports when `VERCUBE_DEV_ROUTES` is set. */
+  export interface RoutesMessage {
+    type: 'vercube:routes';
+    routes: IntrospectionTypes.RouteDescription[];
+    discovery: IntrospectionTypes.DiscoveryDescription | null;
+  }
+
   export interface DevServer {
     /**
      * The application associated with the development server.

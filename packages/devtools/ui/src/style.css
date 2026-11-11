@@ -28,51 +28,52 @@
 
 @font-face {
   font-family: 'Geist Pixel';
-  src: url('../fonts/geist-pixel-circle.woff2') format('woff2');
+  src: url('../fonts/geist-pixel-line.woff2') format('woff2');
   font-weight: 400;
   font-display: swap;
 }
 
 :root {
-  --void: #060608;
-  --chassis: #0b0b0f;
-  --panel: #101015;
-  --panel-head: #15151b;
-  --raised: #1c1c24;
-  --edge: #23232c;
-  --edge-soft: #17171e;
-  --edge-strong: #33333f;
+  /* The palette of vercube.dev: zinc blacks, one violet accent. */
+  --void: #09090b;
+  --chassis: #09090b;
+  --panel: #0c0c0f;
+  --panel-head: #111114;
+  --raised: #131317;
+  --edge: #26262b;
+  --edge-soft: #1b1b1f;
+  --edge-strong: #3f3f46;
 
-  --text: #ededf1;
-  --text-2: #a0a0ad;
-  --text-3: #6b6b7a;
+  --text: #fafafa;
+  --text-2: #a1a1aa;
+  --text-3: #71717a;
 
-  --brand: #bb4fff;
-  --brand-2: #628bff;
-  --brand-grad: linear-gradient(135deg, #bb4fff 0%, #628bff 100%);
-  --brand-tint: rgba(187, 79, 255, 0.13);
-  --brand-edge: rgba(187, 79, 255, 0.38);
+  --brand: #bc4eff;
+  --brand-2: #bc4eff;
+  --brand-grad: #bc4eff;
+  --brand-tint: rgba(188, 78, 255, 0.1);
+  --brand-edge: rgba(188, 78, 255, 0.45);
 
-  --ok: #3ecf8e;
-  --ok-tint: rgba(62, 207, 142, 0.13);
-  --warn: #f5a524;
-  --warn-tint: rgba(245, 165, 36, 0.13);
-  --err: #ff5a5f;
-  --err-tint: rgba(255, 90, 95, 0.13);
-  --info: #628bff;
-  --info-tint: rgba(98, 139, 255, 0.13);
+  --ok: #4ade80;
+  --ok-tint: rgba(74, 222, 128, 0.12);
+  --warn: #fbbf24;
+  --warn-tint: rgba(251, 191, 36, 0.12);
+  --err: #f87171;
+  --err-tint: rgba(248, 113, 113, 0.12);
+  --info: #60a5fa;
+  --info-tint: rgba(96, 165, 250, 0.12);
 
-  --role-controller: #c05cff;
-  --role-middleware: #2fc6c0;
-  --role-service: #5f8dff;
-  --role-plugin: #f2739d;
-  --role-framework: #6b6b7a;
-  --role-value: #f5a524;
+  --role-controller: #bc4eff;
+  --role-middleware: #2dd4bf;
+  --role-service: #60a5fa;
+  --role-plugin: #f472b6;
+  --role-framework: #71717a;
+  --role-value: #fbbf24;
 
-  --chart-ok: #03ab69;
-  --chart-warn: #c67e00;
-  --chart-err: #c33939;
-  --chart-line: #6387fc;
+  --chart-ok: #22c55e;
+  --chart-warn: #d97706;
+  --chart-err: #dc2626;
+  --chart-line: #bc4eff;
 
   --radius: 0;
   --radius-sm: 0;
@@ -82,7 +83,7 @@
   --display: 'Geist Pixel', 'Geist Mono', monospace;
 
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow: none;
 
   --row: 28px;
 
@@ -103,11 +104,11 @@
   --text-2: #5c5c6b;
   --text-3: #8a8a99;
 
-  --brand: #8b16e8;
-  --brand-2: #3d63dd;
-  --brand-grad: linear-gradient(135deg, #8b16e8 0%, #3d63dd 100%);
-  --brand-tint: rgba(139, 22, 232, 0.09);
-  --brand-edge: rgba(139, 22, 232, 0.32);
+  --brand: #9333ea;
+  --brand-2: #9333ea;
+  --brand-grad: #9333ea;
+  --brand-tint: rgba(147, 51, 234, 0.09);
+  --brand-edge: rgba(147, 51, 234, 0.35);
 
   --ok: #08875d;
   --ok-tint: rgba(8, 135, 93, 0.1);
@@ -121,9 +122,9 @@
   --chart-ok: #08875d;
   --chart-warn: #c98a00;
   --chart-err: #d02730;
-  --chart-line: #3d63dd;
+  --chart-line: #9333ea;
 
-  --role-controller: #8b16e8;
+  --role-controller: #9333ea;
   --role-middleware: #0f766e;
   --role-service: #2f5fd0;
   --role-plugin: #c02a72;
@@ -171,7 +172,7 @@ h4 {
 }
 
 a {
-  color: var(--brand-2);
+  color: var(--brand);
 }
 
 button {
@@ -227,28 +228,32 @@ code,
 .display {
   font-family: var(--display);
   font-weight: 400;
-  letter-spacing: 0.01em;
+  letter-spacing: -0.02em;
 }
 
 .eyebrow {
-  font-family: var(--sans);
-  font-size: 9.5px;
-  font-weight: 500;
-  letter-spacing: 0.12em;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-3);
 }
 
 .eyebrow.slug::before {
-  content: '// ';
-  color: var(--brand);
+  content: '';
 }
 
-.label {
-  font-family: var(--sans);
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-2);
+/* Section labels, as on vercube.dev: small mono capitals. (SVG node names in
+   the graph use the class for their own text and keep their style.) */
+.label:not(text) {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
 }
 
 .num {
@@ -306,6 +311,44 @@ code,
   background: var(--chassis);
 }
 
+/* Labels in panel heads read like the section labels of vercube.dev. */
+.surface-head .label,
+.panel-head .label {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+/* The small squares where rules cross, as on vercube.dev. */
+.cross-tl,
+.cross-bl {
+  position: relative;
+}
+
+.cross-tl::before,
+.cross-bl::after {
+  content: '';
+  position: absolute;
+  left: -4px;
+  z-index: 5;
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--edge-strong);
+  background: var(--void);
+  pointer-events: none;
+}
+
+.cross-tl::before {
+  top: -4px;
+}
+
+.cross-bl::after {
+  bottom: -4px;
+}
+
 .panel-body {
   padding: 14px;
 }
@@ -324,14 +367,14 @@ code,
 .tag {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 1px 8px;
-  border-radius: var(--radius-sm);
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 0;
   border: 1px solid var(--edge);
-  background: var(--raised);
+  background: rgb(39 39 42 / 0.45);
   font-family: var(--mono);
-  font-size: 10.5px;
-  line-height: 17px;
+  font-size: 11px;
+  line-height: 1.5;
   color: var(--text-2);
   white-space: nowrap;
 }
@@ -365,46 +408,68 @@ code,
 .btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  height: 28px;
-  padding: 0 10px;
+  gap: 8px;
+  height: 30px;
+  padding: 0 12px;
   border: 1px solid var(--edge);
-  border-radius: var(--radius-sm);
+  border-radius: 0;
   background: var(--raised);
-  color: var(--text-2);
-  font-size: 12px;
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-weight: 500;
   white-space: nowrap;
+  text-decoration: none;
   transition:
-    color 0.15s ease,
-    border-color 0.15s ease,
-    background 0.15s ease;
+    border-color 160ms ease,
+    background-color 160ms ease,
+    transform 120ms ease;
 }
 
 .btn:hover {
-  color: var(--text);
-  border-color: var(--edge-strong);
+  border-color: #52525b;
+  background: #1a1a1f;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn svg {
+  color: var(--text-3);
+}
+
+.btn.primary {
+  border-color: var(--brand);
+  background: var(--brand);
+  color: #0b0010;
+}
+
+.btn.primary:hover {
+  background: #c869ff;
 }
 
 .btn.active {
   color: var(--text);
-  border-color: var(--brand-edge);
+  border-color: var(--brand);
   background: var(--brand-tint);
 }
 
 .btn.ghost {
-  background: transparent;
+  background: var(--raised);
 }
 
 .field {
   width: 100%;
-  height: 28px;
+  height: 30px;
   padding: 0 10px;
   border: 1px solid var(--edge);
-  border-radius: var(--radius-sm);
-  background: var(--raised);
-  font-size: 12px;
+  border-radius: 0;
+  background: rgb(19 19 23 / 0.6);
+  font-family: var(--mono);
+  font-size: 11.5px;
   outline: none;
-  transition: border-color 0.15s ease;
+  transition: border-color 160ms ease;
 }
 
 .field::placeholder {
@@ -461,9 +526,11 @@ code,
   height: var(--row);
   padding: 0 12px;
   text-align: left;
-  font-family: var(--sans);
-  font-size: 11px;
-  font-weight: 500;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--text-3);
   background: var(--chassis);
   box-shadow: inset 0 -1px 0 var(--edge);

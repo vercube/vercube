@@ -17,6 +17,17 @@ const SECRET_WORDS: ReadonlySet<string> = new Set([
   'secretkey',
   'dsn',
   'connectionstring',
+  'session',
+  'sid',
+  'jwt',
+  'cookie',
+  'auth',
+  'authorization',
+  'bearer',
+  'signature',
+  'passphrase',
+  'otp',
+  'salt',
 ]);
 
 /** Maximum recursion depth when flattening. */

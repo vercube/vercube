@@ -1,5 +1,5 @@
 import { mkdirSync, renameSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'pathe';
+import { dirname, join, relative } from 'pathe';
 import type { VercubePluginContext } from './types';
 
 /**
@@ -93,6 +93,8 @@ export function generateServerEntry(ctx: VercubePluginContext): string {
     lines.push('await app.listen();', '');
   }
   lines.push('export const fetch = app.fetch.bind(app);', '');
+  // Read by the dev worker to report routes for the `@vercube/client` route map.
+  lines.push('export const inspect = (id) => app.inspect(id);', '');
   // WebSocket upgrades in dev: the worker forwards raw Node upgrade events here.
   // `@vercube/ws` installs the handler on `globalThis` when its plugin is used;
   // otherwise this is a no-op.
@@ -139,17 +141,21 @@ function writeFileAtomic(path: string, content: string): void {
  * @param ctx - The plugin context holding the discovery result.
  */
 export function writeDiscoveryManifest(ctx: VercubePluginContext): void {
+  // `path` on a scanned entry is relative to the scan directory (`src/server`),
+  // the manifest promises paths relative to the project root
+  const fromRoot = (entry: { path: string; fullPath: string }): string =>
+    entry.fullPath ? relative(ctx.root, entry.fullPath) : entry.path;
   const manifest = {
     root: ctx.root,
     generatedAt: new Date().toISOString(),
-    controllers: ctx.controllers.map((entry) => ({ name: entry.importClassName, path: entry.path })),
-    services: ctx.services.map((entry) => ({ name: entry.importClassName, path: entry.path })),
-    middlewares: (ctx.middlewares ?? []).map((entry) => ({ name: entry.importClassName, path: entry.path })),
+    controllers: ctx.controllers.map((entry) => ({ name: entry.importClassName, path: fromRoot(entry) })),
+    services: ctx.services.map((entry) => ({ name: entry.importClassName, path: fromRoot(entry) })),
+    middlewares: (ctx.middlewares ?? []).map((entry) => ({ name: entry.importClassName, path: fromRoot(entry) })),
     routes: ctx.routes.map((route) => ({
       method: route.method,
       path: route.route,
       controller: route.importClassName,
-      file: route.path,
+      file: fromRoot(route),
     })),
   };
 

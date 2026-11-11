@@ -1,6 +1,6 @@
 import { createReadStream } from 'node:fs';
-import { stat as statAsync } from 'node:fs/promises';
-import { extname, join, normalize, sep } from 'node:path';
+import { realpath, stat as statAsync } from 'node:fs/promises';
+import { extname, join, normalize, relative, sep } from 'node:path';
 import { mime } from '../../Utils/Mine';
 import type { ConfigTypes } from '../../Types/ConfigTypes';
 
@@ -38,7 +38,8 @@ export class StaticRequestHandler {
    */
   public async handleRequest(request: Request): Promise<void | Response> {
     // Get dirs that has to be static provided
-    const dirs = this.fOptions?.dirs ?? ([] as string[]);
+    // The default `public` merges into user dirs, so duplicates are common
+    const dirs = [...new Set(this.fOptions?.dirs ?? ([] as string[]))];
 
     // No static request was provided
     if (!dirs) {
@@ -63,35 +64,55 @@ export class StaticRequestHandler {
       return;
     }
 
-    // Strip the mount prefix, but only when it is a whole leading path segment
-    let relativePath = path;
+    // With several dirs each one is served only under its own mount prefix.
+    // A single dir also answers without the prefix.
+    const candidates: Array<{ dir: string; relativePath: string }> = [];
+
     for (const dir of dirs) {
       const prefix = `/${dir.replace(/^\/+|\/+$/g, '')}`;
 
-      if (relativePath === prefix || relativePath.startsWith(`${prefix}/`)) {
-        relativePath = relativePath.slice(prefix.length);
-        break;
+      if (path === prefix || path.startsWith(`${prefix}/`)) {
+        candidates.push({ dir, relativePath: path.slice(prefix.length) });
       }
     }
 
-    for (const dir of dirs) {
+    const dotfiles = this.fOptions?.dotfiles ?? 'ignore';
+
+    if (candidates.length === 0 && dirs.length === 1) {
+      candidates.push({ dir: dirs[0], relativePath: path });
+    }
+
+    for (const { dir, relativePath } of candidates) {
       const root = join(process.cwd(), dir);
       const fullPath = join(root, relativePath);
 
       // Never serve anything outside the static directory
-      if (fullPath !== root && !fullPath.startsWith(root.endsWith(sep) ? root : root + sep)) {
+      if (!isInside(root, fullPath)) {
         continue;
       }
 
       try {
-        const stats = await statAsync(fullPath);
+        // Resolve symlinks so a link inside the directory cannot reach a file outside it
+        const realRoot = await realpath(root);
+        const realFile = await realpath(fullPath);
+
+        if (!isInside(realRoot, realFile)) {
+          continue;
+        }
+
+        // Checked on the requested path and on the resolved one, as a link to a dotfile is still a dotfile
+        if (dotfiles !== 'allow' && (hasDotSegment(relativePath) || hasDotSegment(relative(realRoot, realFile)))) {
+          return dotfiles === 'deny' ? new Response(null, { status: 403 }) : undefined;
+        }
+
+        const stats = await statAsync(realFile);
 
         if (stats.isDirectory()) {
           continue;
         }
 
         if (stats.isFile()) {
-          return this.serveFile(request, fullPath, stats);
+          return this.serveFile(request, realFile, stats);
         }
       } catch {
         // silent catch
@@ -149,6 +170,27 @@ export class StaticRequestHandler {
       headers,
     });
   }
+}
+
+/**
+ * Whether a path is the root itself or lies inside it.
+ *
+ * @param {string} root - The directory
+ * @param {string} path - The path to check
+ * @returns {boolean} True when the path does not leave the root
+ */
+function isInside(root: string, path: string): boolean {
+  return path === root || path.startsWith(root.endsWith(sep) ? root : root + sep);
+}
+
+/**
+ * Whether any segment of a path starts with a dot, such as `.env` or `.git/config`.
+ *
+ * @param {string} path - The path relative to the static directory
+ * @returns {boolean} True when the path names a dotfile or goes through a dot directory
+ */
+function hasDotSegment(path: string): boolean {
+  return path.split(/[\\/]/).some((segment) => segment.length > 1 && segment.startsWith('.'));
 }
 
 /**

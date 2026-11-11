@@ -1,14 +1,20 @@
+import { resolveImportSource } from '@vercube/scan';
+import { nitroHealthPaths } from '../_internal/health';
 import { scanFiles, type FileInfo } from '../_internal/scan';
 import { IMPORT_SOURCE, transformRoute, type RouteInfo } from '../build/Routes';
+import type { PluginOptions } from '../plugin/VercubePlugin';
 import type { HTTPMethod } from 'nitro/h3';
 import type { Nitro, NitroOptions } from 'nitro/types';
 
-export async function setupRoutes(nitro: Nitro): Promise<void> {
-  /**
-   * Scan files in the api and routes directories
-   * @param nitro - The nitro instance
-   * @returns void
-   */
+/**
+ * Routes every scanned controller route, and the probe endpoints of the
+ * `health` option, to the Vercube handler.
+ *
+ * @param nitro - The nitro instance
+ * @param options - The plugin options
+ * @returns void
+ */
+export async function setupRoutes(nitro: Nitro, options?: PluginOptions): Promise<void> {
   const routes = await getTransformedRoutes(nitro);
 
   // clear nitro handlers
@@ -21,6 +27,15 @@ export async function setupRoutes(nitro: Nitro): Promise<void> {
       handler: `@vercube/nitro/runtime/handler`,
       lazy: true,
     })),
+    // the probes are not files Nitro could scan, they come from the option
+    ...nitroHealthPaths(options?.health).flatMap((route) =>
+      (['GET', 'HEAD'] as HTTPMethod[]).map((method) => ({
+        route,
+        method,
+        handler: `@vercube/nitro/runtime/handler`,
+        lazy: true,
+      })),
+    ),
   );
 
   // ignore class files
@@ -46,7 +61,7 @@ export async function getTransformedRoutes(nitro: Nitro): Promise<RouteInfo[]> {
   const routes = await scanRoutes(nitro);
   return (await Promise.all(routes.map(async (route) => await transformRoute(route))).then((r) => r.flat())).map((route) => ({
     ...route,
-    import: route.import.replace(IMPORT_SOURCE, route.fullPath),
+    import: resolveImportSource(route.import, IMPORT_SOURCE, route.fullPath),
   }));
 }
 

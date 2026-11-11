@@ -208,6 +208,30 @@ describe('RabbitMQStrategy', () => {
     });
   });
 
+  describe('health', () => {
+    it('should ping by opening and closing a channel', async () => {
+      const before = state.connections[0].createChannel.mock.calls.length;
+
+      await strategy.ping();
+
+      expect(state.connections[0].createChannel.mock.calls.length).toBe(before + 1);
+      const channel = await state.connections[0].createChannel.mock.results.at(-1)!.value;
+      expect(channel.close).toHaveBeenCalled();
+    });
+
+    it('should fail the ping when the broker refuses a channel', async () => {
+      state.connections[0].createChannel.mockRejectedValueOnce(new Error('connection closed'));
+
+      await expect(strategy.ping()).rejects.toThrow('connection closed');
+    });
+
+    it('should fail the ping once closed', async () => {
+      await strategy.close();
+
+      await expect(strategy.ping()).rejects.toThrow('not connected');
+    });
+  });
+
   describe('connecting', () => {
     it('should connect with recovery enabled by default', () => {
       expect(state.connectArgs[0]).toEqual(['amqp://localhost', { recovery: {} }]);
@@ -584,6 +608,51 @@ describe('RabbitMQStrategy', () => {
       await vi.waitFor(() => expect(state.channels[0].nack).toHaveBeenCalledWith(expect.any(Object), false, false));
 
       expect(state.channels[0].ack).not.toHaveBeenCalled();
+    });
+
+    it('should log a failing ack on a closed channel without nacking or rejecting', async () => {
+      const unhandled = vi.fn();
+      process.on('unhandledRejection', unhandled);
+
+      await strategy.consume({ queue: 'emails', concurrency: 1, dispatch: async () => undefined });
+      state.channels[0].ack.mockImplementation(() => {
+        throw new Error('Channel closed');
+      });
+
+      state.channels[0].deliver(delivery());
+      await vi.waitFor(() =>
+        expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('settle the message'), expect.any(Error)),
+      );
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      process.off('unhandledRejection', unhandled);
+
+      expect(state.channels[0].nack).not.toHaveBeenCalled();
+      expect(unhandled).not.toHaveBeenCalled();
+    });
+
+    it('should log a failing nack on a closed channel without rejecting', async () => {
+      const unhandled = vi.fn();
+      process.on('unhandledRejection', unhandled);
+
+      await strategy.consume({
+        queue: 'emails',
+        concurrency: 1,
+        dispatch: async () => {
+          throw new Error('boom');
+        },
+      });
+      state.channels[0].nack.mockImplementation(() => {
+        throw new Error('Channel closed');
+      });
+
+      state.channels[0].deliver(delivery());
+      await vi.waitFor(() =>
+        expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('settle the message'), expect.any(Error)),
+      );
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      process.off('unhandledRejection', unhandled);
+
+      expect(unhandled).not.toHaveBeenCalled();
     });
 
     it('should report a consumer cancelled by the broker', async () => {

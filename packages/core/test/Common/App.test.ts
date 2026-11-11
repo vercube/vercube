@@ -14,7 +14,7 @@ vi.mock('srvx', () => ({
     serve: vi.fn(),
     ready: vi.fn().mockResolvedValue(undefined),
   }),
-  FastResponse: vi.fn(),
+  FastResponse: globalThis.Response,
 }));
 
 describe('App', () => {

@@ -514,4 +514,44 @@ describe('StorageManager', () => {
       await expect(manager.deleteItem({ storage: 'sesions', key: 'k' })).rejects.toBeInstanceOf(StorageError);
     });
   });
+
+  describe('describe', () => {
+    const mountMemory = async (count: number) => {
+      await storageManager.mount({ storage: MemoryStorage });
+      const driver = storageManager.getStorage() as MemoryStorage;
+      for (let i = 0; i < count; i++) driver.setItem(`k${i}`, i);
+      return driver;
+    };
+
+    it('should report an exact size from the keys when they fit', async () => {
+      const driver = await mountMemory(3);
+      const size = vi.spyOn(driver, 'size');
+
+      const { mounts } = await storageManager.describe({ maxKeys: 10 });
+
+      expect(mounts[0]).toMatchObject({ size: 3, truncated: false, keys: ['k0', 'k1', 'k2'] });
+      expect(size).not.toHaveBeenCalled();
+    });
+
+    it('should ask the driver for one key more than the cap only', async () => {
+      const driver = await mountMemory(5);
+      const getKeys = vi.spyOn(driver, 'getKeys');
+
+      const { mounts } = await storageManager.describe({ maxKeys: 2 });
+
+      expect(getKeys).toHaveBeenCalledWith({ limit: 3 });
+      expect(mounts[0]).toMatchObject({ size: 5, truncated: true, keys: ['k0', 'k1'] });
+    });
+
+    it('should not count a driver whose size lists everything when the keys were cut short', async () => {
+      const driver = await mountMemory(5);
+      Object.defineProperty(driver, 'cheapSize', { value: false });
+      const size = vi.spyOn(driver, 'size');
+
+      const { mounts } = await storageManager.describe({ maxKeys: 2 });
+
+      expect(size).not.toHaveBeenCalled();
+      expect(mounts[0]).toMatchObject({ size: null, truncated: true, keys: ['k0', 'k1'] });
+    });
+  });
 });

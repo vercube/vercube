@@ -1,6 +1,10 @@
+import { QueueError } from '../Errors/QueueError';
 import { QueueStrategy } from '../Services/QueueStrategy';
 import { ATTEMPT_HEADER, generateJobId, readNumericHeader } from '../Utils/Job';
 import type { QueueTypes } from '../Types/QueueTypes';
+
+/** Longest delay a single timer can hold in every runtime (2^31 - 1 ms). */
+const MAX_TIMEOUT = 2 ** 31 - 1;
 
 /** A job waiting in, or running on, an in-memory queue. */
 interface MemoryJob {
@@ -18,7 +22,7 @@ interface MemoryJob {
 interface MemoryQueue {
   waiting: MemoryJob[];
   /** Jobs waiting for their delay, kept with their timer so they can be inspected. */
-  delayed: Map<ReturnType<typeof setTimeout>, { job: MemoryJob; at: number }>;
+  delayed: Map<MemoryJob, { job: MemoryJob; at: number; timer: ReturnType<typeof setTimeout> }>;
   active: number;
   completed: number;
   failed: number;
@@ -96,15 +100,40 @@ export class MemoryStrategy extends QueueStrategy {
 
     const delay = request.options.delay ?? 0;
 
-    if (delay > 0) {
-      const timer = setTimeout(() => {
-        queue.delayed.delete(timer);
-        queue.waiting.push(job);
-        this.pump(request.queue);
-      }, delay);
+    if (Number.isNaN(delay) || delay === Infinity) {
+      throw new QueueError(
+        `Invalid job delay: ${delay}`,
+        'publish',
+        undefined,
+        { queue: request.queue, job: request.job },
+        false,
+      );
+    }
 
-      timer.unref?.();
-      queue.delayed.set(timer, { job, at: Date.now() + delay });
+    if (delay > 0) {
+      const entry = { job, at: Date.now() + delay, timer: undefined as unknown as ReturnType<typeof setTimeout> };
+
+      // setTimeout cannot wait longer than MAX_TIMEOUT (it fires after 1 ms), so
+      // a longer delay is waited out in chunks until its deadline is reached.
+      const arm = (): void => {
+        entry.timer = setTimeout(
+          () => {
+            if (Date.now() < entry.at) {
+              arm();
+              return;
+            }
+
+            queue.delayed.delete(job);
+            queue.waiting.push(job);
+            this.pump(request.queue);
+          },
+          Math.min(Math.max(0, entry.at - Date.now()), MAX_TIMEOUT),
+        );
+        entry.timer.unref?.();
+      };
+
+      arm();
+      queue.delayed.set(job, entry);
     } else {
       queue.waiting.push(job);
       this.pump(request.queue);
@@ -194,7 +223,7 @@ export class MemoryStrategy extends QueueStrategy {
    */
   public async close(): Promise<void> {
     for (const queue of this.fQueues.values()) {
-      for (const timer of queue.delayed.keys()) {
+      for (const { timer } of queue.delayed.values()) {
         clearTimeout(timer);
       }
 

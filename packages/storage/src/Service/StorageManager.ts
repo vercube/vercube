@@ -20,6 +20,18 @@ export class StorageManager {
   protected gLogger!: Logger | null;
 
   /**
+   * The application's health check registry, bound by `@vercube/core` under a
+   * string key so storage stays independent of core at runtime
+   */
+  @InjectOptional('vercube:health')
+  protected gHealth!: StorageTypes.HealthRegistryLike | null;
+
+  /**
+   * Removes the health check of each mount that registered one
+   */
+  protected fHealthChecks: Map<string, () => void> = new Map();
+
+  /**
    * Map of registered storage instances indexed by their names
    */
   protected fStorages: Map<string, StorageTypes.Storages> = new Map();
@@ -43,12 +55,13 @@ export class StorageManager {
    * @returns {Promise<void>} A promise that resolves when mounting is complete
    * @throws {StorageError} When mounted after startup and the storage fails to initialize
    */
-  public async mount<T extends Storage<unknown>>({ name, storage, initOptions }: StorageTypes.Mount<T>): Promise<void> {
+  public async mount<T extends Storage<unknown>>({ name, storage, initOptions, health }: StorageTypes.Mount<T>): Promise<void> {
     const mountName = name ?? 'default';
     const instance = this.gContainer.resolve(storage);
 
     this.fStorages.set(mountName, { storage: instance, initOptions });
     this.fFailed.delete(mountName);
+    this.registerHealthCheck(mountName, instance, health);
 
     // the storages present at startup are initialized by init(), a later one here
     if (this.fInitialized) {
@@ -90,19 +103,29 @@ export class StorageManager {
     const mounts = await Promise.all(
       [...this.fStorages.entries()].map(async ([name, mount]) => {
         const driver = mount.storage as unknown as {
-          getKeys?: () => string[] | Promise<string[]>;
+          getKeys?: (options?: { limit?: number }) => string[] | Promise<string[]>;
           size?: () => number | Promise<number>;
+          cheapSize?: boolean;
         };
 
-        const keys = typeof driver.getKeys === 'function' ? await safely(() => driver.getKeys!()) : null;
-        const size = typeof driver.size === 'function' ? await safely(() => driver.size!()) : (keys?.length ?? null);
+        // one key past the cap tells whether the list was cut short
+        const keys = typeof driver.getKeys === 'function' ? await safely(() => driver.getKeys!({ limit: maxKeys + 1 })) : null;
+        const truncated = keys ? keys.length > maxKeys : false;
+
+        let size: number | null = null;
+
+        if (keys && !truncated) {
+          size = keys.length;
+        } else if (typeof driver.size === 'function' && driver.cheapSize !== false) {
+          size = await safely(() => driver.size!());
+        }
 
         return {
           name,
           driver: (mount.storage as object)?.constructor?.name ?? 'Storage',
-          size: size ?? null,
+          size,
           keys: keys ? keys.slice(0, maxKeys) : null,
-          truncated: keys ? keys.length > maxKeys : false,
+          truncated,
         };
       }),
     );
@@ -209,6 +232,53 @@ export class StorageManager {
    */
   public async size({ storage }: StorageTypes.Size): Promise<number> {
     return this.requireStorage(storage, 'size').size();
+  }
+
+  /**
+   * Checks that the backend of a mount answers. Resolves without a round trip
+   * for a driver that has no backend.
+   *
+   * @param {string} [name] - Name of the mount, `default` when omitted
+   * @returns {Promise<void>} Resolves once the backend answered
+   * @throws {StorageError} When the mount does not exist or failed to initialize, or the backend does not answer
+   */
+  public async ping(name: string = 'default'): Promise<void> {
+    if (!this.fInitialized) {
+      throw new StorageError(`Storage "${name}" is not initialized yet`, 'ping', undefined, { mount: name });
+    }
+
+    await this.requireStorage(name, 'ping').ping?.();
+  }
+
+  /**
+   * Registers the readiness check of a mount whose driver talks to a backend,
+   * replacing the one an earlier mount under the name registered.
+   *
+   * @param {string} name - Name of the mount
+   * @param {Storage} storage - The mounted driver
+   * @param {StorageTypes.HealthOption} [option] - The mount's `health` option
+   * @returns {void}
+   * @protected
+   */
+  protected registerHealthCheck(name: string, storage: Storage, option?: StorageTypes.HealthOption): void {
+    this.fHealthChecks.get(name)?.();
+    this.fHealthChecks.delete(name);
+
+    if (!this.gHealth || option === false || typeof storage.ping !== 'function') {
+      return;
+    }
+
+    const settings = typeof option === 'object' ? option : {};
+
+    this.fHealthChecks.set(
+      name,
+      this.gHealth.register({
+        name: `storage:${name}`,
+        critical: settings.critical !== false,
+        ...(settings.timeout === undefined ? {} : { timeout: settings.timeout }),
+        check: () => this.ping(name),
+      }),
+    );
   }
 
   /**

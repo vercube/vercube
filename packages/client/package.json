@@ -1,0 +1,43 @@
+{
+  "name": "@vercube/client",
+  "version": "1.4.0",
+  "description": "End-to-end typed HTTP client for Vercube applications",
+  "packageManager": "pnpm@12.14.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vercube/vercube.git",
+    "directory": "packages/client"
+  },
+  "license": "MIT",
+  "sideEffects": false,
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "exports": {
+    ".": "./dist/index.mjs",
+    "./package.json": "./package.json"
+  },
+  "types": "./dist/index.d.mts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "keywords": [
+    "vercube",
+    "client",
+    "fetch",
+    "typesafe",
+    "rpc"
+  ],
+  "scripts": {
+    "build": "tsdown --config ../../tsdown.config.ts --config-loader=unrun"
+  },
+  "devDependencies": {
+    "@vercube/core": "workspace:*",
+    "@vercube/di": "workspace:*",
+    "@vercube/scan": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

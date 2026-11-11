@@ -1,4 +1,4 @@
-import { BasePlugin, MetadataResolver, skipGlobalMiddlewares } from '@vercube/core';
+import { BasePlugin, MetadataResolver, resolveModuleHealth, skipGlobalMiddlewares } from '@vercube/core';
 import { DEFAULT_HTTP_PATH, SchedulerController } from '../Controllers/SchedulerController';
 import { SchedulerError } from '../Errors/SchedulerError';
 import { SchedulerManager } from '../Services/SchedulerManager';
@@ -86,12 +86,20 @@ export class SchedulerPlugin extends BasePlugin<SchedulerTypes.PluginOptions> {
     }
 
     const manager = app.container.get(SchedulerManager);
-    const { store, http, ...settings } = options ?? {};
+    const { store, http, health, ...settings } = options ?? {};
 
     manager.configure(settings);
 
     if (store && !manager.store) {
       await manager.mount(store as SchedulerTypes.Mount<never>);
+
+      const check = resolveModuleHealth(health);
+      // read again, the check above narrowed it to undefined before the mount
+      const mounted = (manager as { store: SchedulerManager['store'] }).store;
+
+      if (check && typeof mounted?.ping === 'function') {
+        app.health.register({ name: 'scheduler:store', ...check, check: () => manager.ping() });
+      }
     }
 
     if (http) {

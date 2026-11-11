@@ -97,6 +97,15 @@ export class HttpServer {
   private fTelemetry: TelemetryTypes.Hooks | null | undefined;
 
   /**
+   * Whether the server is bound and accepting connections. False before
+   * `listen()`, once `close()` began, and when the application is driven
+   * through `app.fetch()` alone.
+   */
+  public get listening(): boolean {
+    return this.fListening;
+  }
+
+  /**
    * Adds a plugin to the HTTP server
    *
    * @param {ServerPlugin} plugin - The plugin to add

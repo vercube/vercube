@@ -59,17 +59,36 @@ describe('createNitroApp', () => {
   });
 
   it.each([
-    [0, 'debug'],
-    [1, 'error'],
-    [2, 'warn'],
+    [-1, 'error'],
+    [0, 'error'],
+    [1, 'warn'],
+    [2, 'info'],
     [3, 'info'],
     [4, 'debug'],
+    [5, 'debug'],
     [undefined, 'debug'],
   ])('should map logLevel %s to %s', async (logLevel, expectedLevel) => {
     await createNitroApp(makeNitroOpts({ logLevel }));
     expect(createApp).toHaveBeenCalledWith({
       cfg: expect.objectContaining({ logLevel: expectedLevel }),
     });
+  });
+
+  it('should pass the health option on', async () => {
+    await createNitroApp(makeNitroOpts(), { health: { path: '/probes' } });
+    expect(createApp).toHaveBeenCalledWith({
+      cfg: expect.objectContaining({ health: { path: '/probes' } }),
+    });
+  });
+
+  it('should turn health off when the plugin did not ask for it', async () => {
+    await createNitroApp(makeNitroOpts());
+    expect(createApp).toHaveBeenCalledWith({ cfg: expect.objectContaining({ health: false }) });
+  });
+
+  it('should read the health token from the runtime config', async () => {
+    await createNitroApp(makeNitroOpts({ runtimeConfig: { vercube: { healthToken: 'rt' } } }), { health: true });
+    expect(createApp).toHaveBeenCalledWith({ cfg: expect.objectContaining({ health: { token: 'rt' } }) });
   });
 
   it('should read the runtime config when the server starts', async () => {

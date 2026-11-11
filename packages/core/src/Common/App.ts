@@ -1,19 +1,24 @@
 import { initializeContainer, Inject } from '@vercube/di';
 import { Logger } from '@vercube/logger';
 import { RuntimeConfig } from '../Services/Config/RuntimeConfig';
+import { HealthRegistry } from '../Services/Health/HealthRegistry';
+import { HealthRoutes } from '../Services/Health/HealthRoutes';
 import { HttpServer } from '../Services/HttpServer/HttpServer';
 import { IntrospectionRegistry } from '../Services/Introspection/IntrospectionRegistry';
+import { AppLifecycle } from '../Services/Lifecycle/AppLifecycle';
 import { PluginsRegistry } from '../Services/Plugins/PluginsRegistry';
 import { RequestHandler } from '../Services/Router/RequestHandler';
 import { Router } from '../Services/Router/Router';
 import { StaticRequestHandler } from '../Services/Router/StaticRequestHandler';
 import { ShutdownRegistry } from '../Services/Shutdown/ShutdownRegistry';
 import { StartupRegistry } from '../Services/Startup/StartupRegistry';
+import { resolveHealthOptions, resolveShutdownDefaults } from '../Utils/Health';
 import { LISTEN_ENV, shouldListen } from '../Utils/Listen';
 import type { BasePlugin } from '../Services/Plugins/BasePlugin';
 import type { ShutdownHook } from '../Services/Shutdown/ShutdownRegistry';
 import type { StartupHook } from '../Services/Startup/StartupRegistry';
 import type { ConfigTypes } from '../Types/ConfigTypes';
+import type { HealthTypes } from '../Types/HealthTypes';
 import type { VercubePlugin, VercubePluginEnv } from '../Types/Plugin';
 import type { Container } from '@vercube/di';
 
@@ -22,6 +27,9 @@ const DEFAULT_SHUTDOWN_SIGNALS = ['SIGTERM', 'SIGINT'];
 
 /** How long the HTTP server waits for requests in flight when no timeout is configured. */
 const DEFAULT_SHUTDOWN_TIMEOUT = 25_000;
+
+/** The longest delay a timer takes before it overflows and fires at once. */
+const MAX_TIMER_DELAY = 2_147_483_647;
 
 /**
  * Represents the main application class.
@@ -50,6 +58,12 @@ export class App {
 
   @Inject(StartupRegistry)
   private gStartupRegistry!: StartupRegistry;
+
+  @Inject(AppLifecycle)
+  private gLifecycle!: AppLifecycle;
+
+  @Inject(HealthRegistry)
+  private gHealthRegistry!: HealthRegistry;
 
   /** The run of the startup hooks, shared by `start()` and `listen()`. */
   private fStarting: Promise<void> | undefined;
@@ -88,6 +102,27 @@ export class App {
   }
 
   /**
+   * Where the application is in its lifecycle: `starting` until the
+   * {@link App.onStart} hooks have finished, `ready` after, `draining` as soon
+   * as {@link App.close} begins, and `closed` once it has finished.
+   *
+   * @returns {HealthTypes.AppState} The current state
+   */
+  public get state(): HealthTypes.AppState {
+    return this.gLifecycle.state;
+  }
+
+  /**
+   * The health check registry. Modules register a check for each backend they
+   * depend on, and the readiness route runs them.
+   *
+   * @returns {HealthRegistry} The registry
+   */
+  public get health(): HealthRegistry {
+    return this.gHealthRegistry;
+  }
+
+  /**
    * Gets the application config.
    * This method is used to get the application config without runtime config.
    * @returns {ConfigTypes.Config} The application config.
@@ -123,6 +158,14 @@ export class App {
     }
 
     await this.gRouter.initialize();
+
+    // before the controllers register theirs, so a collision is the
+    // application route's registration, which `start()` reports
+    const health = resolveHealthOptions(this.fConfig);
+
+    if (health) {
+      this.container.get(HealthRoutes).mount(health);
+    }
   }
 
   /**
@@ -160,6 +203,12 @@ export class App {
       return;
     }
 
+    // `vercube dev` forks the application and writes the `@vercube/client`
+    // route map from what it reports, so nothing has to boot twice
+    if (process.env.VERCUBE_DEV_ROUTES && process.send) {
+      await this.reportRoutes();
+    }
+
     // Services that start with the application, such as the scheduler. Before
     // the port is bound, so a failure stops the boot instead of surfacing once
     // the server is already serving.
@@ -182,7 +231,8 @@ export class App {
 
   /**
    * Runs the startup hooks registered with {@link App.onStart}, once however
-   * often it is called. `listen()` calls it; an application driven without
+   * often it is called, and moves {@link App.state} to `ready` once they
+   * have finished. A failing hook leaves the application `starting`. `listen()` calls it; an application driven without
    * `listen()`, such as one embedded in Nitro, calls it after the container
    * is initialized.
    *
@@ -190,7 +240,11 @@ export class App {
    * @throws {Error} The first hook failure
    */
   public start(): Promise<void> {
-    this.fStarting ??= this.gStartupRegistry.run();
+    this.fStarting ??= (async () => {
+      await this.gStartupRegistry.run();
+
+      this.gLifecycle.advance('ready');
+    })();
 
     return this.fStarting;
   }
@@ -219,7 +273,10 @@ export class App {
   }
 
   /**
-   * Closes the application gracefully. The HTTP server stops accepting
+   * Closes the application gracefully. {@link App.state} turns `draining`
+   * right away, so a readiness probe fails while the server keeps serving for
+   * `drainDelay` milliseconds: long enough for a load balancer to stop
+   * routing new requests here. Then the HTTP server stops accepting
    * connections and waits for the requests in flight, closing the connections
    * still open once `timeout` elapses. Then the callbacks registered with
    * {@link App.onClose} run, last registered first, so modules such as the
@@ -231,11 +288,15 @@ export class App {
    *
    * @param {object} [options] - How long to wait
    * @param {number} [options.timeout] - Milliseconds the HTTP server waits for requests in flight, defaults to `shutdown.timeout`
+   * @param {number} [options.drainDelay] - Milliseconds to keep serving before the HTTP server closes, defaults to `shutdown.drainDelay` (5000 with `health` on, 0 otherwise)
    * @returns {Promise<void>} Resolves once everything is closed
    * @throws {AggregateError} When the server or a callback failed to close, after every callback has run
    */
-  public close(options: { timeout?: number } = {}): Promise<void> {
-    this.fClosing ??= this.shutdown(options.timeout ?? this.fConfig?.shutdown?.timeout ?? DEFAULT_SHUTDOWN_TIMEOUT);
+  public close(options: { timeout?: number; drainDelay?: number } = {}): Promise<void> {
+    this.fClosing ??= this.shutdown(
+      options.timeout ?? this.fConfig?.shutdown?.timeout ?? DEFAULT_SHUTDOWN_TIMEOUT,
+      options.drainDelay ?? resolveShutdownDefaults(this.fConfig).drainDelay,
+    );
 
     return this.fClosing;
   }
@@ -299,6 +360,10 @@ export class App {
       const { writeFileSync } = await import('node:fs');
       writeFileSync(target, json, 'utf8');
 
+      // the parent stops the process once the file is complete, so a handle
+      // left open by `setup` does not keep it waiting
+      process.send?.({ type: 'vercube:inspected' });
+
       return;
     }
 
@@ -306,15 +371,63 @@ export class App {
   }
 
   /**
-   * Stops the HTTP server, runs the shutdown hooks, then disposes the
-   * container. A step that fails does not keep the next one from running.
+   * Sends the `routes` and `discovery` sections to the parent process, now
+   * and whenever either section is touched. The route map is a development
+   * aid, so a section that fails to describe itself is logged and the server
+   * keeps running.
+   *
+   * @returns {Promise<void>} Resolves once the first report is sent
+   */
+  private async reportRoutes(): Promise<void> {
+    const registry = this.container.get(IntrospectionRegistry);
+    const send = async (): Promise<void> => {
+      try {
+        const [routes, discovery] = await Promise.all([registry.describe('routes'), registry.describe('discovery')]);
+
+        // without the section there is nothing to say; an empty map would
+        // replace a good one
+        if (!Array.isArray(routes?.data)) {
+          return;
+        }
+
+        process.send?.({ type: 'vercube:routes', routes: routes.data, discovery: discovery?.data ?? null });
+      } catch (error) {
+        this.container.getOptional(Logger)?.warn('Vercube/App::Route types not reported', error);
+      }
+    };
+
+    registry.onInvalidate((id) => {
+      if (id === 'routes' || id === 'discovery') {
+        void send();
+      }
+    });
+
+    await send();
+  }
+
+  /**
+   * Marks the application as draining, keeps serving for `drainDelay`, stops
+   * the HTTP server, runs the shutdown hooks, then disposes the container. A
+   * step that fails does not keep the next one from running.
    *
    * @param {number} timeout - Milliseconds the HTTP server waits for requests in flight
+   * @param {number} drainDelay - Milliseconds to keep serving before the HTTP server closes
    * @returns {Promise<void>} Resolves once everything is closed
    * @private
    */
-  private async shutdown(timeout: number): Promise<void> {
+  private async shutdown(timeout: number, drainDelay: number): Promise<void> {
     const errors: unknown[] = [];
+
+    // before anything awaits: a readiness probe answering right after
+    // `close()` was called must already see it
+    this.gLifecycle.advance('draining');
+
+    // Only a server that listens has a load balancer in front of it to drain
+    // from. Serverless platforms and Nitro route requests themselves.
+    if (drainDelay > 0 && this.gHttpServer.listening) {
+      // a timer overflows past 2^31-1 ms and fires at once, so Infinity is capped
+      await new Promise<void>((resolve) => setTimeout(resolve, Math.min(drainDelay, MAX_TIMER_DELAY)));
+    }
 
     try {
       await this.gHttpServer.close(timeout);
@@ -337,6 +450,8 @@ export class App {
     this.fSignalCleanup?.();
     this.fSignalCleanup = null;
 
+    this.gLifecycle.advance('closed');
+
     if (errors.length > 0) {
       throw new AggregateError(errors, 'Failed to close the application');
     }
@@ -353,7 +468,7 @@ export class App {
    * @private
    */
   private installSignals(): void {
-    const option = this.fConfig?.shutdown?.handleSignals;
+    const option = resolveShutdownDefaults(this.fConfig).handleSignals;
 
     if (!option || this.fSignalCleanup) {
       return;

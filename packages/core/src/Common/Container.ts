@@ -4,6 +4,8 @@ import { EvlogMiddleware } from '../Middleware/EvlogMiddleware';
 import { RuntimeConfig } from '../Services/Config/RuntimeConfig';
 import { DefaultErrorHandlerProvider } from '../Services/ErrorHandler/DefaultErrorHandlerProvider';
 import { ErrorHandlerProvider } from '../Services/ErrorHandler/ErrorHandlerProvider';
+import { HEALTH_REGISTRY_KEY, HealthRegistry } from '../Services/Health/HealthRegistry';
+import { HealthRoutes } from '../Services/Health/HealthRoutes';
 import { HooksService } from '../Services/Hooks/HooksService';
 import { HttpServer } from '../Services/HttpServer/HttpServer';
 import { IntrospectionRegistry } from '../Services/Introspection/IntrospectionRegistry';
@@ -12,6 +14,7 @@ import { ContainerProvider } from '../Services/Introspection/Providers/Container
 import { DiscoveryProvider } from '../Services/Introspection/Providers/DiscoveryProvider';
 import { PluginsProvider } from '../Services/Introspection/Providers/PluginsProvider';
 import { RoutesProvider } from '../Services/Introspection/Providers/RoutesProvider';
+import { AppLifecycle } from '../Services/Lifecycle/AppLifecycle';
 import { MetadataResolver } from '../Services/Metadata/MetadataResolver';
 import { GlobalMiddlewareRegistry } from '../Services/Middleware/GlobalMiddlewareRegistry';
 import { PluginsRegistry } from '../Services/Plugins/PluginsRegistry';
@@ -56,6 +59,13 @@ export function createContainer(config: ConfigTypes.Config): Container {
   container.bind(GlobalMiddlewareRegistry);
   container.bind(ShutdownRegistry);
   container.bind(StartupRegistry);
+
+  // Always bound: modules register their checks whether or not the health
+  // routes are on, and nothing runs until something asks for a report.
+  container.bind(AppLifecycle);
+  container.bind(HealthRegistry);
+  container.bindInstance(HEALTH_REGISTRY_KEY, container.get(HealthRegistry));
+  container.bind(HealthRoutes);
 
   // Always bound, always empty until `@vercube/telemetry` installs itself.
   // Core reads it once per service and short-circuits on `hooks === null`.

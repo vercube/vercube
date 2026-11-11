@@ -120,4 +120,31 @@ describe('writeServerEntry', () => {
       rmSync(dirname(dirname(serverEntry)), { recursive: true, force: true });
     }
   });
+
+  it('records discovered files relative to the project root', () => {
+    const root = `/tmp/vercube-manifest-${Date.now()}`;
+    const serverEntry = `${root}/node_modules/.vercube/server-entry.mjs`;
+    const controller: ServiceInfo = {
+      importClassName: 'HelloController',
+      import: '',
+      fullPath: `${root}/src/server/Controllers/HelloController.ts`,
+      // relative to the scan directory, which is not the root
+      path: 'Controllers/HelloController.ts',
+    };
+
+    try {
+      writeServerEntry(ctx({ root, serverEntry, controllers: [controller], services: [controller] }));
+
+      const manifest = JSON.parse(readFileSync(`${dirname(serverEntry)}/discovery.json`, 'utf8'));
+
+      expect(manifest.controllers).toEqual([{ name: 'HelloController', path: 'src/server/Controllers/HelloController.ts' }]);
+      expect(manifest.services).toEqual([{ name: 'HelloController', path: 'src/server/Controllers/HelloController.ts' }]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('exports inspect, for the dev worker to report routes', () => {
+    expect(generateServerEntry(ctx({}))).toContain('export const inspect = (id) => app.inspect(id);');
+  });
 });

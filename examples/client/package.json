@@ -1,0 +1,22 @@
+{
+  "name": "@examples/client",
+  "version": "1.0.0",
+  "description": "A typed client calling a Vercube application",
+  "packageManager": "pnpm@11.13.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vercube build",
+    "dev": "vercube dev",
+    "client": "node client/main.ts"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@oxc-project/runtime": "catalog:",
+    "@vercube/cli": "workspace:*",
+    "@vercube/client": "workspace:*",
+    "@vercube/core": "workspace:*",
+    "@vercube/di": "workspace:*",
+    "@vercube/logger": "workspace:*"
+  }
+}

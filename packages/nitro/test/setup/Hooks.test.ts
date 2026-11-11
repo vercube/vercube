@@ -58,14 +58,14 @@ describe('setupHooks', () => {
     await nitro.hooks._hooks['build:before']();
     expect(validateBundler).toHaveBeenCalledWith(nitro);
     expect(validateTypescript).toHaveBeenCalledWith(nitro);
-    expect(setupRoutes).toHaveBeenCalledWith(nitro);
+    expect(setupRoutes).toHaveBeenCalledWith(nitro, undefined);
   });
 
   it('compiled hook should setup routes and sync routing', async () => {
     const nitro = makeMockNitro();
     setupHooks(nitro);
     await nitro.hooks._hooks['compiled']();
-    expect(setupRoutes).toHaveBeenCalledWith(nitro);
+    expect(setupRoutes).toHaveBeenCalledWith(nitro, undefined);
     expect(nitro.routing.sync).toHaveBeenCalled();
   });
 

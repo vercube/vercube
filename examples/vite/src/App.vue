@@ -1,5 +1,11 @@
 <script setup lang="ts">
+import { createClient } from '@vercube/client';
 import { onMounted, ref } from 'vue';
+import type { VercubeRoutes } from '../.vercube/routes';
+
+// Typed by the controllers: the route map is rewritten by the Vite plugin
+// whenever routes change, so a renamed parameter fails here at compile time.
+const api = createClient<VercubeRoutes>();
 
 const greeting = ref('…');
 const name = ref('World');
@@ -8,8 +14,7 @@ let socket: WebSocket | undefined;
 
 // HTTP: call the Vercube API served on the same origin.
 async function loadGreeting() {
-  const res = await fetch(`/api/hello/${encodeURIComponent(name.value)}`);
-  const data = await res.json();
+  const data = await api.get('/api/hello/:name', { params: { name: name.value } });
   greeting.value = data.message;
 }
 

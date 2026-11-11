@@ -18,7 +18,6 @@
     "@vercube/core": "workspace:*",
     "@vercube/di": "workspace:*",
     "@vercube/logger": "workspace:*",
-    "@vercube/serverless": "workspace:*",
-    "azure-functions-core-tools": "~4.16.0"
+    "@vercube/serverless": "workspace:*"
   }
 }

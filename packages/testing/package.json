@@ -35,6 +35,7 @@
     "build": "tsdown --config tsdown.config.ts --config-loader=unrun"
   },
   "dependencies": {
+    "@vercube/client": "workspace:*",
     "@vercube/core": "workspace:*",
     "@vercube/di": "workspace:*",
     "@vercube/logger": "workspace:*"

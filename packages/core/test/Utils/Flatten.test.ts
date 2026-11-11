@@ -15,11 +15,41 @@ describe('Flatten', () => {
       'x-api-key',
       'connectionString',
       'tokens',
+      'session',
+      'session:abc',
+      'sessionId',
+      'sessions',
+      'sid',
+      'auth',
+      'auth:user1',
+      'authorization',
+      'jwt',
+      'cookie',
+      'cookies',
+      'bearer',
+      'signature',
+      'passphrase',
+      'otp',
+      'salt',
     ])('should redact %s', (key) => {
       expect(isSecretKey(key)).toBe(true);
     });
 
-    it.each(['keys', 'key', 'name', 'publicKey', 'monkeys', 'stripe', 'port'])('should keep %s visible', (key) => {
+    it.each([
+      'keys',
+      'key',
+      'name',
+      'publicKey',
+      'monkeys',
+      'stripe',
+      'port',
+      'author',
+      'authors',
+      'authority',
+      'side',
+      'consider',
+      'salty',
+    ])('should keep %s visible', (key) => {
       expect(isSecretKey(key)).toBe(false);
     });
   });
@@ -28,16 +58,22 @@ describe('Flatten', () => {
     it('should redact credential-looking leaves anywhere in the path', () => {
       const entries = flattenConfig({
         port: 3000,
-        auth: { jwtSecret: 'super', publicKey: 'visible' },
+        oidc: { jwtSecret: 'super', publicKey: 'visible' },
         providers: [{ api_key: 'nope' }],
+        session: { name: 'sid', maxAge: 3600 },
+        authorization: 'Bearer abc',
+        author: 'Jane',
       });
 
       expect(entries).toEqual(
         expect.arrayContaining([
           { path: 'port', value: '3000' },
-          { path: 'auth.jwtSecret', value: '<redacted>', redacted: true },
-          { path: 'auth.publicKey', value: 'visible' },
+          { path: 'oidc.jwtSecret', value: '<redacted>', redacted: true },
+          { path: 'oidc.publicKey', value: 'visible' },
           { path: 'providers.0.api_key', value: '<redacted>', redacted: true },
+          { path: 'session', value: '<redacted>', redacted: true },
+          { path: 'authorization', value: '<redacted>', redacted: true },
+          { path: 'author', value: 'Jane' },
         ]),
       );
     });

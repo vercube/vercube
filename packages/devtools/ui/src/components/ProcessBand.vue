@@ -63,7 +63,7 @@ const loopTone = computed(() => {
 
 <template>
   <section class="band">
-    <div class="cell">
+    <div class="cell cross-tl">
       <div class="head">
         <span class="label">CPU</span>
         <span class="faint note">
@@ -81,7 +81,7 @@ const loopTone = computed(() => {
       </div>
     </div>
 
-    <div class="cell">
+    <div class="cell cross-tl">
       <div class="head">
         <span class="label">Heap</span>
         <span class="faint note">
@@ -101,7 +101,7 @@ const loopTone = computed(() => {
       </div>
     </div>
 
-    <div class="cell">
+    <div class="cell cross-tl">
       <div class="head">
         <span class="label">Event loop</span>
         <span class="faint note">
@@ -121,7 +121,7 @@ const loopTone = computed(() => {
       </div>
     </div>
 
-    <div class="cell">
+    <div class="cell cross-tl">
       <div class="head">
         <span class="label">Handles</span>
         <span class="faint note">keeping the process alive</span>
@@ -142,6 +142,16 @@ const loopTone = computed(() => {
 </template>
 
 <style scoped>
+/* Section labels as on vercube.dev. */
+.label {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
 .band {
   flex: none;
   display: grid;

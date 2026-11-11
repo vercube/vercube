@@ -33,6 +33,7 @@ export * from './Decorators/Http/Redirect';
 export * from './Decorators/Http/Middleware';
 export * from './Decorators/Http/MultipartFormData';
 export * from './Decorators/Http/Sse';
+export * from './Decorators/Http/Throws';
 
 // Hooks
 export * from './Decorators/Hooks/Listen';
@@ -80,9 +81,14 @@ export * from './Services/Telemetry/TelemetryRegistry';
 export * from './Services/Telemetry/TelemetryOptions';
 export * from './Services/Shutdown/ShutdownRegistry';
 export * from './Services/Startup/StartupRegistry';
+export * from './Services/Lifecycle/AppLifecycle';
+export * from './Services/Health/HealthRegistry';
+export * from './Services/Health/HealthController';
+export * from './Services/Health/HealthRoutes';
 
 // Errors
 export * from './Errors/HttpError';
+export * from './Errors/RouteErrors';
 export * from './Errors/Http/BadRequestError';
 export * from './Errors/Http/ForbiddenError';
 export * from './Errors/Http/InternalServerError';
@@ -104,10 +110,12 @@ export * from './Types/IntrospectionTypes';
 export * from './Types/TelemetryTypes';
 export * from './Types/ValidationTypes';
 export * from './Types/HttpCodes';
+export * from './Types/HealthTypes';
 
 // Utils
 export * from './Utils/Utils';
 export * from './Utils/Listen';
+export * from './Utils/Health';
 export * from './Utils/Security';
 export * from './Utils/Flatten';
 export * from './Utils/Url';

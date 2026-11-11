@@ -41,7 +41,22 @@ describe('DevServer', async () => {
 
     await new Promise((resolve) => setTimeout(resolve, 100));
 
-    expect(fork).toHaveBeenCalledWith(expectedPath);
+    // the worker is told it is one, so `health` does not make a reload wait for a drain
+    expect(fork).toHaveBeenCalledWith(expectedPath, [], { env: expect.objectContaining({ VERCUBE_DEV_SERVER: '1' }) });
+  });
+
+  it('asks the worker for its routes when typegen is on', async () => {
+    const on = vi.fn();
+    vi.mocked(fork).mockReturnValueOnce({ on, exitCode: null, signalCode: null } as any);
+
+    const server = createDevServer({
+      ...mockApp,
+      config: { ...mockApp.config, build: { ...mockApp.config.build, typegen: true } },
+    } as any);
+    await server.reload();
+
+    expect(fork).toHaveBeenCalledWith(expect.any(String), [], { env: expect.objectContaining({ VERCUBE_DEV_ROUTES: '1' }) });
+    expect(on).toHaveBeenCalledWith('message', expect.any(Function));
   });
 
   it('should handle reload successfully', async () => {

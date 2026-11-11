@@ -100,7 +100,7 @@ export function testAuth<U = any>(options: TestAuthOptions<U> = {}): TestingType
     beforeInitialize: (app) => {
       app.container.bindInstance(AuthProvider, new TestAuthProvider<U>(users, roles));
     },
-    ready: (testApp: TestApp) => {
+    ready: (testApp: TestApp<any>) => {
       testApp.useImpersonator((request, user) => {
         users.set(request, user as U);
       });

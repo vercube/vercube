@@ -1,5 +1,5 @@
 import { context, SpanKind, trace } from '@opentelemetry/api';
-import { getRequestPathname, getRequestSearch, isSecretKey } from '@vercube/core';
+import { getRequestPathname, getRequestSearch } from '@vercube/core';
 import { bootstrapRecorder } from '../Bootstrap/BootstrapSpans';
 import {
   ERROR_TYPE,
@@ -24,6 +24,7 @@ import {
   RESPONSE_BODY_EVENT,
 } from '../Common/BodyCapture';
 import { addHeadersEvent, REQUEST_HEADERS_EVENT, RESPONSE_HEADERS_EVENT } from '../Common/HeaderCapture';
+import { redactQuery } from '../Common/Redaction';
 import { errorType, failSpan, runInSpan } from '../Common/SpanUtils';
 import type { BodyPreview } from '../Common/BodyCapture';
 import type { Telemetry } from '../Common/Telemetry';
@@ -64,6 +65,9 @@ export class CoreTelemetryHooks implements TelemetryTypes.Hooks {
   /** Path prefixes that produce no telemetry. */
   private readonly fExclude: string[];
 
+  /** Exact paths that produce no telemetry. */
+  private readonly fExcludeExact: ReadonlySet<string>;
+
   /** Extra header names to withhold, or null when headers are not captured. */
   private readonly fRedactHeaders: ReadonlySet<string> | null;
 
@@ -81,6 +85,7 @@ export class CoreTelemetryHooks implements TelemetryTypes.Hooks {
     this.fBodyBytes = resolveBodyBytes(options.spans?.bodies);
     this.fBootstrapPending = options.spans?.di !== false;
     this.fExclude = options.exclude ?? [];
+    this.fExcludeExact = new Set(options.excludeExact ?? []);
     this.fRedactHeaders = resolveHeaderRedaction(options.spans?.headers);
   }
 
@@ -89,7 +94,7 @@ export class CoreTelemetryHooks implements TelemetryTypes.Hooks {
     spanContext: TelemetryTypes.ServerSpanContext,
     fn: () => Response | Promise<Response>,
   ): Response | Promise<Response> {
-    if (this.fExclude.length > 0 && this.isExcluded(getRequestPathname(spanContext.request))) {
+    if ((this.fExclude.length > 0 || this.fExcludeExact.size > 0) && this.isExcluded(getRequestPathname(spanContext.request))) {
       return fn();
     }
 
@@ -182,6 +187,15 @@ export class CoreTelemetryHooks implements TelemetryTypes.Hooks {
    * @returns True when nothing should be recorded
    */
   private isExcluded(path: string): boolean {
+    if (this.fExcludeExact.size > 0) {
+      // the router serves `/x/` as `/x`, so the exact list does too
+      const bare = path.length > 1 && path.endsWith('/') ? path.slice(0, -1) : path;
+
+      if (this.fExcludeExact.has(bare)) {
+        return true;
+      }
+    }
+
     return this.fExclude.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
   }
 
@@ -284,32 +298,6 @@ function toAttributes(spanContext: TelemetryTypes.ServerSpanContext): Attributes
   }
 
   return attributes;
-}
-
-/**
- * Rewrites a query string with credential-bearing values withheld.
- *
- * A secret in `?access_token=` is as sensitive as one in an `Authorization`
- * header, and it ends up in traces, downloadable snapshots and any exporter
- * that shares the pipeline. The same name matching used for configuration
- * values decides what to withhold.
- *
- * @param query - The raw query string, without the leading `?`
- * @returns The query string with secret values replaced
- */
-function redactQuery(query: string): string {
-  const params = new URLSearchParams(query);
-  let redacted = false;
-
-  // Snapshotted into a Set, because the loop writes back into `params`.
-  for (const key of new Set(params.keys())) {
-    if (isSecretKey(key)) {
-      params.set(key, '<redacted>');
-      redacted = true;
-    }
-  }
-
-  return redacted ? params.toString() : query;
 }
 
 /**

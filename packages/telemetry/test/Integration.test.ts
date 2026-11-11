@@ -203,6 +203,27 @@ describe('@vercube/telemetry end to end', () => {
     expect(telemetry.spans()).toEqual([]);
   });
 
+  it('leaves the health probes out, but not the routes beneath them', async () => {
+    const probed = await createApp({
+      cfg: { telemetry: true, health: { endpoints: { live: '/users' } }, requestLogging: false },
+      setup: (instance) => {
+        instance.container.bind(UsersController);
+        instance.addPlugin(TelemetryPlugin);
+      },
+    });
+
+    telemetry.reset();
+    await probed.fetch(new Request('http://localhost/users'));
+    await probed.fetch(new Request('http://localhost/users/'));
+    await probed.fetch(new Request('http://localhost/_health/ready'));
+
+    expect(telemetry.spans()).toEqual([]);
+
+    await probed.fetch(new Request('http://localhost/users/42'));
+
+    expect(telemetry.span('GET /users/:id')).toBeDefined();
+  });
+
   it('has no active span once the request is done', async () => {
     await app.fetch(new Request('http://localhost/users/42'));
 

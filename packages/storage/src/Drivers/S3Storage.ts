@@ -1,6 +1,8 @@
 import {
   DeleteObjectCommand,
+  DeleteObjectsCommand,
   GetObjectCommand,
+  HeadBucketCommand,
   HeadObjectCommand,
   ListObjectsV2Command,
   PutObjectCommand,
@@ -69,7 +71,16 @@ import type { Readable } from 'node:stream';
 export interface S3BaseOptions extends S3ClientConfig {
   bucket: string;
   logger?: Logger;
+  /**
+   * What the readiness probe asks S3. `'object'` (default) sends `HeadObject` for a
+   * sentinel key and treats 404 as healthy; `'bucket'` sends `HeadBucket`
+   * (needs `s3:ListBucket`). A 403 fails the probe in both modes.
+   */
+  probe?: 'object' | 'bucket';
 }
+
+/** Key the readiness probe asks about; it does not need to exist. */
+const HEALTH_PROBE_KEY = '.vercube-health';
 
 /**
  * S3 storage implementation of the Storage interface.
@@ -109,6 +120,7 @@ export class S3Storage implements Storage<S3BaseOptions> {
   private logger?: Logger;
   private s3!: S3Client;
   private bucket!: string;
+  private probe: 'object' | 'bucket' = 'object';
 
   /**
    * Initializes the S3 storage client.
@@ -131,10 +143,44 @@ export class S3Storage implements Storage<S3BaseOptions> {
    * When credentials are explicitly provided in options, they take precedence over all other sources.
    */
   public async initialize(options: S3BaseOptions): Promise<void> {
-    const { bucket, logger, ...s3Options } = options;
+    const { bucket, logger, probe, ...s3Options } = options;
     this.s3 = new S3Client(s3Options);
     this.bucket = bucket;
+    this.probe = probe ?? 'object';
     this.logger = logger;
+  }
+
+  /**
+   * Asks S3 whether it is reachable with the configured credentials, for the
+   * readiness probe. A 403 is never treated as healthy: S3 also answers it for
+   * an unknown access key, a bad signature, a disabled key or a bucket owned by
+   * another account, and a HEAD response carries no body to tell them apart.
+   *
+   * With `probe: 'object'` (the default) it sends `HeadObject` for a sentinel key
+   * and accepts success or 404. With `probe: 'bucket'` it sends `HeadBucket`,
+   * which needs `s3:ListBucket`. Without `s3:ListBucket`, S3 answers 403 for a
+   * missing object too, so grant it or make sure the sentinel key exists.
+   *
+   * @returns {Promise<void>} Resolves once S3 answered with proof the credentials were accepted
+   * @throws {Error} When S3 cannot be reached, access is denied, or S3 fails
+   */
+  public async ping(): Promise<void> {
+    if (this.probe === 'bucket') {
+      await this.s3.send(new HeadBucketCommand({ Bucket: this.bucket }));
+      return;
+    }
+
+    try {
+      await this.s3.send(new HeadObjectCommand({ Bucket: this.bucket, Key: HEALTH_PROBE_KEY }));
+    } catch (error) {
+      const e = error as { name?: string; $metadata?: { httpStatusCode?: number } };
+
+      if (e?.$metadata?.httpStatusCode === 404 || e?.name === 'NotFound' || e?.name === 'NoSuchKey') {
+        return;
+      }
+
+      throw error;
+    }
   }
 
   /**
@@ -159,10 +205,27 @@ export class S3Storage implements Storage<S3BaseOptions> {
       }
 
       const body = await this.streamToString(result.Body as Readable);
-      return JSON.parse(body) as T;
+
+      try {
+        return JSON.parse(body) as T;
+      } catch (parseError) {
+        throw new StorageError(
+          `Failed to parse item "${key}" from S3: the object is not valid JSON`,
+          'getItem',
+          parseError as Error,
+          {
+            bucket: this.bucket,
+            errorName: 'SyntaxError',
+          },
+        );
+      }
     } catch (error: any) {
       if (error.name === 'NoSuchKey') {
         return undefined as T;
+      }
+
+      if (error instanceof StorageError) {
+        throw error;
       }
 
       // Log sanitized error information
@@ -208,8 +271,15 @@ export class S3Storage implements Storage<S3BaseOptions> {
    * @param {T} value - The value to store (will be JSON serialized).
    * @param {U} [options] - Additional options (currently unused).
    * @returns {Promise<void>} A promise that resolves when the value has been stored.
+   *
+   * Storing `undefined` removes the key, since it has no JSON form and would otherwise leave an unreadable empty object.
    */
   public async setItem<T = unknown, U = unknown>(key: string, value: T, options?: U): Promise<void> {
+    if (value === undefined) {
+      await this.deleteItem(key);
+      return;
+    }
+
     await this.s3.send(
       new PutObjectCommand({
         Bucket: this.bucket,
@@ -277,19 +347,32 @@ export class S3Storage implements Storage<S3BaseOptions> {
   }
 
   /**
-   * Retrieves a list of all keys stored in the S3 bucket.
-   *
-   * @returns {Promise<string[]>} An array of all stored keys.
+   * Counting means listing the whole bucket, so `describe()` leaves the count
+   * out when the keys were cut short.
    */
-  public async getKeys(): Promise<string[]> {
+  public readonly cheapSize = false;
+
+  /**
+   * Retrieves the keys stored in the S3 bucket.
+   *
+   * @param {object} [options] - `limit` stops paging once that many keys were collected
+   * @returns {Promise<string[]>} The stored keys, at most `limit` of them
+   */
+  public async getKeys(options: { limit?: number } = {}): Promise<string[]> {
+    const limit = options.limit;
     const keys: string[] = [];
     let continuationToken: string | undefined = undefined;
+
+    if (limit !== undefined && limit <= 0) {
+      return keys;
+    }
 
     do {
       const result: ListObjectsV2CommandOutput = await this.s3.send(
         new ListObjectsV2Command({
           Bucket: this.bucket,
           ContinuationToken: continuationToken,
+          ...(limit === undefined ? {} : { MaxKeys: Math.min(1000, limit - keys.length) }),
         }),
       );
 
@@ -299,6 +382,10 @@ export class S3Storage implements Storage<S3BaseOptions> {
         }
       }
 
+      if (limit !== undefined && keys.length >= limit) {
+        return keys.slice(0, limit);
+      }
+
       continuationToken = result.NextContinuationToken;
     } while (continuationToken);
 
@@ -306,15 +393,36 @@ export class S3Storage implements Storage<S3BaseOptions> {
   }
 
   /**
-   * Deletes all items from S3 storage.
+   * Deletes all items from S3 storage, one page of up to 1000 keys per request.
    *
    * @returns {Promise<void>} A promise that resolves when all items have been deleted.
+   * @throws {StorageError} When S3 reports keys it could not delete.
    */
   public async clear(): Promise<void> {
-    const keys = await this.getKeys();
-    for (const key of keys) {
-      await this.deleteItem(key);
-    }
+    let continuationToken: string | undefined = undefined;
+
+    do {
+      const result: ListObjectsV2CommandOutput = await this.s3.send(
+        new ListObjectsV2Command({ Bucket: this.bucket, ContinuationToken: continuationToken }),
+      );
+
+      const objects = (result.Contents ?? []).filter((obj) => obj.Key).map((obj) => ({ Key: obj.Key! }));
+
+      if (objects.length > 0) {
+        const deleted = await this.s3.send(
+          new DeleteObjectsCommand({ Bucket: this.bucket, Delete: { Objects: objects, Quiet: true } }),
+        );
+
+        if (deleted?.Errors?.length) {
+          throw new StorageError(`Failed to delete ${deleted.Errors.length} items from S3`, 'clear', undefined, {
+            bucket: this.bucket,
+            errorName: deleted.Errors[0]?.Code,
+          });
+        }
+      }
+
+      continuationToken = result.NextContinuationToken;
+    } while (continuationToken);
   }
 
   /**

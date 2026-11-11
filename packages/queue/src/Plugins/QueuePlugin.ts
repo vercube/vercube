@@ -1,4 +1,4 @@
-import { BasePlugin } from '@vercube/core';
+import { BasePlugin, resolveModuleHealth } from '@vercube/core';
 import { QueueManager } from '../Services/QueueManager';
 import type { QueueTypes } from '../Types/QueueTypes';
 import type { App } from '@vercube/core';
@@ -59,7 +59,9 @@ export class QueuePlugin extends BasePlugin<QueueTypes.PluginOptions> {
    * @override
    */
   public override async use(app: App, options?: QueueTypes.PluginOptions): Promise<void> {
-    if (!app.container.getOptional(QueueManager)) {
+    const first = !app.container.getOptional(QueueManager);
+
+    if (first) {
       app.container.bind(QueueManager);
 
       // close with the application, once however many times the plugin is registered
@@ -69,7 +71,15 @@ export class QueuePlugin extends BasePlugin<QueueTypes.PluginOptions> {
     const manager = app.container.get(QueueManager);
     const { strategies, ...defaults } = options ?? {};
 
-    manager.configure(defaults);
+    const { health, ...settings } = defaults;
+
+    manager.configure(settings);
+
+    // the first registration turns the checks on by default, a later one only
+    // changes them when it says so
+    if (first || health !== undefined) {
+      manager.enableHealthChecks(resolveModuleHealth(health));
+    }
 
     for (const mount of strategies ?? []) {
       if (manager.getStrategy(mount.name)) {

@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 import type { SchedulerStore } from '../Services/SchedulerStore';
+import type { HealthTypes } from '@vercube/core';
 import type { IOC } from '@vercube/di';
 import type { Logger } from '@vercube/logger';
 
@@ -524,6 +525,14 @@ export namespace SchedulerTypes {
      * Vercel Cron. Off unless set, and refused without a secret.
      */
     http?: HttpOptions;
+
+    /**
+     * Registers a readiness check, `scheduler:store`, when the store talks to
+     * a backend (Redis, Postgres). `false` registers none; `{ critical: false }`
+     * reports it without failing readiness.
+     * @default true
+     */
+    health?: HealthTypes.ModuleOption;
   }
 
   /** A mounted store together with the options it is initialized with. */

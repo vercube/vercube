@@ -49,30 +49,57 @@ export function buildImport(className: string, source: string, isDefault: boolea
 }
 
 /**
- * Searches a list of decorators for a `CallExpression` matching the given name
- * and extracts its first string argument.
+ * Reads a decorator argument as a static string.
  *
- * Used to retrieve the path argument from decorators like `@Controller('/api/foo')`.
- * If the decorator is found but has no string argument, an empty string is returned.
- * If no matching decorator is found, `null` is returned.
+ * Supports string literals and template literals without expressions.
+ *
+ * @param arg - The AST node of the argument, or `undefined` when absent.
+ * @returns The string value, or `null` if the argument cannot be read statically.
+ */
+export function readStaticString(arg: any): string | null {
+  if (arg?.type === 'Literal' && typeof arg.value === 'string') return arg.value;
+  if (arg?.type === 'TemplateLiteral' && arg.expressions?.length === 0) {
+    return arg.quasis?.[0]?.value?.cooked ?? null;
+  }
+  return null;
+}
+
+/**
+ * Finds a decorator by name and reads its first argument statically.
  *
  * @param decorators - The array of decorator AST nodes to search, or `undefined` if none exist.
  * @param name - The decorator function name to match against (e.g. 'Controller').
- * @returns The string argument value, an empty string if no argument is provided, or `null` if the decorator is not found.
+ * @returns `null` if the decorator is not found, otherwise `{ value }` where `value` is the
+ * argument string, `''` when no argument is given, or `null` when the argument is not statically readable.
  */
-export function extractDecoratorArg(decorators: any[] | undefined, name: string): string | null {
+export function findDecoratorArg(decorators: any[] | undefined, name: string): { value: string | null } | null {
   if (!decorators) return null;
   for (const dec of decorators) {
     const expr = dec.expression;
     if (expr?.type === 'CallExpression' && expr.callee?.name === name) {
       const arg = expr.arguments?.[0];
-      if (arg?.type === 'Literal' && typeof arg.value === 'string') {
-        return arg.value;
-      }
-      return '';
+      return { value: arg === undefined ? '' : readStaticString(arg) };
     }
   }
   return null;
+}
+
+/**
+ * Searches a list of decorators for a `CallExpression` matching the given name
+ * and extracts its first string argument.
+ *
+ * Used to retrieve the path argument from decorators like `@Controller('/api/foo')`.
+ * Template literals without expressions are supported. If the decorator is found but
+ * has no readable string argument, an empty string is returned.
+ * If no matching decorator is found, `null` is returned.
+ *
+ * @param decorators - The array of decorator AST nodes to search, or `undefined` if none exist.
+ * @param name - The decorator function name to match against (e.g. 'Controller').
+ * @returns The string argument value, an empty string if no readable argument is provided, or `null` if the decorator is not found.
+ */
+export function extractDecoratorArg(decorators: any[] | undefined, name: string): string | null {
+  const found = findDecoratorArg(decorators, name);
+  return found === null ? null : (found.value ?? '');
 }
 
 /**

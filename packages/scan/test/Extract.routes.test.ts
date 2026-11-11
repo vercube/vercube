@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { extractRoutes, IMPORT_SOURCE } from '../src/Extract';
 
 describe('extractRoutes', () => {
@@ -182,7 +182,7 @@ describe('extractRoutes', () => {
     expect(routes).toHaveLength(0);
   });
 
-  it('should use empty string as path when HTTP decorator has non-literal argument', () => {
+  it('should skip the route when HTTP decorator has non-literal argument', () => {
     const code = `
       @Controller('/api')
       export class FooController {
@@ -190,9 +190,7 @@ describe('extractRoutes', () => {
         foo() {}
       }
     `;
-    const routes = extractRoutes(code);
-    expect(routes).toHaveLength(1);
-    expect(routes[0].route).toBe('/api');
+    expect(extractRoutes(code, { warn: vi.fn() })).toEqual([]);
   });
 
   it('should handle class with no decorators on class node', () => {
@@ -274,7 +272,7 @@ describe('extractRoutes', () => {
     expect(extractRoutes(code)).toEqual([]);
   });
 
-  it('should handle @Controller with non-literal argument', () => {
+  it('should skip routes when @Controller has non-literal argument', () => {
     const code = `
       @Controller(BASE_PATH)
       export class FooController {
@@ -282,9 +280,7 @@ describe('extractRoutes', () => {
         foo() {}
       }
     `;
-    const routes = extractRoutes(code);
-    expect(routes).toHaveLength(1);
-    expect(routes[0].route).toBe('/foo');
+    expect(extractRoutes(code, { warn: vi.fn() })).toEqual([]);
   });
 
   it('should skip anonymous default-export class without a name', () => {
@@ -345,5 +341,29 @@ describe('extractRoutes', () => {
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+  });
+});
+
+describe('extractRoutes with non-literal paths', () => {
+  it('reads template literals without expressions', () => {
+    const code = "@Controller(`/users`)\nexport class U { @Get(`/list`) a(){} @Get('/ok') b(){} }";
+    expect(extractRoutes(code).map((r) => `${r.method} ${r.route}`)).toEqual(['GET /users/list', 'GET /users/ok']);
+  });
+
+  it('skips and warns for a method path it cannot read', () => {
+    const warn = vi.fn();
+    const code =
+      "const P = '/x';\n@Controller('/users')\nexport class U { @Get(P) a(){} @Get(`/${P}`) c(){} @Get('/ok') b(){} @Get() d(){} }";
+    const routes = extractRoutes(code, { warn });
+    expect(routes.map((r) => r.route)).toEqual(['/users/ok', '/users']);
+    expect(warn).toHaveBeenCalledTimes(2);
+    expect(warn.mock.calls[0][0]).toContain('U.a');
+  });
+
+  it('skips and warns for a controller path it cannot read', () => {
+    const warn = vi.fn();
+    const code = "const P = '/x';\n@Controller(P)\nexport class U { @Get('/ok') b(){} }";
+    expect(extractRoutes(code, { warn })).toEqual([]);
+    expect(warn).toHaveBeenCalledTimes(1);
   });
 });

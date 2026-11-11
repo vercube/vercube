@@ -16,6 +16,8 @@ describe('DefaultErrorHandlerProvider', () => {
 
     errorHandler = app.container.get(ErrorHandlerProvider) as DefaultErrorHandlerProvider;
     logger = app.container.get(Logger);
+    // the message of an unexpected error is only shown in dev, so pin it
+    Object.defineProperty(errorHandler, 'gConfigProvider', { value: { dev: true }, configurable: true });
   });
 
   it('should handle HttpError and return appropriate response', async () => {
@@ -73,6 +75,24 @@ describe('DefaultErrorHandlerProvider', () => {
     const responseData = await response.json();
     // The cause property might not be serialized properly, so we just check that it doesn't throw
     expect(responseData).toBeDefined();
+  });
+
+  it('should not leak the message or the cause of an unexpected error', async () => {
+    vi.spyOn(logger, 'error').mockImplementation(() => {});
+    Object.defineProperty(errorHandler, 'gConfigProvider', { value: { dev: false }, configurable: true });
+    const cause = Object.assign(new Error('duplicate key'), { detail: 'Key (email)=(victim@x.io)', host: '10.0.3.7' });
+    const response = errorHandler.handleError(new Error('password=hunter2 at /srv/app', { cause }));
+
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({ status: 500, name: 'InternalServerError', message: 'Internal Server Error' });
+  });
+
+  it('should expose the message of an unexpected error only in dev mode', async () => {
+    vi.spyOn(logger, 'error').mockImplementation(() => {});
+    Object.defineProperty(errorHandler, 'gConfigProvider', { value: { dev: true }, configurable: true });
+    const response = errorHandler.handleError(new Error('boom detail'));
+
+    expect((await response.json()).message).toBe('boom detail');
   });
 
   it('should handle error with null message', async () => {

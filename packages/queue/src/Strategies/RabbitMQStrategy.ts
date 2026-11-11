@@ -407,6 +407,23 @@ export class RabbitMQStrategy extends QueueStrategy<RabbitMQStrategyOptions> {
   }
 
   /**
+   * Opens and closes a channel, for the readiness probe.
+   *
+   * @returns {Promise<void>} Resolves once the broker answered
+   * @throws {QueueError} When the strategy is not connected
+   */
+  public override async ping(): Promise<void> {
+    if (!this.fConnection) {
+      throw new QueueError('RabbitMQ strategy is not connected', 'ping', undefined, undefined, false);
+    }
+
+    // opening a channel is a round trip to the broker, unlike reading a flag
+    const channel = await this.fConnection.createChannel();
+
+    await channel.close();
+  }
+
+  /**
    * Stops every consumer and closes the connection.
    *
    * @returns {Promise<void>} Resolves once the connection is closed
@@ -446,6 +463,8 @@ export class RabbitMQStrategy extends QueueStrategy<RabbitMQStrategyOptions> {
 
     consumer.active++;
 
+    let succeeded = false;
+
     try {
       await request.dispatch({
         id: message.properties.messageId ?? generateJobId(),
@@ -455,11 +474,21 @@ export class RabbitMQStrategy extends QueueStrategy<RabbitMQStrategyOptions> {
         attempt: readNumericHeader(headers[ATTEMPT_HEADER], 1),
         raw: message,
       });
-
-      consumer.channel.ack(message);
+      succeeded = true;
     } catch {
       // the manager owns the retry policy, so requeueing here would only loop
-      consumer.channel.nack(message, false, false);
+    }
+
+    // Settled on its own so a dead channel is logged instead of escaping: the
+    // broker redelivers unacked messages once the connection is back.
+    try {
+      if (succeeded) {
+        consumer.channel.ack(message);
+      } else {
+        consumer.channel.nack(message, false, false);
+      }
+    } catch (error) {
+      this.gLogger?.warn('Vercube/RabbitMQStrategy::Failed to settle the message', error);
     } finally {
       consumer.active--;
     }

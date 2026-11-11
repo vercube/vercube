@@ -1,5 +1,5 @@
 import type { ConfigTypes } from '@vercube/core';
-import type { MiddlewareInfo, RouteInfo, ServiceInfo } from '@vercube/scan';
+import type { MiddlewareInfo, RouteInfo, ServiceInfo, TypegenSetting } from '@vercube/scan';
 import type { RunnerManager } from 'env-runner';
 
 /**
@@ -43,6 +43,16 @@ export interface VercubePluginConfig {
    * vercube({ appConfig: { requestLogging: false } })
    */
   appConfig?: ConfigTypes.Config;
+
+  /**
+   * The typed route map for `@vercube/client`, written in dev whenever the
+   * routes change and after `vite build`.
+   *
+   * On by default when the project depends on `@vercube/client`. `false`
+   * turns it off; an object turns it on and sets where it is written
+   * (relative to `rootDir`, default `.vercube/routes.d.ts`).
+   */
+  typegen?: TypegenSetting;
 
   /**
    * The runner used to execute server code in the dev environment.

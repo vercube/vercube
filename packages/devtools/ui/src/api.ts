@@ -81,7 +81,13 @@ export function apiUrl(path: string): string {
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(apiUrl(path), {
     ...init,
-    headers: { Accept: 'application/json', ...(token ? { 'x-devtools-token': token } : {}), ...init?.headers },
+    headers: {
+      Accept: 'application/json',
+      // Required by the server on every state-changing call; a cross-site page cannot send it.
+      'x-devtools-request': '1',
+      ...(token ? { 'x-devtools-token': token } : {}),
+      ...init?.headers,
+    },
   });
 
   if (!response.ok) {
@@ -186,7 +192,7 @@ export function signals(kind: 'traces' | 'logs' | 'metrics'): Promise<unknown> {
  * @returns Resolves once the buffer is empty
  */
 export async function clearSignals(kind: 'traces' | 'logs' | 'metrics'): Promise<void> {
-  await api(`/api/signals/${kind}/clear`);
+  await api(`/api/signals/${kind}/clear`, { method: 'POST' });
 }
 
 /**

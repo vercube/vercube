@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { extractMiddlewares, extractRoutes, extractServices } from './Extract';
-import type { FileInfo, MiddlewareInfo, RouteInfo, ServiceInfo } from './Types';
+import type { FileInfo, MiddlewareInfo, RouteInfo, ScanLogger, ServiceInfo } from './Types';
 
 /**
  * Reads a controller file from disk and returns all routes defined in classes
@@ -10,10 +10,11 @@ import type { FileInfo, MiddlewareInfo, RouteInfo, ServiceInfo } from './Types';
  * them to the real file path with {@link resolveImports} when generating code.
  *
  * @param file - File info (path and fullPath) to analyze.
+ * @param logger - Optional logger used to warn about paths that cannot be read statically.
  * @returns A list of {@link RouteInfo} for every route in the file.
  */
-export async function transformRoute(file: FileInfo): Promise<RouteInfo[]> {
-  return extractRoutes(readFileSync(file.fullPath, 'utf8')).map((route) => ({ ...route, ...file }));
+export async function transformRoute(file: FileInfo, logger?: ScanLogger): Promise<RouteInfo[]> {
+  return extractRoutes(readFileSync(file.fullPath, 'utf8'), logger).map((route) => ({ ...route, ...file }));
 }
 
 /**
@@ -45,5 +46,21 @@ export async function transformMiddleware(file: FileInfo): Promise<MiddlewareInf
  * @returns The entries with resolved `import` statements.
  */
 export function resolveImports<T extends { import: string; fullPath: string }>(entries: T[], placeholder: string): T[] {
-  return entries.map((entry) => ({ ...entry, import: entry.import.replace(placeholder, entry.fullPath) }));
+  return entries.map((entry) => ({ ...entry, import: resolveImportSource(entry.import, placeholder, entry.fullPath) }));
+}
+
+/**
+ * Swaps the quoted placeholder specifier in an import statement for the real file path.
+ *
+ * The path is emitted as a JSON string literal, so quotes, backslashes and `$` sequences
+ * in it cannot break (or inject into) the generated statement.
+ *
+ * @param statement - Import statement containing the placeholder specifier.
+ * @param placeholder - The placeholder module specifier to replace.
+ * @param fullPath - The real absolute file path.
+ * @returns The import statement pointing at `fullPath`.
+ */
+export function resolveImportSource(statement: string, placeholder: string, fullPath: string): string {
+  const literal = JSON.stringify(fullPath);
+  return statement.replace(`'${placeholder}'`, () => literal);
 }

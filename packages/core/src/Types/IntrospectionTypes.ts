@@ -106,6 +106,33 @@ export namespace IntrospectionTypes {
     actions: number;
     /** True when the route takes the allocation-free fast path. */
     simple: boolean;
+    /** Set on `@Sse()` routes, which answer with `text/event-stream`. */
+    sse?: true;
+    /**
+     * Errors the route answers with, sorted by status: those declared with
+     * `@Throws()` on the handler or its controller, and those the framework
+     * throws itself (a 400 for a validated or parsed input, a 401 and a 403
+     * for a secured route). Absent when there are none.
+     */
+    throws?: RouteThrows[];
+    /** Set when an authentication middleware (`@Auth()`) guards the route. */
+    secured?: true;
+
+    /**
+     * Set on infrastructure routes that opt out of application-wide
+     * middlewares: health probes, devtools, the scheduler trigger. Absent
+     * on application routes.
+     */
+    internal?: true;
+  }
+
+  /** One error a route answers with. */
+  export interface RouteThrows {
+    /** Class name of the error. */
+    name: string;
+    status: number;
+    /** Set for an implicit error: the module its class is imported from. */
+    module?: string;
   }
 
   /** One source file the scanner attributed to a class. */

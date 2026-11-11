@@ -136,4 +136,14 @@ export abstract class QueueStrategy<InitOptions = undefined> {
    * @throws {QueueError} When the queue cannot be read.
    */
   public peek?(request: QueueTypes.PeekRequest): Promise<QueueTypes.PeekedMessage[]>;
+
+  /**
+   * Checks that the broker answers, for the readiness probe. Resolves when
+   * it does, throws when it does not. A transport without a broker, such as
+   * the in-memory one, leaves it out and gets no health check.
+   *
+   * @returns Resolves once the broker answered.
+   * @throws {Error} When the broker cannot be reached.
+   */
+  public ping?(): Promise<void>;
 }

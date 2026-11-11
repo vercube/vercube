@@ -1,5 +1,13 @@
 import { Readable } from 'node:stream';
-import { DeleteObjectCommand, HeadObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import {
+  DeleteObjectCommand,
+  DeleteObjectsCommand,
+  HeadBucketCommand,
+  HeadObjectCommand,
+  ListObjectsV2Command,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { S3Storage } from '../src/Drivers/S3Storage';
 import { StorageError } from '../src/Errors/StorageError';
@@ -77,6 +85,14 @@ describe('S3Storage', () => {
       expect(cmd.input.Key).toBe('key');
       expect(cmd.input.Body).toBe(JSON.stringify({ test: 'value' }));
     });
+
+    it('should delete the key instead of writing an empty body when value is undefined', async () => {
+      mockSend.mockResolvedValueOnce({});
+      await storage.setItem('key', undefined);
+
+      expect(mockSend).toHaveBeenCalledTimes(1);
+      expect(mockSend.mock.calls[0][0]).toBeInstanceOf(DeleteObjectCommand);
+    });
   });
 
   describe('getItem', () => {
@@ -92,6 +108,19 @@ describe('S3Storage', () => {
       mockSend.mockRejectedValueOnce({ name: 'NoSuchKey' });
       const result = await storage.getItem('missing');
       expect(result).toBeUndefined();
+    });
+
+    it.each([
+      ['empty', ''],
+      ['non-JSON', 'not json {'],
+    ])('should throw a StorageError naming the key for an %s body', async (_name, body) => {
+      mockSend.mockResolvedValueOnce({ Body: ReadableFromString(body) });
+
+      await expect(storage.getItem('my-key')).rejects.toMatchObject({
+        name: 'StorageError',
+        operation: 'getItem',
+        message: expect.stringMatching(/my-key.*not valid JSON/),
+      });
     });
 
     it('should throw StorageError for other errors', async () => {
@@ -193,6 +222,63 @@ describe('S3Storage', () => {
     });
   });
 
+  describe('ping', () => {
+    it('should send HeadObject for the sentinel key by default', async () => {
+      mockSend.mockResolvedValueOnce({});
+
+      await storage.ping();
+
+      expect(mockSend.mock.calls[0][0]).toBeInstanceOf(HeadObjectCommand);
+      expect((mockSend.mock.calls[0][0] as HeadObjectCommand).input.Bucket).toBe('test-bucket');
+      expect((mockSend.mock.calls[0][0] as HeadObjectCommand).input.Key).toBe('.vercube-health');
+    });
+
+    it('should count a 404 as reachable, the credentials were accepted', async () => {
+      mockSend.mockRejectedValueOnce({ name: 'NotFound', $metadata: { httpStatusCode: 404 } });
+
+      await expect(storage.ping()).resolves.toBeUndefined();
+    });
+
+    it('should fail on a 403, which includes invalid credentials', async () => {
+      mockSend.mockRejectedValueOnce({ name: 'Forbidden', $metadata: { httpStatusCode: 403 } });
+
+      await expect(storage.ping()).rejects.toMatchObject({ name: 'Forbidden' });
+    });
+
+    it('should fail on an unreachable endpoint', async () => {
+      mockSend.mockRejectedValueOnce(new Error('connect ECONNREFUSED'));
+
+      await expect(storage.ping()).rejects.toThrow('ECONNREFUSED');
+    });
+
+    describe('with probe: bucket', () => {
+      let bucketStorage: S3Storage;
+
+      beforeEach(async () => {
+        bucketStorage = new S3Storage();
+        await bucketStorage.initialize({ bucket: 'test-bucket', region: 'us-east-1', probe: 'bucket' });
+        (bucketStorage as any).s3 = { send: mockSend };
+      });
+
+      it('should ask S3 about the bucket', async () => {
+        mockSend.mockResolvedValueOnce({});
+
+        await bucketStorage.ping();
+
+        expect(mockSend.mock.calls[0][0]).toBeInstanceOf(HeadBucketCommand);
+        expect((mockSend.mock.calls[0][0] as HeadBucketCommand).input.Bucket).toBe('test-bucket');
+      });
+
+      it('should fail on a 403 and on a missing bucket', async () => {
+        mockSend.mockRejectedValueOnce({ name: 'Forbidden', $metadata: { httpStatusCode: 403 } });
+        await expect(bucketStorage.ping()).rejects.toMatchObject({ name: 'Forbidden' });
+
+        mockSend.mockRejectedValueOnce({ name: 'NotFound', $metadata: { httpStatusCode: 404 } });
+        await expect(bucketStorage.ping()).rejects.toMatchObject({ name: 'NotFound' });
+      });
+    });
+  });
+
   describe('hasItem', () => {
     it('should return true if HeadObjectCommand succeeds', async () => {
       mockSend.mockResolvedValueOnce({});
@@ -248,6 +334,30 @@ describe('S3Storage', () => {
       expect(keys).toEqual(['a', 'b', 'c']);
     });
 
+    it('should stop paging once the limit is reached', async () => {
+      mockSend.mockResolvedValueOnce({
+        Contents: [{ Key: 'a' }, { Key: 'b' }, { Key: 'c' }],
+        NextContinuationToken: 'more',
+      });
+
+      const keys = await storage.getKeys({ limit: 2 });
+
+      expect(keys).toEqual(['a', 'b']);
+      expect(mockSend).toHaveBeenCalledTimes(1);
+      expect((mockSend.mock.calls[0][0] as ListObjectsV2Command).input.MaxKeys).toBe(2);
+    });
+
+    it('should ask for the keys still missing on the next page', async () => {
+      mockSend
+        .mockResolvedValueOnce({ Contents: [{ Key: 'a' }], NextContinuationToken: 't' })
+        .mockResolvedValueOnce({ Contents: [{ Key: 'b' }], NextContinuationToken: 'u' });
+
+      const keys = await storage.getKeys({ limit: 2 });
+
+      expect(keys).toEqual(['a', 'b']);
+      expect((mockSend.mock.calls[1][0] as ListObjectsV2Command).input.MaxKeys).toBe(1);
+    });
+
     it('should return empty array if no objects', async () => {
       mockSend.mockResolvedValueOnce({});
       const keys = await storage.getKeys();
@@ -256,7 +366,7 @@ describe('S3Storage', () => {
   });
 
   describe('clear', () => {
-    it('should delete all items', async () => {
+    it('should delete a page of keys with one DeleteObjects request', async () => {
       mockSend
         .mockResolvedValueOnce({
           Contents: [{ Key: 'x' }, { Key: 'y' }],
@@ -266,9 +376,38 @@ describe('S3Storage', () => {
 
       await storage.clear();
 
-      expect(mockSend).toHaveBeenCalledWith(expect.any(ListObjectsV2Command));
-      expect(mockSend).toHaveBeenCalledWith(expect.any(DeleteObjectCommand));
-      expect(mockSend).toHaveBeenCalledTimes(3); // 1 list + 2 deletes
+      expect(mockSend).toHaveBeenCalledTimes(2); // 1 list + 1 batch delete
+      expect(mockSend.mock.calls[0][0]).toBeInstanceOf(ListObjectsV2Command);
+      const cmd = mockSend.mock.calls[1][0] as DeleteObjectsCommand;
+      expect(cmd).toBeInstanceOf(DeleteObjectsCommand);
+      expect(cmd.input.Delete?.Objects).toEqual([{ Key: 'x' }, { Key: 'y' }]);
+    });
+
+    it('should delete each listed page separately', async () => {
+      mockSend
+        .mockResolvedValueOnce({ Contents: [{ Key: 'a' }], NextContinuationToken: 't' })
+        .mockResolvedValueOnce({})
+        .mockResolvedValueOnce({ Contents: [{ Key: 'b' }] })
+        .mockResolvedValueOnce({});
+
+      await storage.clear();
+
+      expect(mockSend).toHaveBeenCalledTimes(4);
+      expect((mockSend.mock.calls[2][0] as ListObjectsV2Command).input.ContinuationToken).toBe('t');
+    });
+
+    it('should send nothing to delete for an empty bucket', async () => {
+      mockSend.mockResolvedValueOnce({});
+      await storage.clear();
+      expect(mockSend).toHaveBeenCalledTimes(1);
+    });
+
+    it('should throw when S3 reports keys it could not delete', async () => {
+      mockSend
+        .mockResolvedValueOnce({ Contents: [{ Key: 'x' }] })
+        .mockResolvedValueOnce({ Errors: [{ Key: 'x', Code: 'AccessDenied' }] });
+
+      await expect(storage.clear()).rejects.toBeInstanceOf(StorageError);
     });
   });
 
