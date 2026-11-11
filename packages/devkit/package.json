@@ -33,10 +33,10 @@
     "chokidar": "6.0.0",
     "consola": "catalog:",
     "defu": "catalog:",
-    "dotenv": "18.0.9",
+    "dotenv": "18.0.10",
     "hookable": "6.1.2",
-    "oxc-parser": "0.157.0",
-    "oxc-transform": "0.157.0",
+    "oxc-parser": "0.158.0",
+    "oxc-transform": "0.158.0",
     "pathe": "catalog:",
     "rolldown": "catalog:",
     "unplugin-isolated-decl": "0.17.0"

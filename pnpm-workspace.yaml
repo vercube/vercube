@@ -4,20 +4,20 @@ packages:
   - playground
 
 catalog:
-  '@oxc-project/runtime': 0.157.0
+  '@oxc-project/runtime': 0.158.0
   '@standard-schema/spec': 1.1.0
   c12: 4.0.0-rc.4
   consola: 3.4.2
   jiti: 2.7.0
   nitro: 3.0.261103-rc
-  ocache: 0.3.1
+  ocache: 0.3.2
   ohash: 2.0.12
   ufo: 1.6.4
   defu: 6.1.7
   env-runner: 0.3.11
   pathe: 2.0.3
-  vite: 8.3.6
-  rolldown: 1.3.0
+  vite: 8.3.8
+  rolldown: 1.3.1
   srvx: 1.0.8
   zod: 4.6.7
 

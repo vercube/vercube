@@ -33,7 +33,7 @@
     "@vercube/telemetry": "workspace:*"
   },
   "optionalDependencies": {
-    "@aws-sdk/client-s3": "3.1163.0"
+    "@aws-sdk/client-s3": "3.1166.0"
   },
   "publishConfig": {
     "access": "public"

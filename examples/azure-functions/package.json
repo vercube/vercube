@@ -13,7 +13,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@azure/functions": "4.17.0",
+    "@azure/functions": "4.17.1",
     "@vercube/cli": "workspace:*",
     "@vercube/core": "workspace:*",
     "@vercube/di": "workspace:*",

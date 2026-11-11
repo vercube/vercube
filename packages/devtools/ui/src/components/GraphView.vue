@@ -463,9 +463,7 @@ onUnmounted(() => {
         <span v-if="selected.basePath" class="tag accent mono">{{ selected.basePath }}</span>
       </div>
 
-      <p v-if="selected.implementation" class="impl">
-        bound to <code>{{ selected.implementation }}</code>
-      </p>
+      <p v-if="selected.implementation" class="impl">bound to <code>{{ selected.implementation }}</code></p>
 
       <section>
         <span class="eyebrow">injects ({{ selected.dependencies.length }})</span>

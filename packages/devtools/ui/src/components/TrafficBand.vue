@@ -233,15 +233,9 @@ onBeforeUnmount(() => globalThis.clearInterval(timer));
         </div>
 
         <ul class="legend">
-          <li>
-            <span class="swatch ok" />2xx–3xx <b class="mono">{{ totals.ok }}</b>
-          </li>
-          <li>
-            <span class="swatch warn" />4xx <b class="mono">{{ totals.warn }}</b>
-          </li>
-          <li>
-            <span class="swatch err" />5xx <b class="mono">{{ totals.err }}</b>
-          </li>
+          <li><span class="swatch ok" />2xx–3xx <b class="mono">{{ totals.ok }}</b></li>
+          <li><span class="swatch warn" />4xx <b class="mono">{{ totals.warn }}</b></li>
+          <li><span class="swatch err" />5xx <b class="mono">{{ totals.err }}</b></li>
         </ul>
       </template>
     </figure>

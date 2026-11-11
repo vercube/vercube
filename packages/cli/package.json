@@ -37,7 +37,7 @@
     "@vercube/logger": "workspace:*",
     "c12": "catalog:",
     "citty": "0.2.2",
-    "confbox": "0.3.1",
+    "confbox": "0.3.2",
     "consola": "catalog:",
     "giget": "3.3.1",
     "jiti": "catalog:",

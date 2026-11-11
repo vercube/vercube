@@ -119,9 +119,7 @@ onMounted(reload);
     <div v-else-if="data" class="scroll layout">
       <section v-if="data.cache.available" class="cache">
         <span class="label">Cache</span>
-        <span v-if="data.cache.mount" class="faint"
-          >writes through <b class="mono">{{ data.cache.mount }}</b></span
-        >
+        <span v-if="data.cache.mount" class="faint">writes through <b class="mono">{{ data.cache.mount }}</b></span>
         <span v-for="entry in data.cache.defaults" :key="entry.path" class="entry">
           <span class="faint">{{ entry.path }}</span>
           <span class="mono">{{ entry.value }}</span>

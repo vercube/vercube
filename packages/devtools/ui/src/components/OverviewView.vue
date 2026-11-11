@@ -291,8 +291,7 @@ onMounted(reloadAll);
                   </td>
 
                   <td class="mono path" :title="`${record.method} ${record.path}`">
-                    <span class="faint verb">{{ record.method }}</span
-                    >{{ record.path }}
+                    <span class="faint verb">{{ record.method }}</span>{{ record.path }}
                   </td>
                   <td class="mono right">{{ formatMs(record.durationMs) }}</td>
                 </tr>

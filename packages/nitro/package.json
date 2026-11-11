@@ -39,7 +39,7 @@
     "chokidar": "6.0.0",
     "defu": "catalog:",
     "nitro": "catalog:",
-    "oxc-parser": "0.157.0",
+    "oxc-parser": "0.158.0",
     "pathe": "catalog:",
     "tinyglobby": "0.2.17",
     "unstorage": "2.0.0-beta.0"

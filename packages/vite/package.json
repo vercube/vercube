@@ -47,7 +47,7 @@
   },
   "devDependencies": {
     "@vercube/core": "workspace:*",
-    "vite": "^8.3.6"
+    "vite": "^8.3.8"
   },
   "publishConfig": {
     "access": "public"
