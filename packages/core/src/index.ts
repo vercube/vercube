@@ -110,7 +110,6 @@ export * from './Types/ConfigTypes';
 export * from './Types/RouterTypes';
 export * from './Types/IntrospectionTypes';
 export * from './Types/TelemetryTypes';
-export * from './Types/RateLimitTypes';
 export * from './Types/ValidationTypes';
 export * from './Types/HttpCodes';
 export * from './Types/HealthTypes';
