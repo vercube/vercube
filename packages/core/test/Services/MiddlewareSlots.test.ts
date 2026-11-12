@@ -211,3 +211,123 @@ describe('middleware slots without an app-wide entry', () => {
     expect((await app.fetch(new globalThis.Request('http://localhost/bare/off'))).status).toBe(200);
   });
 });
+
+@Controller('/edges')
+class EdgesController {
+  // @Middleware() takes a slot and a skip too
+  @Get('/decorator')
+  @Middleware(LimitMiddleware, { slot: SLOT, args: { name: 'decorator' } })
+  public decorator(): string {
+    return 'ok';
+  }
+
+  @Get('/decorator-off')
+  @Middleware(LimitMiddleware, { slot: SLOT, skip: true })
+  public decoratorOff(): string {
+    return 'ok';
+  }
+
+  // the same class in another slot, with the same args, is another middleware
+  @Get('/two-slots')
+  @Middleware(LimitMiddleware, { slot: 'other', args: { name: 'global' } })
+  public twoSlots(): string {
+    return 'ok';
+  }
+
+  // a skip without a slot never runs its middleware
+  @Get('/stray-skip')
+  @Middleware(TagMiddleware, { skip: true, args: { tag: 'stray' } })
+  public straySkip(): string {
+    return 'ok';
+  }
+
+  // lifting the slot leaves an unslotted entry of the same class alone
+  @Get('/lifted-and-explicit')
+  @Limit(false)
+  @Middleware(LimitMiddleware, { args: { name: 'explicit' } })
+  public liftedAndExplicit(): string {
+    return 'ok';
+  }
+}
+
+describe('middleware slots, edge cases', () => {
+  let app: App;
+
+  const limit = async (path: string): Promise<string | null> =>
+    (await app.fetch(new globalThis.Request(`http://localhost${path}`))).headers.get('x-limit');
+
+  beforeAll(async () => {
+    app = await createApp({
+      cfg: { requestLogging: false, requestContext: false },
+      setup: (instance) => {
+        instance.container.get(GlobalMiddlewareRegistry).registerGlobalMiddleware(LimitMiddleware, {
+          slot: SLOT,
+          args: { name: 'global' },
+        });
+        instance.container.bind(EdgesController);
+      },
+    });
+  });
+
+  it('should pass slot and skip given to @Middleware() on', async () => {
+    expect(await limit('/edges/decorator')).toBe('decorator');
+    expect(await limit('/edges/decorator-off')).toBeNull();
+  });
+
+  it('should run the same class once per slot, even with equal args', async () => {
+    expect(await limit('/edges/two-slots')).toBe('global, global');
+  });
+
+  it('should never run an entry marked skip without a slot', async () => {
+    const response = await app.fetch(new globalThis.Request('http://localhost/edges/stray-skip'));
+
+    expect(response.headers.get('x-tag')).toBeNull();
+  });
+
+  it('should keep an unslotted entry next to a lifted slot of the same class', async () => {
+    expect(await limit('/edges/lifted-and-explicit')).toBe('explicit');
+  });
+});
+
+describe('route info handed to middlewares', () => {
+  it('should tell a middleware the controller and handler it runs on, a subclass by its own name', async () => {
+    const seen: unknown[] = [];
+
+    class Spy extends BaseMiddleware {
+      public override onRequest(_request: Request, _response: Response, args: MiddlewareOptions): void {
+        seen.push(args.route);
+      }
+    }
+
+    @Controller('/base')
+    @Middleware(Spy)
+    class BaseController {
+      @Get('/')
+      public index(): string {
+        return 'ok';
+      }
+    }
+
+    @Controller('/derived')
+    class DerivedController extends BaseController {}
+
+    const app = await createApp({
+      cfg: { requestLogging: false, requestContext: false },
+      setup: (instance) => {
+        instance.container.get(GlobalMiddlewareRegistry).registerGlobalMiddleware(Spy);
+        instance.container.bind(BaseController);
+        instance.container.bind(DerivedController);
+      },
+    });
+
+    await app.fetch(new globalThis.Request('http://localhost/base'));
+    await app.fetch(new globalThis.Request('http://localhost/derived'));
+    await app.fetch(new globalThis.Request('http://localhost/nowhere'));
+
+    expect(seen).toEqual([
+      { controller: 'BaseController', handler: 'index' },
+      { controller: 'DerivedController', handler: 'index' },
+      undefined,
+    ]);
+  });
+});

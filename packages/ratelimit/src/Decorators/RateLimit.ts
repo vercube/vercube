@@ -58,16 +58,21 @@ export function RateLimit(options: Partial<RateLimitTypes.Options> | false = {})
       return;
     }
 
-    const name = options.name ?? (propertyName ? `${owner}.${propertyName}` : owner);
-    const windowMs = validate({ ...options, name }, `@RateLimit() on ${propertyName ? `${owner}.${propertyName}` : owner}`);
+    const windowMs = validate(options, `@RateLimit() on ${propertyName ? `${owner}.${propertyName}` : owner}`);
     const { window: _window, priority, ...rest } = options;
 
+    // the counter is named after the route's own class once the route is built,
+    // so a subclass inheriting a limit gets a counter of its own
     addMetadataMiddleware(meta, {
       target: propertyName ?? '__global__',
       priority: priority ?? DEFAULT_PRIORITY,
       middleware: RateLimitMiddleware,
       slot: RATE_LIMIT_SLOT,
-      args: { ...rest, name, ...(windowMs === undefined ? {} : { windowMs }) } satisfies RateLimitTypes.DeclaredOptions,
+      args: {
+        ...rest,
+        scope: propertyName ? 'method' : 'controller',
+        ...(windowMs === undefined ? {} : { windowMs }),
+      } satisfies RateLimitTypes.DeclaredOptions,
     });
   };
 }

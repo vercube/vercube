@@ -40,8 +40,14 @@ export interface RequestIPOptions {
 export function getRequestIP(request: Request, options: RequestIPOptions = {}): string | null {
   const socket = normalize((request as Request & { ip?: unknown }).ip);
   const trust = options.trustProxy ?? false;
+  // a fraction, a negative number or NaN trusts nobody rather than reading past the list
+  let hops = trust === true ? Infinity : 0;
 
-  if (trust === false || trust === 0) {
+  if (typeof trust === 'number' && Number.isFinite(trust)) {
+    hops = Math.trunc(trust);
+  }
+
+  if (hops <= 0) {
     return socket;
   }
 
@@ -54,19 +60,16 @@ export function getRequestIP(request: Request, options: RequestIPOptions = {}): 
     return socket;
   }
 
-  if (trust === true) {
-    return forwarded[0];
-  }
-
-  // the last trusted proxy appended the address it saw: `trust` entries from the
+  // the last trusted proxy appended the address it saw: `hops` entries from the
   // right. Fewer entries than proxies means the chain is shorter than configured,
-  // so the leftmost one is the best there is.
-  return forwarded[Math.max(0, forwarded.length - Math.trunc(trust))];
+  // so the leftmost one is the best there is. `true` trusts every proxy.
+  return forwarded[Math.max(0, forwarded.length - hops)];
 }
 
 /**
- * Trims an address and drops the IPv4-mapped IPv6 prefix, so the same client
- * gets the same address whichever way the socket reports it.
+ * Trims an address, drops a port (`1.2.3.4:51234`, `[2001:db8::1]:443`, as
+ * some proxies write them) and the IPv4-mapped IPv6 prefix, so the same client
+ * gets the same address whichever way it is reported.
  *
  * @param {unknown} value - Raw address
  * @returns {string | null} The address, or null when empty
@@ -76,7 +79,16 @@ function normalize(value: unknown): string | null {
     return null;
   }
 
-  const address = value.trim();
+  let address = value.trim();
+
+  if (address.startsWith('[')) {
+    // a bracketed IPv6 address, with or without a port
+    const end = address.indexOf(']');
+    address = end === -1 ? address.slice(1) : address.slice(1, end);
+  } else if (/^\d{1,3}(?:\.\d{1,3}){3}:\d+$/.test(address)) {
+    // an IPv4 address with a port; a bare IPv6 address has several colons and stays whole
+    address = address.slice(0, address.lastIndexOf(':'));
+  }
 
   if (address === '') {
     return null;
