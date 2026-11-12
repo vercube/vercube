@@ -260,17 +260,14 @@ export class SchemaRegistry {
    * @returns The entries
    */
   private routeMiddlewares(prototype: object, propertyName: string): MetadataTypes.Middleware[] {
-    const own = ((prototype as { __metadata?: MetadataTypes.Ctx }).__metadata?.__middlewares ?? []).filter(
-      (entry) => entry.target === '__global__' || entry.target === propertyName,
-    );
     const global = skipsGlobalMiddlewares(prototype) ? [] : (this.gGlobalMiddlewares?.middlewares ?? []);
+    // the resolver's order, controller then method, is the one the request handler resolves slots in
+    const own = (this.gMetadataResolver ?? new MetadataResolver()).resolveMiddlewares(
+      prototype as MetadataTypes.Metadata,
+      propertyName,
+    );
 
-    // app-wide, then the controller's, then the method's: the order slots resolve in
-    return resolveSlots([
-      ...global,
-      ...own.filter((entry) => entry.target === '__global__'),
-      ...own.filter((entry) => entry.target !== '__global__'),
-    ]);
+    return resolveSlots([...global, ...own]);
   }
 
   /**
@@ -282,15 +279,7 @@ export class SchemaRegistry {
    * @returns True when the route requires authentication
    */
   private isSecured(prototype: object, propertyName: string): boolean {
-    const isAuth = (entry: MetadataTypes.Middleware): boolean => isAuthMiddleware(entry.middleware);
-
-    const own = (prototype as { __metadata?: MetadataTypes.Ctx }).__metadata?.__middlewares ?? [];
-
-    if (own.some((entry) => (entry.target === '__global__' || entry.target === propertyName) && isAuth(entry))) {
-      return true;
-    }
-
-    return !skipsGlobalMiddlewares(prototype) && (this.gGlobalMiddlewares?.middlewares ?? []).some(isAuth);
+    return this.routeMiddlewares(prototype, propertyName).some((entry) => isAuthMiddleware(entry.middleware));
   }
 }
 

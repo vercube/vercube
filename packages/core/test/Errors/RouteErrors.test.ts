@@ -6,13 +6,9 @@ import {
   NotFoundError,
   ServiceUnavailableError,
   Throws,
-  TooManyRequestsError as CoreTooManyRequestsError,
+  TooManyRequestsError,
 } from '../../src';
 import type { ImplicitErrorRule } from '../../src';
-
-class TooManyRequestsError extends HttpError {
-  public static readonly status: number = 429;
-}
 
 class Users {
   @Throws(NotFoundError)
@@ -74,7 +70,7 @@ describe('getRouteErrors', () => {
 
   it('adds the errors a middleware running on the route declares', () => {
     class Limiter {
-      public static readonly implicitErrors = [{ error: CoreTooManyRequestsError, module: '@vercube/core' }];
+      public static readonly implicitErrors = [{ error: TooManyRequestsError, module: '@vercube/core' }];
     }
 
     class Plain {}
@@ -87,10 +83,10 @@ describe('getRouteErrors', () => {
 
 describe('TooManyRequestsError and ServiceUnavailableError', () => {
   it('answer with 429 and 503, statically and per instance', () => {
-    const tooMany = new CoreTooManyRequestsError('slow down');
+    const tooMany = new TooManyRequestsError('slow down');
     const unavailable = new ServiceUnavailableError();
 
-    expect([CoreTooManyRequestsError.status, tooMany.status, tooMany.name, tooMany.message]).toEqual([
+    expect([TooManyRequestsError.status, tooMany.status, tooMany.name, tooMany.message]).toEqual([
       429,
       429,
       'TooManyRequestsError',
