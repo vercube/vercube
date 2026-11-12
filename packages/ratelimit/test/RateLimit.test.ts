@@ -458,4 +458,37 @@ describe('review fixes', () => {
     await container.get(RateLimitManager).reset('AuthController.login', '1.1.1.1', { storage: ['default', 'unknown'] });
     await app.post('/auth/login').headers(from('1.1.1.1')).expect(200);
   });
+
+  it('should tell a client rejected by a sliding window when the next request gets through', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(1_000_000);
+    const app = await setup({}, [KeyedController]);
+
+    for (let i = 0; i < 4; i++) {
+      await app.get('/keyed/sliding').headers(from('1.1.1.1'));
+    }
+
+    const rejected = await app.get('/keyed/sliding').headers(from('1.1.1.1')).expect(429);
+
+    // the 1 s window resets in 1 s, but its 4 requests weigh 3 until 1.25 s later
+    expect(rejected.headers.get('ratelimit-reset')).toBe('1');
+    expect(rejected.headers.get('retry-after')).toBe('2');
+  });
+
+  it('should reset one client across every counter when no name is given', async () => {
+    const app = await setup({}, [AuthController, ReportsController]);
+
+    for (let i = 0; i < 3; i++) {
+      await app.post('/auth/login').headers(from('1.1.1.1'));
+      await app.get('/reports/a').headers(from('1.1.1.1'));
+    }
+
+    await app.post('/auth/login').headers(from('2.2.2.2'));
+    await app.post('/auth/login').headers(from('2.2.2.2'));
+
+    await app.resolve(RateLimitManager).reset(undefined, '1.1.1.1');
+
+    await app.post('/auth/login').headers(from('1.1.1.1')).expect(200);
+    await app.get('/reports/a').headers(from('1.1.1.1')).expect(200);
+    await app.post('/auth/login').headers(from('2.2.2.2')).expect(429);
+  });
 });

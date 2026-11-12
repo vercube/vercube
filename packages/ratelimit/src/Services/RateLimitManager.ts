@@ -145,10 +145,18 @@ export class RateLimitManager {
 
       if (estimate > limit) {
         // a rejected request gives its count back, so a client retrying over
-        // the limit still gets `limit` requests per window through
-        await storage.increment({ storage: options.storage, key, by: -1 });
+        // the limit still gets `limit` requests per window through. Same ttl as
+        // the first increment: a driver without its own increment rewrites the
+        // key, and would drop the expiry without one
+        await storage.increment({ storage: options.storage, key, by: -1, ttl: Math.ceil((2 * windowMs) / 1000) });
 
-        return { allowed: false, limit, remaining: 0, resetAt };
+        return {
+          allowed: false,
+          limit,
+          remaining: 0,
+          resetAt,
+          retryAt: slidingRetryAt(index * windowMs, windowMs, limit, Number.isFinite(previous) ? previous : 0, count - 1, now),
+        };
       }
 
       return { allowed: true, limit, remaining: Math.max(0, Math.floor(limit - estimate)), resetAt };
@@ -169,7 +177,7 @@ export class RateLimitManager {
    * and tools.
    *
    * @param {string} [name] - Counter name, every counter when omitted
-   * @param {string} [client] - Client key, every client of the counter when omitted
+   * @param {string} [client] - Client key, every client when omitted; without a name, that client in every counter
    * @param {object} [options] - Where to look
    * @param {string | string[]} [options.storage] - More mounts to look in
    * @returns {Promise<void>} Resolves once deleted
@@ -177,15 +185,17 @@ export class RateLimitManager {
   public async reset(name?: string, client?: string, options: { storage?: string | string[] } = {}): Promise<void> {
     const manager = this.storageManager();
 
-    let prefix = `${KEY_PREFIX}:`;
+    // keys are `ratelimit:<name>:<client>:<window>`, both parts encoded, so
+    // splitting on `:` gives the segments back
+    const matches = (key: string): boolean => {
+      const [prefix, keyName, keyClient] = key.split(':');
 
-    if (name !== undefined) {
-      prefix += `${encodeURIComponent(name)}:`;
-    }
-
-    if (name !== undefined && client !== undefined) {
-      prefix += `${encodeURIComponent(client)}:`;
-    }
+      return (
+        prefix === KEY_PREFIX &&
+        (name === undefined || keyName === encodeURIComponent(name)) &&
+        (client === undefined || keyClient === encodeURIComponent(client))
+      );
+    };
 
     const extra = options.storage === undefined ? [] : [options.storage].flat();
     const mounts = new Set([...this.fMounts, this.fDefaults.storage ?? 'default', ...extra]);
@@ -197,7 +207,7 @@ export class RateLimitManager {
 
       const keys = await manager.getKeys({ storage: mount });
 
-      await Promise.all(keys.filter((key) => key.startsWith(prefix)).map((key) => manager.deleteItem({ storage: mount, key })));
+      await Promise.all(keys.filter((key) => matches(key)).map((key) => manager.deleteItem({ storage: mount, key })));
     }
   }
 
@@ -388,4 +398,35 @@ function counterName(scope: RateLimitTypes.Scope, route?: RouteInfo): string {
   }
 
   return scope === 'method' ? `${route.controller}.${route.handler}` : route.controller;
+}
+
+/**
+ * When a sliding window lets the next request of a rejected client through:
+ * the moment the weighted estimate, plus that request, is back at the limit.
+ * Assumes the client sends nothing until then.
+ *
+ * @param {number} start - Start of the current window, in epoch milliseconds
+ * @param {number} windowMs - Length of the window
+ * @param {number} limit - The limit
+ * @param {number} previous - Requests counted in the previous window
+ * @param {number} current - Requests counted in the current window
+ * @param {number} now - Current time
+ * @returns {number} Epoch milliseconds
+ */
+export function slidingRetryAt(
+  start: number,
+  windowMs: number,
+  limit: number,
+  previous: number,
+  current: number,
+  now: number,
+): number {
+  // previous * (1 - elapsed) + current + 1 <= limit, solved for elapsed
+  if (current <= limit - 1 && previous > 0) {
+    return Math.max(now, start + windowMs * (1 - (limit - 1 - current) / previous));
+  }
+
+  // the current window alone is full: in the next one it becomes the
+  // previous window and weighs less as that window goes by
+  return start + windowMs + windowMs * Math.max(0, 1 - (limit - 1) / Math.max(current, 1));
 }

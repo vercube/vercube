@@ -131,6 +131,12 @@ export namespace RateLimitTypes {
     remaining: number;
     /** When the window resets, in epoch milliseconds. */
     resetAt: number;
+    /**
+     * For a rejected request, when the next one gets through, in epoch
+     * milliseconds. Later than `resetAt` with a sliding window, where the
+     * previous window still weighs in after the reset. Missing for fixed windows.
+     */
+    retryAt?: number;
   }
 }
 

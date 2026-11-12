@@ -1,7 +1,7 @@
 import { Container } from '@vercube/di';
 import { describe, expect, it } from 'vitest';
 import { parseDuration, RateLimit, RateLimitError, RateLimitManager } from '../src';
-import { counterKey } from '../src/Services/RateLimitManager';
+import { counterKey, slidingRetryAt } from '../src/Services/RateLimitManager';
 import type { MetadataTypes } from '@vercube/core';
 
 /** The rate limit entries a class collected. */
@@ -161,5 +161,24 @@ describe('RateLimitManager', () => {
 
   it('should encode counter keys so a client cannot forge another counter', () => {
     expect(counterKey('Users.list', 'a:b', 7)).toBe('ratelimit:Users.list:a%3Ab:7');
+  });
+});
+
+describe('slidingRetryAt', () => {
+  it('should wait for the previous window to weigh less when the current one has room', () => {
+    // limit 4, 4 requests in the previous minute, 2 in this one, a quarter in:
+    // 4 * (1 - x) + 2 + 1 <= 4 once x = 0.75, at 45 seconds
+    expect(slidingRetryAt(0, 60_000, 4, 4, 2, 15_000)).toBe(45_000);
+  });
+
+  it('should wait into the next window when the current one is full', () => {
+    // 4 requests at the start of a minute with a limit of 4: the window resets
+    // at 60 s, but they still weigh 3 until 75 s
+    expect(slidingRetryAt(0, 60_000, 4, 0, 4, 1000)).toBe(75_000);
+  });
+
+  it('should never answer a time in the past', () => {
+    // by the formula the next request fits from 15 s on, and it is already 30 s
+    expect(slidingRetryAt(0, 60_000, 4, 4, 0, 30_000)).toBe(30_000);
   });
 });
