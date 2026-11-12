@@ -255,8 +255,11 @@ export class RedisStorage implements Storage<RedisStorageOptions | undefined> {
       return true;
     });
 
-    // one key per DEL keeps Redis Cluster working without hash tags
-    await Promise.all(keys.map((key) => this.client.del(key)));
+    // one key per DEL keeps Redis Cluster working without hash tags, and a
+    // bounded batch keeps a large prefix from flooding the connection
+    for (let start = 0; start < keys.length; start += SCAN_COUNT) {
+      await Promise.all(keys.slice(start, start + SCAN_COUNT).map((key) => this.client.del(key)));
+    }
   }
 
   /**
@@ -297,12 +300,14 @@ export class RedisStorage implements Storage<RedisStorageOptions | undefined> {
   }
 
   /**
-   * Walks every key under the prefix, on every master of a cluster.
+   * Walks every key under the prefix once, on every master of a cluster.
    * @param {Function} visit - Receives each batch of full keys, returns false to stop
    * @returns {Promise<void>} Resolves once walked or stopped
    */
   private async scan(visit: (keys: string[]) => boolean): Promise<void> {
     const client = this.client;
+    // SCAN may return a key twice, every caller wants it once
+    const seen = new Set<string>();
     const nodes: Redis[] = isCluster(client) ? client.nodes('master') : [client];
     const match = `${escapeGlob(this.fPrefix)}:*`;
 
@@ -310,7 +315,8 @@ export class RedisStorage implements Storage<RedisStorageOptions | undefined> {
       let cursor = '0';
 
       do {
-        const [next, keys] = await node.scan(cursor, 'MATCH', match, 'COUNT', SCAN_COUNT);
+        const [next, found] = await node.scan(cursor, 'MATCH', match, 'COUNT', SCAN_COUNT);
+        const keys = found.filter((key) => !seen.has(key) && seen.add(key));
 
         cursor = next;
 

@@ -94,7 +94,10 @@ export class RateLimitMiddleware extends BaseMiddleware<RateLimitTypes.DeclaredO
         response.headers.set(name, value);
       }
 
-      response.headers.set('retry-after', String(reset));
+      // a sliding window can stay full past the reset, while the previous window still weighs in
+      const retry = result.retryAt === undefined ? reset : Math.max(1, Math.ceil((result.retryAt - now) / 1000));
+
+      response.headers.set('retry-after', String(retry));
 
       throw new TooManyRequestsError('Too many requests');
     }
