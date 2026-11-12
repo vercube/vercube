@@ -63,6 +63,12 @@ export class StorageManager {
   public async mount<T extends Storage<unknown>>({ name, storage, initOptions, health }: StorageTypes.Mount<T>): Promise<void> {
     const mountName = name ?? 'default';
     const instance = this.gContainer.resolve(storage);
+    const previous = this.fStorages.get(mountName)?.storage;
+
+    // the driver mounted before under the name may hold a connection nobody else can close
+    if (previous) {
+      await this.closeDriver(mountName, previous);
+    }
 
     this.fStorages.set(mountName, { storage: instance, initOptions });
     this.fFailed.delete(mountName);
@@ -204,6 +210,10 @@ export class StorageManager {
    */
   public async increment({ storage, key, by = 1, ttl }: StorageTypes.Increment): Promise<number> {
     const storageInstance = this.requireStorage(storage, 'increment');
+
+    if (!Number.isFinite(by)) {
+      throw new StorageError(`Cannot increment "${key}" by ${by}`, 'increment', undefined, { mount: storage ?? 'default' });
+    }
 
     if (typeof storageInstance.increment === 'function') {
       return storageInstance.increment(key, { by, ttl });
@@ -367,18 +377,25 @@ export class StorageManager {
    */
   @Destroy()
   public async close(): Promise<void> {
-    await Promise.all(
-      [...this.fStorages.entries()].map(async ([name, { storage }]) => {
-        try {
-          await storage.close?.();
-        } catch (error) {
-          this.gLogger?.error(
-            'Vercube/StorageManager::close',
-            new StorageError(`Failed to close storage "${name}"`, 'close', error as Error, { mount: name }),
-          );
-        }
-      }),
-    );
+    await Promise.all([...this.fStorages.entries()].map(([name, { storage }]) => this.closeDriver(name, storage)));
+  }
+
+  /**
+   * Closes one driver, logging a failure instead of throwing it.
+   * @param {string} name - Name of the mount
+   * @param {Storage} storage - The driver
+   * @returns {Promise<void>} Resolves once closed or failed
+   * @protected
+   */
+  protected async closeDriver(name: string, storage: Storage): Promise<void> {
+    try {
+      await storage.close?.();
+    } catch (error) {
+      this.gLogger?.error(
+        'Vercube/StorageManager::close',
+        new StorageError(`Failed to close storage "${name}"`, 'close', error as Error, { mount: name }),
+      );
+    }
   }
 
   /**

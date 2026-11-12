@@ -52,9 +52,9 @@ export class RateLimitMiddleware extends BaseMiddleware<RateLimitTypes.DeclaredO
     }
 
     const manager = (this.fManager ??= this.manager());
-    const options = (this.fOptions ??= manager.resolve(args.middlewareArgs ?? { name: 'global' }));
+    const options = (this.fOptions ??= manager.resolve(args.middlewareArgs ?? { scope: 'global' }, args.route));
     const ip = getRequestIP(request, { trustProxy: options.trustProxy });
-    const client = options.key ? await options.key({ request, ip, context: this.gRequestContext as RequestContext }) : ip;
+    const client = options.key ? await options.key({ request, ip, context: this.gRequestContext }) : ip;
 
     if (client === null || client === undefined || client === '') {
       manager.reportNoIdentity(options.name);

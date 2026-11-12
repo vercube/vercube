@@ -48,14 +48,13 @@ export class RateLimitPlugin extends BasePlugin<RateLimitTypes.Config> {
       return;
     }
 
-    const name = config.name ?? 'global';
-    const windowMs = validate({ ...config, name }, 'rateLimit');
+    const windowMs = validate(config, 'rateLimit');
     const { window: _window, priority, trustProxy: _trustProxy, ...rest } = config;
 
     container.get(GlobalMiddlewareRegistry).registerGlobalMiddleware(RateLimitMiddleware, {
       slot: RATE_LIMIT_SLOT,
       priority: priority ?? DEFAULT_PRIORITY,
-      args: { ...rest, name, windowMs } satisfies RateLimitTypes.DeclaredOptions,
+      args: { ...rest, scope: 'global', windowMs } satisfies RateLimitTypes.DeclaredOptions,
     });
   }
 }

@@ -59,7 +59,7 @@ export function describeRoute(route: RouterTypes.Route, basePath?: string): Intr
   const throws = getRouteErrors(prototype, handler.propertyName, {
     args: handler.args ?? [],
     secured,
-    middlewares: middlewares.map((definition) => (definition.middleware as object).constructor),
+    middlewares: middlewares.map((definition) => (definition.middleware as object | undefined)?.constructor),
   }).map(({ name, status, module }) => (module ? { name, status, module } : { name, status }));
 
   return {

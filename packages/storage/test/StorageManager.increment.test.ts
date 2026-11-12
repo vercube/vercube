@@ -83,6 +83,23 @@ describe('StorageManager.increment', () => {
     expect(await manager.increment({ storage: 'plain', key: 'hits' })).toBe(1);
   });
 
+  it('should refuse a step that is not a finite number', async () => {
+    await manager.mount({ storage: MemoryStorage });
+
+    await expect(manager.increment({ key: 'hits', by: Number.NaN })).rejects.toThrow(StorageError);
+    await expect(manager.increment({ key: 'hits', by: Infinity })).rejects.toThrow(/by Infinity/);
+  });
+
+  it('should close the driver a new mount replaces', async () => {
+    await manager.mount({ name: 'a', storage: ClosingStorage });
+    const first = manager.getStorage('a') as ClosingStorage;
+
+    await manager.mount({ name: 'a', storage: ClosingStorage });
+
+    expect(first.close).toHaveBeenCalledTimes(1);
+    expect((manager.getStorage('a') as ClosingStorage).close).not.toHaveBeenCalled();
+  });
+
   it('should fail for a mount that does not exist', async () => {
     await expect(manager.increment({ storage: 'missing', key: 'hits' })).rejects.toThrow(StorageError);
     expect(manager.isAtomic('missing')).toBe(false);

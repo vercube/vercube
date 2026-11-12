@@ -1,4 +1,5 @@
 import type { BaseMiddleware } from '../Services/Middleware/BaseMiddleware';
+import type { RouteInfo } from './CommonTypes';
 import type { MetadataTypes } from './MetadataTypes';
 
 export namespace RouterTypes {
@@ -18,6 +19,8 @@ export namespace RouterTypes {
     target: string;
     priority?: number;
     args?: unknown;
+    /** The route the chain belongs to, none for the chain of unmatched requests. */
+    route?: RouteInfo;
   }
 
   /**

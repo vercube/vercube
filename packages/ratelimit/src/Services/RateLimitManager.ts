@@ -6,6 +6,7 @@ import { KEY_PREFIX, STORAGE_WARNING_INTERVAL } from '../Common/Constants';
 import { RateLimitError } from '../Errors/RateLimitError';
 import { parseDuration } from '../Utils/Duration';
 import type { RateLimitTypes } from '../Types/RateLimitTypes';
+import type { RouteInfo } from '@vercube/core';
 
 /**
  * Counts requests against their limits. One instance holds every counter's
@@ -38,8 +39,14 @@ export class RateLimitManager {
   /** Counters already warned about a request without a client identity */
   private fNoIdentityWarned: Set<string> = new Set();
 
-  /** Every counter name seen, so `reset()` knows what to delete */
-  private fNames: Map<string, string> = new Map();
+  /** Mounts counters were written to, so `reset()` knows where to look */
+  private fMounts: Set<string> = new Set();
+
+  /** Whether `RateLimitPlugin` configured the manager */
+  private fConfigured: boolean = false;
+
+  /** Whether the missing plugin was already warned about */
+  private fUnconfiguredWarned: boolean = false;
 
   /**
    * The defaults every limit starts from.
@@ -60,27 +67,32 @@ export class RateLimitManager {
     const merged = { ...this.fDefaults, ...defaults };
 
     // fail at startup, not on the first request
-    validate({ ...merged, name: 'defaults' }, 'rateLimit');
+    validate(merged, 'rateLimit');
 
     this.fDefaults = merged;
+    this.fConfigured = true;
   }
 
   /**
    * Applies the defaults to a route's declaration.
    * @param {RateLimitTypes.DeclaredOptions} declared - What `@RateLimit()` or the plugin stored
+   * @param {RouteInfo} [route] - The route the limit runs on, none for unmatched requests
    * @returns {RateLimitTypes.ResolvedOptions} The limit to count against
    * @throws {RateLimitError} When neither the declaration nor the defaults set a limit and a window
    */
-  public resolve(declared: RateLimitTypes.DeclaredOptions): RateLimitTypes.ResolvedOptions {
+  public resolve(declared: RateLimitTypes.DeclaredOptions, route?: RouteInfo): RateLimitTypes.ResolvedOptions {
+    this.warnIfUnconfigured();
+
     const defaults = this.fDefaults;
+    const name = declared.name ?? counterName(declared.scope, route);
     const limit = declared.limit ?? defaults.limit;
     const windowMs = declared.windowMs ?? (defaults.window === undefined ? undefined : parseDuration(defaults.window, 'window'));
 
     if (limit === undefined || windowMs === undefined) {
       throw new RateLimitError(
-        `Rate limit "${declared.name}" needs a limit and a window, set them on @RateLimit() or in the rateLimit config`,
+        `Rate limit "${name}" needs a limit and a window, set them on @RateLimit() or in the rateLimit config`,
         'configure',
-        { name: declared.name },
+        { name },
       );
     }
 
@@ -92,7 +104,7 @@ export class RateLimitManager {
       storage: declared.storage ?? defaults.storage ?? 'default',
       onStorageError: declared.onStorageError ?? defaults.onStorageError ?? 'allow',
       headers: declared.headers ?? defaults.headers ?? true,
-      name: declared.name,
+      name,
       trustProxy: defaults.trustProxy ?? false,
     };
   }
@@ -115,31 +127,34 @@ export class RateLimitManager {
     const { limit, windowMs, name } = options;
     const index = Math.floor(now / windowMs);
     const resetAt = (index + 1) * windowMs;
+    const key = counterKey(name, client, index);
 
-    this.fNames.set(name, options.storage);
+    this.fMounts.add(options.storage);
 
     if (options.algorithm === 'sliding') {
-      // the previous window has to outlive the current one to be weighed in
-      const count = await storage.increment({
-        storage: options.storage,
-        key: counterKey(name, client, index),
-        ttl: Math.ceil((2 * windowMs) / 1000),
-      });
-      // read straight from the driver: the manager would open a span per request
-      const previous = Number(
-        (await storage.getStorage(options.storage)?.getItem<number>(counterKey(name, client, index - 1))) ?? 0,
-      );
+      // independent round trips, sent together; the previous window has to
+      // outlive the current one to be weighed in, and is read straight from the
+      // driver because the manager would open a span per request
+      const [count, stored] = await Promise.all([
+        storage.increment({ storage: options.storage, key, ttl: Math.ceil((2 * windowMs) / 1000) }),
+        storage.getStorage(options.storage)?.getItem<number>(counterKey(name, client, index - 1)),
+      ]);
+      const previous = Number(stored ?? 0);
       const elapsed = (now - index * windowMs) / windowMs;
       const estimate = (Number.isFinite(previous) ? previous : 0) * (1 - elapsed) + count;
 
-      return { allowed: estimate <= limit, limit, remaining: Math.max(0, Math.floor(limit - estimate)), resetAt };
+      if (estimate > limit) {
+        // a rejected request gives its count back, so a client retrying over
+        // the limit still gets `limit` requests per window through
+        await storage.increment({ storage: options.storage, key, by: -1 });
+
+        return { allowed: false, limit, remaining: 0, resetAt };
+      }
+
+      return { allowed: true, limit, remaining: Math.max(0, Math.floor(limit - estimate)), resetAt };
     }
 
-    const count = await storage.increment({
-      storage: options.storage,
-      key: counterKey(name, client, index),
-      ttl: Math.ceil(windowMs / 1000),
-    });
+    const count = await storage.increment({ storage: options.storage, key, ttl: Math.ceil(windowMs / 1000) });
 
     return { allowed: count <= limit, limit, remaining: Math.max(0, limit - count), resetAt };
   }
@@ -148,16 +163,18 @@ export class RateLimitManager {
    * Forgets counted requests, so a client starts over. Never clears the
    * storage as a whole: the mount is usually shared with application data.
    *
-   * - With a name and a client: deletes every window of that client.
-   * - Otherwise: deletes every counter key, of one name when given, in the
-   *   mounts counters were written to. Lists the mount's keys, so keep it for
-   *   tests and tools.
+   * Looks in the mounts this process counted in, the default mount, and the
+   * ones passed in `storage`, so another instance or a fresh process can reset
+   * counters in a shared Redis. Lists the mounts' keys, so keep it for tests
+   * and tools.
    *
    * @param {string} [name] - Counter name, every counter when omitted
-   * @param {string} [client] - Client key, every client when omitted
+   * @param {string} [client] - Client key, every client of the counter when omitted
+   * @param {object} [options] - Where to look
+   * @param {string | string[]} [options.storage] - More mounts to look in
    * @returns {Promise<void>} Resolves once deleted
    */
-  public async reset(name?: string, client?: string): Promise<void> {
+  public async reset(name?: string, client?: string, options: { storage?: string | string[] } = {}): Promise<void> {
     const manager = this.storageManager();
 
     let prefix = `${KEY_PREFIX}:`;
@@ -170,9 +187,8 @@ export class RateLimitManager {
       prefix += `${encodeURIComponent(client)}:`;
     }
 
-    const mounts = new Set(
-      name === undefined ? this.fNames.values() : [this.fNames.get(name)].filter((mount) => mount !== undefined),
-    );
+    const extra = options.storage === undefined ? [] : [options.storage].flat();
+    const mounts = new Set([...this.fMounts, this.fDefaults.storage ?? 'default', ...extra]);
 
     for (const mount of mounts) {
       if (!manager.getStorage(mount)) {
@@ -211,6 +227,24 @@ export class RateLimitManager {
   }
 
   /**
+   * Logs once that `@RateLimit()` runs without `RateLimitPlugin`, which is what
+   * applies the `rateLimit` config section: `trustProxy` and every other
+   * default are then ignored.
+   * @returns {void}
+   */
+  private warnIfUnconfigured(): void {
+    if (this.fConfigured || this.fUnconfiguredWarned) {
+      return;
+    }
+
+    this.fUnconfiguredWarned = true;
+    this.gLogger?.warn(
+      'Vercube/RateLimitManager',
+      'RateLimitPlugin is not registered: the rateLimit config section, trustProxy included, is ignored. Add it to plugins in vercube.config.ts.',
+    );
+  }
+
+  /**
    * Logs once per counter that a request had no client identity and was let through.
    * @param {string} name - The counter name
    * @returns {void}
@@ -239,6 +273,12 @@ export class RateLimitManager {
 
     if (manager.getStorage(mount)) {
       return manager;
+    }
+
+    // only an unmounted default gets memory, for development; a named mount that
+    // is missing is a mistake (a typo, a forgotten mount) and fails like a storage that is down
+    if (mount !== 'default') {
+      throw new RateLimitError(`Storage "${mount}" is not mounted`, 'storage', { mount });
     }
 
     let mounting = this.fMounting.get(mount);
@@ -292,12 +332,12 @@ export function counterKey(name: string, client: string, index: number): string 
 /**
  * Checks a declaration or the defaults, so a typo fails at startup.
  *
- * @param {Partial<RateLimitTypes.Options> & { name: string }} options - What to check
+ * @param {Partial<RateLimitTypes.Options> | RateLimitTypes.Config} options - What to check
  * @param {string} where - Where the options were written, for the message
  * @returns {number | undefined} The window in milliseconds, when one is set
  * @throws {RateLimitError} When an option is invalid
  */
-export function validate(options: Partial<RateLimitTypes.Options> & { name?: string }, where: string): number | undefined {
+export function validate(options: Partial<RateLimitTypes.Options> | RateLimitTypes.Config, where: string): number | undefined {
   const fail = (message: string): never => {
     throw new RateLimitError(`${where}: ${message}`, 'configure', { name: options.name });
   };
@@ -326,5 +366,26 @@ export function validate(options: Partial<RateLimitTypes.Options> & { name?: str
     fail('priority must be a number');
   }
 
+  const trustProxy = (options as RateLimitTypes.Config).trustProxy;
+
+  if (trustProxy !== undefined && typeof trustProxy !== 'boolean' && !(Number.isInteger(trustProxy) && trustProxy >= 0)) {
+    fail(`trustProxy must be a boolean or a number of proxies, got ${JSON.stringify(trustProxy)}`);
+  }
+
   return options.window === undefined ? undefined : parseDuration(options.window, 'window');
+}
+
+/**
+ * Names a counter after where its limit was declared and the route it runs on.
+ *
+ * @param {RateLimitTypes.Scope} scope - Where the limit was declared
+ * @param {RouteInfo} [route] - The route, none for unmatched requests
+ * @returns {string} `Controller.method`, `Controller` or `global`
+ */
+function counterName(scope: RateLimitTypes.Scope, route?: RouteInfo): string {
+  if (!route || scope === 'global') {
+    return 'global';
+  }
+
+  return scope === 'method' ? `${route.controller}.${route.handler}` : route.controller;
 }

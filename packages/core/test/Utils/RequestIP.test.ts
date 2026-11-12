@@ -46,4 +46,21 @@ describe('getRequestIP', () => {
     expect(getRequestIP(request('10.0.0.1'), { trustProxy: 1 })).toBe('10.0.0.1');
     expect(getRequestIP(request('10.0.0.1', ' , '), { trustProxy: true })).toBe('10.0.0.1');
   });
+
+  it('should trust nobody for a fraction, a negative number or NaN', () => {
+    const req = request('10.0.0.1', '203.0.113.7, 10.0.0.2');
+
+    for (const trustProxy of [0.5, -1, Number.NaN]) {
+      expect(getRequestIP(req, { trustProxy })).toBe('10.0.0.1');
+    }
+
+    expect(getRequestIP(req, { trustProxy: 1.9 })).toBe('10.0.0.2');
+  });
+
+  it('should drop the port a proxy wrote next to the address', () => {
+    expect(getRequestIP(request('10.0.0.1', '203.0.113.7:51234'), { trustProxy: 1 })).toBe('203.0.113.7');
+    expect(getRequestIP(request('10.0.0.1', '[2001:db8::1]:443'), { trustProxy: 1 })).toBe('2001:db8::1');
+    expect(getRequestIP(request('10.0.0.1', '[2001:db8::1]'), { trustProxy: 1 })).toBe('2001:db8::1');
+    expect(getRequestIP(request('2001:db8::1'))).toBe('2001:db8::1');
+  });
 });

@@ -1,3 +1,4 @@
+import { PluginsRegistry } from '@vercube/core';
 import { StorageManager } from '@vercube/storage';
 import { MemoryStorage } from '@vercube/storage/drivers/MemoryStorage';
 import { RateLimitPlugin } from '../Plugins/RateLimitPlugin';
@@ -33,8 +34,10 @@ export interface RateLimitExtension extends TestingTypes.Extension {
 
 /**
  * Sets rate limits up for `createTestApp()` from `@vercube/testing`: registers
- * `RateLimitPlugin`, counts in a memory storage unless the test mounted
- * another one, and gives test requests a client to count against.
+ * `RateLimitPlugin` (or adds its settings to the one the test registered),
+ * counts in a memory storage unless the test mounted the limits' storage
+ * itself, and gives test requests without an address a client to count against.
+ * A `key` from the options or the app's `rateLimit` config is kept.
  *
  * @param options - `rateLimit` settings for the test, plus the default client
  * @returns The extension
@@ -55,6 +58,7 @@ export interface RateLimitExtension extends TestingTypes.Extension {
 export function withRateLimit(options: WithRateLimitOptions = {}): RateLimitExtension {
   const { client = 'test-client', ...config } = options;
   let manager: RateLimitManager | null = null;
+  let registered = false;
 
   const current = (): RateLimitManager => {
     if (!manager) {
@@ -74,20 +78,41 @@ export function withRateLimit(options: WithRateLimitOptions = {}): RateLimitExte
         app.container.bind(StorageManager);
       }
 
-      app.addPlugin(RateLimitPlugin, {
-        key: ({ ip }) => ip ?? client,
-        ...config,
-      });
+      registered = app.container.get(PluginsRegistry).plugins.some((plugin) => plugin instanceof RateLimitPlugin);
+
+      if (!registered) {
+        app.addPlugin(RateLimitPlugin, config);
+        return;
+      }
+
+      // registering it again would replace the test's own plugin options
+      if (config.limit !== undefined && config.window !== undefined) {
+        throw new Error(
+          'withRateLimit(): RateLimitPlugin is already registered, set the app-wide limit on it rather than on withRateLimit().',
+        );
+      }
+    },
+    beforeInitialize: (app) => {
+      // the plugin has applied the app's config by now, so a key the app or the
+      // test configured is known and wins; the fallback only gives address-less
+      // test requests someone to count against
+      const limits = app.container.get(RateLimitManager);
+      const key: RateLimitTypes.Options['key'] = config.key ?? limits.defaults.key ?? (({ ip }) => ip ?? client);
+
+      limits.configure(registered ? { ...config, key } : { key });
     },
     ready: async (testApp) => {
+      manager = testApp.resolve(RateLimitManager);
+
       const storage = testApp.resolve(StorageManager);
-      const mount = config.storage ?? 'default';
+      const mount = manager.defaults.storage ?? 'default';
 
       if (!storage.getStorage(mount)) {
         await storage.mount({ name: mount, storage: MemoryStorage });
       }
-
-      manager = testApp.resolve(RateLimitManager);
+    },
+    teardown: () => {
+      manager = null;
     },
     reset: (name, clientKey) => current().reset(name, clientKey),
   };
