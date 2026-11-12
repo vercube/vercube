@@ -136,4 +136,22 @@ describe('module recipes', () => {
     expect(files['vercube.config.ts']).toContain('RateLimitPlugin');
     expect(files['src/controller/LoginController.ts']).toContain(`@RateLimit({ limit: 5, window: '1m' })`);
   });
+
+  it('counts rate limits in a memory mount of their own unless storage is Redis', async () => {
+    const memory = apiTemplate();
+    const redis = apiTemplate();
+
+    dirs.push(memory, redis);
+
+    await applyRecipes(new Project(memory, { version: '1.5.0' }), ['ratelimit'], RECIPES, { storage: { driver: 's3' } });
+    await applyRecipes(new Project(redis, { version: '1.5.0' }), ['ratelimit'], RECIPES, { storage: { driver: 'redis' } });
+
+    const own = snapshot(memory);
+    const shared = snapshot(redis);
+
+    expect(own['src/boot/Container.ts']).toContain(`mount({ name: 'ratelimit', storage: MemoryStorage })`);
+    expect(own['vercube.config.ts']).toMatch(/rateLimit: {\s*storage: 'ratelimit',?\s*}/);
+    expect(shared['src/boot/Container.ts']).not.toContain(`name: 'ratelimit'`);
+    expect(shared['vercube.config.ts']).not.toContain('rateLimit:');
+  });
 });

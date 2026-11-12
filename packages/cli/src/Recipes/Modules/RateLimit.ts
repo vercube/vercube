@@ -30,6 +30,18 @@ export const rateLimitRecipe = defineRecipe({
   apply: ({ project }) => {
     project.addDependencies({ '@vercube/ratelimit': 'latest', '@vercube/storage': 'latest' });
     project.addPlugin({ name: 'RateLimitPlugin', from: '@vercube/ratelimit' });
+
+    // Redis shares the counters between instances and expires them, so the
+    // default mount is the right place. Any other driver gets a memory mount of
+    // its own: S3 cannot increment atomically and would keep every counter.
+    if (!project.read('src/boot/Container.ts')?.includes('RedisStorage')) {
+      project.addToContainer("void container.get(StorageManager).mount({ name: 'ratelimit', storage: MemoryStorage });", {
+        StorageManager: '@vercube/storage',
+        MemoryStorage: '@vercube/storage/drivers/MemoryStorage',
+      });
+      project.setConfig('rateLimit', "{ storage: 'ratelimit' }");
+    }
+
     project.createFile('src/controller/LoginController.ts', CONTROLLER);
     project.bind({ name: 'LoginController', from: '@/controller/LoginController', default: true });
   },

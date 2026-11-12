@@ -5,7 +5,7 @@ import { MemoryStorage } from '@vercube/storage/drivers/MemoryStorage';
 import { createTestApp } from '@vercube/testing';
 import { testAuth } from '@vercube/testing/auth';
 import { afterEach, describe, expect, it } from 'vitest';
-import { RateLimit } from '../src';
+import { RateLimit, RateLimitPlugin } from '../src';
 import { withRateLimit } from '../src/Testing';
 import type { TestApp } from '@vercube/testing';
 
@@ -100,5 +100,78 @@ describe('a key function with @vercube/auth', () => {
     await app.get('/me').as({ id: 'ada' }).expect(200);
     await app.get('/me').as({ id: 'ada' }).expect(429);
     await app.get('/me').as({ id: 'grace' }).expect(200);
+  });
+});
+
+describe('withRateLimit with the app settings', () => {
+  @Controller('/keys')
+  class KeysController {
+    @Get('/')
+    @RateLimit({ limit: 1, window: '1m' })
+    public index(): string {
+      return 'ok';
+    }
+  }
+
+  it('should keep a key from the app config', async () => {
+    app = await createTestApp({
+      controllers: [KeysController],
+      config: { rateLimit: { key: ({ request }) => request.headers.get('x-api-key') } },
+      extensions: [withRateLimit()],
+    });
+
+    await app.get('/keys').header('x-api-key', 'a').expect(200);
+    await app.get('/keys').header('x-api-key', 'b').expect(200);
+    await app.get('/keys').header('x-api-key', 'a').expect(429);
+  });
+
+  it('should add its settings to a RateLimitPlugin the test registered, keeping its app-wide limit', async () => {
+    const limits = withRateLimit();
+
+    app = await createTestApp({
+      controllers: [KeysController, LoginController],
+      plugins: [[RateLimitPlugin, { limit: 1, window: '1m', storage: 'limits' }]],
+      extensions: [limits],
+    });
+
+    await app.post('/auth/login').expect(200);
+    await app.post('/auth/login').expect(200);
+    await app.post('/auth/login').expect(429);
+    await app.get('/nowhere').expect(404);
+    await app.get('/nowhere').expect(429);
+
+    expect(app.resolve(StorageManager).getStorage('limits')).toBeInstanceOf(MemoryStorage);
+  });
+
+  it('should refuse an app-wide limit next to a RateLimitPlugin the test registered', async () => {
+    await expect(
+      createTestApp({
+        controllers: [KeysController],
+        plugins: [RateLimitPlugin],
+        extensions: [withRateLimit({ limit: 1, window: '1m' })],
+      }),
+    ).rejects.toThrow(/already registered/);
+  });
+
+  it('should mount the storage the app config names', async () => {
+    app = await createTestApp({
+      controllers: [KeysController],
+      config: { rateLimit: { storage: 'limits' } },
+      extensions: [withRateLimit()],
+    });
+
+    await app.get('/keys').expect(200);
+
+    expect(app.resolve(StorageManager).getStorage('limits')).toBeInstanceOf(MemoryStorage);
+    expect(app.logs.filter('warn', /not mounted|failed to count/)).toEqual([]);
+  });
+
+  it('should forget the app once it is closed', async () => {
+    const limits = withRateLimit();
+    const closed = await createTestApp({ controllers: [KeysController], extensions: [limits] });
+
+    expect(limits.manager).toBeDefined();
+    await closed.close();
+    expect(() => limits.manager).toThrow(/not set up yet/);
   });
 });
