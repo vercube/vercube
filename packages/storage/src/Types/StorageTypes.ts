@@ -49,6 +49,30 @@ export namespace StorageTypes {
     options?: U;
   }
 
+  /**
+   * Options of a write that can expire. Drivers that cannot expire keys
+   * (S3) ignore `ttl`.
+   */
+  export interface WriteOptions {
+    /** Seconds until the key expires. Missing or `0` keeps it forever. */
+    ttl?: number;
+  }
+
+  /** Options of {@link Storage.increment}. */
+  export interface IncrementOptions {
+    /**
+     * Amount added, may be negative.
+     * @default 1
+     */
+    by?: number;
+    /** Seconds until the counter expires, applied only when the increment creates it. */
+    ttl?: number;
+  }
+
+  export interface Increment extends BaseOptions, IncrementOptions {
+    key: string;
+  }
+
   export interface DeleteItem extends BaseOptions {
     key: string;
   }
@@ -75,6 +99,8 @@ export namespace StorageTypes {
     keys: string[] | null;
     /** True when the key list was cut short by the cap. */
     truncated: boolean;
+    /** True when the driver increments counters atomically, false when the manager falls back to a read and a write. */
+    atomicIncrement: boolean;
   }
 
   /** What {@link StorageManager.describe} reports. */

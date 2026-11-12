@@ -1,5 +1,5 @@
 import { defineRecipe } from '../Apply';
-import { useApiKeyGuard } from './Services';
+import { useApiKeyGuard, useRedis } from './Services';
 import { VERSIONS } from './Versions';
 
 const CONTROLLER = `import { BadRequestError, Body, Controller, Get, Header, Param, Put } from '@vercube/core';
@@ -57,7 +57,7 @@ export default class FilesController {
 export const storageRecipe = defineRecipe<{ driver: string }>({
   id: 'storage',
   label: 'Storage',
-  hint: 'key-value storage, memory or S3',
+  hint: 'key-value storage, memory, Redis or S3',
   prompts: [
     {
       name: 'driver',
@@ -66,6 +66,7 @@ export const storageRecipe = defineRecipe<{ driver: string }>({
       default: 'memory',
       options: [
         { value: 'memory', label: 'Memory', hint: 'nothing to run, lost on restart' },
+        { value: 'redis', label: 'Redis', hint: 'shared by every instance, needs Redis' },
         { value: 's3', label: 'S3', hint: 'AWS S3 or a compatible service' },
       ],
     },
@@ -77,7 +78,17 @@ export const storageRecipe = defineRecipe<{ driver: string }>({
     project.createFile('src/controller/FilesController.ts', CONTROLLER);
     project.bind({ name: 'StorageManager', from: '@vercube/storage' });
 
-    if (answers.driver === 's3') {
+    if (answers.driver === 'redis') {
+      project.addDependencies({ ioredis: VERSIONS.ioredis });
+      useRedis(project);
+      project.addToContainer(
+        `void container.get(StorageManager).mount({
+          storage: RedisStorage,
+          initOptions: { url: process.env.REDIS_URL ?? 'redis://127.0.0.1:6379' },
+        });`,
+        { StorageManager: '@vercube/storage', RedisStorage: '@vercube/storage/drivers/RedisStorage' },
+      );
+    } else if (answers.driver === 's3') {
       project.addDependencies({ '@aws-sdk/client-s3': VERSIONS.awsSdkS3 });
       project.addToContainer(
         `void container.get(StorageManager).mount({

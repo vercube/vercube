@@ -195,8 +195,8 @@ describe('NitroStorageManager', () => {
       const { mounts } = await manager.describe();
 
       expect(mounts).toEqual([
-        { name: 'default', driver: 'memory', size: 1, keys: ['root1'], truncated: false },
-        { name: 'mystore', driver: 'fs', size: 3, keys: ['a', 'b', 'c'], truncated: false },
+        { name: 'default', driver: 'memory', size: 1, keys: ['root1'], truncated: false, atomicIncrement: false },
+        { name: 'mystore', driver: 'fs', size: 3, keys: ['a', 'b', 'c'], truncated: false, atomicIncrement: false },
       ]);
       expect(mockStorage.getKeys).toHaveBeenCalledTimes(1);
     });
@@ -229,7 +229,9 @@ describe('NitroStorageManager', () => {
 
       expect(manager.mounts).toEqual(['default']);
       const { mounts } = await manager.describe();
-      expect(mounts).toEqual([{ name: 'default', driver: 'memory', size: 2, keys: ['root1', 'default:a'], truncated: false }]);
+      expect(mounts).toEqual([
+        { name: 'default', driver: 'memory', size: 2, keys: ['root1', 'default:a'], truncated: false, atomicIncrement: false },
+      ]);
     });
 
     it('should cap the keys and keep the full count', async () => {
@@ -238,7 +240,14 @@ describe('NitroStorageManager', () => {
 
       const { mounts } = await manager.describe({ maxKeys: 2 });
 
-      expect(mounts[1]).toEqual({ name: 'mystore', driver: 'fs', size: 3, keys: ['k1', 'k2'], truncated: true });
+      expect(mounts[1]).toEqual({
+        name: 'mystore',
+        driver: 'fs',
+        size: 3,
+        keys: ['k1', 'k2'],
+        truncated: true,
+        atomicIncrement: false,
+      });
     });
 
     it('should report null when the storage cannot be listed', async () => {
