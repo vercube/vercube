@@ -73,3 +73,29 @@ function isEqual(a: unknown, b: unknown): boolean {
 
   return false;
 }
+
+/**
+ * Keeps one entry per middleware slot: the last one, as a route collects its
+ * entries app-wide first, then the controller's, then the method's. A winning
+ * entry marked `skip` empties its slot. Entries without a slot pass through.
+ *
+ * Resolved once per route when its chain is built, never per request.
+ *
+ * @param {MetadataTypes.Middleware[]} middlewares - Middleware entries, app-wide first.
+ * @returns {MetadataTypes.Middleware[]} The entries that run.
+ */
+export function resolveSlots<T extends Pick<MetadataTypes.Middleware, 'slot' | 'skip'>>(middlewares: T[]): T[] {
+  let winners: Map<string, T> | undefined;
+
+  for (const m of middlewares) {
+    if (m.slot !== undefined) {
+      (winners ??= new Map()).set(m.slot, m);
+    }
+  }
+
+  if (!winners) {
+    return middlewares;
+  }
+
+  return middlewares.filter((m) => m.slot === undefined || (winners.get(m.slot) === m && !m.skip));
+}

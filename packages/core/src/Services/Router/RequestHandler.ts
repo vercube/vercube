@@ -1,7 +1,7 @@
 import { Container, Inject } from '@vercube/di';
 import { ValidationMiddleware } from '../../Middleware/ValidationMiddleware';
 import { FastResponse } from '../../Types/CommonTypes';
-import { isSameMiddleware } from '../../Utils/MiddlewareUtils';
+import { isSameMiddleware, resolveSlots } from '../../Utils/MiddlewareUtils';
 import { skipsGlobalMiddlewares } from '../../Utils/Utils';
 import { ErrorHandlerProvider } from '../ErrorHandler/ErrorHandlerProvider';
 import { MetadataResolver } from '../Metadata/MetadataResolver';
@@ -753,7 +753,7 @@ export class RequestHandler {
     afterMiddlewares: RouterTypes.MiddlewareDefinition[];
   } {
     const uniqueMiddlewares: MetadataTypes.Middleware[] = [];
-    for (const m of middlewares) {
+    for (const m of resolveSlots(middlewares)) {
       const index = uniqueMiddlewares.findIndex((unique) => isSameMiddleware(unique, m));
 
       if (index === -1) {

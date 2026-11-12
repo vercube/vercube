@@ -71,6 +71,19 @@ export namespace MetadataTypes {
     priority?: number;
     middleware: typeof BaseMiddleware<T, U>;
     args?: unknown;
+    /**
+     * Makes the entry replaceable: of all entries a route collects with the same
+     * slot (app-wide, then controller, then method), only the last one runs.
+     * A rate limit on a method this way replaces the controller's and the app's
+     * instead of running next to them.
+     */
+    slot?: string;
+    /**
+     * With a `slot`: removes the slot from the route, so neither this entry nor
+     * any earlier one in the slot runs. How a method opts out of a controller-wide
+     * or app-wide middleware.
+     */
+    skip?: boolean;
   }
 
   export interface ResolveUrlParams {

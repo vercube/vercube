@@ -56,9 +56,11 @@ export function describeRoute(route: RouterTypes.Route, basePath?: string): Intr
   const prototype = instance ? (Object.getPrototypeOf(instance) as { __metadata?: MetadataTypes.Ctx }) : undefined;
   const middlewares = [...(handler.middlewares?.beforeMiddlewares ?? []), ...(handler.middlewares?.afterMiddlewares ?? [])];
   const secured = middlewares.some((definition) => isAuthMiddleware(definition.middleware));
-  const throws = getRouteErrors(prototype, handler.propertyName, { args: handler.args ?? [], secured }).map(
-    ({ name, status, module }) => (module ? { name, status, module } : { name, status }),
-  );
+  const throws = getRouteErrors(prototype, handler.propertyName, {
+    args: handler.args ?? [],
+    secured,
+    middlewares: middlewares.map((definition) => (definition.middleware as object).constructor),
+  }).map(({ name, status, module }) => (module ? { name, status, module } : { name, status }));
 
   return {
     id: `${route.method} ${route.path}`,

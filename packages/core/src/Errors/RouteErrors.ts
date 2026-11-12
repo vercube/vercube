@@ -11,6 +11,27 @@ export interface RouteErrorContext {
   args: readonly Pick<MetadataTypes.Arg, 'type' | 'validate' | 'validationSchema'>[];
   /** Whether an authentication middleware guards the route. */
   secured: boolean;
+  /**
+   * Classes of the middlewares that run on the route, after slots are
+   * resolved. A middleware class lists the errors it throws in a static
+   * `implicitErrors`, see {@link MiddlewareErrors}.
+   */
+  middlewares?: readonly unknown[];
+}
+
+/**
+ * Implemented statically by a middleware class that throws errors on its own:
+ * a rate limiter's 429, say. Every route the middleware runs on lists them.
+ *
+ * @example
+ * ```ts
+ * class RateLimitMiddleware extends BaseMiddleware {
+ *   static readonly implicitErrors = [{ error: TooManyRequestsError, module: '@vercube/core' }];
+ * }
+ * ```
+ */
+export interface MiddlewareErrors {
+  readonly implicitErrors?: readonly ImplicitError[];
 }
 
 /** An error a rule adds, and the module its type is imported from. */
@@ -61,6 +82,11 @@ export const IMPLICIT_ERRORS: readonly ImplicitErrorRule[] = [
             { error: ForbiddenError, module: '@vercube/core' },
           ]
         : [],
+  },
+  {
+    // a middleware declaring what it throws, such as a rate limiter's 429
+    name: 'middlewares',
+    errors: ({ middlewares = [] }) => middlewares.flatMap((middleware) => (middleware as MiddlewareErrors)?.implicitErrors ?? []),
   },
 ];
 

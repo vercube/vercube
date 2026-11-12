@@ -1,5 +1,6 @@
 import type { HealthTypes } from './HealthTypes';
 import type { VercubePluginInput } from './Plugin';
+import type { RateLimitTypes } from './RateLimitTypes';
 import type { TelemetryTypes } from './TelemetryTypes';
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 import type { LoggerTypes } from '@vercube/logger';
@@ -281,6 +282,16 @@ export namespace ConfigTypes {
      * @default false
      */
     health?: boolean | HealthTypes.Options;
+
+    /**
+     * Defaults for `@RateLimit()`, provided by `@vercube/ratelimit`. With both
+     * `limit` and `window` set it is also an app-wide limit for every route
+     * that does not set its own.
+     *
+     * Core only declares the shape: without `RateLimitPlugin` registered the
+     * field has no effect.
+     */
+    rateLimit?: RateLimitTypes.Config;
 
     /**
      * Server configuration options.

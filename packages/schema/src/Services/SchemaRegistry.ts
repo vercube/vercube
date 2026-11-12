@@ -4,6 +4,7 @@ import {
   GlobalMiddlewareRegistry,
   isAuthMiddleware,
   MetadataResolver,
+  resolveSlots,
   Router,
   skipsGlobalMiddlewares,
 } from '@vercube/core';
@@ -157,7 +158,11 @@ export class SchemaRegistry {
             secured,
             security,
             globalSecurity,
-            errors: getRouteErrors(prototype, propertyName, { args: metadata?.__methods?.[propertyName]?.args ?? [], secured }),
+            errors: getRouteErrors(prototype, propertyName, {
+              args: metadata?.__methods?.[propertyName]?.args ?? [],
+              secured,
+              middlewares: this.routeMiddlewares(prototype, propertyName).map((entry) => entry.middleware),
+            }),
           };
           const route = createRouteConfig(metadata?.__methods?.[propertyName], options, warn, controllerPath, context);
 
@@ -244,6 +249,28 @@ export class SchemaRegistry {
     }
 
     return Object.keys(components?.securitySchemes ?? {}).map((name) => ({ [name]: [] }));
+  }
+
+  /**
+   * The middleware entries that run on a route, the way the request handler
+   * resolves them: app-wide, the controller's and the method's, slots resolved.
+   *
+   * @param prototype - Prototype of the controller
+   * @param propertyName - Name of the handler method
+   * @returns The entries
+   */
+  private routeMiddlewares(prototype: object, propertyName: string): MetadataTypes.Middleware[] {
+    const own = ((prototype as { __metadata?: MetadataTypes.Ctx }).__metadata?.__middlewares ?? []).filter(
+      (entry) => entry.target === '__global__' || entry.target === propertyName,
+    );
+    const global = skipsGlobalMiddlewares(prototype) ? [] : (this.gGlobalMiddlewares?.middlewares ?? []);
+
+    // app-wide, then the controller's, then the method's: the order slots resolve in
+    return resolveSlots([
+      ...global,
+      ...own.filter((entry) => entry.target === '__global__'),
+      ...own.filter((entry) => entry.target !== '__global__'),
+    ]);
   }
 
   /**

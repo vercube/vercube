@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { BadRequestError, getRouteErrors, HttpError, NotFoundError, Throws } from '../../src';
+import {
+  BadRequestError,
+  getRouteErrors,
+  HttpError,
+  NotFoundError,
+  ServiceUnavailableError,
+  Throws,
+  TooManyRequestsError as CoreTooManyRequestsError,
+} from '../../src';
 import type { ImplicitErrorRule } from '../../src';
 
 class TooManyRequestsError extends HttpError {
@@ -62,5 +70,34 @@ describe('getRouteErrors', () => {
     }
 
     expect(getRouteErrors(Forms.prototype, 'post', { args: [{ type: 'body' }], secured: false })).toHaveLength(1);
+  });
+
+  it('adds the errors a middleware running on the route declares', () => {
+    class Limiter {
+      public static readonly implicitErrors = [{ error: CoreTooManyRequestsError, module: '@vercube/core' }];
+    }
+
+    class Plain {}
+
+    expect(
+      summary(getRouteErrors(undefined, 'get', { args: [], secured: false, middlewares: [Plain, Limiter, undefined] })),
+    ).toEqual([[429, 'TooManyRequestsError', '@vercube/core']]);
+  });
+});
+
+describe('TooManyRequestsError and ServiceUnavailableError', () => {
+  it('answer with 429 and 503, statically and per instance', () => {
+    const tooMany = new CoreTooManyRequestsError('slow down');
+    const unavailable = new ServiceUnavailableError();
+
+    expect([CoreTooManyRequestsError.status, tooMany.status, tooMany.name, tooMany.message]).toEqual([
+      429,
+      429,
+      'TooManyRequestsError',
+      'slow down',
+    ]);
+    expect([ServiceUnavailableError.status, unavailable.status, unavailable.name]).toEqual([503, 503, 'ServiceUnavailableError']);
+    expect(tooMany).toBeInstanceOf(HttpError);
+    expect(unavailable).toBeInstanceOf(ServiceUnavailableError);
   });
 });
