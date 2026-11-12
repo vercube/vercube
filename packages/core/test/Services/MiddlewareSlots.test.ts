@@ -288,3 +288,46 @@ describe('middleware slots, edge cases', () => {
     expect(await limit('/edges/lifted-and-explicit')).toBe('explicit');
   });
 });
+
+describe('route info handed to middlewares', () => {
+  it('should tell a middleware the controller and handler it runs on, a subclass by its own name', async () => {
+    const seen: unknown[] = [];
+
+    class Spy extends BaseMiddleware {
+      public override onRequest(_request: Request, _response: Response, args: MiddlewareOptions): void {
+        seen.push(args.route);
+      }
+    }
+
+    @Controller('/base')
+    @Middleware(Spy)
+    class BaseController {
+      @Get('/')
+      public index(): string {
+        return 'ok';
+      }
+    }
+
+    @Controller('/derived')
+    class DerivedController extends BaseController {}
+
+    const app = await createApp({
+      cfg: { requestLogging: false, requestContext: false },
+      setup: (instance) => {
+        instance.container.get(GlobalMiddlewareRegistry).registerGlobalMiddleware(Spy);
+        instance.container.bind(BaseController);
+        instance.container.bind(DerivedController);
+      },
+    });
+
+    await app.fetch(new globalThis.Request('http://localhost/base'));
+    await app.fetch(new globalThis.Request('http://localhost/derived'));
+    await app.fetch(new globalThis.Request('http://localhost/nowhere'));
+
+    expect(seen).toEqual([
+      { controller: 'BaseController', handler: 'index' },
+      { controller: 'DerivedController', handler: 'index' },
+      undefined,
+    ]);
+  });
+});
