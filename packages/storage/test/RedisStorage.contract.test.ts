@@ -48,6 +48,21 @@ describe.skipIf(!url)('RedisStorage against Redis', () => {
     expect(await storage.getItem('hits')).toBe(100);
   });
 
+  it('should add fractional steps and start a non-numeric value over', async () => {
+    expect(await storage.increment('float', { by: 0.5 })).toBe(0.5);
+    expect(await storage.increment('float', { by: 1 })).toBe(1.5);
+
+    await storage.setItem('text', 'not a number');
+    expect(await storage.increment('text')).toBe(1);
+  });
+
+  it('should read several keys at once', async () => {
+    await storage.setItem('a', 1);
+    await storage.setItem('b', { b: 2 });
+
+    expect(await storage.getItems(['a', 'missing', 'b'])).toEqual([1, null, { b: 2 }]);
+  });
+
   it('should set the expiry when the counter is created and never extend it', async () => {
     await storage.increment('window', { ttl: 10 });
     const before = await storage.client.pttl(`${prefix}:window`);

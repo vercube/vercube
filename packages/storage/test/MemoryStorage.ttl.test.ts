@@ -88,6 +88,15 @@ describe('MemoryStorage expiry', () => {
       expect(storage.increment('hits', { ttl: 10 })).toBe(1);
     });
 
+    it('should give a counter written without expiry the ttl of its next increment', () => {
+      storage.setItem('hits', 3);
+
+      expect(storage.increment('hits', { ttl: 10 })).toBe(4);
+
+      vi.advanceTimersByTime(10_000);
+      expect(storage.getItem('hits')).toBeUndefined();
+    });
+
     it('should restart a counter that holds something else than a number', () => {
       storage.setItem('hits', 'not a number');
 
