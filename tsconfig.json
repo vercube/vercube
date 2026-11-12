@@ -35,6 +35,7 @@
       "@vercube/testing/auth": ["./packages/testing/src/Auth.ts"],
       "@vercube/testing/telemetry": ["./packages/testing/src/Telemetry.ts"],
       "@vercube/queue/testing": ["./packages/queue/src/Testing.ts"],
+      "@vercube/ratelimit/testing": ["./packages/ratelimit/src/Testing.ts"],
       "@vercube/scheduler/cli": ["./packages/scheduler/src/Cli.ts"],
       "@vercube/scheduler/testing": ["./packages/scheduler/src/Testing.ts"],
       "@vercube/scheduler/stores/MemoryStore": ["./packages/scheduler/src/Stores/MemoryStore.ts"],

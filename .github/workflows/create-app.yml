@@ -48,6 +48,7 @@ jobs:
           - { name: storage redis, template: api, args: '--modules storage --storage redis --services' }
           - { name: storage s3 (build only), template: api, args: '--modules storage --storage s3' }
           - { name: cache, template: api, args: '--modules cache' }
+          - { name: ratelimit, template: api, args: '--modules ratelimit' }
           - { name: queue memory, template: api, args: '--modules queue --queue memory' }
           - { name: queue bullmq, template: api, args: '--modules queue --queue bullmq --services' }
           - { name: queue rabbitmq, template: api, args: '--modules queue --queue rabbitmq --services' }
@@ -64,7 +65,7 @@ jobs:
           - {
               name: kitchen sink,
               template: api,
-              args: '--modules schema,auth,storage,cache,queue,scheduler,ws,telemetry,devtools,testing --queue bullmq --scheduler-store postgres --services',
+              args: '--modules schema,auth,storage,cache,ratelimit,queue,scheduler,ws,telemetry,devtools,testing --queue bullmq --scheduler-store postgres --services',
             }
           - { name: fullstack-vue, template: fullstack-vue, args: '--modules schema,testing' }
     steps:

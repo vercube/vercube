@@ -121,4 +121,19 @@ describe('module recipes', () => {
     expect(summary.implied).toEqual(['storage']);
     expect(summary.applied).toEqual(['storage', 'cache']);
   });
+
+  it('adds storage and the plugin for rate limits', async () => {
+    const dir = apiTemplate();
+
+    dirs.push(dir);
+
+    const summary = await applyRecipes(new Project(dir, { version: '1.5.0' }), ['ratelimit'], RECIPES);
+    const files = snapshot(dir);
+
+    expect(summary.implied).toEqual(['storage']);
+    expect(summary.applied).toEqual(['storage', 'ratelimit']);
+    expect(files['vercube.config.ts']).toContain(`import { RateLimitPlugin } from '@vercube/ratelimit'`);
+    expect(files['vercube.config.ts']).toContain('RateLimitPlugin');
+    expect(files['src/controller/LoginController.ts']).toContain(`@RateLimit({ limit: 5, window: '1m' })`);
+  });
 });

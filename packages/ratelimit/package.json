@@ -15,6 +15,7 @@
   "module": "./dist/index.mjs",
   "exports": {
     ".": "./dist/index.mjs",
+    "./testing": "./dist/Testing.mjs",
     "./package.json": "./package.json"
   },
   "types": "./dist/index.d.mts",
@@ -39,7 +40,16 @@
     "@vercube/storage": "workspace:*",
     "@vercube/telemetry": "workspace:*"
   },
+  "peerDependencies": {
+    "@vercube/testing": "workspace:^"
+  },
+  "peerDependenciesMeta": {
+    "@vercube/testing": {
+      "optional": true
+    }
+  },
   "devDependencies": {
+    "@vercube/auth": "workspace:*",
     "@vercube/testing": "workspace:*"
   },
   "publishConfig": {

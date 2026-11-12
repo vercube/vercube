@@ -4,6 +4,7 @@ import { azureFunctionsRecipe } from './Modules/AzureFunctions';
 import { cacheRecipe } from './Modules/Cache';
 import { devtoolsRecipe } from './Modules/Devtools';
 import { queueRecipe } from './Modules/Queue';
+import { rateLimitRecipe } from './Modules/RateLimit';
 import { schedulerRecipe } from './Modules/Scheduler';
 import { schemaRecipe } from './Modules/Schema';
 import { storageRecipe } from './Modules/Storage';
@@ -22,6 +23,7 @@ export const RECIPES: RecipeTypes.Recipe<any>[] = [
   authRecipe,
   storageRecipe,
   cacheRecipe,
+  rateLimitRecipe,
   queueRecipe,
   schedulerRecipe,
   websocketsRecipe,
