@@ -829,6 +829,28 @@ importers:
         specifier: 2.2.4
         version: 2.2.4
 
+  packages/ratelimit:
+    dependencies:
+      '@vercube/core':
+        specifier: workspace:*
+        version: link:../core
+      '@vercube/di':
+        specifier: workspace:*
+        version: link:../di
+      '@vercube/logger':
+        specifier: workspace:*
+        version: link:../logger
+      '@vercube/storage':
+        specifier: workspace:*
+        version: link:../storage
+      '@vercube/telemetry':
+        specifier: workspace:*
+        version: link:../telemetry
+    devDependencies:
+      '@vercube/testing':
+        specifier: workspace:*
+        version: link:../testing
+
   packages/scan:
     dependencies:
       oxc-parser:
