@@ -77,6 +77,9 @@ describe.skipIf(!url)('RedisStorage against Redis', () => {
 
   it('should list and clear its own keys only', async () => {
     await storage.client.set('vercube:storage:test:outsider', '1');
+    await storage.setItem('user', 1);
+    await storage.increment('hits');
+    await storage.increment('window', { ttl: 10 });
 
     expect(await storage.getKeys()).toEqual(expect.arrayContaining(['user', 'hits', 'window']));
     expect(await storage.size()).toBeGreaterThanOrEqual(3);

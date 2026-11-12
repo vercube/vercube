@@ -65,7 +65,7 @@ export namespace StorageTypes {
      * @default 1
      */
     by?: number;
-    /** Seconds until the counter expires, applied only when the increment creates it. */
+    /** Seconds until the counter expires, applied when it has no expiry yet. */
     ttl?: number;
   }
 
