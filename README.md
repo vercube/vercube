@@ -96,20 +96,20 @@ More examples available in the [examples directory](https://github.com/vercube/v
 
 ## 📦 Packages
 
-| Package                                                                  | Description                                  |
-| ------------------------------------------------------------------------ | -------------------------------------------- |
-| [@vercube/core](https://www.npmjs.com/package/@vercube/core)             | Core framework with routing and middleware   |
-| [@vercube/di](https://www.npmjs.com/package/@vercube/di)                 | Lightweight dependency injection container   |
-| [@vercube/auth](https://www.npmjs.com/package/@vercube/auth)             | Authentication decorators and middleware     |
-| [@vercube/logger](https://www.npmjs.com/package/@vercube/logger)         | Structured wide-event logging via evlog      |
-| [@vercube/storage](https://www.npmjs.com/package/@vercube/storage)       | File storage abstraction layer               |
-| [@vercube/ratelimit](https://www.npmjs.com/package/@vercube/ratelimit)   | Rate limits shared across instances          |
-| [@vercube/queue](https://www.npmjs.com/package/@vercube/queue)           | Background jobs over BullMQ, RabbitMQ, Kafka |
-| [@vercube/scheduler](https://www.npmjs.com/package/@vercube/scheduler)   | Cron jobs that run once across replicas      |
-| [@vercube/testing](https://www.npmjs.com/package/@vercube/testing)       | Test apps with real DI, no port, any runner  |
-| [@vercube/client](https://www.npmjs.com/package/@vercube/client)         | Fetch client typed by your controllers       |
-| [@vercube/ws](https://www.npmjs.com/package/@vercube/ws)                 | WebSocket support                            |
-| [@vercube/serverless](https://www.npmjs.com/package/@vercube/serverless) | AWS Lambda & Azure Functions adapters        |
+| Package                                                                  | Description                                   |
+| ------------------------------------------------------------------------ | --------------------------------------------- |
+| [@vercube/core](https://www.npmjs.com/package/@vercube/core)             | Core framework with routing and middleware    |
+| [@vercube/di](https://www.npmjs.com/package/@vercube/di)                 | Lightweight dependency injection container    |
+| [@vercube/auth](https://www.npmjs.com/package/@vercube/auth)             | Authentication decorators and middleware      |
+| [@vercube/logger](https://www.npmjs.com/package/@vercube/logger)         | Structured wide-event logging via evlog       |
+| [@vercube/storage](https://www.npmjs.com/package/@vercube/storage)       | File storage abstraction layer                |
+| [@vercube/ratelimit](https://www.npmjs.com/package/@vercube/ratelimit)   | Rate limits, shared across instances on Redis |
+| [@vercube/queue](https://www.npmjs.com/package/@vercube/queue)           | Background jobs over BullMQ, RabbitMQ, Kafka  |
+| [@vercube/scheduler](https://www.npmjs.com/package/@vercube/scheduler)   | Cron jobs that run once across replicas       |
+| [@vercube/testing](https://www.npmjs.com/package/@vercube/testing)       | Test apps with real DI, no port, any runner   |
+| [@vercube/client](https://www.npmjs.com/package/@vercube/client)         | Fetch client typed by your controllers        |
+| [@vercube/ws](https://www.npmjs.com/package/@vercube/ws)                 | WebSocket support                             |
+| [@vercube/serverless](https://www.npmjs.com/package/@vercube/serverless) | AWS Lambda & Azure Functions adapters         |
 
 ## 📖 Documentation
 
