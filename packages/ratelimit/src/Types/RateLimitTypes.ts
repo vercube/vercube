@@ -19,8 +19,11 @@ export namespace RateLimitTypes {
     request: Request;
     /** The client address, as `trustProxy` allows reading it, or null when unknown. */
     ip: string | null;
-    /** The request context, where `@Auth()` keeps the authenticated user. */
-    context: RequestContext;
+    /**
+     * The request context, where `@Auth()` keeps the authenticated user. Null
+     * when the application turns both `requestContext` and `requestLogging` off.
+     */
+    context: RequestContext | null;
   }
 
   /** Options of one limit. */
@@ -58,7 +61,8 @@ export namespace RateLimitTypes {
     /**
      * Middleware priority. The default runs right after `@Auth()` (-999), so a
      * `key` function can read the user. Use a priority below -999 to limit
-     * requests before authentication runs.
+     * requests before authentication runs. In the config section it only
+     * applies to the app-wide limit: a decorator's priority is fixed when the class is defined.
      * @default -900
      */
     priority?: number;
@@ -71,8 +75,10 @@ export namespace RateLimitTypes {
     headers?: boolean;
 
     /**
-     * Name of the counter. Routes with the same name share it.
-     * @default `Controller.method`, `Controller` for a controller-wide limit, `global` for the app-wide one
+     * Name of the counter. Routes with the same name share it. In the config
+     * section it only names the app-wide limit.
+     * @default `Controller.method`, `Controller` for a controller-wide limit, `global` for the app-wide one.
+     * The controller is the route's own class, a subclass's name when it inherits the route.
      */
     name?: string;
   }
@@ -91,12 +97,15 @@ export namespace RateLimitTypes {
     trustProxy?: boolean | number;
   }
 
-  /** What `@RateLimit()` stores on a route: the options with the window parsed and a name. */
+  /** Where a limit was declared, which decides its default counter name. */
+  export type Scope = 'method' | 'controller' | 'global';
+
+  /** What `@RateLimit()` and the plugin store on a route: the options with the window parsed. */
   export interface DeclaredOptions extends Partial<Omit<Options, 'window'>> {
     /** Length of the window in milliseconds, when the declaration sets one. */
     windowMs?: number;
-    /** Name of the counter. */
-    name: string;
+    /** Where the limit was declared. */
+    scope: Scope;
   }
 
   /** A limit with every default applied, what the manager counts against. */

@@ -47,7 +47,7 @@ describe('@RateLimit() validation', () => {
     }).toThrow(message);
   });
 
-  it('should name the counter after the route or the controller, unless named', () => {
+  it('should record where a limit was declared, and an explicit name', () => {
     @RateLimit({ limit: 1, window: '1m' })
     class Users {
       @RateLimit({ limit: 2, window: '1s' })
@@ -57,13 +57,12 @@ describe('@RateLimit() validation', () => {
       public get(): void {}
     }
 
-    expect(entries(Users).map((entry) => [entry.target, (entry.args as { name: string }).name])).toEqual(
-      expect.arrayContaining([
-        ['__global__', 'Users'],
-        ['list', 'Users.list'],
-        ['get', 'shared'],
-      ]),
-    );
+    const args = (target: string) => entries(Users).find((entry) => entry.target === target)?.args as Record<string, unknown>;
+
+    expect(args('__global__')).toMatchObject({ scope: 'controller' });
+    expect(args('list')).toMatchObject({ scope: 'method' });
+    expect(args('list').name).toBeUndefined();
+    expect(args('get')).toMatchObject({ scope: 'method', name: 'shared' });
     expect(entries(Users).find((entry) => entry.target === 'list')).toMatchObject({
       priority: -900,
       args: { limit: 2, windowMs: 1000 },
@@ -109,6 +108,12 @@ describe('RateLimitManager', () => {
   it('should refuse invalid defaults', () => {
     expect(() => manager().configure({ limit: -1 })).toThrow(/rateLimit: limit must be a positive integer/);
     expect(() => manager().configure({ window: 'never' })).toThrow(RateLimitError);
+
+    for (const trustProxy of [-1, 0.5, Number.NaN, 'yes']) {
+      expect(() => manager().configure({ trustProxy } as never)).toThrow(/trustProxy must be a boolean or a number of proxies/);
+    }
+
+    expect(() => manager().configure({ trustProxy: 0 })).not.toThrow();
   });
 
   it('should merge defaults and apply them to a declaration', () => {
@@ -118,7 +123,7 @@ describe('RateLimitManager', () => {
     instance.configure({ window: '1m', trustProxy: 1 });
 
     expect(instance.defaults).toEqual({ limit: 10, storage: 'redis', window: '1m', trustProxy: 1 });
-    expect(instance.resolve({ name: 'a' })).toEqual({
+    expect(instance.resolve({ scope: 'method', name: 'a' })).toEqual({
       limit: 10,
       windowMs: 60_000,
       algorithm: 'fixed',
@@ -129,7 +134,7 @@ describe('RateLimitManager', () => {
       name: 'a',
       trustProxy: 1,
     });
-    expect(instance.resolve({ name: 'b', limit: 2, windowMs: 1000, storage: 'memory' })).toMatchObject({
+    expect(instance.resolve({ scope: 'method', name: 'b', limit: 2, windowMs: 1000, storage: 'memory' })).toMatchObject({
       limit: 2,
       windowMs: 1000,
       storage: 'memory',
@@ -137,7 +142,21 @@ describe('RateLimitManager', () => {
   });
 
   it('should refuse a declaration that ends up without a limit or a window', () => {
-    expect(() => manager().resolve({ name: 'Users.list', limit: 5 })).toThrow(/"Users.list" needs a limit and a window/);
+    expect(() => manager().resolve({ scope: 'method', limit: 5 }, { controller: 'Users', handler: 'list' })).toThrow(
+      /"Users.list" needs a limit and a window/,
+    );
+  });
+
+  it('should name counters after the route, the controller or global', () => {
+    const instance = manager();
+    const route = { controller: 'Users', handler: 'list' };
+    const base = { limit: 1, windowMs: 1000 };
+
+    expect(instance.resolve({ ...base, scope: 'method' }, route).name).toBe('Users.list');
+    expect(instance.resolve({ ...base, scope: 'controller' }, route).name).toBe('Users');
+    expect(instance.resolve({ ...base, scope: 'global' }, route).name).toBe('global');
+    expect(instance.resolve({ ...base, scope: 'method' }).name).toBe('global');
+    expect(instance.resolve({ ...base, scope: 'method', name: 'shared' }, route).name).toBe('shared');
   });
 
   it('should encode counter keys so a client cannot forge another counter', () => {
