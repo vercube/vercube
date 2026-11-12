@@ -41,6 +41,8 @@ export function Middleware<T = any, U = any>(
       priority: opts?.priority ?? 999, // default priority is 999 to ensure it runs last
       middleware,
       args: opts?.args,
+      ...(opts?.slot === undefined ? {} : { slot: opts.slot }),
+      ...(opts?.skip === undefined ? {} : { skip: opts.skip }),
     });
   };
 }
