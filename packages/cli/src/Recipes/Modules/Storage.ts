@@ -88,6 +88,8 @@ export const storageRecipe = defineRecipe<{ driver: string }>({
         });`,
         { StorageManager: '@vercube/storage', RedisStorage: '@vercube/storage/drivers/RedisStorage' },
       );
+      // an open Redis connection keeps the process alive after SIGTERM or Ctrl-C
+      project.setConfig('shutdown', '{ handleSignals: true }');
     } else if (answers.driver === 's3') {
       project.addDependencies({ '@aws-sdk/client-s3': VERSIONS.awsSdkS3 });
       project.addToContainer(

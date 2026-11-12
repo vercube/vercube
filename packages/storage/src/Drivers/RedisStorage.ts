@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { Redis } from 'ioredis';
 import { StorageError } from '../Errors/StorageError';
 import { Storage } from '../Service/Storage';
@@ -28,11 +29,18 @@ export interface RedisStorageOptions {
 
 /**
  * Increments a counter and gives it an expiry when it has none, in one round
- * trip, so a crash between the two steps can never leave a counter that lives forever.
+ * trip, so a crash between the two steps can never leave a counter that lives
+ * forever. A value that is not a number starts over from zero, like in memory.
+ * `INCRBYFLOAT` keeps fractional steps, and is exact for whole numbers.
  */
-const INCREMENT_SCRIPT = `local value = redis.call('incrby', KEYS[1], ARGV[1])
+const INCREMENT_SCRIPT = `local current = redis.call('get', KEYS[1])
+if current and not tonumber(current) then redis.call('del', KEYS[1]) end
+local value = redis.call('incrbyfloat', KEYS[1], ARGV[1])
 if tonumber(ARGV[2]) > 0 and redis.call('pttl', KEYS[1]) == -1 then redis.call('pexpire', KEYS[1], ARGV[2]) end
 return value`;
+
+/** SHA1 of the increment script, so a call sends 40 bytes instead of the script. */
+const INCREMENT_SHA = createHash('sha1').update(INCREMENT_SCRIPT).digest('hex');
 
 /** Keys fetched per SCAN round trip. */
 const SCAN_COUNT = 500;
@@ -135,7 +143,11 @@ export class RedisStorage implements Storage<RedisStorageOptions | undefined> {
       return [];
     }
 
-    const values = await this.client.mget(...keys.map((key) => this.key(key)));
+    const client = this.client;
+    const prefixed = keys.map((key) => this.key(key));
+
+    // a cluster refuses MGET across slots, so it gets one GET per key
+    const values = isCluster(client) ? await Promise.all(prefixed.map((key) => client.get(key))) : await client.mget(...prefixed);
 
     return values.map((value) => decode<T>(value) as T);
   }
@@ -164,8 +176,8 @@ export class RedisStorage implements Storage<RedisStorageOptions | undefined> {
   }
 
   /**
-   * Adds to a counter atomically with `INCRBY`, setting the expiry in the same
-   * round trip when the counter has none.
+   * Adds to a counter atomically, setting the expiry in the same round trip
+   * when the counter has none. The script is sent once, then called by its SHA.
    * @param {string} key - The counter key
    * @param {StorageTypes.IncrementOptions} [options] - Step and expiry
    * @returns {Promise<number>} The value after the increment
@@ -173,7 +185,18 @@ export class RedisStorage implements Storage<RedisStorageOptions | undefined> {
   public async increment(key: string, options: StorageTypes.IncrementOptions = {}): Promise<number> {
     const ttl = typeof options.ttl === 'number' && options.ttl > 0 ? Math.ceil(options.ttl * 1000) : 0;
 
-    return Number(await this.client.eval(INCREMENT_SCRIPT, 1, this.key(key), Math.trunc(options.by ?? 1), ttl));
+    const args = [1, this.key(key), options.by ?? 1, ttl] as const;
+
+    try {
+      return Number(await this.client.evalsha(INCREMENT_SHA, ...args));
+    } catch (error) {
+      // the server has not seen the script yet, or restarted since
+      if (!String((error as Error)?.message).includes('NOSCRIPT')) {
+        throw error;
+      }
+
+      return Number(await this.client.eval(INCREMENT_SCRIPT, ...args));
+    }
   }
 
   /**
@@ -280,8 +303,7 @@ export class RedisStorage implements Storage<RedisStorageOptions | undefined> {
    */
   private async scan(visit: (keys: string[]) => boolean): Promise<void> {
     const client = this.client;
-    const nodes: Redis[] =
-      'nodes' in client && typeof client.nodes === 'function' ? (client as Cluster).nodes('master') : [client as Redis];
+    const nodes: Redis[] = isCluster(client) ? client.nodes('master') : [client];
     const match = `${escapeGlob(this.fPrefix)}:*`;
 
     for (const node of nodes) {
@@ -334,4 +356,13 @@ function decode<T>(raw: string | null): T | null {
  */
 function escapeGlob(value: string): string {
   return value.replaceAll(/[*?[\]\\]/g, String.raw`\$&`);
+}
+
+/**
+ * Tells a cluster client from a single-node one.
+ * @param {Redis | Cluster} client - The client
+ * @returns {boolean} True for a cluster
+ */
+function isCluster(client: Redis | Cluster): client is Cluster {
+  return 'nodes' in client && typeof client.nodes === 'function';
 }

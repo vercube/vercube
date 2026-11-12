@@ -49,9 +49,14 @@ const fake = vi.hoisted(() => {
       return this.data.delete(key) ? 1 : 0;
     });
 
+    /** Scripts the server knows, by SHA. Empty until `eval` loads one, like after a restart. */
+    public scripts: Set<string> = new Set();
+
     /** Runs the increment script the way Redis would. */
-    public eval = vi.fn(async (_script: string, _keys: number, key: string, by: number, ttl: number) => {
-      const value = Number(this.data.get(key) ?? 0) + Number(by);
+    private runIncrement(key: string, by: number, ttl: number): string {
+      const current = this.data.get(key);
+      const start = current === undefined || Number.isNaN(Number(current)) ? 0 : Number(current);
+      const value = start + Number(by);
 
       this.data.set(key, String(value));
 
@@ -59,7 +64,23 @@ const fake = vi.hoisted(() => {
         this.ttls.set(key, Number(ttl));
       }
 
-      return value;
+      return String(value);
+    }
+
+    public eval = vi.fn(async (script: string, _keys: number, key: string, by: number, ttl: number) => {
+      const { createHash } = await import('node:crypto');
+
+      this.scripts.add(createHash('sha1').update(script).digest('hex'));
+
+      return this.runIncrement(key, by, ttl);
+    });
+
+    public evalsha = vi.fn(async (sha: string, _keys: number, key: string, by: number, ttl: number) => {
+      if (!this.scripts.has(sha)) {
+        throw new Error('NOSCRIPT No matching script. Please use EVAL.');
+      }
+
+      return this.runIncrement(key, by, ttl);
     });
 
     /** Returns the matching keys over two pages, like a real cursor would. */
@@ -198,17 +219,40 @@ describe('RedisStorage', () => {
     expect(await storage.getItems([])).toEqual([]);
   });
 
-  it('should increment with one script call that also sets the expiry', async () => {
+  it('should increment with one script call that also sets the expiry, sending the script only once', async () => {
     const { storage, client } = await create();
 
     expect(await storage.increment('hits', { ttl: 60 })).toBe(1);
     expect(await storage.increment('hits', { by: 4 })).toBe(5);
-    expect(await storage.increment('other')).toBe(1);
+    expect(await storage.increment('other', { by: 0.5 })).toBe(0.5);
 
-    expect(client.eval).toHaveBeenNthCalledWith(1, expect.stringContaining('incrby'), 1, 'vercube:storage:hits', 1, 60_000);
-    expect(client.eval).toHaveBeenNthCalledWith(2, expect.any(String), 1, 'vercube:storage:hits', 4, 0);
+    // the first call finds no script on the server and loads it, the rest go by SHA
+    expect(client.eval).toHaveBeenCalledTimes(1);
+    expect(client.eval).toHaveBeenCalledWith(expect.stringContaining('incrbyfloat'), 1, 'vercube:storage:hits', 1, 60_000);
+    expect(client.evalsha).toHaveBeenNthCalledWith(2, expect.any(String), 1, 'vercube:storage:hits', 4, 0);
     expect(client.ttls.get('vercube:storage:hits')).toBe(60_000);
     expect(await storage.getItem('hits')).toBe(5);
+  });
+
+  it('should load the script again after Redis forgot it, and rethrow any other error', async () => {
+    const { storage, client } = await create();
+
+    await storage.increment('hits');
+    client.scripts.clear();
+
+    expect(await storage.increment('hits')).toBe(2);
+    expect(client.eval).toHaveBeenCalledTimes(2);
+
+    client.evalsha.mockRejectedValueOnce(new Error('LOADING Redis is loading the dataset in memory'));
+    await expect(storage.increment('hits')).rejects.toThrow('LOADING');
+  });
+
+  it('should start a counter over when the key holds something else than a number', async () => {
+    const { storage } = await create();
+
+    await storage.setItem('hits', 'not a number');
+
+    expect(await storage.increment('hits')).toBe(1);
   });
 
   it('should list, count and clear only the keys under its prefix', async () => {
@@ -236,6 +280,20 @@ describe('RedisStorage', () => {
     await storage.getKeys();
 
     expect(client.scan).toHaveBeenCalledWith('0', 'MATCH', String.raw`a\*b:*`, 'COUNT', 500);
+  });
+
+  it('should read several keys of a cluster one by one, since MGET cannot cross slots', async () => {
+    const node = new fake();
+    const cluster = Object.assign(new fake(), { nodes: vi.fn(() => [node]) });
+
+    cluster.data.set('vercube:storage:a', '1');
+    cluster.data.set('vercube:storage:b', '2');
+
+    const storage = new RedisStorage();
+    await storage.initialize({ client: cluster as never });
+
+    expect(await storage.getItems(['a', 'b', 'c'])).toEqual([1, 2, null]);
+    expect(cluster.mget).not.toHaveBeenCalled();
   });
 
   it('should scan every master of a cluster', async () => {

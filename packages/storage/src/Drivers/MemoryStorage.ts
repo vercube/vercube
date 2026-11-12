@@ -78,7 +78,8 @@ export class MemoryStorage implements Storage {
 
   /**
    * Adds to a numeric counter and returns the new value. A missing, expired or
-   * non-numeric entry starts from zero; `ttl` only applies when the counter is created.
+   * non-numeric entry starts from zero. `ttl` applies to a counter that has no
+   * expiry yet, so later increments never push it forward.
    * @param {string} key - The counter key
    * @param {StorageTypes.IncrementOptions} [options] - Step and expiry
    * @returns {number} The value after the increment
@@ -92,6 +93,7 @@ export class MemoryStorage implements Storage {
 
     if (entry && typeof entry.value === 'number') {
       entry.value = value;
+      entry.expiresAt ??= expiry(options.ttl);
     } else {
       this.storage.set(key, { value, expiresAt: expiry(options.ttl) });
     }
