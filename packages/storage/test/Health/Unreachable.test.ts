@@ -1,6 +1,6 @@
 import { HealthRegistry, HEALTH_REGISTRY_KEY } from '@vercube/core';
 import { Container, initializeContainer } from '@vercube/di';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { StorageManager } from '../../src';
 import { RedisStorage } from '../../src/Drivers/RedisStorage';
 
@@ -23,8 +23,9 @@ describe('storage health against an unreachable Redis', () => {
 
     await manager.mount({ name: 'redis', storage: RedisStorage, initOptions: { url: 'redis://127.0.0.1:1' } });
     initializeContainer(container);
-    // init() swallows the failure and records it for every later operation
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    // init() swallows the failure and records it for every later operation:
+    // wait until it has, however long the refused connection takes
+    await vi.waitFor(async () => expect(manager.ping('redis')).rejects.toThrow('Failed to initialize'), { timeout: 5000 });
 
     const result = (await registry.check()).checks['storage:redis'] as unknown as Record<string, unknown>;
 

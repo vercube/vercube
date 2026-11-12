@@ -100,11 +100,13 @@ export abstract class Storage<InitOptions = undefined> {
 
   /**
    * Adds to a numeric counter in one atomic step and returns the new value.
-   * A missing or expired key starts from zero. `ttl` is applied only when the
-   * key is created, so later increments never push its expiry forward.
+   * A missing, expired or non-numeric key starts from zero. `ttl` is applied to
+   * a counter that has no expiry yet (a new one, or one written by `setItem()`
+   * without a ttl), so later increments never push an expiry forward.
    *
    * Optional: `StorageManager.increment()` falls back to a read followed by a
-   * write for a driver that leaves it out, which is not atomic across instances.
+   * write for a driver that leaves it out, which is not atomic across instances
+   * and cannot keep an expiry: pass the same `ttl` on every call there.
    *
    * @param {string} key - The counter key
    * @param {StorageTypes.IncrementOptions} [options] - Step and expiry

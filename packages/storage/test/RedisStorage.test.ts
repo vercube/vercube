@@ -274,6 +274,40 @@ describe('RedisStorage', () => {
     expect(client.data.get('someone-else')).toBe('1');
   });
 
+  it('should list a key SCAN returned twice once', async () => {
+    const { storage, client } = await create();
+
+    await storage.setItem('a', 1);
+    client.scan.mockResolvedValueOnce(['1', ['vercube:storage:a']]).mockResolvedValueOnce(['0', ['vercube:storage:a']]);
+
+    expect(await storage.getKeys()).toEqual(['a']);
+  });
+
+  it('should delete a large prefix in bounded batches', async () => {
+    const { storage, client } = await create();
+
+    for (let i = 0; i < 1200; i++) {
+      client.data.set(`vercube:storage:k${i}`, '1');
+    }
+
+    let inFlight = 0;
+    let peak = 0;
+    const del = client.del.getMockImplementation()!;
+
+    client.del.mockImplementation(async (key: string) => {
+      peak = Math.max(peak, ++inFlight);
+      await Promise.resolve();
+      inFlight--;
+
+      return del(key);
+    });
+
+    await storage.clear();
+
+    expect(await storage.size()).toBe(0);
+    expect(peak).toBeLessThanOrEqual(500);
+  });
+
   it('should escape glob characters of the prefix when scanning', async () => {
     const { storage, client } = await create('a*b');
 
