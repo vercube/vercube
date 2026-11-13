@@ -40,6 +40,9 @@
       "@vercube/scheduler/stores/MemoryStore": ["./packages/scheduler/src/Stores/MemoryStore.ts"],
       "@vercube/scheduler/stores/PostgresStore": ["./packages/scheduler/src/Stores/PostgresStore.ts"],
       "@vercube/scheduler/stores/RedisStore": ["./packages/scheduler/src/Stores/RedisStore.ts"],
+      "@vercube/storage/drivers/MemoryStorage": ["./packages/storage/src/Drivers/MemoryStorage.ts"],
+      "@vercube/storage/drivers/RedisStorage": ["./packages/storage/src/Drivers/RedisStorage.ts"],
+      "@vercube/storage/drivers/S3Storage": ["./packages/storage/src/Drivers/S3Storage.ts"],
       "@vercube/*": ["./packages/*/src"]
     }
   },

@@ -1,3 +1,4 @@
+import type { StorageTypes } from '../Types/StorageTypes';
 import type { MaybePromise } from '@vercube/core';
 
 /**
@@ -96,4 +97,28 @@ export abstract class Storage<InitOptions = undefined> {
    * @throws {Error} When the backend cannot be reached.
    */
   public ping?(): Promise<void>;
+
+  /**
+   * Adds to a numeric counter in one atomic step and returns the new value.
+   * A missing, expired or non-numeric key starts from zero. `ttl` is applied to
+   * a counter that has no expiry yet (a new one, or one written by `setItem()`
+   * without a ttl), so later increments never push an expiry forward.
+   *
+   * Optional: `StorageManager.increment()` falls back to a read followed by a
+   * write for a driver that leaves it out, which is not atomic across instances
+   * and cannot keep an expiry: pass the same `ttl` on every call there.
+   *
+   * @param {string} key - The counter key
+   * @param {StorageTypes.IncrementOptions} [options] - Step and expiry
+   * @returns {MaybePromise<number>} The value after the increment
+   */
+  public increment?(key: string, options?: StorageTypes.IncrementOptions): MaybePromise<number>;
+
+  /**
+   * Releases what the driver holds, such as a connection it opened. Called once
+   * when the application shuts down.
+   *
+   * @returns {MaybePromise<void>} Resolves once released
+   */
+  public close?(): MaybePromise<void>;
 }

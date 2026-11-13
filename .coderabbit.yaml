@@ -11,3 +11,4 @@ reviews:
       - feat/client.*
       - feat/health.*
       - feat/create.*
+      - feat/ratelimit.*

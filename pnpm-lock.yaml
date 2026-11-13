@@ -946,10 +946,17 @@ importers:
       '@vercube/telemetry':
         specifier: workspace:*
         version: link:../telemetry
+    devDependencies:
+      '@vercube/core':
+        specifier: workspace:*
+        version: link:../core
     optionalDependencies:
       '@aws-sdk/client-s3':
         specifier: 3.1166.0
         version: 3.1166.0
+      ioredis:
+        specifier: 6.0.0
+        version: 6.0.0
 
   packages/telemetry:
     dependencies:

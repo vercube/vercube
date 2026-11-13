@@ -16,6 +16,7 @@
   "exports": {
     ".": "./dist/index.mjs",
     "./drivers/MemoryStorage": "./dist/Drivers/MemoryStorage.mjs",
+    "./drivers/RedisStorage": "./dist/Drivers/RedisStorage.mjs",
     "./drivers/S3Storage": "./dist/Drivers/S3Storage.mjs",
     "./package.json": "./package.json"
   },
@@ -33,7 +34,11 @@
     "@vercube/telemetry": "workspace:*"
   },
   "optionalDependencies": {
-    "@aws-sdk/client-s3": "3.1166.0"
+    "@aws-sdk/client-s3": "3.1166.0",
+    "ioredis": "6.0.0"
+  },
+  "devDependencies": {
+    "@vercube/core": "workspace:*"
   },
   "publishConfig": {
     "access": "public"

@@ -1,4 +1,4 @@
-import { Container, Init, Inject, InjectOptional } from '@vercube/di';
+import { Container, Destroy, Init, Inject, InjectOptional } from '@vercube/di';
 import { Logger } from '@vercube/logger';
 import { traceOperation } from '../Common/Instrument';
 import { StorageError } from '../Errors/StorageError';
@@ -48,6 +48,11 @@ export class StorageManager {
   protected fInitialized: boolean = false;
 
   /**
+   * Mounts already warned about a non-atomic increment
+   */
+  protected fNonAtomicWarned: Set<string> = new Set();
+
+  /**
    * Mounts a new storage instance with the specified name
    * @param {StorageTypes.Mount} params - Mount parameters containing name and storage implementation
    * @param {string} [params.name] - Optional name for the storage instance, defaults to 'default'
@@ -58,6 +63,12 @@ export class StorageManager {
   public async mount<T extends Storage<unknown>>({ name, storage, initOptions, health }: StorageTypes.Mount<T>): Promise<void> {
     const mountName = name ?? 'default';
     const instance = this.gContainer.resolve(storage);
+    const previous = this.fStorages.get(mountName)?.storage;
+
+    // the driver mounted before under the name may hold a connection nobody else can close
+    if (previous) {
+      await this.closeDriver(mountName, previous);
+    }
 
     this.fStorages.set(mountName, { storage: instance, initOptions });
     this.fFailed.delete(mountName);
@@ -126,6 +137,7 @@ export class StorageManager {
           size,
           keys: keys ? keys.slice(0, maxKeys) : null,
           truncated,
+          atomicIncrement: this.isAtomic(name),
         };
       }),
     );
@@ -177,6 +189,64 @@ export class StorageManager {
       const storageInstance = this.requireStorage(storage, 'setItem');
       await storageInstance.setItem<T, U>(key, value, options);
     });
+  }
+
+  /**
+   * Adds to a numeric counter and returns the new value.
+   *
+   * Atomic when the driver implements `increment` (memory, Redis). Any other
+   * driver gets a read followed by a write, which two instances can interleave
+   * (a warning is logged once per mount), and every write sets the expiry again.
+   * Not traced, because it sits on hot
+   * paths such as rate limiting where a span per request costs more than the call.
+   *
+   * @param {StorageTypes.Increment} params - Parameters of the increment
+   * @param {string} [params.storage] - Name of the storage, defaults to 'default'
+   * @param {string} params.key - Counter key
+   * @param {number} [params.by] - Amount added, 1 when omitted
+   * @param {number} [params.ttl] - Seconds until a counter this call creates expires
+   * @returns {Promise<number>} The value after the increment
+   * @throws {StorageError} When the mount does not exist or failed to initialize
+   */
+  public async increment({ storage, key, by = 1, ttl }: StorageTypes.Increment): Promise<number> {
+    const storageInstance = this.requireStorage(storage, 'increment');
+
+    if (!Number.isFinite(by)) {
+      throw new StorageError(`Cannot increment "${key}" by ${by}`, 'increment', undefined, { mount: storage ?? 'default' });
+    }
+
+    if (typeof storageInstance.increment === 'function') {
+      return storageInstance.increment(key, { by, ttl });
+    }
+
+    const name = storage ?? 'default';
+
+    if (!this.fNonAtomicWarned.has(name)) {
+      this.fNonAtomicWarned.add(name);
+      this.gLogger?.warn(
+        'Vercube/StorageManager::increment',
+        `Storage "${name}" has no atomic increment: counters are read and written separately and can lose updates across instances`,
+      );
+    }
+
+    const current = Number((await storageInstance.getItem<number>(key)) ?? 0);
+    const next = (Number.isFinite(current) ? current : 0) + by;
+
+    // A plain write cannot keep the old expiry, so it is set again on every
+    // write: later than an atomic driver would expire the key, never immortal.
+    await storageInstance.setItem<number, StorageTypes.WriteOptions>(key, next, ttl ? { ttl } : undefined);
+
+    return next;
+  }
+
+  /**
+   * Tells whether a mount increments counters atomically.
+   *
+   * @param {string} [name] - Name of the mount, `default` when omitted
+   * @returns {boolean} True when the driver implements `increment`
+   */
+  public isAtomic(name: string = 'default'): boolean {
+    return typeof this.getStorage(name)?.increment === 'function';
   }
 
   /**
@@ -296,6 +366,35 @@ export class StorageManager {
       } catch {
         // already logged and recorded: every operation on this mount throws it
       }
+    }
+  }
+
+  /**
+   * Closes every mounted driver that holds something to release, such as a
+   * connection. Called once when the application shuts down; a driver that
+   * fails to close is logged and does not stop the others.
+   * @returns {Promise<void>} Resolves once every driver was closed
+   */
+  @Destroy()
+  public async close(): Promise<void> {
+    await Promise.all([...this.fStorages.entries()].map(([name, { storage }]) => this.closeDriver(name, storage)));
+  }
+
+  /**
+   * Closes one driver, logging a failure instead of throwing it.
+   * @param {string} name - Name of the mount
+   * @param {Storage} storage - The driver
+   * @returns {Promise<void>} Resolves once closed or failed
+   * @protected
+   */
+  protected async closeDriver(name: string, storage: Storage): Promise<void> {
+    try {
+      await storage.close?.();
+    } catch (error) {
+      this.gLogger?.error(
+        'Vercube/StorageManager::close',
+        new StorageError(`Failed to close storage "${name}"`, 'close', error as Error, { mount: name }),
+      );
     }
   }
 

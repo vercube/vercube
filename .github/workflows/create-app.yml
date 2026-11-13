@@ -45,6 +45,7 @@ jobs:
           - { name: schema, template: api, args: '--modules schema' }
           - { name: auth, template: api, args: '--modules auth' }
           - { name: storage, template: api, args: '--modules storage' }
+          - { name: storage redis, template: api, args: '--modules storage --storage redis --services' }
           - { name: storage s3 (build only), template: api, args: '--modules storage --storage s3' }
           - { name: cache, template: api, args: '--modules cache' }
           - { name: queue memory, template: api, args: '--modules queue --queue memory' }

@@ -101,6 +101,8 @@ export class NitroStorageManager extends StorageManager {
         size: keys ? keys.length : null,
         keys: keys ? keys.slice(0, maxKeys) : null,
         truncated: keys ? keys.length > maxKeys : false,
+        // unstorage has no increment, so counters are read and written separately
+        atomicIncrement: false,
       };
     });
 
