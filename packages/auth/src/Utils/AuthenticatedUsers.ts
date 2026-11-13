@@ -43,6 +43,19 @@ export function rememberUser(context: RequestContext | null, provider: typeof Au
 /**
  * Looks up the user a provider authenticated earlier in the request.
  *
+ * Useful outside a handler, where `@User()` is not available: a rate limit
+ * `key` function, for instance, runs after `@Auth()` and can count per user.
+ *
+ * The provider is the key the user was stored under: `AuthProvider` for a
+ * plain `@Auth()`, whatever class is bound to it, or the `provider` given to
+ * `@Auth({ provider })`.
+ *
+ * @example
+ * ```ts
+ * @Auth()
+ * @RateLimit({ limit: 100, window: '1h', key: ({ context }) => (recallUser(context, AuthProvider)?.user as User)?.id })
+ * ```
+ *
  * @param {RequestContext | null} context - The request context
  * @param {typeof AuthProvider} provider - The provider to look up
  * @returns {{ user: unknown } | undefined} The user, wrapped so a `null` user is told apart from none

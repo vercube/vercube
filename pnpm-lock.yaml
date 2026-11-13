@@ -847,6 +847,9 @@ importers:
         specifier: workspace:*
         version: link:../telemetry
     devDependencies:
+      '@vercube/auth':
+        specifier: workspace:*
+        version: link:../auth
       '@vercube/testing':
         specifier: workspace:*
         version: link:../testing
