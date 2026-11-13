@@ -1,13 +1,14 @@
 import { Container, Inject } from '@vercube/di';
 import { ValidationMiddleware } from '../../Middleware/ValidationMiddleware';
 import { FastResponse } from '../../Types/CommonTypes';
-import { isSameMiddleware } from '../../Utils/MiddlewareUtils';
+import { isSameMiddleware, resolveSlots } from '../../Utils/MiddlewareUtils';
 import { skipsGlobalMiddlewares } from '../../Utils/Utils';
 import { ErrorHandlerProvider } from '../ErrorHandler/ErrorHandlerProvider';
 import { MetadataResolver } from '../Metadata/MetadataResolver';
 import { GlobalMiddlewareRegistry } from '../Middleware/GlobalMiddlewareRegistry';
 import { TelemetryRegistry } from '../Telemetry/TelemetryRegistry';
 import { RequestContext } from './RequestContext';
+import type { RouteInfo } from '../../Types/CommonTypes';
 import type { MetadataTypes } from '../../Types/MetadataTypes';
 import type { RouterTypes } from '../../Types/RouterTypes';
 import type { TelemetryTypes } from '../../Types/TelemetryTypes';
@@ -178,7 +179,10 @@ export class RequestHandler {
 
     // app-wide first, then the controller's, then the method's: sorting by
     // priority is stable, so this is the order at equal priority
-    const { beforeMiddlewares, afterMiddlewares } = this.buildMiddlewareChain([...globalMiddlewares, ...middlewares]);
+    const { beforeMiddlewares, afterMiddlewares } = this.buildMiddlewareChain([...globalMiddlewares, ...middlewares], {
+      controller: instance?.constructor?.name ?? 'Unknown',
+      handler: propertyName,
+    });
 
     const args = method.args.length <= 1 ? method.args : [...method.args].sort((a, b) => a.idx - b.idx);
     // a copy, so actions another application registers later never reach this route
@@ -745,15 +749,19 @@ export class RequestHandler {
    * arguments, so a stricter requirement is never dropped in favour of a looser one.
    *
    * @param {MetadataTypes.Middleware[]} middlewares - Middleware definitions, route ones first
+   * @param {RouteInfo} [route] - The route the chain belongs to, handed to every middleware
    * @returns The before and after chains
    * @private
    */
-  private buildMiddlewareChain(middlewares: MetadataTypes.Middleware[]): {
+  private buildMiddlewareChain(
+    middlewares: MetadataTypes.Middleware[],
+    route?: RouteInfo,
+  ): {
     beforeMiddlewares: RouterTypes.MiddlewareDefinition[];
     afterMiddlewares: RouterTypes.MiddlewareDefinition[];
   } {
     const uniqueMiddlewares: MetadataTypes.Middleware[] = [];
-    for (const m of middlewares) {
+    for (const m of resolveSlots(middlewares)) {
       const index = uniqueMiddlewares.findIndex((unique) => isSameMiddleware(unique, m));
 
       if (index === -1) {
@@ -772,6 +780,7 @@ export class RequestHandler {
     const resolvedMiddlewares = uniqueMiddlewares.map((m) => ({
       ...m,
       middleware: this.gContainer.resolve(m.middleware),
+      ...(route ? { route } : {}),
     }));
 
     // get middleware types
@@ -827,6 +836,7 @@ export class RequestHandler {
     const hookResponse = await hook.middleware.onRequest?.(request, response, {
       middlewareArgs: hook.args,
       methodArgs,
+      route: hook.route,
     });
 
     return hookResponse ?? null;

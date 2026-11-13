@@ -98,6 +98,8 @@ export * from './Errors/Http/PayloadTooLargeError';
 export * from './Errors/Http/UnsupportedMediaTypeError';
 export * from './Errors/Http/NotFoundError';
 export * from './Errors/Http/UnauthorizedError';
+export * from './Errors/Http/TooManyRequestsError';
+export * from './Errors/Http/ServiceUnavailableError';
 
 // Types
 export * from './Types/CommonTypes';
@@ -114,6 +116,8 @@ export * from './Types/HealthTypes';
 
 // Utils
 export * from './Utils/Utils';
+export { resolveSlots } from './Utils/MiddlewareUtils';
+export * from './Utils/RequestIP';
 export * from './Utils/Listen';
 export * from './Utils/Health';
 export * from './Utils/Security';

@@ -79,9 +79,14 @@ export function setMetadataAction(method: MetadataTypes.Method, action: Metadata
   method.actions[index] = action;
 }
 
+/** Marks a middleware entry a subclass got from its parent, see {@link copyMetadataCtx}. */
+const INHERITED: unique symbol = Symbol('vercube.middleware.inherited');
+
 /**
  * Registers a middleware in the metadata context.
- * Skips duplicates identified by target, middleware class and arguments.
+ * Skips duplicates identified by target, middleware class and arguments. An
+ * entry with a `slot` replaces the one the same target already has in that
+ * slot, so decorating a method twice keeps the decorator written closest to it.
  * @param {MetadataTypes.Ctx} meta - Metadata context to register the middleware in.
  * @param {MetadataTypes.Middleware} middleware - The middleware to register.
  * @param {'first' | 'last'} position - Whether the middleware goes to the front of the list.
@@ -91,6 +96,20 @@ export function addMetadataMiddleware(
   middleware: MetadataTypes.Middleware,
   position: 'first' | 'last' = 'last',
 ): void {
+  if (middleware.slot !== undefined) {
+    const index = meta.__middlewares.findIndex((entry) => entry.target === middleware.target && entry.slot === middleware.slot);
+
+    if (index !== -1) {
+      // A subclass replaces what it inherited. Within one class, decorators
+      // apply bottom-up: the one registered first is the closest, and stays.
+      if (INHERITED in meta.__middlewares[index]) {
+        meta.__middlewares[index] = middleware;
+      }
+
+      return;
+    }
+  }
+
   const exists = meta.__middlewares.some((entry) => entry.target === middleware.target && isSameMiddleware(entry, middleware));
 
   if (exists) {
@@ -153,6 +172,9 @@ function copyMetadataCtx(ctx: MetadataTypes.Ctx): MetadataTypes.Ctx {
   for (const [key, value] of Object.entries(ctx)) {
     result[key] = copy(value);
   }
+
+  // marked, so a subclass decorator can replace an inherited slot entry
+  result.__middlewares = (ctx.__middlewares ?? []).map((entry) => ({ ...entry, [INHERITED]: true }));
 
   result.__methods = Object.fromEntries(
     Object.entries(ctx.__methods ?? {}).map(([name, method]) => [

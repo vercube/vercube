@@ -13,7 +13,8 @@ import type { MetadataTypes } from '../Types/MetadataTypes';
  * @returns {boolean} True when both entries are duplicates of each other.
  */
 export function isSameMiddleware(a: MetadataTypes.Middleware, b: MetadataTypes.Middleware): boolean {
-  if (a.middleware !== b.middleware) {
+  // entries in different slots replace different things, they are never one
+  if (a.middleware !== b.middleware || a.slot !== b.slot || Boolean(a.skip) !== Boolean(b.skip)) {
     return false;
   }
 
@@ -72,4 +73,35 @@ function isEqual(a: unknown, b: unknown): boolean {
   }
 
   return false;
+}
+
+/**
+ * Keeps one entry per middleware slot: the last one, as a route collects its
+ * entries app-wide first, then the controller's, then the method's. A winning
+ * entry marked `skip` empties its slot. Entries without a slot pass through,
+ * except one marked `skip`, which never runs.
+ *
+ * Resolved once per route when its chain is built, never per request.
+ *
+ * @param {MetadataTypes.Middleware[]} middlewares - Middleware entries, app-wide first.
+ * @returns {MetadataTypes.Middleware[]} The entries that run.
+ */
+export function resolveSlots<T extends Pick<MetadataTypes.Middleware, 'slot' | 'skip'>>(middlewares: T[]): T[] {
+  let winners: Map<string, T> | undefined;
+  let skipped = false;
+
+  for (const m of middlewares) {
+    if (m.slot !== undefined) {
+      (winners ??= new Map()).set(m.slot, m);
+    }
+
+    skipped ||= m.skip === true;
+  }
+
+  if (!winners && !skipped) {
+    return middlewares;
+  }
+
+  // a skip entry never runs its middleware, with or without a slot
+  return middlewares.filter((m) => !m.skip && (m.slot === undefined || winners?.get(m.slot) === m));
 }
