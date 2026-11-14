@@ -32,6 +32,12 @@ export const EVLOG_FINISH_KEY = 'evlog:finish';
  */
 export class EvlogMiddleware extends BaseMiddleware<BaseEvlogOptions> {
   /**
+   * This middleware never reads the request body, so a route does not have to
+   * keep the body readable on its account.
+   */
+  public static readonly readsBody = false;
+
+  /**
    * Request context used to carry the request-scoped logger across the lifecycle.
    */
   @InjectOptional(RequestContext)

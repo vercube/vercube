@@ -2,6 +2,7 @@ import { BadRequestError } from '../Errors/Http/BadRequestError';
 import { PayloadTooLargeError } from '../Errors/Http/PayloadTooLargeError';
 import { UnsupportedMediaTypeError } from '../Errors/Http/UnsupportedMediaTypeError';
 import { isSafeProperty } from '../Utils/Security';
+import { readBytes, readSharedBytes } from '../Utils/SharedBody';
 import type { RouterTypes } from '../Types/RouterTypes';
 
 /**
@@ -30,11 +31,10 @@ export async function resolveMultipartFormData(event: RouterTypes.RouterEvent): 
     throw new UnsupportedMediaTypeError('Expected a multipart/form-data request body');
   }
 
-  const request = event.cloneBody === false ? event.request : event.request.clone();
   let form: FormData;
 
   try {
-    form = await readForm(request, contentType, event.bodyLimit);
+    form = await readForm(event, contentType);
   } catch (error) {
     if (error instanceof PayloadTooLargeError) {
       throw error;
@@ -65,52 +65,29 @@ export async function resolveMultipartFormData(event: RouterTypes.RouterEvent): 
 }
 
 /**
- * Parses the form, enforcing the size limit. A declared `Content-Length` is
- * checked up front, a body without one is buffered only up to the limit.
+ * Reads a multipart body, enforcing the size limit.
  *
- * @param {Request} request - The request to read
- * @param {string} contentType - The `Content-Type` header, carrying the boundary
- * @param {number | undefined} limit - The maximum body size in bytes
+ * Where nothing else can read the body, the runtime parses it straight off the
+ * request. Otherwise its bytes are read once and shared, and the form is parsed
+ * from them.
+ *
+ * @param {RouterTypes.RouterEvent} event - The router event
+ * @param {string} contentType - The `Content-Type` header, which carries the boundary
  * @returns {Promise<FormData>} The parsed form
  * @throws {PayloadTooLargeError} If the body is larger than the limit
  */
-async function readForm(request: Request, contentType: string, limit: number | undefined): Promise<FormData> {
-  if (limit === undefined) {
-    return request.formData();
-  }
+async function readForm(event: RouterTypes.RouterEvent, contentType: string): Promise<FormData> {
+  const { request, bodyLimit } = event;
 
-  const length = request.headers.get('content-length');
-
-  if (length !== null) {
-    if (Number(length) > limit) {
+  if (event.cloneBody === false && (bodyLimit === undefined || request.headers.has('content-length'))) {
+    if (bodyLimit !== undefined && Number(request.headers.get('content-length')) > bodyLimit) {
       throw new PayloadTooLargeError('Request body is too large');
     }
 
     return request.formData();
   }
 
-  const reader = request.body!.getReader();
-  const chunks: Uint8Array[] = [];
-  let size = 0;
+  const bytes = event.cloneBody === false ? await readBytes(request, bodyLimit) : await readSharedBytes(request, bodyLimit);
 
-  for (;;) {
-    const { done, value } = await reader.read();
-
-    if (done) {
-      break;
-    }
-
-    size += value.byteLength;
-
-    if (size > limit) {
-      // not awaited: a branch of a cloned body only settles its cancel once the
-      // other branch is cancelled too, which nothing here would ever do
-      reader.cancel().catch(() => undefined);
-      throw new PayloadTooLargeError('Request body is too large');
-    }
-
-    chunks.push(value);
-  }
-
-  return new Response(new Blob(chunks as BlobPart[]), { headers: { 'content-type': contentType } }).formData();
+  return new Response(bytes as BodyInit, { headers: { 'content-type': contentType } }).formData();
 }
