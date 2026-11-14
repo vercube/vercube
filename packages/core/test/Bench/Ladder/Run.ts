@@ -187,7 +187,8 @@ async function stopServer(server: Server): Promise<void> {
 async function assertRung(server: Server, rung: Rung): Promise<void> {
   const response = await fetch(`http://${HOST}:${server.port}${rung.path}`, {
     method: rung.method,
-    headers: rung.headers,
+    // no keep-alive: a pooled connection the server closed while idle would fail the next check
+    headers: { ...rung.headers, connection: 'close' },
     body: rung.body,
     redirect: 'manual',
   });
