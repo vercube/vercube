@@ -30,6 +30,7 @@ class RedirectDecorator extends BaseDecorator<RedirectDecoratorOptions, Metadata
     // `@SetHeader` survive.
     setMetadataAction(method, {
       key: this.options,
+      static: true,
       handler: () => ({
         status: this.options.code,
         headers: { Location: this.options.location },

@@ -63,12 +63,30 @@ export namespace RouterTypes {
      * that used to make this possible.
      */
     cloneBody?: boolean;
+    /**
+     * The response of a simple route whose actions are all static, folded once
+     * in `RequestHandler.prepareHandler`. Absent for a route without actions.
+     */
+    staticResponse?: RouterTypes.StaticResponse;
     /** Controller class name, resolved once in `RequestHandler.prepareHandler`. */
     controller?: string;
     /** Route template this handler was registered under, set by `Router.addRoute`. */
     path?: string;
     /** Precomputed `${method} ${path}` telemetry span name, set by `Router.addRoute`. */
     spanName?: string;
+  }
+
+  /**
+   * What static actions (`@Status`, `@SetHeader`, `@Redirect`) make of a
+   * response, computed once per route instead of once per request.
+   */
+  export interface StaticResponse {
+    /** Init of the response for a handler result serialized as JSON. */
+    json: ResponseInit;
+    /** Init of the response for a handler that returned `undefined`. */
+    empty: ResponseInit;
+    /** The intermediate response the actions produced, whose headers go onto a response built elsewhere. */
+    source: Response;
   }
 
   export interface RouteMatched<T = unknown> {
