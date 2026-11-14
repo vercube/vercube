@@ -3,6 +3,7 @@ import { serve } from 'srvx';
 import { tryServeSpaIndex } from '../../Common/ServeStatic';
 import { MethodNotAllowedError } from '../../Errors/Http/MethodNotAllowedError';
 import { NotFoundError } from '../../Errors/Http/NotFoundError';
+import { withoutStack } from '../../Utils/Errors';
 import { getRequestPathname } from '../../Utils/Url';
 import { ErrorHandlerProvider } from '../ErrorHandler/ErrorHandlerProvider';
 import { RequestHandler } from '../Router/RequestHandler';
@@ -259,10 +260,16 @@ export class HttpServer {
    * through the global middlewares, like a routed request.
    *
    * @param {Request} request - The incoming HTTP request
-   * @returns {Promise<Response>} The HTTP response
+   * @returns {Response | Promise<Response>} The HTTP response, synchronous when no file can answer it
    * @private
    */
-  private handleUnmatchedRequest(request: Request): Promise<Response> {
+  private handleUnmatchedRequest(request: Request): Response | Promise<Response> {
+    // Nothing to look for on disk: the answer is a 404 or a 405, and it is
+    // known without awaiting anything.
+    if (this.fSpaPublicDir === undefined && !this.gStaticRequestHandler.handles(request)) {
+      return this.gRequestHandler.handleMiss(request, this.gRouter.allowedMethods(getRequestPathname(request)));
+    }
+
     return this.gRequestHandler.handleUnmatched(request, async (response) => {
       const staticResponse = await this.gStaticRequestHandler.handleRequest(request);
 
@@ -274,7 +281,7 @@ export class HttpServer {
 
       if (allowed.length > 0) {
         response.headers.set('allow', allowed.join(', '));
-        throw new MethodNotAllowedError('Method not allowed');
+        throw withoutStack(() => new MethodNotAllowedError('Method not allowed'));
       }
 
       const spaResponse = await tryServeSpaIndex(request, this.fSpaPublicDir);
@@ -283,7 +290,7 @@ export class HttpServer {
         return spaResponse;
       }
 
-      throw new NotFoundError('Route not found');
+      throw withoutStack(() => new NotFoundError('Route not found'));
     });
   }
 

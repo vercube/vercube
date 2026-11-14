@@ -25,15 +25,14 @@ export class DefaultErrorHandlerProvider extends ErrorHandlerProvider {
    * @returns Promise<Response> | Response - The response to be sent to the client
    */
   public handleError(error: Error): Response {
-    // the real message can hold paths, queries or credentials: it only leaves
-    // the process in dev mode
-    const detail = this.gConfigProvider?.dev === true ? (error?.message ?? 'Internal server error') : undefined;
-    const _internalError = new InternalServerError(detail ?? 'Internal Server Error');
+    const dev = this.gConfigProvider?.dev === true;
+    // readable in development, compact everywhere else
+    const indent = dev ? 2 : undefined;
     const status = resolveStatus(error);
 
     // check if the error is known error type and return it.
     if (error instanceof HttpError) {
-      return new FastResponse(JSON.stringify({ ...error }, undefined, 2), {
+      return new FastResponse(JSON.stringify({ ...error }, undefined, indent), {
         status,
         headers: JSON_HEADERS,
       });
@@ -41,7 +40,12 @@ export class DefaultErrorHandlerProvider extends ErrorHandlerProvider {
 
     this.gLogger.error(error);
 
-    return new FastResponse(JSON.stringify({ ..._internalError }, undefined, 2), {
+    // the real message can hold paths, queries or credentials: it only leaves
+    // the process in dev mode
+    const detail = dev ? (error?.message ?? 'Internal server error') : undefined;
+    const internalError = new InternalServerError(detail ?? 'Internal Server Error');
+
+    return new FastResponse(JSON.stringify({ ...internalError }, undefined, indent), {
       status,
       headers: JSON_HEADERS,
     });

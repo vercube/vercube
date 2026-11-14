@@ -101,6 +101,15 @@ export class Router {
   private fRevision: number = 0;
 
   /**
+   * The HTTP methods at least one route is registered for, sorted, and the
+   * route revision they were collected at.
+   * @private
+   */
+  private fMethods: string[] | undefined;
+
+  private fMethodsRevision = -1;
+
+  /**
    * Static GET paths only one owner may register, such as the health probes,
    * with the test that tells the owner's handlers apart.
    * @private
@@ -269,9 +278,15 @@ export class Router {
    * @returns {string[]} The methods, empty when the path is not routed at all
    */
   public allowedMethods(pathname: string): string[] {
-    const methods = new Set(this.fRoutes.map((route) => route.method.toUpperCase()));
+    // The methods in use only change with the route table, and a miss asks for
+    // them every time: walking every route per unmatched request made a 404
+    // cost more the larger the application was.
+    if (this.fMethods === undefined || this.fMethodsRevision !== this.fRevision) {
+      this.fMethods = [...new Set(this.fRoutes.map((route) => route.method.toUpperCase()))].toSorted();
+      this.fMethodsRevision = this.fRevision;
+    }
 
-    return [...methods].filter((method) => this.match(method, pathname) !== undefined).toSorted();
+    return this.fMethods.filter((method) => this.match(method, pathname) !== undefined);
   }
 
   /**
