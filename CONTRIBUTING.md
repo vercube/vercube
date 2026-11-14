@@ -78,6 +78,28 @@ By participating in this project, you agree to abide by our Code of Conduct. Ple
    ```
    The playground is a development environment where you can test your changes in real-time. It provides a sandbox environment to experiment with Vercube features and test your modifications before submitting a pull request.
 
+### Benchmarks
+
+A change to the request path comes with numbers. The ladder is one application whose routes each isolate one cost (a body, a schema, a middleware, a 404, the default configuration), measured on real sockets under Bun and Node with [bombardier](https://github.com/codesandbox/bombardier):
+
+```sh
+pnpm build
+pnpm bench:ladder
+```
+
+To compare a change with the code it started from, keep a copy of the build from before and measure both in one run. Every rung is measured on each build in turn, so the two columns see the same machine:
+
+```sh
+cp -R packages/core/dist packages/core/tmp/before
+# make the change, then
+pnpm build
+pnpm bench:ladder --target before=packages/core/tmp/before/index.mjs --target after=packages/core/dist/index.mjs
+```
+
+`--rungs plain,body,404` limits the run to some rungs, `--runtime bun,node,deno` picks the runtimes, `--out results.json` keeps the numbers and `pnpm bench:ladder compare a.json b.json` renders stored results side by side. Put the table in the pull request.
+
+The same routes run in process with `pnpm test:bench`, which is quicker but does not see the server.
+
 ## Coding Standards
 
 - Follow the existing code style and formatting
