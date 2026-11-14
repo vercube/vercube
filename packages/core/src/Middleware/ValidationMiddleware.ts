@@ -9,10 +9,10 @@ import type { MiddlewareOptions } from '../Types/CommonTypes';
  * Middleware for validating request data against a schema
  * @class ValidationMiddleware
  * @implements {BaseMiddleware}
- * @description Validates incoming request data against a provided schema
- * @example
- * const middleware = new ValidationMiddleware();
- * await middleware.use(event, { schema: myValidationSchema });
+ * @deprecated Arguments with a `validationSchema` are validated as they are
+ * resolved, and no decorator registers this middleware any more. Registered by
+ * hand it receives no arguments and validates nothing. It will be removed in
+ * the next minor release.
  */
 export class ValidationMiddleware implements BaseMiddleware {
   @InjectOptional(Logger)

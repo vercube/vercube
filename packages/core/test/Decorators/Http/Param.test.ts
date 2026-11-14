@@ -28,11 +28,9 @@ describe('Param Decorator', () => {
     expect(meta.__methods['paramValidation'].args[0].validationSchema).toBeDefined();
   });
 
-  it(`should register validation middleware only for a param with a schema`, () => {
+  it(`should not register a validation middleware: a schema is validated by the argument resolver`, () => {
     const meta = initializeMetadata(MockController.prototype);
-    const targets = meta.__middlewares.filter((m) => m.middleware === ValidationMiddleware).map((m) => m.target);
 
-    expect(targets).toContain('paramValidation');
-    expect(targets).not.toContain('param');
+    expect(meta.__middlewares.filter((m) => m.middleware === ValidationMiddleware)).toEqual([]);
   });
 });

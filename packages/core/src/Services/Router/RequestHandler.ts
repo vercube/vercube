@@ -1,5 +1,5 @@
 import { Container, Inject } from '@vercube/di';
-import { ValidationMiddleware } from '../../Middleware/ValidationMiddleware';
+import { Logger } from '@vercube/logger';
 import { FastResponse } from '../../Types/CommonTypes';
 import { isSameMiddleware, resolveSlots } from '../../Utils/MiddlewareUtils';
 import { skipsGlobalMiddlewares } from '../../Utils/Utils';
@@ -7,11 +7,14 @@ import { ErrorHandlerProvider } from '../ErrorHandler/ErrorHandlerProvider';
 import { MetadataResolver } from '../Metadata/MetadataResolver';
 import { GlobalMiddlewareRegistry } from '../Middleware/GlobalMiddlewareRegistry';
 import { TelemetryRegistry } from '../Telemetry/TelemetryRegistry';
+import { ValidationProvider } from '../Validation/ValidationProvider';
 import { RequestContext } from './RequestContext';
 import type { RouteInfo } from '../../Types/CommonTypes';
 import type { MetadataTypes } from '../../Types/MetadataTypes';
 import type { RouterTypes } from '../../Types/RouterTypes';
 import type { TelemetryTypes } from '../../Types/TelemetryTypes';
+import type { ValidationTypes } from '../../Types/ValidationTypes';
+import type { ArgValidator } from '../Metadata/MetadataResolver';
 
 /**
  * Options for configuring a request handler
@@ -140,6 +143,30 @@ export class RequestHandler {
   /** Cached telemetry hooks (`null` when no telemetry package is installed). */
   private fTelemetry: TelemetryTypes.Hooks | null | undefined;
 
+  /** Cached validation provider (`null` when the app does not bind one). */
+  private fValidationProvider: ValidationProvider | null | undefined;
+
+  /**
+   * Validates a resolved argument against its schema, compiled into the
+   * argument resolvers of every route.
+   *
+   * The provider is looked up on the first validated request rather than when
+   * the route is prepared, so one bound during setup is still picked up.
+   */
+  private readonly fValidator: ArgValidator = (schema: ValidationTypes.Schema, data: unknown) => {
+    if (this.fValidationProvider === undefined) {
+      this.fValidationProvider = this.gContainer.getOptional(ValidationProvider);
+    }
+
+    if (!this.fValidationProvider) {
+      this.gContainer.getOptional(Logger)?.warn('RequestHandler::ValidationProvider', 'Validation provider is not registered');
+
+      return undefined;
+    }
+
+    return this.fValidationProvider.validate(schema, data);
+  };
+
   /** Maximum request body size in bytes, `undefined` when unlimited. */
   private fBodyLimit: number | undefined = DEFAULT_BODY_LIMIT;
 
@@ -197,19 +224,22 @@ export class RequestHandler {
     // observe the intermediate response, so they can skip building one.
     const simple = beforeMiddlewares.length === 0 && afterMiddlewares.length === 0 && actions.length === 0 && !observesResponse;
 
+    const asyncArgs = args.some((arg) => MetadataResolver.isAsyncArg(arg));
+
     return {
       instance,
       propertyName,
       controller: instance?.constructor?.name,
       args,
-      argResolvers: MetadataResolver.compileArgs(args),
+      argResolvers: MetadataResolver.compileArgs(args, this.fValidator),
       middlewares: {
         beforeMiddlewares,
         afterMiddlewares,
       },
       actions,
       simple,
-      asyncArgs: args.some((arg) => MetadataResolver.isAsyncArg(arg)),
+      asyncArgs,
+      maybeAsyncArgs: !asyncArgs && args.some((arg) => MetadataResolver.isValidatedArg(arg)),
       // The body can only be read once, and cloning is what makes it readable
       // twice - at the cost of materializing a full native request per call.
       // It is only skipped where nothing else can possibly read the body: a
@@ -483,7 +513,7 @@ export class RequestHandler {
     request: Request,
     route: RouterTypes.RouteMatched<RouterTypes.RouterHandler>,
   ): Response | Promise<Response> {
-    const { instance, propertyName, args, argResolvers, asyncArgs, cloneBody } = route.data;
+    const { instance, propertyName, args, argResolvers, asyncArgs, maybeAsyncArgs, cloneBody } = route.data;
 
     try {
       if (args.length === 0) {
@@ -510,6 +540,19 @@ export class RequestHandler {
           (values) => this.finalize(instance[propertyName](...values)),
           (error: unknown) => this.handleError(error),
         );
+      }
+
+      if (maybeAsyncArgs) {
+        const resolved = this.gMetadataResolver.resolveCompiledArgValuesMaybeAsync(plan, event);
+
+        if (resolved instanceof Promise) {
+          return resolved.then(
+            (values) => this.finalize(instance[propertyName](...values)),
+            (error: unknown) => this.handleError(error),
+          );
+        }
+
+        return this.finalize(instance[propertyName](...resolved));
       }
 
       const values = this.gMetadataResolver.resolveCompiledArgValues(plan, event);
@@ -559,64 +602,43 @@ export class RequestHandler {
         propertyName,
         actions = [],
         args = [],
+        argResolvers,
         middlewares = { beforeMiddlewares: [], afterMiddlewares: [] },
         cloneBody = true,
       } = route.data;
 
-      // Validation middlewares are sorted last, see prepareHandler.
-      const before = middlewares.beforeMiddlewares;
-      let validationStart = before.findIndex((m) => m.middleware instanceof ValidationMiddleware);
-      if (validationStart === -1) {
-        validationStart = before.length;
-      }
-
       // 1. Call before route middlewares, so auth and CORS run before the body is read
-      if (validationStart > 0) {
-        const beforeResult = await this.executeMiddlewares(
-          validationStart === before.length ? before : before.slice(0, validationStart),
-          {
-            request,
-            response: fakeResponse,
-            methodArgs: undefined,
-            handlerResponse: undefined,
-            executeRequest: true,
-            executeResponse: false,
-          },
-        );
+      if (middlewares.beforeMiddlewares.length > 0) {
+        const beforeResult = await this.executeMiddlewares(middlewares.beforeMiddlewares, {
+          request,
+          response: fakeResponse,
+          methodArgs: undefined,
+          handlerResponse: undefined,
+          executeRequest: true,
+          executeResponse: false,
+        });
         if (beforeResult.earlyReturn) {
           return mergeResponseHeaders(beforeResult.earlyReturn, beforeResult.response, false);
         }
         fakeResponse = beforeResult.response;
       }
 
-      // 2. Resolve all args
+      // 2. Resolve all args; the ones with a schema are validated as they resolve
       const resolvedArgs =
         args.length > 0
-          ? await this.gMetadataResolver.resolveArgs(args, {
-              data: route.data,
-              params: route.params,
-              request,
-              response: fakeResponse,
-              cloneBody,
-              bodyLimit: this.fBodyLimit,
-            })
+          ? await this.gMetadataResolver.resolveArgs(
+              args,
+              {
+                data: route.data,
+                params: route.params,
+                request,
+                response: fakeResponse,
+                cloneBody,
+                bodyLimit: this.fBodyLimit,
+              },
+              argResolvers,
+            )
           : [];
-
-      // 2b. Validate the resolved args
-      if (validationStart < before.length) {
-        const validationResult = await this.executeMiddlewares(before.slice(validationStart), {
-          request,
-          response: fakeResponse,
-          methodArgs: resolvedArgs,
-          handlerResponse: undefined,
-          executeRequest: true,
-          executeResponse: false,
-        });
-        if (validationResult.earlyReturn) {
-          return mergeResponseHeaders(validationResult.earlyReturn, validationResult.response, false);
-        }
-        fakeResponse = validationResult.response;
-      }
 
       // 3. Call every actions
       for (const action of actions) {
@@ -787,14 +809,8 @@ export class RequestHandler {
     const beforeMiddlewares = resolvedMiddlewares.filter((m) => !!m.middleware.onRequest);
     const afterMiddlewares = resolvedMiddlewares.filter((m) => !!m.middleware.onResponse);
 
-    // sort middlewares by priority, validation always runs last: it needs the
-    // resolved arguments, and they are only resolved once auth, CORS and the
-    // rest of the before middlewares let the request through
-    beforeMiddlewares.sort(
-      (a, b) =>
-        Number(a.middleware instanceof ValidationMiddleware) - Number(b.middleware instanceof ValidationMiddleware) ||
-        (a?.priority ?? 999) - (b?.priority ?? 999),
-    );
+    // sort middlewares by priority
+    beforeMiddlewares.sort((a, b) => (a?.priority ?? 999) - (b?.priority ?? 999));
     afterMiddlewares.sort((a, b) => (a?.priority ?? 999) - (b?.priority ?? 999));
 
     return { beforeMiddlewares, afterMiddlewares };

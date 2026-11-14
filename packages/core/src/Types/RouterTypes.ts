@@ -52,6 +52,11 @@ export namespace RouterTypes {
     argResolvers?: RouterTypes.ArgResolver[];
     /** True when at least one argument resolver returns a promise. */
     asyncArgs?: boolean;
+    /**
+     * True when no argument resolver returns a promise by itself, but a schema
+     * validating one of them may: that is only known once it has run.
+     */
+    maybeAsyncArgs?: boolean;
     /** True when the request body must be cloned before being consumed. */
     cloneBody?: boolean;
     /** Controller class name, resolved once in `RequestHandler.prepareHandler`. */
