@@ -15,6 +15,7 @@
     "test:all": "pnpm test && pnpm test:tscheck && pnpm test:lint",
     "test:coverage": "vitest run --coverage",
     "test:bench": "vitest bench --run",
+    "bench:ladder": "node packages/core/test/Bench/Ladder/Run.ts",
     "test:tscheck": "tsrs --noEmit --fast",
     "test:lint": "oxlint . && oxfmt --check",
     "lint:fix": "oxlint --fix . && oxfmt --no-error-on-unmatched-pattern",
