@@ -50,15 +50,12 @@ jobs:
 
       - uses: oven-sh/setup-bun@v2
 
-      - uses: actions/setup-go@v6
-        with:
-          go-version: stable
-          cache: false
-
       - name: Install bombardier
         run: |
-          go install github.com/codesenberg/bombardier@v2.0.2
-          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+          mkdir -p "$RUNNER_TEMP/bin"
+          curl -fsSL -o "$RUNNER_TEMP/bin/bombardier" https://github.com/codesenberg/bombardier/releases/download/v2.0.2/bombardier-linux-amd64
+          chmod +x "$RUNNER_TEMP/bin/bombardier"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
 
       - name: Build the pull request
         run: |
@@ -87,7 +84,7 @@ jobs:
             --out bench/ladder.json | tee bench.md
 
       - name: Summary
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && hashFiles('bench.md') != '' }}
         run: |
           {
             echo '### Benchmark ladder'
@@ -99,7 +96,7 @@ jobs:
           cat comment.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Comment on the pull request
-        if: ${{ !cancelled() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+        if: ${{ !cancelled() && hashFiles('comment.md') != '' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh pr comment ${{ github.event.pull_request.number }} --edit-last --create-if-none --body-file comment.md
