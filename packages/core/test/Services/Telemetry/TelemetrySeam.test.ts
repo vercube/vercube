@@ -1,5 +1,14 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { Controller, createApp, Get, Post, TelemetryRegistry } from '../../../src';
+import {
+  BaseMiddleware,
+  Controller,
+  createApp,
+  Get,
+  GlobalMiddlewareRegistry,
+  Post,
+  RequestContext,
+  TelemetryRegistry,
+} from '../../../src';
 import { defaultConfig } from '../../../src/Config/DefaultConfig';
 import { HttpServer } from '../../../src/Services/HttpServer/HttpServer';
 import { RequestHandler } from '../../../src/Services/Router/RequestHandler';
@@ -125,6 +134,46 @@ describe('telemetry seam in core', () => {
 
     expect(recorder.errors).toHaveLength(1);
     expect((recorder.errors[0] as Error).message).toBe('handler exploded');
+  });
+
+  it('settles a preflight inside its span, for what waits for the response', async () => {
+    const recorder = createRecorder();
+    const order: string[] = [];
+    const hooks: TelemetryTypes.Hooks = {
+      ...recorder.hooks,
+      server(context, fn) {
+        const result = recorder.hooks.server(context, fn);
+
+        return (result as Promise<unknown>).then((value) => {
+          order.push('span ended');
+
+          return value;
+        }) as never;
+      },
+    };
+    app = await createApp({
+      cfg: { ...defaultConfig, requestLogging: false, requestContext: true },
+      setup: (instance) => {
+        instance.container.bind(TelemetryController);
+      },
+    });
+    app.container.get(TelemetryRegistry).install(hooks);
+
+    class WaitingMiddleware extends BaseMiddleware {
+      public override onRequest(): void {
+        app.container.get(RequestContext).onSettled((settled) => void order.push(`settled ${settled.status}`));
+      }
+    }
+
+    app.container.get(GlobalMiddlewareRegistry).registerGlobalMiddleware(WaitingMiddleware);
+
+    const response = await app.container
+      .get(RequestHandler)
+      .handlePreflight(new Request('http://localhost/telemetry/plain', { method: 'OPTIONS' }));
+
+    expect(recorder.calls).toHaveLength(1);
+    expect(recorder.calls[0].name).toBe('OPTIONS');
+    expect(order).toEqual([`settled ${response.status}`, 'span ended']);
   });
 
   it('spans unmatched traffic too', async () => {
