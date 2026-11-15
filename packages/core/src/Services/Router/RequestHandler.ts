@@ -246,7 +246,8 @@ export class RequestHandler {
       },
       actions,
       simple,
-      staticResponse: simple && actions.length > 0 ? this.foldActions(actions) : undefined,
+      observesResponse,
+      staticResponse: staticActions && actions.length > 0 && !observesResponse ? this.foldActions(actions) : undefined,
       asyncArgs,
       maybeAsyncArgs: !asyncArgs && args.some((arg) => MetadataResolver.isValidatedArg(arg)),
       // The body can only be read once. Where something may read it after the
@@ -836,106 +837,310 @@ export class RequestHandler {
   }
 
   /**
-   * Internal method that handles the request processing logic.
-   * This is separated from handleRequest to allow running with or without request context.
+   * Runs a route through its middlewares, actions and handler.
+   *
+   * Nothing here is asynchronous by itself: every hook, the argument resolvers
+   * and the handler are called directly, and the request only leaves this frame
+   * when one of them returns a promise. A route whose middlewares and handler
+   * are synchronous is therefore answered with a `Response`, not a promise.
    *
    * @param {Request} request - The incoming HTTP request
    * @param {RouterTypes.RouteMatched<RouterTypes.RouterHandler>} route - The matched route with handler data
+   * @returns {Response | Promise<Response>} The HTTP response
+   * @private
+   */
+  private internalHandleRequest(
+    request: Request,
+    route: RouterTypes.RouteMatched<RouterTypes.RouterHandler>,
+  ): Response | Promise<Response> {
+    return this.advance({
+      request,
+      route,
+      // Only `@Response()` and a custom resolver hand the intermediate response
+      // to code that may expect a real one. Everything else gets by with a
+      // stand-in that costs nothing until a header is set on it.
+      response: route.data.observesResponse === false ? createPendingResponse() : this.createInitialResponse(),
+      stage: STAGE_BEFORE,
+      index: 0,
+      values: EMPTY_VALUES,
+      result: undefined,
+    });
+  }
+
+  /**
+   * Moves a request forward until it is answered or something has to be
+   * awaited, in which case it is picked up again by {@link RequestHandler.resume}.
+   *
+   * The order is the one a route always had: before middlewares (so auth and
+   * CORS run before the body is read), arguments, actions, the handler, after
+   * middlewares.
+   *
+   * @param {Pipeline} state - The request and how far it got
+   * @returns {Response | Promise<Response>} The HTTP response
+   * @private
+   */
+  private advance(state: Pipeline): Response | Promise<Response> {
+    const data = state.route.data;
+
+    try {
+      if (state.stage === STAGE_BEFORE) {
+        const chain = data.middlewares?.beforeMiddlewares ?? EMPTY_CHAIN;
+
+        while (state.index < chain.length) {
+          const hook = chain[state.index++];
+          const result = hook.middleware.onRequest?.(state.request, state.response, {
+            middlewareArgs: hook.args,
+            methodArgs: undefined,
+            route: hook.route,
+          });
+
+          if (result != null) {
+            if (isThenable(result)) {
+              return this.suspend(state, result, PENDING_HOOK);
+            }
+
+            const ended = this.applyHookResult(state, result);
+
+            if (ended !== undefined) {
+              return ended;
+            }
+          }
+        }
+
+        state.stage = STAGE_ARGS;
+      }
+
+      if (state.stage === STAGE_ARGS) {
+        state.stage = STAGE_HANDLER;
+
+        const args = data.args ?? EMPTY_ARGS;
+
+        if (args.length > 0) {
+          // Absent only for a handler assembled without `prepareHandler`.
+          const plan = data.argResolvers ?? MetadataResolver.compileArgs(args);
+          const event: RouterTypes.RouterEvent = {
+            data,
+            params: state.route.params,
+            request: state.request,
+            response: state.response,
+            cloneBody: data.cloneBody ?? true,
+            bodyLimit: this.fBodyLimit,
+          };
+
+          if (plan.length === 1) {
+            // The common case, a single `@Body()`: waiting for the value itself
+            // saves the promise that would wrap it into a list.
+            const value = plan[0](event);
+
+            if (value instanceof Promise) {
+              return this.suspend(state, value, PENDING_VALUE);
+            }
+
+            state.values = [value];
+          } else {
+            const values =
+              data.asyncArgs === false
+                ? this.gMetadataResolver.resolveCompiledArgValuesMaybeAsync(plan, event)
+                : this.gMetadataResolver.resolveCompiledArgValuesAsync(plan, event);
+
+            if (values instanceof Promise) {
+              return this.suspend(state, values, PENDING_VALUES);
+            }
+
+            state.values = values;
+          }
+        }
+      }
+
+      if (state.stage === STAGE_HANDLER) {
+        state.stage = STAGE_AFTER;
+        state.index = 0;
+
+        this.applyActions(state);
+
+        const result = data.instance[data.propertyName](...state.values);
+
+        if (result instanceof Promise) {
+          return this.suspend(state, result, PENDING_RESULT);
+        }
+
+        state.result = result;
+      }
+
+      const chain = data.middlewares?.afterMiddlewares ?? EMPTY_CHAIN;
+
+      while (state.index < chain.length) {
+        const hook = chain[state.index++];
+        const result = hook.middleware.onResponse?.(state.request, state.response, state.result);
+
+        if (result != null) {
+          if (isThenable(result)) {
+            return this.suspend(state, result, PENDING_HOOK);
+          }
+
+          const ended = this.applyHookResult(state, result);
+
+          if (ended !== undefined) {
+            return ended;
+          }
+        }
+      }
+
+      return this.complete(state);
+    } catch (error) {
+      return this.fail(state, error);
+    }
+  }
+
+  /**
+   * Waits for a hook, the arguments or the handler, then goes on with the request.
+   *
+   * @param {Pipeline} state - The request and how far it got
+   * @param {PromiseLike<unknown>} pending - What is being waited for
+   * @param {number} kind - What the settled value is: a hook result, the argument values, a single one, or the handler result
    * @returns {Promise<Response>} The HTTP response
    * @private
    */
-  private async internalHandleRequest(
-    request: Request,
-    route: RouterTypes.RouteMatched<RouterTypes.RouterHandler>,
-  ): Promise<Response> {
-    // Outside the try, so an error response still gets the headers set so far.
-    let fakeResponse = this.createInitialResponse();
+  private suspend(state: Pipeline, pending: PromiseLike<unknown>, kind: number): Promise<Response> {
+    return Promise.resolve(pending).then(
+      (value) => this.resume(state, value, kind),
+      (error: unknown) => this.fail(state, error),
+    );
+  }
 
-    try {
-      const {
-        instance,
-        propertyName,
-        actions = [],
-        args = [],
-        argResolvers,
-        middlewares = { beforeMiddlewares: [], afterMiddlewares: [] },
-        cloneBody = true,
-      } = route.data;
+  /**
+   * Picks a request up where {@link RequestHandler.suspend} left it.
+   *
+   * @param {Pipeline} state - The request and how far it got
+   * @param {unknown} value - The settled value
+   * @param {number} kind - What the value is
+   * @returns {Response | Promise<Response>} The HTTP response
+   * @private
+   */
+  private resume(state: Pipeline, value: unknown, kind: number): Response | Promise<Response> {
+    if (kind === PENDING_VALUE) {
+      state.values = [value];
+    } else if (kind === PENDING_VALUES) {
+      state.values = value as unknown[];
+    } else if (kind === PENDING_RESULT) {
+      state.result = value;
+    } else if (value != null) {
+      let ended: Response | undefined;
 
-      // 1. Call before route middlewares, so auth and CORS run before the body is read
-      if (middlewares.beforeMiddlewares.length > 0) {
-        const beforeResult = await this.executeMiddlewares(middlewares.beforeMiddlewares, {
-          request,
-          response: fakeResponse,
-          methodArgs: undefined,
-          handlerResponse: undefined,
-          executeRequest: true,
-          executeResponse: false,
-        });
-        if (beforeResult.earlyReturn) {
-          return mergeResponseHeaders(beforeResult.earlyReturn, beforeResult.response, false);
-        }
-        fakeResponse = beforeResult.response;
+      try {
+        ended = this.applyHookResult(state, value as Response | ResponseInit);
+      } catch (error) {
+        return this.fail(state, error);
       }
 
-      // 2. Resolve all args; the ones with a schema are validated as they resolve
-      const resolvedArgs =
-        args.length > 0
-          ? await this.gMetadataResolver.resolveArgs(
-              args,
-              {
-                data: route.data,
-                params: route.params,
-                request,
-                response: fakeResponse,
-                cloneBody,
-                bodyLimit: this.fBodyLimit,
-              },
-              argResolvers,
-            )
-          : [];
-
-      // 3. Call every actions
-      for (const action of actions) {
-        const actionResponse = action.handler(request, fakeResponse);
-        if (actionResponse != null) {
-          fakeResponse = this.processOverrideResponse(actionResponse, fakeResponse);
-        }
+      if (ended !== undefined) {
+        return ended;
       }
-
-      // 4. Call current route handler
-      let handlerResponse = instance[propertyName].call(instance, ...toValues(resolvedArgs));
-      if (handlerResponse instanceof Promise) {
-        handlerResponse = await handlerResponse;
-      }
-
-      // 5. Call after route middlewares
-      if (middlewares.afterMiddlewares.length > 0) {
-        const afterResult = await this.executeMiddlewares(middlewares.afterMiddlewares, {
-          request,
-          response: fakeResponse,
-          methodArgs: resolvedArgs,
-          handlerResponse,
-          executeRequest: false,
-          executeResponse: true,
-        });
-        if (afterResult.earlyReturn) {
-          return mergeResponseHeaders(afterResult.earlyReturn, afterResult.response, false);
-        }
-        fakeResponse = afterResult.response;
-      }
-
-      // 6. If handlerResponse is already instance of Response, return it with
-      //    the headers middlewares and actions set on the intermediate response
-      if (handlerResponse instanceof Response) {
-        return mergeResponseHeaders(handlerResponse, fakeResponse);
-      }
-
-      // 7. Otherwise prepare new response
-      return this.createFinalResponse(fakeResponse, handlerResponse, 200, 'OK');
-    } catch (error) {
-      return mergeResponseHeaders(await this.handleError(error), fakeResponse, false);
     }
+
+    return this.advance(state);
+  }
+
+  /**
+   * Applies what a middleware hook returned: a `Response` ends the request, a
+   * `ResponseInit` is merged into the intermediate response and the request
+   * goes on.
+   *
+   * @param {Pipeline} state - The request and how far it got
+   * @param {Response | ResponseInit} result - The value the hook returned
+   * @returns {Response | undefined} The response the request ends with, if it does
+   * @private
+   */
+  private applyHookResult(state: Pipeline, result: Response | ResponseInit): Response | undefined {
+    if (result instanceof PendingResponse) {
+      // a hook that returned the intermediate response it was handed
+      return result.toResponse();
+    }
+
+    if (result instanceof Response) {
+      return mergeResponseHeaders(result, state.response, false);
+    }
+
+    state.response = this.processOverrideResponse(result, state.response);
+
+    return undefined;
+  }
+
+  /**
+   * Runs the actions of a route on the intermediate response.
+   *
+   * Static actions were folded when the route was registered. As long as no
+   * middleware changed the response before them, what they make of it is known,
+   * and the response is replaced by one that starts from there.
+   *
+   * @param {Pipeline} state - The request and how far it got
+   * @returns {void}
+   * @private
+   */
+  private applyActions(state: Pipeline): void {
+    const actions = state.route.data.actions ?? EMPTY_ACTIONS;
+
+    if (actions.length === 0) {
+      return;
+    }
+
+    const fixed = state.route.data.staticResponse;
+
+    if (fixed !== undefined && isUntouched(state.response)) {
+      state.response = createPendingResponse(fixed);
+
+      return;
+    }
+
+    for (const action of actions) {
+      const override = action.handler(state.request, state.response);
+
+      if (override != null) {
+        state.response = this.processOverrideResponse(override, state.response);
+      }
+    }
+  }
+
+  /**
+   * Builds the response of a request that went through the whole pipeline.
+   *
+   * @param {Pipeline} state - The request, with the handler result
+   * @returns {Response} The HTTP response
+   * @private
+   */
+  private complete(state: Pipeline): Response {
+    const { response, result } = state;
+
+    // A response of the handler's own gets the headers middlewares and actions
+    // set on the intermediate one.
+    if (result instanceof Response) {
+      return mergeResponseHeaders(result, response);
+    }
+
+    // No middleware set a header or a status, so the response is the one a
+    // route without middlewares answers with, built from a shared init.
+    if (isUntouched(response)) {
+      return this.createSimpleResponse(result, response.fixed);
+    }
+
+    return this.createFinalResponse(response, result, 200, 'OK');
+  }
+
+  /**
+   * Answers a request the pipeline failed on with the response of the error
+   * handler, carrying the headers set on the intermediate response so far.
+   *
+   * @param {Pipeline} state - The request and how far it got
+   * @param {unknown} error - The error
+   * @returns {Response | Promise<Response>} The error response
+   * @private
+   */
+  private fail(state: Pipeline, error: unknown): Response | Promise<Response> {
+    const response = this.handleError(error);
+
+    return response instanceof Promise
+      ? response.then((settled) => mergeResponseHeaders(settled, state.response, false))
+      : mergeResponseHeaders(response, state.response, false);
   }
 
   /**
@@ -1323,6 +1528,144 @@ function withAllow(response: Response, allow: string): Response {
 /** Arguments of a handler that takes none. */
 const EMPTY_VALUES: readonly unknown[] = Object.freeze([]);
 
+/** Fallbacks for a handler assembled without `prepareHandler`. */
+const EMPTY_CHAIN: readonly RouterTypes.MiddlewareDefinition[] = Object.freeze([]);
+const EMPTY_ARGS: MetadataTypes.Arg[] = [];
+const EMPTY_ACTIONS: readonly MetadataTypes.Action[] = Object.freeze([]);
+
+/** Where a request is in the pipeline. */
+const STAGE_BEFORE = 0;
+const STAGE_ARGS = 1;
+const STAGE_HANDLER = 2;
+const STAGE_AFTER = 3;
+
+/** What a suspended request is waiting for. */
+const PENDING_HOOK = 0;
+const PENDING_VALUES = 1;
+const PENDING_RESULT = 2;
+const PENDING_VALUE = 3;
+
+/**
+ * One request on its way through the pipeline: what
+ * {@link RequestHandler.advance} needs to go on after waiting for a promise.
+ */
+interface Pipeline {
+  request: Request;
+  route: RouterTypes.RouteMatched<RouterTypes.RouterHandler>;
+  /** The intermediate response middlewares and actions work on. */
+  response: Response;
+  stage: number;
+  /** Position in the middleware chain of the current stage. */
+  index: number;
+  values: readonly unknown[];
+  result: unknown;
+}
+
+/**
+ * The intermediate response of a route nothing takes a real one from.
+ *
+ * Middlewares and actions read its status and set headers on it, and that is
+ * all they do with it, so it holds a status and creates its `Headers` the first
+ * time something asks for them. Until then the final response can be built from
+ * a shared init, which is what makes a middleware that only looks at the
+ * request nearly free. Creating a `Response` per request for this costs more
+ * than everything else the pipeline does on Bun.
+ *
+ * It answers `instanceof Response`, but has no body to read or clone.
+ */
+class PendingResponse {
+  /** The folded static actions this response starts from, if any. */
+  public readonly fixed: RouterTypes.StaticResponse | undefined;
+
+  private fHeaders: Headers | undefined = undefined;
+
+  constructor(fixed: RouterTypes.StaticResponse | undefined) {
+    this.fixed = fixed;
+  }
+
+  /** Whether anything asked for the headers, and so may have changed them. */
+  public get touched(): boolean {
+    return this.fHeaders !== undefined;
+  }
+
+  public get headers(): Headers {
+    return (this.fHeaders ??= new Headers(this.fixed === undefined ? INITIAL_RESPONSE_HEADERS : this.fixed.json.headers));
+  }
+
+  public get status(): number {
+    return this.fixed === undefined ? 200 : this.fixed.source.status;
+  }
+
+  public get statusText(): string {
+    return this.fixed === undefined ? 'OK' : this.fixed.source.statusText;
+  }
+
+  public get ok(): boolean {
+    return this.status >= 200 && this.status < 300;
+  }
+
+  public get body(): null {
+    return null;
+  }
+
+  public get bodyUsed(): boolean {
+    return false;
+  }
+
+  public get type(): ResponseType {
+    return 'default';
+  }
+
+  public get url(): string {
+    return '';
+  }
+
+  public get redirected(): boolean {
+    return false;
+  }
+
+  /**
+   * @returns {Response} A real response with this status and these headers
+   */
+  public toResponse(): Response {
+    return new FastResponse(null, { status: this.status, statusText: this.statusText, headers: this.headers });
+  }
+}
+
+// So a middleware that checks what it was handed still recognises a response.
+Object.setPrototypeOf(PendingResponse.prototype, Response.prototype);
+
+/**
+ * Creates the intermediate response of a route nothing takes a real one from.
+ *
+ * @param {RouterTypes.StaticResponse} [fixed] - The folded static actions to start from
+ * @returns {Response} The stand-in
+ */
+function createPendingResponse(fixed?: RouterTypes.StaticResponse): Response {
+  return new PendingResponse(fixed) as unknown as Response;
+}
+
+/**
+ * Whether an intermediate response is still what the pipeline created: no
+ * middleware or action replaced it, and nothing asked for its headers.
+ *
+ * @param {Response} response - The intermediate response
+ * @returns {boolean} True when nothing can have changed it
+ */
+function isUntouched(response: Response): response is Response & PendingResponse {
+  return response instanceof PendingResponse && !response.touched;
+}
+
+/**
+ * Whether a middleware hook returned something to wait for.
+ *
+ * @param {object} value - What the hook returned
+ * @returns {boolean} True for a promise or any other thenable
+ */
+function isThenable(value: object): value is PromiseLike<Response | ResponseInit | void> {
+  return typeof (value as { then?: unknown }).then === 'function';
+}
+
 /**
  * Turns headers into a response init that can be reused across requests: a
  * plain record, which a response is built from fastest, or pairs when a header
@@ -1367,22 +1710,6 @@ function toServerSpanContext(request: Request, handler: RouterTypes.RouterHandle
     controller: handler.controller,
     handler: handler.propertyName,
   };
-}
-
-/**
- * Extracts the resolved values of already resolved arguments.
- *
- * @param {MetadataTypes.Arg[]} args - Resolved arguments
- * @returns {unknown[]} The values in handler parameter order
- */
-function toValues(args: MetadataTypes.Arg[]): unknown[] {
-  const values: unknown[] = [];
-
-  for (let i = 0; i < args.length; i++) {
-    values.push(args[i].resolved);
-  }
-
-  return values;
 }
 
 /**
