@@ -1,6 +1,5 @@
 import { BaseDecorator, createDecorator } from '@vercube/di';
-import { ValidationMiddleware } from '../../Middleware/ValidationMiddleware';
-import { addMetadataMiddleware, initializeMetadata, initializeMetadataMethod, setMetadataArg } from '../../Utils/Utils';
+import { initializeMetadata, initializeMetadataMethod, setMetadataArg } from '../../Utils/Utils';
 import type { MetadataTypes } from '../../Types/MetadataTypes';
 import type { ValidationTypes } from '../../Types/ValidationTypes';
 
@@ -30,7 +29,7 @@ class QueryParamsDecorator extends BaseDecorator<QueryParamsDecoratorOptions, Me
    * and then adds the query parameters information to the metadata.
    */
   public override created(): void {
-    const meta = initializeMetadata(this.prototype);
+    initializeMetadata(this.prototype);
     const method = initializeMetadataMethod(this.prototype, this.propertyName);
 
     // add body to metadata
@@ -41,20 +40,6 @@ class QueryParamsDecorator extends BaseDecorator<QueryParamsDecoratorOptions, Me
       validate: this.options?.validationSchema ? true : false,
       validationSchema: this.options?.validationSchema,
     });
-
-    // the validation middleware only has work to do when a schema was given
-    if (this.options?.validationSchema) {
-      addMetadataMiddleware(
-        meta,
-        {
-          target: this.propertyName,
-          priority: -1,
-          args: {},
-          middleware: ValidationMiddleware,
-        },
-        'first',
-      );
-    }
   }
 }
 

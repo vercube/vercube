@@ -19,8 +19,8 @@ export class BadRequestError<E = readonly StandardSchemaV1.Issue[]> extends Http
   public override name: string = 'BadRequestError';
 
   /**
-   * Details of what was wrong. `ValidationMiddleware` sets the validation
-   * issues; absent for a body that is not valid JSON or form data.
+   * Details of what was wrong. An argument that fails its `validationSchema`
+   * sets the validation issues; absent for a body that is not valid JSON or form data.
    */
   declare public errors?: E;
 

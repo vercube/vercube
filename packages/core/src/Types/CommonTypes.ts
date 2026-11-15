@@ -7,8 +7,10 @@ export type MaybePromise<T> = T | Promise<T>;
 export interface MiddlewareOptions<T = any> {
   middlewareArgs?: T;
   /**
-   * Resolved handler arguments. Only passed to validation middlewares: the
-   * arguments (and the body) are resolved after every other before middleware.
+   * Resolved handler arguments.
+   *
+   * @deprecated Never set. Arguments are validated as they are resolved, after
+   * every before middleware, so no middleware receives them any more.
    */
   methodArgs?: MetadataTypes.Arg[];
   /**

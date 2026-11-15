@@ -1,3 +1,4 @@
+import { BadRequestError } from '../../Errors/Http/BadRequestError';
 import { resolveRequestBody } from '../../Resolvers/Body';
 import { getRequestHeader, getRequestHeaders } from '../../Resolvers/Headers';
 import { resolveMultipartFormData } from '../../Resolvers/MultipartFormData';
@@ -5,6 +6,16 @@ import { resolveQueryParam, resolveQueryParamAll, resolveQueryParams } from '../
 import { resolveRouterParam } from '../../Resolvers/RouterParam';
 import type { MetadataTypes } from '../../Types/MetadataTypes';
 import type { RouterTypes } from '../../Types/RouterTypes';
+import type { ValidationTypes } from '../../Types/ValidationTypes';
+
+/**
+ * Validates one resolved argument against its schema. Returns `undefined` when
+ * nothing can validate, which leaves the value as it was resolved.
+ */
+export type ArgValidator = (
+  schema: ValidationTypes.Schema,
+  data: unknown,
+) => ValidationTypes.Result | Promise<ValidationTypes.Result> | undefined;
 
 /**
  * Argument types whose resolver may return a promise. Everything else is
@@ -30,6 +41,16 @@ export class MetadataResolver {
   }
 
   /**
+   * Tells whether an argument is validated against a schema.
+   *
+   * @param {MetadataTypes.Arg} arg - The argument definition to inspect.
+   * @returns {boolean} True when the argument carries a schema that is switched on.
+   */
+  public static isValidatedArg(arg: MetadataTypes.Arg): boolean {
+    return arg.validate === true && arg.validationSchema !== undefined;
+  }
+
+  /**
    * Turns an argument list into one resolver per argument, bound at
    * registration time.
    *
@@ -40,11 +61,65 @@ export class MetadataResolver {
    * calls exactly one resolver, so the call site stays monomorphic instead of
    * seeing every argument type in turn.
    *
+   * An argument with a schema is validated by its resolver, which is where the
+   * value is at hand: the handler receives what the schema parsed (coercions,
+   * defaults, stripped keys), and a schema that answers synchronously keeps the
+   * resolver synchronous.
+   *
    * @param {MetadataTypes.Arg[]} args - The arguments to compile, sorted by index.
+   * @param {ArgValidator} [validator] - Validates arguments that carry a schema; without one they are not validated.
    * @returns {RouterTypes.ArgResolver[]} One resolver per argument, in handler parameter order.
    */
-  public static compileArgs(args: MetadataTypes.Arg[]): RouterTypes.ArgResolver[] {
-    return args.map((arg) => MetadataResolver.compileArg(arg));
+  public static compileArgs(args: MetadataTypes.Arg[], validator?: ArgValidator): RouterTypes.ArgResolver[] {
+    return args.map((arg) => {
+      const resolver = MetadataResolver.compileArg(arg);
+
+      return validator && MetadataResolver.isValidatedArg(arg)
+        ? MetadataResolver.compileValidation(arg, resolver, validator)
+        : resolver;
+    });
+  }
+
+  /**
+   * Wraps a resolver so the value it resolves is validated against the
+   * argument's schema.
+   *
+   * @param {MetadataTypes.Arg} arg - The argument definition.
+   * @param {RouterTypes.ArgResolver} resolver - The resolver of the raw value.
+   * @param {ArgValidator} validator - Validates the value against the schema.
+   * @returns {RouterTypes.ArgResolver} A resolver of the parsed value.
+   */
+  private static compileValidation(
+    arg: MetadataTypes.Arg,
+    resolver: RouterTypes.ArgResolver,
+    validator: ArgValidator,
+  ): RouterTypes.ArgResolver {
+    const schema = arg.validationSchema as ValidationTypes.Schema;
+    const message = `Validation error - ${arg.type}`;
+
+    const unwrap = (result: ValidationTypes.Result | undefined, value: unknown): unknown => {
+      if (result === undefined) {
+        return value;
+      }
+
+      if (result.issues?.length) {
+        throw new BadRequestError(message, result.issues);
+      }
+
+      return 'value' in result ? result.value : value;
+    };
+
+    const validate = (value: unknown): unknown => {
+      const result = validator(schema, value);
+
+      return result instanceof Promise ? result.then((settled) => unwrap(settled, value)) : unwrap(result, value);
+    };
+
+    return (event) => {
+      const value = resolver(event);
+
+      return value instanceof Promise ? value.then(validate) : validate(value);
+    };
   }
 
   /**
@@ -123,6 +198,65 @@ export class MetadataResolver {
 
     for (let i = 0; i < plan.length; i++) {
       values.push(plan[i](event));
+    }
+
+    return values;
+  }
+
+  /**
+   * Resolves a plan whose resolvers are synchronous unless a schema validates
+   * asynchronously, which only shows once it has run. Nothing is awaited, and
+   * no promise is created, as long as every value comes back settled.
+   *
+   * @param {RouterTypes.ArgResolver[]} plan - The compiled resolvers, in handler parameter order.
+   * @param {RouterTypes.RouterEvent} event - The event to resolve arguments for.
+   * @returns {unknown[] | Promise<unknown[]>} The resolved values in handler parameter order.
+   */
+  public resolveCompiledArgValuesMaybeAsync(
+    plan: RouterTypes.ArgResolver[],
+    event: RouterTypes.RouterEvent,
+  ): unknown[] | Promise<unknown[]> {
+    const values: unknown[] = [];
+
+    for (let i = 0; i < plan.length; i++) {
+      const value = plan[i](event);
+
+      if (value instanceof Promise) {
+        return this.resolveRemainingArgValues(plan, event, values, i, value);
+      }
+
+      values.push(value);
+    }
+
+    return values;
+  }
+
+  /**
+   * Finishes a plan one of whose resolvers turned out to be asynchronous,
+   * argument by argument: a later resolver only runs once the earlier ones
+   * settled, so the first failure is the one reported and no promise is left
+   * without a handler.
+   *
+   * @param {RouterTypes.ArgResolver[]} plan - The compiled resolvers, in handler parameter order.
+   * @param {RouterTypes.RouterEvent} event - The event to resolve arguments for.
+   * @param {unknown[]} values - The values resolved so far.
+   * @param {number} index - The index of the resolver that returned a promise.
+   * @param {Promise<unknown>} pending - The promise it returned.
+   * @returns {Promise<unknown[]>} The resolved values in handler parameter order.
+   */
+  private async resolveRemainingArgValues(
+    plan: RouterTypes.ArgResolver[],
+    event: RouterTypes.RouterEvent,
+    values: unknown[],
+    index: number,
+    pending: Promise<unknown>,
+  ): Promise<unknown[]> {
+    values.push(await pending);
+
+    for (let i = index + 1; i < plan.length; i++) {
+      const value = plan[i](event);
+
+      values.push(value instanceof Promise ? await value : value);
     }
 
     return values;
@@ -244,16 +378,19 @@ export class MetadataResolver {
    *
    * @param {MetadataTypes.Arg[]} args - The arguments to resolve.
    * @param {RouterTypes.RouterEvent} event - The event to resolve arguments for.
+   * @param {RouterTypes.ArgResolver[]} [compiled] - The plan compiled for `args` at registration, when they are sorted by index.
    * @return {unknown[]} The resolved arguments.
    * @public
    */
-  public async resolveArgs(args: MetadataTypes.Arg[], event: RouterTypes.RouterEvent): Promise<MetadataTypes.Arg[]> {
+  public async resolveArgs(
+    args: MetadataTypes.Arg[],
+    event: RouterTypes.RouterEvent,
+    compiled?: RouterTypes.ArgResolver[],
+  ): Promise<MetadataTypes.Arg[]> {
     const list = sortArgs(args);
-    // Compiled per call rather than per route: this path already copies every
-    // argument's metadata and runs a middleware chain, so a few closures are
-    // noise against it, and one compiler beats keeping two dispatch tables in
-    // step with each other.
-    const plan = MetadataResolver.compileArgs(list);
+    // The plan of a prepared route validates as it resolves. Without one the
+    // arguments are compiled here and resolved as they are.
+    const plan = compiled !== undefined && list === args ? compiled : MetadataResolver.compileArgs(list);
 
     const resolvedArgs: MetadataTypes.Arg[] = [];
     for (let i = 0; i < list.length; i++) {
