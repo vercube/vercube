@@ -89,6 +89,7 @@ export const RUNGS: readonly Rung[] = [
   post('body', '@Body', '/json'),
   post('body-schema', '@Body + schema', '/json-schema'),
   post('body-mw', '@Body + middleware', '/json-mw'),
+  post('body-after', '@Body + onResponse middleware', '/json-after'),
   post('body-status', '@Body + @Status', '/json-status', { status: 201 }),
   post('body-full', '@Body + schema + auth + @Status', '/json-full', {
     status: 201,
@@ -203,6 +204,7 @@ export async function createLadderApp(core: Core, z: SchemaBuilder, options: Lad
   route(controller, 'json', [Post('/json')], [Body()], echo);
   route(controller, 'jsonSchema', [Post('/json-schema')], [Body({ validationSchema: bodySchema as never })], echo);
   route(controller, 'jsonMw', [Post('/json-mw'), Middleware(NoopMiddleware)], [Body()], echo);
+  route(controller, 'jsonAfter', [Post('/json-after'), Middleware(BothMiddleware)], [Body()], echo);
   route(controller, 'jsonStatus', [Post('/json-status'), Status(201)], [Body()], echo);
   route(
     controller,
