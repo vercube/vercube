@@ -25,8 +25,10 @@ concurrency:
 # busy runner hits both alike. Absolute numbers of a shared runner mean little;
 # the change between the two columns is what the job is for.
 #
-# A rung more than THRESHOLD percent below the base, twice in a row, fails the
-# job. The check is not required: it is a signal to look, not a merge gate.
+# A rung more than THRESHOLD percent below the base, twice in a row, is listed
+# under the tables. It does not fail the job: on a shared runner two builds of
+# the same code were measured 15% apart on three rungs in a row, so this is a
+# reason to look and measure locally, and a gate only on a machine of our own.
 env:
   THRESHOLD: 10
   RUNGS: plain,param-query,body,body-schema,mw3,body-full,404,default-plain,default-body
@@ -72,7 +74,7 @@ jobs:
           pnpm build
 
       - name: Run the ladder
-        id: ladder
+        continue-on-error: true
         run: |
           set -o pipefail
           NODE_ENV=production node packages/core/test/Bench/Ladder/Run.ts \
