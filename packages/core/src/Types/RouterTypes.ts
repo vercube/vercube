@@ -64,8 +64,15 @@ export namespace RouterTypes {
      */
     cloneBody?: boolean;
     /**
-     * The response of a simple route whose actions are all static, folded once
-     * in `RequestHandler.prepareHandler`. Absent for a route without actions.
+     * True when an argument hands the intermediate response to the handler or
+     * to a custom resolver (`@Response()`, a custom decorator), which may
+     * expect a real `Response`.
+     */
+    observesResponse?: boolean;
+    /**
+     * What the actions of a route make of a response when all of them are
+     * static, folded once in `RequestHandler.prepareHandler`. Absent for a
+     * route without actions, and for one that observes the response.
      */
     staticResponse?: RouterTypes.StaticResponse;
     /** Controller class name, resolved once in `RequestHandler.prepareHandler`. */
