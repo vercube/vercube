@@ -28,6 +28,7 @@ class StatusDecorator extends BaseDecorator<StatusDecoratorOptions, MetadataType
 
     setMetadataAction(method, {
       key: this.options,
+      static: true,
       handler: () => ({
         status: this.options.code,
       }),

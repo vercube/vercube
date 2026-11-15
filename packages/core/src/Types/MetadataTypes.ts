@@ -60,6 +60,13 @@ export namespace MetadataTypes {
   export interface Action {
     handler: (req: Request, res: Response) => void | Response | ResponseInit;
     /**
+     * True when the action does the same for every request and does not read
+     * it, as `@Status`, `@SetHeader` and `@Redirect` do. A static action runs
+     * once, when the route is registered, and its result is reused: on a route
+     * without middlewares it is then called without a request.
+     */
+    static?: boolean;
+    /**
      * Identifies the decorator application that added the action, so a second
      * container initializing the same class replaces it instead of adding it again.
      */

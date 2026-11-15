@@ -220,9 +220,13 @@ export class RequestHandler {
     // expect the mutation to survive into the final one.
     const observesResponse = args.some((arg) => arg.type === 'response' || arg.type === 'custom');
 
-    // Routes without middlewares and without response-mutating actions never
-    // observe the intermediate response, so they can skip building one.
-    const simple = beforeMiddlewares.length === 0 && afterMiddlewares.length === 0 && actions.length === 0 && !observesResponse;
+    // `@Status`, `@SetHeader` and `@Redirect` do the same for every request,
+    // so what they make of the response is worked out here, once.
+    const staticActions = actions.every((action) => action.static === true);
+
+    // Routes without middlewares and without actions that depend on the request
+    // never observe the intermediate response, so they can skip building one.
+    const simple = beforeMiddlewares.length === 0 && afterMiddlewares.length === 0 && staticActions && !observesResponse;
 
     const asyncArgs = args.some((arg) => MetadataResolver.isAsyncArg(arg));
 
@@ -238,16 +242,18 @@ export class RequestHandler {
       },
       actions,
       simple,
+      staticResponse: simple && actions.length > 0 ? this.foldActions(actions) : undefined,
       asyncArgs,
       maybeAsyncArgs: !asyncArgs && args.some((arg) => MetadataResolver.isValidatedArg(arg)),
       // The body can only be read once. Where something may read it after the
       // handler's argument did - a middleware answering the response, a second
-      // body argument, an action, a handler or resolver holding the raw request
+      // body argument, an action that is handed the request, a handler or
+      // resolver holding the raw request
       // - it is read once and shared, see `Utils/SharedBody`. Everywhere else
       // it is read straight off the request, which is cheaper still. Before
       // middlewares do not count: they are done by the time arguments resolve.
       cloneBody:
-        actions.length > 0 ||
+        !staticActions ||
         afterMiddlewares.some((definition) => readsBody(definition.middleware)) ||
         args.some((arg) => arg.type === 'request' || arg.type === 'custom') ||
         args.filter((arg) => arg.type === 'body' || arg.type === 'multipart-form-data').length > 1,
@@ -515,7 +521,11 @@ export class RequestHandler {
     request: Request,
     route: RouterTypes.RouteMatched<RouterTypes.RouterHandler>,
   ): Response | Promise<Response> {
-    const { instance, propertyName, args, argResolvers, asyncArgs, maybeAsyncArgs, cloneBody } = route.data;
+    const { instance, propertyName, args, argResolvers, asyncArgs, maybeAsyncArgs, cloneBody, staticResponse } = route.data;
+
+    if (staticResponse !== undefined) {
+      return this.handleStaticRequest(request, route, staticResponse);
+    }
 
     try {
       if (args.length === 0) {
@@ -562,6 +572,153 @@ export class RequestHandler {
     } catch (error) {
       return this.handleError(error);
     }
+  }
+
+  /**
+   * Handles a simple route decorated with static actions: `@Status`,
+   * `@SetHeader`, `@Redirect`.
+   *
+   * What the actions do to the response was folded when the route was
+   * registered, so the request is served like any simple route, with another
+   * response init. An error of the handler gets the headers the actions set,
+   * as it does in the full pipeline, where actions run before the handler; an
+   * error resolving the arguments does not, as they resolve before the actions.
+   *
+   * @param {Request} request - The incoming HTTP request
+   * @param {RouterTypes.RouteMatched<RouterTypes.RouterHandler>} route - The matched route
+   * @param {RouterTypes.StaticResponse} fixed - The folded actions
+   * @returns {Response | Promise<Response>} The HTTP response
+   * @private
+   */
+  private handleStaticRequest(
+    request: Request,
+    route: RouterTypes.RouteMatched<RouterTypes.RouterHandler>,
+    fixed: RouterTypes.StaticResponse,
+  ): Response | Promise<Response> {
+    const { args, argResolvers, asyncArgs, cloneBody } = route.data;
+
+    if (args.length === 0) {
+      return this.callStatic(route.data, EMPTY_VALUES, fixed);
+    }
+
+    try {
+      const plan = argResolvers ?? MetadataResolver.compileArgs(args);
+      const event: RouterTypes.RouterEvent = {
+        data: route.data,
+        params: route.params,
+        request,
+        response: undefined as unknown as Response,
+        cloneBody,
+        bodyLimit: this.fBodyLimit,
+      };
+
+      const values = asyncArgs
+        ? this.gMetadataResolver.resolveCompiledArgValuesAsync(plan, event)
+        : this.gMetadataResolver.resolveCompiledArgValuesMaybeAsync(plan, event);
+
+      if (values instanceof Promise) {
+        return values.then(
+          (resolved) => this.callStatic(route.data, resolved, fixed),
+          (error: unknown) => this.handleError(error),
+        );
+      }
+
+      return this.callStatic(route.data, values, fixed);
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  /**
+   * Calls the handler of a route with static actions and builds its response.
+   *
+   * @param {RouterTypes.RouterHandler} data - The route handler
+   * @param {unknown[]} values - The resolved handler arguments
+   * @param {RouterTypes.StaticResponse} fixed - The folded actions
+   * @returns {Response | Promise<Response>} The HTTP response
+   * @private
+   */
+  private callStatic(
+    data: RouterTypes.RouterHandler,
+    values: readonly unknown[],
+    fixed: RouterTypes.StaticResponse,
+  ): Response | Promise<Response> {
+    let result: unknown;
+
+    try {
+      result = data.instance[data.propertyName](...values);
+    } catch (error) {
+      return this.handleStaticError(error, fixed);
+    }
+
+    if (result instanceof Promise) {
+      return result.then(
+        (value: unknown) => this.createSimpleResponse(value, fixed),
+        (error: unknown) => this.handleStaticError(error, fixed),
+      );
+    }
+
+    return this.createSimpleResponse(result, fixed);
+  }
+
+  /**
+   * Turns an error of a handler with static actions into a response carrying
+   * the headers the actions set.
+   *
+   * @param {unknown} error - The error
+   * @param {RouterTypes.StaticResponse} fixed - The folded actions
+   * @returns {Response | Promise<Response>} The error response
+   * @private
+   */
+  private handleStaticError(error: unknown, fixed: RouterTypes.StaticResponse): Response | Promise<Response> {
+    const response = this.handleError(error);
+
+    return response instanceof Promise
+      ? response.then((settled) => mergeResponseHeaders(settled, fixed.source, false))
+      : mergeResponseHeaders(response, fixed.source, false);
+  }
+
+  /**
+   * Runs static actions once and keeps what they make of a response.
+   *
+   * @param {MetadataTypes.Action[]} actions - The actions of a route, all of them static
+   * @returns {RouterTypes.StaticResponse} The folded actions
+   * @private
+   */
+  private foldActions(actions: MetadataTypes.Action[]): RouterTypes.StaticResponse {
+    let source = this.createInitialResponse();
+
+    for (const action of actions) {
+      // a static action does not read the request, so there is none to hand it
+      const override = action.handler(undefined as unknown as Request, source);
+
+      if (override != null) {
+        source = this.processOverrideResponse(override, source);
+      }
+    }
+
+    // The same rules as `createFinalResponse`: a handler without a result
+    // answers 204 unless an action picked a status, and never claims to be JSON.
+    const noContent = source.status === 200;
+    const emptyHeaders = new Headers(source.headers);
+
+    if (emptyHeaders.get('content-type') === DEFAULT_CONTENT_TYPE) {
+      emptyHeaders.delete('content-type');
+    }
+
+    return {
+      source,
+      json: Object.freeze({
+        status: source.status,
+        statusText: source.statusText,
+        headers: toHeadersInit(source.headers),
+      }),
+      empty: Object.freeze({
+        status: noContent ? 204 : source.status,
+        statusText: noContent ? 'No Content' : source.statusText,
+        headers: toHeadersInit(emptyHeaders),
+      }),
+    };
   }
 
   /**
@@ -733,10 +890,21 @@ export class RequestHandler {
    * Serializes a handler result into the final response of a simple route.
    *
    * @param handlerResponse - The value returned by the route handler
+   * @param fixed - The folded static actions of the route, when it has any
    * @returns The final Response object
    * @private
    */
-  private createSimpleResponse(handlerResponse: unknown): Response {
+  private createSimpleResponse(handlerResponse: unknown, fixed?: RouterTypes.StaticResponse): Response {
+    if (fixed !== undefined) {
+      if (handlerResponse instanceof Response) {
+        return mergeResponseHeaders(handlerResponse, fixed.source);
+      }
+
+      return handlerResponse === undefined
+        ? new FastResponse(null, fixed.empty)
+        : new FastResponse(JSON.stringify(handlerResponse), fixed.json);
+    }
+
     if (handlerResponse instanceof Response) {
       return handlerResponse;
     }
@@ -1033,6 +1201,24 @@ export class RequestHandler {
 
     return fakeResponse;
   }
+}
+
+/** Arguments of a handler that takes none. */
+const EMPTY_VALUES: readonly unknown[] = Object.freeze([]);
+
+/**
+ * Turns headers into a response init that can be reused across requests: a
+ * plain record, which a response is built from fastest, or pairs when a header
+ * is set more than once.
+ *
+ * @param {Headers} headers - The headers
+ * @returns {HeadersInit} A frozen record or list of pairs
+ */
+function toHeadersInit(headers: Headers): HeadersInit {
+  const pairs = [...headers];
+  const record = Object.fromEntries(pairs);
+
+  return Object.freeze(Object.keys(record).length === pairs.length ? record : pairs) as HeadersInit;
 }
 
 /**
