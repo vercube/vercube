@@ -12,8 +12,9 @@
  * target is the baseline of the comparison.
  *
  * With `--threshold`, a rung on which a target falls more than that many
- * percent below the baseline is measured a second time, and the run fails
- * when it falls again: one slow measurement is noise, two in a row are not.
+ * percent below the baseline is measured a second time, and the run exits
+ * with code 3 when it falls again: one slow measurement is noise, two in a
+ * row are not.
  *
  * Needs `bombardier` on the PATH and built packages (`pnpm build`).
  */
@@ -61,6 +62,8 @@ interface Server {
 }
 
 const HOST = '127.0.0.1';
+/** Exit code of a run that measured a regression, see `--threshold`. */
+const REGRESSION_EXIT_CODE = 3;
 const BASE_PORT = 3200;
 const here = import.meta.dirname;
 const root = resolve(here, '../../../../..');
@@ -493,7 +496,8 @@ async function run(): Promise<void> {
     console.log(
       `\nMore than ${threshold}% below ${targets[0].label}, twice in a row:\n${regressions.map((entry) => `- ${entry}`).join('\n')}`,
     );
-    process.exitCode = 1;
+    // not 1: a caller can tell a regression from a harness that broke
+    process.exitCode = REGRESSION_EXIT_CODE;
   }
 }
 

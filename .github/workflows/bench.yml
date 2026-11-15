@@ -73,10 +73,11 @@ jobs:
           pnpm install --frozen-lockfile
           pnpm build
 
+      # Exit code 3 is a measured regression, which is reported and not failed
+      # on. Anything else is the harness itself breaking.
       - name: Run the ladder
-        continue-on-error: true
         run: |
-          set -o pipefail
+          set +e
           NODE_ENV=production node packages/core/test/Bench/Ladder/Run.ts \
             --runtime bun,node \
             --rungs "$RUNGS" \
@@ -84,6 +85,8 @@ jobs:
             --target pr=packages/core/dist/index.mjs \
             --threshold "$THRESHOLD" \
             --out bench/ladder.json | tee bench.md
+          code=${PIPESTATUS[0]}
+          if [ "$code" -ne 0 ] && [ "$code" -ne 3 ]; then exit "$code"; fi
 
       - name: Summary
         if: ${{ !cancelled() && hashFiles('bench.md') != '' }}
