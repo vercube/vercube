@@ -217,16 +217,49 @@ export class MetadataResolver {
     event: RouterTypes.RouterEvent,
   ): unknown[] | Promise<unknown[]> {
     const values: unknown[] = [];
-    let pending = false;
 
     for (let i = 0; i < plan.length; i++) {
       const value = plan[i](event);
 
-      pending ||= value instanceof Promise;
+      if (value instanceof Promise) {
+        return this.resolveRemainingArgValues(plan, event, values, i, value);
+      }
+
       values.push(value);
     }
 
-    return pending ? Promise.all(values) : values;
+    return values;
+  }
+
+  /**
+   * Finishes a plan one of whose resolvers turned out to be asynchronous,
+   * argument by argument: a later resolver only runs once the earlier ones
+   * settled, so the first failure is the one reported and no promise is left
+   * without a handler.
+   *
+   * @param {RouterTypes.ArgResolver[]} plan - The compiled resolvers, in handler parameter order.
+   * @param {RouterTypes.RouterEvent} event - The event to resolve arguments for.
+   * @param {unknown[]} values - The values resolved so far.
+   * @param {number} index - The index of the resolver that returned a promise.
+   * @param {Promise<unknown>} pending - The promise it returned.
+   * @returns {Promise<unknown[]>} The resolved values in handler parameter order.
+   */
+  private async resolveRemainingArgValues(
+    plan: RouterTypes.ArgResolver[],
+    event: RouterTypes.RouterEvent,
+    values: unknown[],
+    index: number,
+    pending: Promise<unknown>,
+  ): Promise<unknown[]> {
+    values.push(await pending);
+
+    for (let i = index + 1; i < plan.length; i++) {
+      const value = plan[i](event);
+
+      values.push(value instanceof Promise ? await value : value);
+    }
+
+    return values;
   }
 
   /**

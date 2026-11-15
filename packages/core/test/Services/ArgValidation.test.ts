@@ -54,6 +54,14 @@ class ArgsController {
     return { q };
   }
 
+  @Get('/two')
+  public two(
+    @QueryParam({ name: 'q', validationSchema: asyncSchema }) q: string,
+    @QueryParam({ name: 'age', validationSchema: z.coerce.number().int() }) age: number,
+  ): unknown {
+    return { q, age };
+  }
+
   @Post('/body')
   public body(@Body({ validationSchema: z.object({ name: z.string() }) }) body: unknown): unknown {
     return body;
@@ -149,6 +157,33 @@ describe('argument validation', () => {
       message: 'Validation error - query-param',
       errors: [{ message: 'bad value' }],
     });
+  });
+
+  it('reports the first failure when an asynchronous and a synchronous schema both fail', async () => {
+    const app = await createArgsApp();
+    const unhandled = vi.fn();
+
+    process.on('unhandledRejection', unhandled);
+
+    try {
+      const both = await app.fetch(new Request('http://localhost/args/two?q=bad&age=abc'));
+
+      expect(both.status).toBe(400);
+      expect((await both.json()).errors).toEqual([{ message: 'bad value' }]);
+
+      const second = await app.fetch(new Request('http://localhost/args/two?q=ok&age=abc'));
+      expect(second.status).toBe(400);
+
+      const valid = await app.fetch(new Request('http://localhost/args/two?q=ok&age=3'));
+      expect(await valid.json()).toEqual({ q: 'parsed:ok', age: 3 });
+
+      // rejections without a handler are reported a turn of the event loop later
+      await new Promise((done) => setTimeout(done, 10));
+
+      expect(unhandled).not.toHaveBeenCalled();
+    } finally {
+      process.off('unhandledRejection', unhandled);
+    }
   });
 
   it('hands the parsed body to the handler and reports the issues of an invalid one', async () => {
