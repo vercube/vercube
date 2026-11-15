@@ -5,10 +5,15 @@
  *   pnpm bench:ladder --runtime bun --rungs plain,body,404
  *   pnpm bench:ladder --target before=packages/core/tmp/before/index.mjs --target after=packages/core/dist/index.mjs
  *   pnpm bench:ladder compare before.json after.json
+ *   pnpm bench:ladder --target base=../base/packages/core/dist/index.mjs --target pr=packages/core/dist/index.mjs --threshold 5
  *
  * With several targets every rung is measured on each of them in turn, run
  * after run, so a drift of the machine hits all targets alike. The first
  * target is the baseline of the comparison.
+ *
+ * With `--threshold`, a rung on which a target falls more than that many
+ * percent below the baseline is measured a second time, and the run fails
+ * when it falls again: one slow measurement is noise, two in a row are not.
  *
  * Needs `bombardier` on the PATH and built packages (`pnpm build`).
  */
@@ -346,6 +351,7 @@ const { values, positionals } = parseArgs({
     connections: { type: 'string', default: '100' },
     runs: { type: 'string', default: '3' },
     out: { type: 'string' },
+    threshold: { type: 'string' },
   },
 });
 
@@ -363,6 +369,8 @@ async function run(): Promise<void> {
   const duration = Number(values.duration);
   const connections = Number(values.connections);
   const runs = Number(values.runs);
+  const threshold = values.threshold === undefined ? undefined : Number(values.threshold);
+  const regressions: string[] = [];
 
   const targets: Target[] = (values.target ?? ['current=packages/core/dist/index.mjs']).map((entry) => {
     const separator = entry.indexOf('=');
@@ -422,16 +430,39 @@ async function run(): Promise<void> {
 
     for (const rung of rungs) {
       const serving = servers.filter((server) => server.variant === rung.variant);
-      const measured = new Map<Server, number[]>(serving.map((server) => [server, []]));
-
       for (const server of serving) {
         await assertRung(server, rung);
         load(server, rung, 1, connections);
       }
 
-      for (let run = 0; run < runs; run++) {
-        for (const server of serving) {
-          measured.get(server)!.push(load(server, rung, duration, connections));
+      const sample = (): Map<Server, number[]> => {
+        const samples = new Map<Server, number[]>(serving.map((server) => [server, []]));
+
+        for (let run = 0; run < runs; run++) {
+          for (const server of serving) {
+            samples.get(server)!.push(load(server, rung, duration, connections));
+          }
+        }
+
+        return samples;
+      };
+
+      // The targets that fell further below the first one than the threshold allows.
+      const fallen = (samples: Map<Server, number[]>): string[] => {
+        const [baseline, ...others] = serving;
+        const floor = median(samples.get(baseline)!) * (1 - (threshold ?? 0) / 100);
+
+        return others.filter((server) => median(samples.get(server)!) < floor).map((server) => server.target.label);
+      };
+
+      let measured = sample();
+
+      if (threshold !== undefined && fallen(measured).length > 0) {
+        console.error(`${runtime} ${rung.id}: ${fallen(measured).join(', ')} below the threshold, measuring again`);
+        measured = sample();
+
+        for (const label of fallen(measured)) {
+          regressions.push(`${runtime}, ${rung.title}: ${label}`);
         }
       }
 
@@ -457,6 +488,13 @@ async function run(): Promise<void> {
   }
 
   console.log(render(results, RUNGS));
+
+  if (regressions.length > 0) {
+    console.log(
+      `\nMore than ${threshold}% below ${targets[0].label}, twice in a row:\n${regressions.map((entry) => `- ${entry}`).join('\n')}`,
+    );
+    process.exitCode = 1;
+  }
 }
 
 if (positionals[0] === 'compare') {

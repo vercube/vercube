@@ -1,0 +1,112 @@
+name: Bench
+
+permissions:
+  contents: read
+  pull-requests: write
+
+on:
+  pull_request:
+    branches: [main, v1, '[0-9]+.[0-9]+']
+    paths:
+      - 'packages/core/**'
+      - 'packages/di/**'
+      - 'packages/logger/**'
+      - 'packages/auth/**'
+      - '.github/workflows/bench.yml'
+      - 'pnpm-lock.yaml'
+  workflow_dispatch:
+
+concurrency:
+  group: bench-${{ github.ref }}
+  cancel-in-progress: true
+
+# Runs the benchmark ladder (packages/core/test/Bench/Ladder) on the base branch
+# and on the pull request in the same job, measuring them in turn, so a slow or
+# busy runner hits both alike. Absolute numbers of a shared runner mean little;
+# the change between the two columns is what the job is for.
+#
+# A rung more than THRESHOLD percent below the base, twice in a row, fails the
+# job. The check is not required: it is a signal to look, not a merge gate.
+env:
+  THRESHOLD: 10
+  RUNGS: plain,param-query,body,body-schema,mw3,body-full,404,default-plain,default-body
+
+jobs:
+  ladder:
+    name: ladder
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - uses: oven-sh/setup-bun@v2
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: stable
+          cache: false
+
+      - name: Install bombardier
+        run: |
+          go install github.com/codesenberg/bombardier@v2.0.2
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Build the pull request
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      # A checkout of its own, so the base runs with its own dependencies and
+      # its own build of every package, not only of core.
+      - name: Build the base
+        run: |
+          git worktree add ../base "origin/${{ github.base_ref || github.event.repository.default_branch }}"
+          cd ../base
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      - name: Run the ladder
+        id: ladder
+        run: |
+          set -o pipefail
+          NODE_ENV=production node packages/core/test/Bench/Ladder/Run.ts \
+            --runtime bun,node \
+            --rungs "$RUNGS" \
+            --target base=../base/packages/core/dist/index.mjs \
+            --target pr=packages/core/dist/index.mjs \
+            --threshold "$THRESHOLD" \
+            --out bench/ladder.json | tee bench.md
+
+      - name: Summary
+        if: ${{ !cancelled() }}
+        run: |
+          {
+            echo '### Benchmark ladder'
+            echo
+            echo "\`base\` is \`${{ github.base_ref || github.event.repository.default_branch }}\`, measured in turn with this branch on the same runner. Shared runners are noisy: read the change, not the numbers."
+            echo
+            cat bench.md
+          } > comment.md
+          cat comment.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Comment on the pull request
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr comment ${{ github.event.pull_request.number }} --edit-last --create-if-none --body-file comment.md
+
+      - uses: actions/upload-artifact@v6
+        if: ${{ !cancelled() }}
+        with:
+          name: ladder
+          path: bench/ladder.json
+          if-no-files-found: ignore
