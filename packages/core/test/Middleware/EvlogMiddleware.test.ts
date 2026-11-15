@@ -101,7 +101,7 @@ describe('EvlogMiddleware', () => {
     app.container.bindMock(RequestContext, null as any);
     const middleware = app.container.resolve(EvlogMiddleware);
 
-    expect(middleware.onResponse(new Request('http://localhost/test'), new Response())).toBeUndefined();
+    await expect(middleware.onResponse(new Request('http://localhost/test'), new Response())).resolves.toBeUndefined();
   });
 
   it('should call the finish callback with the response status', async () => {
@@ -113,8 +113,7 @@ describe('EvlogMiddleware', () => {
     await requestContext.run(async () => {
       requestContext.set(EVLOG_FINISH_KEY, finish);
 
-      // not awaited by the middleware: the response does not wait for its log event
-      expect(middleware.onResponse(new Request('http://localhost/test'), new Response(null, { status: 201 }))).toBeUndefined();
+      await middleware.onResponse(new Request('http://localhost/test'), new Response(null, { status: 201 }));
 
       expect(finish).toHaveBeenCalledWith({ status: 201 });
     });
@@ -129,7 +128,7 @@ describe('EvlogMiddleware', () => {
     await requestContext.run(async () => {
       requestContext.set(EVLOG_FINISH_KEY, finish);
 
-      expect(middleware.onResponse(new Request('http://localhost/test'), new Response())).toBeUndefined();
+      await expect(middleware.onResponse(new Request('http://localhost/test'), new Response())).resolves.toBeUndefined();
       expect(finish).toHaveBeenCalledOnce();
     });
   });
@@ -139,7 +138,7 @@ describe('EvlogMiddleware', () => {
     const requestContext = app.container.get(RequestContext);
 
     await requestContext.run(async () => {
-      expect(middleware.onResponse(new Request('http://localhost/test'), new Response())).toBeUndefined();
+      await expect(middleware.onResponse(new Request('http://localhost/test'), new Response())).resolves.toBeUndefined();
     });
   });
 });

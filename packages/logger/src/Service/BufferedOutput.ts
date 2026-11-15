@@ -6,8 +6,11 @@ const STDERR_LEVELS: ReadonlySet<string> = new Set(['warn', 'error', 'fatal']);
 
 /** The part of a writable stream the output needs. */
 interface OutputStream {
-  write: (chunk: string) => unknown;
+  write: (chunk: string, callback?: (error?: Error | null) => void) => unknown;
   fd?: number;
+  once?: (event: 'error', listener: () => void) => unknown;
+  removeListener?: (event: 'error', listener: () => void) => unknown;
+  listenerCount?: (event: 'error') => number;
 }
 
 /** The part of `process` the output needs, absent outside Node, Bun and Deno. */
@@ -93,14 +96,14 @@ export class BufferedOutput {
       const chunk = this.fOut;
 
       this.fOut = '';
-      target?.stdout?.write(chunk);
+      writeTo(target?.stdout, chunk);
     }
 
     if (this.fErr !== '') {
       const chunk = this.fErr;
 
       this.fErr = '';
-      (target?.stderr ?? target?.stdout)?.write(chunk);
+      writeTo(target?.stderr ?? target?.stdout, chunk);
     }
   }
 
@@ -131,7 +134,7 @@ export class BufferedOutput {
         writeSync(stream?.fd ?? 1, chunk);
       } catch {
         // a stream that cannot take a synchronous write right now
-        stream?.write(chunk);
+        writeTo(stream, chunk);
       }
     }
 
@@ -165,3 +168,44 @@ export class BufferedOutput {
     return (globalThis as { process?: OutputProcess }).process;
   }
 }
+
+/**
+ * Writes to a stream the way `console` does: a stream that fails, such as a
+ * pipe whose reader went away, must not take the process down with an
+ * unhandled `error` event. A log line that cannot be written is dropped.
+ *
+ * @param {OutputStream | undefined} stream - The stream
+ * @param {string} chunk - What to write
+ * @returns {void}
+ */
+function writeTo(stream: OutputStream | undefined, chunk: string): void {
+  if (!stream) {
+    return;
+  }
+
+  // The failure may come synchronously (a file, a terminal) or later (a pipe).
+  // A listener is held for the first case and added again by the callback for
+  // the second, unless the application listens for stream errors itself.
+  try {
+    if (stream.listenerCount?.('error') === 0) {
+      stream.once?.('error', ignore);
+    }
+
+    stream.write(chunk, (error) => {
+      if (error && stream.listenerCount?.('error') === 0) {
+        stream.once?.('error', ignore);
+      }
+    });
+  } catch {
+    // dropped
+  } finally {
+    stream.removeListener?.('error', ignore);
+  }
+}
+
+/**
+ * Ignores a stream error.
+ *
+ * @returns {void}
+ */
+function ignore(): void {}

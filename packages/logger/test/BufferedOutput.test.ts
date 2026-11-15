@@ -39,14 +39,14 @@ describe('BufferedOutput', () => {
     await nextTurn();
 
     expect(stdout).toHaveBeenCalledTimes(1);
-    expect(stdout).toHaveBeenCalledWith('one\ntwo\nthree\n');
+    expect(stdout).toHaveBeenCalledWith('one\ntwo\nthree\n', expect.any(Function));
     expect(stderr).not.toHaveBeenCalled();
 
     output.write('info', 'four');
     await nextTurn();
 
     expect(stdout).toHaveBeenCalledTimes(2);
-    expect(stdout).toHaveBeenLastCalledWith('four\n');
+    expect(stdout).toHaveBeenLastCalledWith('four\n', expect.any(Function));
   });
 
   it('sends warnings and errors to stderr, like console does', async () => {
@@ -59,8 +59,8 @@ describe('BufferedOutput', () => {
 
     await nextTurn();
 
-    expect(stdout).toHaveBeenCalledWith('fine\n');
-    expect(stderr).toHaveBeenCalledWith('careful\nbroken\ngone\n');
+    expect(stdout).toHaveBeenCalledWith('fine\n', expect.any(Function));
+    expect(stderr).toHaveBeenCalledWith('careful\nbroken\ngone\n', expect.any(Function));
   });
 
   it('writes on demand and then has nothing left', async () => {
@@ -69,7 +69,7 @@ describe('BufferedOutput', () => {
     output.write('info', 'now');
     output.flush();
 
-    expect(stdout).toHaveBeenCalledWith('now\n');
+    expect(stdout).toHaveBeenCalledWith('now\n', expect.any(Function));
 
     await nextTurn();
 
@@ -112,7 +112,7 @@ describe('BufferedOutput', () => {
     output.write('info', 'kept');
     output.flushSync();
 
-    expect(stdout).toHaveBeenCalledWith('kept\n');
+    expect(stdout).toHaveBeenCalledWith('kept\n', expect.any(Function));
   });
 
   it('falls back to the stream where there is no synchronous write', () => {
@@ -123,6 +123,40 @@ describe('BufferedOutput', () => {
     output.write('info', 'kept');
     output.flushSync();
 
-    expect(stdout).toHaveBeenCalledWith('kept\n');
+    expect(stdout).toHaveBeenCalledWith('kept\n', expect.any(Function));
+  });
+
+  it('survives a stream that fails, now or later, like console does', async () => {
+    const { PassThrough } = await import('node:stream');
+    const broken = new PassThrough();
+    const original = Object.getOwnPropertyDescriptor(process, 'stdout')!;
+
+    broken.once('error', () => {});
+    broken.destroy(new Error('EPIPE'));
+    // the error of the destroyed stream is emitted here
+    await nextTurn();
+
+    Object.defineProperty(process, 'stdout', { value: broken, configurable: true });
+
+    try {
+      const output = new BufferedOutput();
+
+      output.write('info', 'lost');
+      output.flush();
+      // an unhandled `error` event would throw from here
+      await nextTurn();
+      await nextTurn();
+
+      expect(broken.listenerCount('error')).toBeLessThanOrEqual(1);
+
+      vi.spyOn(broken, 'write').mockImplementation(() => {
+        throw new Error('EBADF');
+      });
+
+      output.write('info', 'lost too');
+      expect(() => output.flush()).not.toThrow();
+    } finally {
+      Object.defineProperty(process, 'stdout', original);
+    }
   });
 });

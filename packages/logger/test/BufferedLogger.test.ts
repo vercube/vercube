@@ -58,7 +58,10 @@ describe('BaseLogger output buffering', () => {
     await new Promise((done) => setImmediate(done));
 
     expect(stdout).toHaveBeenCalledTimes(1);
-    expect(stdout).toHaveBeenCalledWith('{"level":"info","message":"hello"}\n{"level":"info","message":"again"}\n');
+    expect(stdout).toHaveBeenCalledWith(
+      '{"level":"info","message":"hello"}\n{"level":"info","message":"again"}\n',
+      expect.any(Function),
+    );
   });
 
   it('writes what it holds on flush', () => {
@@ -68,7 +71,7 @@ describe('BaseLogger output buffering', () => {
     lastConfig().plugins[0].drain({ event: { level: 'info', message: 'held' } });
     logger.flush();
 
-    expect(stdout).toHaveBeenCalledWith('{"level":"info","message":"held"}\n');
+    expect(stdout).toHaveBeenCalledWith('{"level":"info","message":"held"}\n', expect.any(Function));
   });
 
   it('keeps buffering when the logger is configured again or gets a plugin', () => {
@@ -119,7 +122,7 @@ describe('BaseLogger output buffering', () => {
 
     logger.bufferOutput(false);
 
-    expect(stdout).toHaveBeenCalledWith('{"level":"info","message":"held"}\n');
+    expect(stdout).toHaveBeenCalledWith('{"level":"info","message":"held"}\n', expect.any(Function));
     expect(lastConfig().silent).toBeUndefined();
     expect(lastConfig().plugins).toEqual([]);
   });
