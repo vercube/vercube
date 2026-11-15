@@ -44,5 +44,15 @@ export namespace LoggerTypes {
      * Alias for evlog's `minLevel`; takes precedence when both are provided.
      */
     logLevel?: Level;
+
+    /**
+     * Whether structured (non-pretty) console output may be collected and
+     * written once per turn of the event loop, instead of with one synchronous
+     * write per event. Only takes effect while an HTTP server is listening.
+     * Set it to `false` to have every event written the moment it is emitted.
+     *
+     * @default true
+     */
+    buffered?: boolean;
   }
 }

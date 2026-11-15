@@ -1,4 +1,5 @@
 import { Container, Inject } from '@vercube/di';
+import { Logger } from '@vercube/logger';
 import { serve } from 'srvx';
 import { tryServeSpaIndex } from '../../Common/ServeStatic';
 import { MethodNotAllowedError } from '../../Errors/Http/MethodNotAllowedError';
@@ -168,6 +169,12 @@ export class HttpServer {
     await this.fServer.ready();
 
     this.fListening = true;
+
+    // A listening server stays around to write what it logged, so the logger
+    // may write once per turn of the event loop instead of once per request.
+    // Not done for an application driven through `app.fetch()` alone: a
+    // serverless platform may freeze the process the moment it has answered.
+    this.gContainer.getOptional(Logger)?.bufferOutput?.();
   }
 
   /**
@@ -208,6 +215,7 @@ export class HttpServer {
     } finally {
       clearTimeout(timer);
       clearInterval(sweep);
+      this.gContainer.getOptional(Logger)?.flush?.();
     }
   }
 

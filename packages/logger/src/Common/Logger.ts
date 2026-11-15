@@ -110,4 +110,19 @@ export abstract class Logger {
    * @param overrides - Additional fields merged into the emitted event
    */
   public abstract emit(overrides?: LoggerTypes.Context): void;
+
+  /**
+   * Lets the logger collect its console output and write it once per turn of
+   * the event loop instead of once per event. Called by the HTTP server when it
+   * starts listening; a logger that does not write to the console ignores it.
+   *
+   * @param _enabled - False to go back to writing every event as it is emitted
+   */
+  public bufferOutput(_enabled?: boolean): void {}
+
+  /**
+   * Writes output the logger is still holding. Does nothing for a logger that
+   * holds none.
+   */
+  public flush(): void {}
 }

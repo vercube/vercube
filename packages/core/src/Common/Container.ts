@@ -42,6 +42,7 @@ export function createContainer(config: ConfigTypes.Config): Container {
   container.bind(Logger, BaseLogger);
   container.get(Logger).configure({
     logLevel: config.logLevel ?? 'debug',
+    ...resolvePretty(config),
   });
 
   // bind default error provider
@@ -115,4 +116,21 @@ export function createContainer(config: ConfigTypes.Config): Container {
   }
 
   return container;
+}
+
+/**
+ * Decides whether logs are pretty-printed from the application's own mode.
+ *
+ * Left to itself the logger looks at `NODE_ENV`, so an application configured
+ * with `production: true` but started without it pretty-printed every request.
+ *
+ * @param {ConfigTypes.Config} config - The application config
+ * @returns {{ pretty?: boolean }} The option, empty when the config does not say
+ */
+function resolvePretty(config: ConfigTypes.Config): { pretty?: boolean } {
+  if (config.production === true) {
+    return { pretty: false };
+  }
+
+  return typeof config.dev === 'boolean' ? { pretty: config.dev } : {};
 }
