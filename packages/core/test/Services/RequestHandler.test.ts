@@ -939,6 +939,51 @@ describe('RequestHandler', () => {
     });
   });
 
+  describe('simple route whose handler throws once its arguments settled', () => {
+    const failure = new Error('Handler error');
+
+    const route = (flags: Partial<RouterTypes.RouterHandler>): RouterTypes.RouteMatched<RouterTypes.RouterHandler> => ({
+      data: {
+        instance: {
+          handle: () => {
+            throw failure;
+          },
+        },
+        propertyName: 'handle',
+        args: [{ idx: 0, type: 'body' }] as MetadataTypes.Arg[],
+        argResolvers: [async () => ({ a: 1 })],
+        actions: [],
+        middlewares: { beforeMiddlewares: [], afterMiddlewares: [] },
+        simple: true,
+        ...flags,
+      },
+      params: {},
+    });
+
+    beforeEach(() => {
+      mockErrorHandler.handleError.mockReturnValue(new Response('failed', { status: 500 }));
+      mockMetadataResolver.resolveCompiledArgValuesAsync = vi.fn().mockResolvedValue([{ a: 1 }]);
+      mockMetadataResolver.resolveCompiledArgValuesMaybeAsync = vi.fn().mockResolvedValue([{ a: 1 }]);
+    });
+
+    it('should answer with the error response when an argument is asynchronous', async () => {
+      const result = await requestHandler.handleRequest(new Request('http://localhost/test'), route({ asyncArgs: true }));
+
+      expect(mockErrorHandler.handleError).toHaveBeenCalledWith(failure);
+      expect(result.status).toBe(500);
+    });
+
+    it('should answer with the error response when a schema validates asynchronously', async () => {
+      const result = await requestHandler.handleRequest(
+        new Request('http://localhost/test'),
+        route({ asyncArgs: false, maybeAsyncArgs: true }),
+      );
+
+      expect(mockErrorHandler.handleError).toHaveBeenCalledWith(failure);
+      expect(result.status).toBe(500);
+    });
+  });
+
   describe('handleUnmatched', () => {
     it('should produce the response when there are no global middlewares', async () => {
       const result = await requestHandler.handleUnmatched(new Request('http://localhost/x'), async () => new Response('file'));

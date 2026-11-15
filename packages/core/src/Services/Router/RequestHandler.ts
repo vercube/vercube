@@ -626,7 +626,7 @@ export class RequestHandler {
 
       if (asyncArgs) {
         return this.gMetadataResolver.resolveCompiledArgValuesAsync(plan, event).then(
-          (values) => this.finalize(instance[propertyName](...values)),
+          (values) => this.callSimple(route.data, values),
           (error: unknown) => this.handleError(error),
         );
       }
@@ -636,7 +636,7 @@ export class RequestHandler {
 
         if (resolved instanceof Promise) {
           return resolved.then(
-            (values) => this.finalize(instance[propertyName](...values)),
+            (values) => this.callSimple(route.data, values),
             (error: unknown) => this.handleError(error),
           );
         }
@@ -646,6 +646,25 @@ export class RequestHandler {
 
       const values = this.gMetadataResolver.resolveCompiledArgValues(plan, event);
       return this.finalize(instance[propertyName](...values));
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  /**
+   * Calls the handler of a simple route once its arguments settled.
+   *
+   * By then the request left the frame that catches a handler's error, so one
+   * thrown here would reject the response instead of reaching the error handler.
+   *
+   * @param {RouterTypes.RouterHandler} data - The route handler
+   * @param {unknown[]} values - The resolved handler arguments
+   * @returns {Response | Promise<Response>} The HTTP response
+   * @private
+   */
+  private callSimple(data: RouterTypes.RouterHandler, values: unknown[]): Response | Promise<Response> {
+    try {
+      return this.finalize(data.instance[data.propertyName](...values));
     } catch (error) {
       return this.handleError(error);
     }
