@@ -97,48 +97,56 @@ describe('EvlogMiddleware', () => {
     });
   });
 
-  it('should do nothing on response when request context is not available', async () => {
-    app.container.bindMock(RequestContext, null as any);
-    const middleware = app.container.resolve(EvlogMiddleware);
-
-    await expect(middleware.onResponse(new Request('http://localhost/test'), new Response())).resolves.toBeUndefined();
-  });
-
-  it('should call the finish callback with the response status', async () => {
+  it('should finish the event with the status of the response the request settled with', async () => {
     const finish = vi.fn().mockResolvedValue(undefined);
+    mocks.createMiddlewareLogger.mockReturnValue({ logger: {}, finish, skipped: false });
 
     const middleware = app.container.resolve(EvlogMiddleware);
     const requestContext = app.container.get(RequestContext);
 
-    await requestContext.run(async () => {
-      requestContext.set(EVLOG_FINISH_KEY, finish);
+    const response = await requestContext.runRequest(() => {
+      middleware.onRequest(new Request('http://localhost/test'), new Response(), {});
 
-      await middleware.onResponse(new Request('http://localhost/test'), new Response(null, { status: 201 }));
+      expect(finish).not.toHaveBeenCalled();
 
-      expect(finish).toHaveBeenCalledWith({ status: 201 });
+      return new Response(null, { status: 201 });
     });
+
+    expect(response.status).toBe(201);
+    expect(finish).toHaveBeenCalledExactlyOnceWith({ status: 201 });
   });
 
-  it('should swallow errors thrown by the finish callback', async () => {
+  it('should swallow a rejection of the finish callback', async () => {
     const finish = vi.fn().mockRejectedValue(new Error('boom'));
+    mocks.createMiddlewareLogger.mockReturnValue({ logger: {}, finish, skipped: false });
 
     const middleware = app.container.resolve(EvlogMiddleware);
     const requestContext = app.container.get(RequestContext);
 
-    await requestContext.run(async () => {
-      requestContext.set(EVLOG_FINISH_KEY, finish);
+    const response = await requestContext.runRequest(() => {
+      middleware.onRequest(new Request('http://localhost/test'), new Response(), {});
 
-      await expect(middleware.onResponse(new Request('http://localhost/test'), new Response())).resolves.toBeUndefined();
-      expect(finish).toHaveBeenCalledOnce();
+      return new Response('ok');
     });
+
+    expect(await response.text()).toBe('ok');
+    expect(finish).toHaveBeenCalledOnce();
   });
 
-  it('should do nothing on response when no finish callback was stored', async () => {
+  it('should not wait for the response of a skipped request', () => {
+    const finish = vi.fn();
+    mocks.createMiddlewareLogger.mockReturnValue({ logger: {}, finish, skipped: true });
+
     const middleware = app.container.resolve(EvlogMiddleware);
     const requestContext = app.container.get(RequestContext);
 
-    await requestContext.run(async () => {
-      await expect(middleware.onResponse(new Request('http://localhost/test'), new Response())).resolves.toBeUndefined();
+    const response = requestContext.runRequest(() => {
+      middleware.onRequest(new Request('http://localhost/test'), new Response(), {});
+
+      return new Response('ok');
     });
+
+    expect(response).toBeInstanceOf(Response);
+    expect(finish).not.toHaveBeenCalled();
   });
 });

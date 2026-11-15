@@ -317,4 +317,129 @@ describe('RequestContext', () => {
       ]);
     });
   });
+
+  describe('runRequest', () => {
+    it('should pass a synchronous response through when nothing waits for it', () => {
+      const response = new Response('ok');
+
+      expect(service.runRequest(() => response)).toBe(response);
+    });
+
+    it('should hand the response to every callback registered during the request', async () => {
+      const seen: number[] = [];
+
+      const response = await service.runRequest(async () => {
+        service.onSettled((settled) => void seen.push(settled.status));
+        await Promise.resolve();
+        service.onSettled((settled) => void seen.push(settled.status + 1));
+
+        return new Response(null, { status: 201 });
+      });
+
+      expect(response.status).toBe(201);
+      expect(seen).toEqual([201, 202]);
+    });
+
+    it('should stay synchronous when no callback returns a promise', () => {
+      let seen: Response | undefined;
+      const response = new Response('ok');
+
+      const result = service.runRequest(() => {
+        service.onSettled((settled) => {
+          seen = settled;
+        });
+
+        return response;
+      });
+
+      expect(result).toBe(response);
+      expect(seen).toBe(response);
+    });
+
+    it('should wait for the promises callbacks return before passing the response on', async () => {
+      const order: string[] = [];
+
+      const result = service.runRequest(() => {
+        service.onSettled(async () => {
+          await Promise.resolve();
+          order.push('first');
+        });
+        service.onSettled(async () => void order.push('second'));
+
+        return new Response('ok');
+      });
+
+      expect(result).toBeInstanceOf(Promise);
+      expect(await (await result).text()).toBe('ok');
+      expect(order).toEqual(['second', 'first']);
+    });
+
+    it('should ignore a callback that throws or rejects', async () => {
+      const result = await service.runRequest(() => {
+        service.onSettled(() => {
+          throw new Error('sync');
+        });
+        service.onSettled(() => Promise.reject(new Error('async')));
+
+        return new Response('ok');
+      });
+
+      expect(await result.text()).toBe('ok');
+    });
+
+    it('should register on the request from inside a nested telemetry frame', () => {
+      let seen: Response | undefined;
+      const response = new Response('ok');
+
+      service.runRequest(() => {
+        service.runWithOtelContext({}, () => {
+          service.onSettled((settled) => {
+            seen = settled;
+          });
+        });
+
+        return response;
+      });
+
+      expect(seen).toBe(response);
+    });
+
+    it('should run the callbacks while the request context is still there', () => {
+      let seen: unknown;
+
+      service.runRequest(() => {
+        service.set('user', 'ada');
+        service.onSettled(() => {
+          seen = service.get('user');
+        });
+
+        return new Response('ok');
+      });
+
+      expect(seen).toBe('ada');
+    });
+
+    it('should settle a response on request from inside the frame', async () => {
+      const seen: number[] = [];
+
+      const response = await service.run(() => {
+        service.onSettled((settled) => void seen.push(settled.status));
+
+        return service.settle(Promise.resolve(new Response(null, { status: 202 })));
+      });
+
+      expect(response.status).toBe(202);
+      expect(seen).toEqual([202]);
+    });
+
+    it('should pass a response through when settled outside of a request', () => {
+      const response = new Response('ok');
+
+      expect(service.settle(response)).toBe(response);
+    });
+
+    it('should drop a callback registered outside of a request', () => {
+      expect(() => service.onSettled(() => {})).not.toThrow();
+    });
+  });
 });

@@ -282,13 +282,18 @@ export class RequestHandler {
     const telemetry = this.telemetry;
 
     if (telemetry !== null) {
+      // settled inside the span, so what waits for the response still sees it
       const traced = (): Promise<Response> =>
-        telemetry.server({ request, name: request.method }, () => this.internalHandlePreflight(request)) as Promise<Response>;
+        telemetry.server({ request, name: request.method }, () => {
+          const response = this.internalHandlePreflight(request);
+
+          return context ? context.settle(response) : response;
+        }) as Promise<Response>;
 
       return context ? context.run(traced) : traced();
     }
 
-    return context ? context.run(() => this.internalHandlePreflight(request)) : this.internalHandlePreflight(request);
+    return context ? context.runRequest(() => this.internalHandlePreflight(request)) : this.internalHandlePreflight(request);
   }
 
   /**
@@ -354,7 +359,7 @@ export class RequestHandler {
     const context = this.requestContext;
 
     return context
-      ? context.run(() => this.internalHandleUnmatched(request, produce))
+      ? (context.runRequest(() => this.internalHandleUnmatched(request, produce)) as Promise<Response>)
       : this.internalHandleUnmatched(request, produce);
   }
 
@@ -374,7 +379,9 @@ export class RequestHandler {
   public handleMiss(request: Request, allowed: string[]): Response | Promise<Response> {
     const context = this.requestContext;
 
-    return context ? context.run(() => this.internalHandleMiss(request, allowed)) : this.internalHandleMiss(request, allowed);
+    return context
+      ? context.runRequest(() => this.internalHandleMiss(request, allowed))
+      : this.internalHandleMiss(request, allowed);
   }
 
   /**
@@ -521,7 +528,7 @@ export class RequestHandler {
     }
 
     if (mode === MODE_CONTEXT) {
-      return (this.fRequestContext as RequestContext).run(() => this.dispatch(request, route));
+      return (this.fRequestContext as RequestContext).runRequest(() => this.dispatch(request, route));
     }
 
     if (mode === MODE_TELEMETRY) {
@@ -564,10 +571,16 @@ export class RequestHandler {
     route: RouterTypes.RouteMatched<RouterTypes.RouterHandler>,
   ): Response | Promise<Response> {
     const telemetry = this.fTelemetry as TelemetryTypes.Hooks;
+    const context = this.fRequestContext;
+    // settled inside the span, so what waits for the response still sees it
     const traced = (): Response | Promise<Response> =>
-      telemetry.server(toServerSpanContext(request, route.data), () => this.dispatch(request, route));
+      telemetry.server(toServerSpanContext(request, route.data), () => {
+        const response = this.dispatch(request, route);
 
-    return this.fRequestContext ? this.fRequestContext.run(traced) : traced();
+        return context ? context.settle(response) : response;
+      });
+
+    return context ? context.run(traced) : traced();
   }
 
   /**

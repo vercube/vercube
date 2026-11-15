@@ -6,7 +6,7 @@ import { TelemetryRegistry } from '../Services/Telemetry/TelemetryRegistry';
 import { getRequestPathname } from '../Utils/Url';
 import type { MiddlewareOptions } from '../Types/CommonTypes';
 import type { RequestLogger } from '@vercube/logger';
-import type { BaseEvlogOptions, MiddlewareLoggerResult } from '@vercube/logger/toolkit';
+import type { BaseEvlogOptions } from '@vercube/logger/toolkit';
 
 /**
  * Key under which the request-scoped evlog logger is stored in {@link RequestContext}.
@@ -25,7 +25,8 @@ export const EVLOG_FINISH_KEY = 'evlog:finish';
  * On each request it creates a request-scoped logger via evlog's toolkit and
  * stores it in {@link RequestContext} (so handlers can enrich the event), then
  * emits the accumulated wide event - including method, path, status and
- * duration - when the response is produced.
+ * duration - once the response the request is answered with is known, an
+ * error response and the answer to an unmatched request included.
  *
  * Registered automatically by the framework; disable via `requestLogging: false`
  * in the application config.
@@ -78,24 +79,11 @@ export class EvlogMiddleware extends BaseMiddleware<BaseEvlogOptions> {
 
     this.gRequestContext.set(EVLOG_REQUEST_LOGGER_KEY, logger);
     this.gRequestContext.set(EVLOG_FINISH_KEY, finish);
-  }
 
-  /**
-   * Emits the request wide event with the final response status.
-   *
-   * @param _request - The HTTP request (unused)
-   * @param response - The final HTTP response
-   */
-  public async onResponse(_request: Request, response: Response): Promise<void> {
-    if (!this.gRequestContext) {
-      return;
-    }
-
-    const finish = this.gRequestContext.get<MiddlewareLoggerResult['finish']>(EVLOG_FINISH_KEY);
-
-    if (finish) {
-      await finish({ status: response.status }).catch(() => {});
-    }
+    // Not an `onResponse` hook: that one sees the intermediate response, whose
+    // status is not the one a 404, a failed request or a handler answering with
+    // a response of its own ends up with, and it does not run after an error.
+    this.gRequestContext.onSettled((response) => finish({ status: response.status }));
   }
 
   /**
