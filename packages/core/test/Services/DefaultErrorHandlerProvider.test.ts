@@ -95,6 +95,18 @@ describe('DefaultErrorHandlerProvider', () => {
     expect((await response.json()).message).toBe('boom detail');
   });
 
+  it('should indent the body in dev mode only', async () => {
+    const indented = await errorHandler.handleError(new BadRequestError('Bad request')).text();
+
+    expect(indented).toContain('\n  "status": 400');
+
+    Object.defineProperty(errorHandler, 'gConfigProvider', { value: { dev: false }, configurable: true });
+    const compact = await errorHandler.handleError(new BadRequestError('Bad request')).text();
+
+    expect(compact).not.toContain('\n');
+    expect(JSON.parse(compact)).toEqual(JSON.parse(indented));
+  });
+
   it('should handle error with null message', async () => {
     const errorWithNullMessage = new Error('Original message');
     errorWithNullMessage.message = null as any;

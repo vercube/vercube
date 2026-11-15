@@ -1,8 +1,12 @@
 import { Container, Inject } from '@vercube/di';
 import { Logger } from '@vercube/logger';
+import { MethodNotAllowedError } from '../../Errors/Http/MethodNotAllowedError';
+import { NotFoundError } from '../../Errors/Http/NotFoundError';
 import { FastResponse } from '../../Types/CommonTypes';
+import { withoutStack } from '../../Utils/Errors';
 import { isSameMiddleware, resolveSlots } from '../../Utils/MiddlewareUtils';
 import { skipsGlobalMiddlewares } from '../../Utils/Utils';
+import { DefaultErrorHandlerProvider } from '../ErrorHandler/DefaultErrorHandlerProvider';
 import { ErrorHandlerProvider } from '../ErrorHandler/ErrorHandlerProvider';
 import { MetadataResolver } from '../Metadata/MetadataResolver';
 import { GlobalMiddlewareRegistry } from '../Middleware/GlobalMiddlewareRegistry';
@@ -351,6 +355,79 @@ export class RequestHandler {
     return context
       ? context.run(() => this.internalHandleUnmatched(request, produce))
       : this.internalHandleUnmatched(request, produce);
+  }
+
+  /**
+   * Answers a request that no route matched and no file can answer: a 405 when
+   * the path is routed for other methods, a 404 otherwise.
+   *
+   * Without global middlewares nothing can observe such a request, so the
+   * error response is built on the spot, synchronously when the error handler
+   * is. With them it goes through {@link RequestHandler.handleUnmatched}, so
+   * CORS and security headers reach it.
+   *
+   * @param {Request} request - The incoming HTTP request
+   * @param {string[]} allowed - The methods the path is routed for, empty for a 404
+   * @returns {Response | Promise<Response>} The HTTP response
+   */
+  public handleMiss(request: Request, allowed: string[]): Response | Promise<Response> {
+    const context = this.requestContext;
+
+    return context ? context.run(() => this.internalHandleMiss(request, allowed)) : this.internalHandleMiss(request, allowed);
+  }
+
+  /**
+   * Internal method behind {@link RequestHandler.handleMiss}.
+   *
+   * @param {Request} request - The incoming HTTP request
+   * @param {string[]} allowed - The methods the path is routed for, empty for a 404
+   * @returns {Response | Promise<Response>} The HTTP response
+   * @private
+   */
+  private internalHandleMiss(request: Request, allowed: string[]): Response | Promise<Response> {
+    const { beforeMiddlewares, afterMiddlewares } = this.globalChain();
+    const error = this.createMissError(allowed.length > 0);
+
+    if (beforeMiddlewares.length > 0 || afterMiddlewares.length > 0) {
+      return this.internalHandleUnmatched(request, (response) => {
+        if (allowed.length > 0) {
+          response.headers.set('allow', allowed.join(', '));
+        }
+
+        return Promise.reject(error);
+      });
+    }
+
+    const response = this.handleError(error);
+
+    if (allowed.length === 0) {
+      return response;
+    }
+
+    const allow = allowed.join(', ');
+
+    return response instanceof Promise ? response.then((settled) => withAllow(settled, allow)) : withAllow(response, allow);
+  }
+
+  /**
+   * The error a request no route matched is answered with.
+   *
+   * The default error handler serializes the error and lets go of it, so it is
+   * handed the same two instances for every miss: creating an error is most of
+   * what a 404 costs otherwise. Any other handler gets one of its own.
+   *
+   * @param {boolean} routed - Whether the path is routed for other methods
+   * @returns {Error} A `MethodNotAllowedError` when it is, a `NotFoundError` otherwise
+   * @private
+   */
+  private createMissError(routed: boolean): Error {
+    this.fErrorHandler ??= this.gContainer.get(ErrorHandlerProvider);
+
+    if (this.fErrorHandler?.constructor === DefaultErrorHandlerProvider) {
+      return routed ? METHOD_NOT_ALLOWED : NOT_FOUND;
+    }
+
+    return withoutStack(() => (routed ? new MethodNotAllowedError('Method not allowed') : new NotFoundError('Route not found')));
   }
 
   /**
@@ -1200,6 +1277,27 @@ export class RequestHandler {
     }
 
     return fakeResponse;
+  }
+}
+
+/** The errors of a miss, shared by every request the default error handler answers. */
+const NOT_FOUND = withoutStack(() => new NotFoundError('Route not found'));
+const METHOD_NOT_ALLOWED = withoutStack(() => new MethodNotAllowedError('Method not allowed'));
+
+/**
+ * Sets the `Allow` header of a 405 response.
+ *
+ * @param {Response} response - The response
+ * @param {string} allow - The methods the path is routed for
+ * @returns {Response} The response, or a copy of it when its headers are immutable
+ */
+function withAllow(response: Response, allow: string): Response {
+  try {
+    response.headers.set('allow', allow);
+
+    return response;
+  } catch {
+    return mergeResponseHeaders(response, new FastResponse(undefined, { headers: { allow } }), false);
   }
 }
 
