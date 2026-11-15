@@ -1,5 +1,6 @@
 import { drainPlugin, enricherPlugin, initLogger, log } from 'evlog';
 import { Logger } from '../Common/Logger';
+import { BufferedOutput } from './BufferedOutput';
 import type { LoggerTypes } from '../Types/LoggerTypes';
 import type { EvlogPlugin } from 'evlog';
 
@@ -134,13 +135,54 @@ export class BaseLogger extends Logger {
    * @private
    */
   private apply(): void {
-    const { logLevel, plugins, ...config } = this.fOptions;
+    const { logLevel, plugins, buffered, ...config } = this.fOptions;
+    const registered = plugins ? [...plugins, ...this.fPlugins] : this.fPlugins;
+
+    if (buffering && buffered !== false && writesStructuredOutput(config)) {
+      // evlog stops writing to the console and the output plugin, registered
+      // last so every other plugin has seen the event, writes instead
+      initLogger({
+        ...config,
+        minLevel: logLevel ?? config.minLevel,
+        silent: true,
+        plugins: [...registered, outputPlugin()],
+      });
+
+      return;
+    }
 
     initLogger({
       ...config,
       minLevel: logLevel ?? config.minLevel,
-      plugins: plugins ? [...plugins, ...this.fPlugins] : this.fPlugins,
+      plugins: registered,
     });
+  }
+
+  /**
+   * Collects structured console output and writes it once per turn of the
+   * event loop. Pretty output, and output evlog was told not to write, is left
+   * alone.
+   *
+   * evlog keeps one configuration per process, so this applies to every logger
+   * in it.
+   *
+   * @param enabled - False to go back to one write per event
+   */
+  public override bufferOutput(enabled: boolean = true): void {
+    buffering = enabled && BufferedOutput.supported();
+
+    if (!buffering) {
+      output.flush();
+    }
+
+    this.apply();
+  }
+
+  /**
+   * Writes the output collected so far.
+   */
+  public override flush(): void {
+    output.flush();
   }
 
   /**
@@ -278,6 +320,44 @@ export class BaseLogger extends Logger {
 
     log[level](event);
   }
+}
+
+/** Whether console output is collected, see {@link BaseLogger.bufferOutput}. */
+let buffering = false;
+
+/** The collected output of this process. */
+const output = new BufferedOutput();
+
+/** Created on first use, see {@link outputPlugin}. */
+let plugin: EvlogPlugin | undefined;
+
+/**
+ * The plugin that writes every event evlog would have written to the console
+ * through {@link output}.
+ *
+ * @returns The plugin
+ */
+function outputPlugin(): EvlogPlugin {
+  plugin ??= drainPlugin('vercube:buffered-output', ({ event }) => {
+    output.write(event.level, JSON.stringify(event));
+  });
+
+  return plugin;
+}
+
+/**
+ * Whether evlog, configured this way, writes one JSON line per event to the
+ * console: the only output worth collecting. Pretty output is for a person at
+ * a terminal, and `silent` or `stringify: false` were asked for on purpose.
+ *
+ * @param config - The evlog configuration
+ * @returns True when the output is structured lines
+ */
+function writesStructuredOutput(config: LoggerTypes.Options): boolean {
+  // evlog's own default: pretty unless NODE_ENV says production
+  const pretty = config.pretty ?? (typeof process === 'undefined' || process.env.NODE_ENV !== 'production');
+
+  return !pretty && config.silent !== true && config.stringify !== false && config.enabled !== false;
 }
 
 const MAX_CAUSE_DEPTH = 5;

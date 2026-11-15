@@ -83,10 +83,13 @@ export class EvlogMiddleware extends BaseMiddleware<BaseEvlogOptions> {
   /**
    * Emits the request wide event with the final response status.
    *
+   * The event is not awaited: enriching, draining and writing it are no reason
+   * to hold the response back, and none of them can change it.
+   *
    * @param _request - The HTTP request (unused)
    * @param response - The final HTTP response
    */
-  public async onResponse(_request: Request, response: Response): Promise<void> {
+  public onResponse(_request: Request, response: Response): void {
     if (!this.gRequestContext) {
       return;
     }
@@ -94,7 +97,7 @@ export class EvlogMiddleware extends BaseMiddleware<BaseEvlogOptions> {
     const finish = this.gRequestContext.get<MiddlewareLoggerResult['finish']>(EVLOG_FINISH_KEY);
 
     if (finish) {
-      await finish({ status: response.status }).catch(() => {});
+      finish({ status: response.status }).catch(noop);
     }
   }
 
@@ -118,3 +121,10 @@ export class EvlogMiddleware extends BaseMiddleware<BaseEvlogOptions> {
  * Request-scoped wide-event logger type, re-exported for handler ergonomics.
  */
 export type EvlogRequestLogger = RequestLogger;
+
+/**
+ * Swallows a failure to emit an event: logging must never fail a request.
+ *
+ * @returns {void}
+ */
+function noop(): void {}
