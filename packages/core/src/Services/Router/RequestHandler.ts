@@ -240,14 +240,16 @@ export class RequestHandler {
       simple,
       asyncArgs,
       maybeAsyncArgs: !asyncArgs && args.some((arg) => MetadataResolver.isValidatedArg(arg)),
-      // The body can only be read once, and cloning is what makes it readable
-      // twice - at the cost of materializing a full native request per call.
-      // It is only skipped where nothing else can possibly read the body: a
-      // route with no middlewares that reads the body exactly once and does not
-      // receive the raw request.
+      // The body can only be read once. Where something may read it after the
+      // handler's argument did - a middleware answering the response, a second
+      // body argument, an action, a handler or resolver holding the raw request
+      // - it is read once and shared, see `Utils/SharedBody`. Everywhere else
+      // it is read straight off the request, which is cheaper still. Before
+      // middlewares do not count: they are done by the time arguments resolve.
       cloneBody:
-        !simple ||
-        args.some((arg) => arg.type === 'request') ||
+        actions.length > 0 ||
+        afterMiddlewares.some((definition) => readsBody(definition.middleware)) ||
+        args.some((arg) => arg.type === 'request' || arg.type === 'custom') ||
         args.filter((arg) => arg.type === 'body' || arg.type === 'multipart-form-data').length > 1,
     };
   }
@@ -1031,6 +1033,17 @@ export class RequestHandler {
 
     return fakeResponse;
   }
+}
+
+/**
+ * Whether a middleware may read the request body. It may, unless its class
+ * says otherwise with `static readsBody = false`.
+ *
+ * @param {object} middleware - The middleware instance
+ * @returns {boolean} False only for a middleware that declared it never reads the body
+ */
+function readsBody(middleware: object): boolean {
+  return (middleware.constructor as { readsBody?: boolean } | undefined)?.readsBody !== false;
 }
 
 /**

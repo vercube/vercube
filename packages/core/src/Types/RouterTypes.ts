@@ -57,7 +57,11 @@ export namespace RouterTypes {
      * validating one of them may: that is only known once it has run.
      */
     maybeAsyncArgs?: boolean;
-    /** True when the request body must be cloned before being consumed. */
+    /**
+     * True when something besides the handler's body argument may read the
+     * request body, so it is read once and shared. Named after the `clone()`
+     * that used to make this possible.
+     */
     cloneBody?: boolean;
     /** Controller class name, resolved once in `RequestHandler.prepareHandler`. */
     controller?: string;
@@ -76,8 +80,9 @@ export namespace RouterTypes {
     request: Request;
     response: Response;
     /**
-     * Whether the request has to be cloned before its body is consumed.
-     * Set by the request handler; defaults to cloning when absent.
+     * Whether something else may read the request body, so it is read once and
+     * shared instead of consumed. Set by the request handler; defaults to
+     * sharing when absent.
      */
     cloneBody?: boolean;
     /**

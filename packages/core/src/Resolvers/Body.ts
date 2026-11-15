@@ -1,7 +1,7 @@
 import { BadRequestError } from '../Errors/Http/BadRequestError';
-import { PayloadTooLargeError } from '../Errors/Http/PayloadTooLargeError';
 import { UnsupportedMediaTypeError } from '../Errors/Http/UnsupportedMediaTypeError';
 import { isSafeProperty, safeJsonParse } from '../Utils/Security';
+import { readSharedText, readText } from '../Utils/SharedBody';
 import type { RouterTypes } from '../Types/RouterTypes';
 
 /**
@@ -29,14 +29,14 @@ type BodyParser = (text: string) => unknown;
  * }
  */
 export function resolveRequestBody(event: RouterTypes.RouterEvent): Promise<unknown> {
-  // Cloning is what makes the body readable twice, but it forces the runtime to
-  // materialize a full native Request with a teed stream - one of the most
-  // expensive things we can do per request. It is only needed when the handler
-  // also receives the raw request and may read the body itself.
-  // `clone()` throws when the body has already been consumed, and that has to
-  // reject rather than throw past the caller, which is what an `async` function
-  // used to guarantee. try/catch keeps the contract without the microtask.
-  let request: Request;
+  // The body is read from the request itself, never from a clone: cloning
+  // forces the runtime to materialize a full native Request with a teed stream,
+  // one of the most expensive things we can do per request. Where something
+  // else may read the body too - a middleware, a second body argument, a
+  // handler holding the raw request - it is read once and shared instead.
+  // A failure before the read has to reject rather than throw past the caller,
+  // which is what an `async` function used to guarantee. try/catch keeps the
+  // contract without the microtask.
   let parser: BodyParser | null;
 
   try {
@@ -50,15 +50,16 @@ export function resolveRequestBody(event: RouterTypes.RouterEvent): Promise<unkn
 
       throw new UnsupportedMediaTypeError('Unsupported request body content type');
     }
-
-    request = event.cloneBody === false ? event.request : event.request.clone();
   } catch (error) {
     return Promise.reject(error);
   }
 
   // Chained rather than awaited: an async function here adds a frame and a
   // microtask to every request carrying a body, for no gain over `.then`.
-  return readBody(request, event.bodyLimit).then(parser);
+  const text =
+    event.cloneBody === false ? readText(event.request, event.bodyLimit) : readSharedText(event.request, event.bodyLimit);
+
+  return text.then(parser);
 }
 
 /**
@@ -89,76 +90,6 @@ function selectParser(contentType: string | null): BodyParser | null {
   }
 
   return null;
-}
-
-/**
- * Reads a request body to text, enforcing the size limit.
- *
- * A declared `Content-Length` is checked up front, so an oversized body is
- * rejected before a single byte is read. Without one (a chunked body) the
- * stream is read chunk by chunk and abandoned as soon as it crosses the limit.
- *
- * @param {Request} request - The request to read
- * @param {number | undefined} limit - The maximum body size in bytes
- * @returns {Promise<string>} The body text
- * @throws {PayloadTooLargeError} If the body is larger than the limit
- */
-function readBody(request: Request, limit: number | undefined): Promise<string> {
-  if (limit === undefined) {
-    return request.text();
-  }
-
-  const length = request.headers.get('content-length');
-
-  if (length !== null) {
-    if (Number(length) > limit) {
-      return Promise.reject(new PayloadTooLargeError('Request body is too large'));
-    }
-
-    return request.text();
-  }
-
-  return readLimited(request, limit);
-}
-
-/**
- * Reads a body without a declared length, stopping once it exceeds the limit.
- *
- * @param {Request} request - The request to read
- * @param {number} limit - The maximum body size in bytes
- * @returns {Promise<string>} The body text
- * @throws {PayloadTooLargeError} If the body is larger than the limit
- */
-async function readLimited(request: Request, limit: number): Promise<string> {
-  if (!request.body) {
-    return '';
-  }
-
-  const reader = request.body.getReader();
-  const decoder = new TextDecoder();
-  let size = 0;
-  let text = '';
-
-  for (;;) {
-    const { done, value } = await reader.read();
-
-    if (done) {
-      break;
-    }
-
-    size += value.byteLength;
-
-    if (size > limit) {
-      // not awaited: a branch of a cloned body only settles its cancel once the
-      // other branch is cancelled too, which nothing here would ever do
-      reader.cancel().catch(() => undefined);
-      throw new PayloadTooLargeError('Request body is too large');
-    }
-
-    text += decoder.decode(value, { stream: true });
-  }
-
-  return text + decoder.decode();
 }
 
 /**
