@@ -1238,6 +1238,68 @@ describe('RequestHandler', () => {
       expect(action.handler).not.toHaveBeenCalled();
       expect(result.headers.get('x-action')).toBeNull();
     });
+
+    it('should resolve several synchronous arguments without waiting', async () => {
+      mockMetadataResolver.resolveCompiledArgValuesMaybeAsync = vi.fn().mockReturnValue(['one', 'two']);
+      route.data.middlewares.beforeMiddlewares = [before(() => {})];
+      route.data.args = [
+        { idx: 0, type: 'param' },
+        { idx: 1, type: 'query' },
+      ] as MetadataTypes.Arg[];
+      route.data.argResolvers = [() => 'one', () => 'two'];
+
+      const result = requestHandler.handleRequest(request, route);
+
+      expect(result).toBeInstanceOf(Response);
+      expect(await (result as Response).json()).toEqual({ values: ['one', 'two'] });
+    });
+
+    it('should end the request with the response an onResponse hook returns', async () => {
+      const skipped = vi.fn();
+      route.data.middlewares.afterMiddlewares = [after(() => new Response('replaced', { status: 203 })), after(skipped)];
+
+      const result = requestHandler.handleRequest(request, route) as Response;
+
+      expect(result.status).toBe(203);
+      expect(await result.text()).toBe('replaced');
+      expect(skipped).not.toHaveBeenCalled();
+    });
+
+    it('should merge a ResponseInit an onResponse hook returns and go on', async () => {
+      const next = vi.fn();
+      route.data.middlewares.afterMiddlewares = [after(() => ({ headers: { 'x-after': '1' } })), after(next)];
+
+      const result = requestHandler.handleRequest(request, route) as Response;
+
+      expect(result.headers.get('x-after')).toBe('1');
+      expect(await result.json()).toEqual({ values: [] });
+      expect(next).toHaveBeenCalled();
+    });
+
+    it('should turn what an asynchronous hook resolved to into an error response when it cannot be applied', async () => {
+      mockErrorHandler.handleError.mockReturnValue(new Response('failed', { status: 500 }));
+      const handle = vi.fn();
+      route.data.instance = { handle };
+      route.data.middlewares.beforeMiddlewares = [before(async () => ({ headers: { 'not a header name': '1' } }))];
+
+      const result = await requestHandler.handleRequest(request, route);
+
+      expect(result.status).toBe(500);
+      expect(mockErrorHandler.handleError).toHaveBeenCalledWith(expect.any(TypeError));
+      expect(handle).not.toHaveBeenCalled();
+    });
+
+    it('should describe the intermediate response as one that was never sent', () => {
+      const seen: Response[] = [];
+      route.data.middlewares.beforeMiddlewares = [before((_request, response) => void seen.push(response))];
+
+      requestHandler.handleRequest(request, route);
+
+      expect(seen[0].bodyUsed).toBe(false);
+      expect(seen[0].type).toBe('default');
+      expect(seen[0].url).toBe('');
+      expect(seen[0].redirected).toBe(false);
+    });
   });
 
   describe('static actions on a route with middlewares', () => {
