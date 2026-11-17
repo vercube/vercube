@@ -11,12 +11,14 @@ import { WebsocketTypes } from '../Types/WebsocketTypes';
  * websocket connection attempt to a namespace.
  *
  * If your function throws, or returns false, the connection
- * will not be accepted.
+ * will not be accepted. A returned or thrown `Response` is sent
+ * as is, and an object is stored as the context of the peer.
  *
  * The decorated function will receive the following parameters:
  *
  * @param {Record<string, unknown>} params - The connection query parameters.
  * @param {Request} request - The original HTTP request.
+ * @param {Record<string, string>} namespaceParams - The parameters of a parametric namespace.
  *
  * @extends {BaseDecorator}
  */
@@ -52,11 +54,13 @@ class OnConnectionAttemptDecorator extends BaseDecorator {
  *
  * This function creates an instance of the OnConnectionAttemptDecorator class and registers a handler for websocket
  * connection attempts under the namespace. If the decorated function throws or returns false, the connection will not
- * be accepted.
+ * be accepted; a returned or thrown `Response` (such as a 401) is sent as the answer instead. An object the function
+ * returns becomes the context of the peer (`peer.context`, `@PeerContext()`), for example `{ user, role }`.
  *
  * The decorated function will receive the following parameters:
  *   - params: {Record<string, unknown>} The connection query parameters.
  *   - request: {Request} The original HTTP request.
+ *   - namespaceParams: {Record<string, string>} The parameters of a parametric namespace, such as `{ boardId }`.
  *
  * @returns {Function} - The decorator function.
  */

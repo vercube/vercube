@@ -1,13 +1,24 @@
-import { BadRequestError, HttpError, HttpServer, ValidationProvider, safeJsonParse, sanitizeObject } from '@vercube/core';
+import {
+  BadRequestError,
+  HttpError,
+  HttpServer,
+  ShutdownRegistry,
+  ValidationProvider,
+  safeJsonParse,
+  sanitizeObject,
+} from '@vercube/core';
 import { Inject, InjectOptional } from '@vercube/di';
 import { Logger } from '@vercube/logger';
 import { createInstrument, SpanKind, ValueType } from '@vercube/telemetry/instrument';
 import { defineHooks } from 'crossws';
 import { plugin } from 'crossws/server';
 import { WebsocketTypes } from '../Types/WebsocketTypes';
+import { NamespaceMatcher } from '../Utils/NamespaceMatcher';
 import type { WSError, WSMessage, WSPeer } from '../Types/WebsocketTypes';
+import type { NamespaceMatch } from '../Utils/NamespaceMatcher';
 import type { Span } from '@vercube/telemetry/instrument';
-import type { NodeAdapter } from 'crossws/adapters/node';
+import type { Hooks } from 'crossws';
+import type { NodeAdapter, NodeOptions } from 'crossws/adapters/node';
 import type { IncomingMessage } from 'node:http';
 import type { Duplex } from 'node:stream';
 
@@ -22,12 +33,31 @@ import type { Duplex } from 'node:stream';
 type WsUpgradeGlobal = { __vercube_ws_upgrade__?: (req: IncomingMessage, socket: Duplex, head: Buffer) => Promise<void> };
 
 /**
- * WebsocketService class responsible for dealing with Websocket connections.
- *
- * This class is responsible for:
- * - Registering namespaces and accepting websocket connections for them
- * - Registering event handlers and handling them
+ * The `crossws` hooks of the service, with the per-runtime adapter options
+ * `crossws/server` reads from `options`.
  */
+export type WebsocketHooks = Partial<Hooks> & {
+  options?: { node?: NodeOptions; bun?: { idleTimeout?: number }; deno?: { idleTimeout?: number } };
+};
+
+/** What the service knows about a connected peer. */
+interface PeerState {
+  /** The namespace pattern the peer matched */
+  pattern: string;
+  /** Parameters of the namespace */
+  params: WebsocketTypes.NamespaceParams;
+  /** Settles once the `@OnOpen()` handler has run */
+  ready: Promise<void>;
+  /** Rooms the peer is in */
+  rooms: Set<string>;
+}
+
+/** Close code for a frame larger than `maxPayload` (RFC 6455). */
+const CLOSE_MESSAGE_TOO_BIG = 1009;
+
+/** Close code used when the application shuts down (RFC 6455 "going away"). */
+const CLOSE_GOING_AWAY = 1001;
+
 /**
  * Records websocket signals.
  *
@@ -60,6 +90,40 @@ function countConnection(delta: number, namespace: string): void {
     .add(delta, { [WS_NAMESPACE]: namespace });
 }
 
+/**
+ * Whether a message arrived as a binary frame. Adapters hand text frames over
+ * as strings and binary frames as bytes.
+ *
+ * @param {WSMessage} message - The message
+ * @returns {boolean} Whether it is binary
+ */
+function isBinaryMessage(message: WSMessage): boolean {
+  const raw = (message as { rawData?: unknown }).rawData;
+  return raw !== undefined && raw !== null && typeof raw !== 'string';
+}
+
+/**
+ * Turns what the application sends into a websocket frame: text and bytes as
+ * they are, anything else as JSON text.
+ *
+ * @param {unknown} data - What to send
+ * @returns {string | Uint8Array} The frame
+ */
+function toFrame(data: unknown): string | Uint8Array {
+  if (typeof data === 'string' || data instanceof Uint8Array) return data;
+  if (data instanceof ArrayBuffer) return new Uint8Array(data);
+  if (ArrayBuffer.isView(data)) return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+  return JSON.stringify(data);
+}
+
+/**
+ * WebsocketService class responsible for dealing with Websocket connections.
+ *
+ * This class is responsible for:
+ * - Registering namespaces (static or parametric) and accepting websocket connections for them
+ * - Registering event, binary and lifecycle handlers and running them
+ * - Keeping rooms of peers, and relaying room publishes across instances through an adapter
+ */
 export class WebsocketService {
   /**
    * Http Server for injecting the server plugin
@@ -77,14 +141,25 @@ export class WebsocketService {
   private readonly gLogger!: Logger | null;
 
   /**
+   * Runs the hooks of `app.close()`, to close the peers and the adapter.
+   */
+  @InjectOptional(ShutdownRegistry)
+  private readonly gShutdownRegistry!: ShutdownRegistry | null;
+
+  /**
    * Lazily-created `crossws` Node adapter used for raw Node HTTP upgrades (dev server).
    */
   private fNodeAdapter?: NodeAdapter;
 
   /**
-   * Internal namespace registry
+   * Internal namespace registry: connected peers by lowercased namespace pattern
    */
   private fNamespaces: Record<string, WSPeer[]> = {};
+
+  /**
+   * Matches request paths against the namespace patterns
+   */
+  private readonly fMatcher: NamespaceMatcher = new NamespaceMatcher();
 
   /**
    * Internal handlers registry
@@ -92,13 +167,87 @@ export class WebsocketService {
   private fHandlers: {
     [WebsocketTypes.HandlerAction.CONNECTION]: Record<string, WebsocketTypes.HandlerAttributes>;
     [WebsocketTypes.HandlerAction.MESSAGE]: Record<string, Record<string, WebsocketTypes.HandlerAttributes>>;
+    [WebsocketTypes.HandlerAction.BINARY]: Record<string, WebsocketTypes.HandlerAttributes>;
+    [WebsocketTypes.HandlerAction.OPEN]: Record<string, WebsocketTypes.HandlerAttributes>;
+    [WebsocketTypes.HandlerAction.CLOSE]: Record<string, WebsocketTypes.HandlerAttributes>;
+    [WebsocketTypes.HandlerAction.ERROR]: Record<string, WebsocketTypes.HandlerAttributes>;
   } = {
     [WebsocketTypes.HandlerAction.CONNECTION]: {}, // namespace -> handler
     [WebsocketTypes.HandlerAction.MESSAGE]: {}, // namespace -> event -> handler
+    [WebsocketTypes.HandlerAction.BINARY]: {}, // namespace -> handler
+    [WebsocketTypes.HandlerAction.OPEN]: {}, // namespace -> handler
+    [WebsocketTypes.HandlerAction.CLOSE]: {}, // namespace -> handler
+    [WebsocketTypes.HandlerAction.ERROR]: {}, // namespace -> handler
   };
 
   /**
-   * Register a new namespace.
+   * What the service knows about each connected peer
+   */
+  private readonly fPeers: WeakMap<WSPeer, PeerState> = new WeakMap();
+
+  /**
+   * Local peers by room
+   */
+  private readonly fRooms: Map<string, Set<WSPeer>> = new Map();
+
+  /**
+   * Listeners of remote room messages, by room
+   */
+  private readonly fRemoteListeners: Map<string, Set<WebsocketTypes.RemoteMessageListener>> = new Map();
+
+  /**
+   * Rooms subscribed on the adapter
+   */
+  private readonly fSubscribed: Set<string> = new Set();
+
+  /**
+   * Id of this instance, which tells its own publishes apart on the adapter
+   */
+  private readonly fInstanceId: string = crypto.randomUUID();
+
+  /**
+   * Pub/sub backplane, when configured
+   */
+  private fAdapter: WebsocketTypes.Adapter | null = null;
+
+  /**
+   * Settles once the adapter is initialized
+   */
+  private fAdapterReady: Promise<void> = Promise.resolve();
+
+  /**
+   * Largest accepted frame in bytes
+   */
+  private fMaxPayload?: number;
+
+  /**
+   * The hooks handed to `crossws`, once initialized
+   */
+  private fHooks: WebsocketHooks | null = null;
+
+  /**
+   * Id of this instance, as sent to the adapter.
+   */
+  public get instanceId(): string {
+    return this.fInstanceId;
+  }
+
+  /**
+   * The `crossws` hooks of the service, for tests and custom servers.
+   *
+   * @throws {Error} When the service was not initialized
+   */
+  public get hooks(): WebsocketHooks {
+    if (!this.fHooks) {
+      throw new Error('WebsocketService is not initialized. Did you add the WebsocketPlugin?');
+    }
+
+    return this.fHooks;
+  }
+
+  /**
+   * Register a new namespace. The path may hold parameters, like an HTTP
+   * route: `/ws/boards/:boardId`.
    *
    * @param {string} path - The namespace path to register.
    * @returns {void}
@@ -107,6 +256,8 @@ export class WebsocketService {
     if (!this?.fNamespaces?.[path.toLowerCase()]) {
       this.fNamespaces[path.toLowerCase()] = [];
     }
+
+    this.fMatcher.add(path);
   }
 
   /**
@@ -123,10 +274,6 @@ export class WebsocketService {
     handler: WebsocketTypes.HandlerAttributes,
   ): void {
     const normalizedNamespace = namespace.toLowerCase();
-
-    if (action === WebsocketTypes.HandlerAction.CONNECTION) {
-      this.fHandlers[action][normalizedNamespace] = handler;
-    }
 
     if (action === WebsocketTypes.HandlerAction.MESSAGE) {
       const event = handler.event;
@@ -150,32 +297,31 @@ export class WebsocketService {
       }
 
       this.fHandlers[action][normalizedNamespace][event] = handler;
+    } else {
+      this.fHandlers[action][normalizedNamespace] = handler;
     }
 
-    this.registerNamespace(normalizedNamespace);
+    // the pattern as written, so parameter names keep their case
+    this.registerNamespace(namespace);
   }
 
   /**
    * Broadcast a message to all peers in the same namespace (including the sender).
+   * For a parametric namespace, that is every peer connected to the same path.
    *
    * @param {WSPeer} peer - The sender peer (used to determine the namespace).
    * @param {unknown} message - The message to broadcast.
    * @returns {void}
    */
   public broadcast(peer: WSPeer, message: unknown): void {
-    const namespace = peer.namespace?.toLowerCase();
-    if (!namespace) return;
-
-    const peers = this.fNamespaces[namespace];
-    if (!peers || peers.length === 0) return;
-
-    for (const p of peers) {
+    for (const p of this.getNamespacePeers(peer)) {
       p.send(message);
     }
   }
 
   /**
-   * Emit a message to a single peer.
+   * Emit a message to a single peer. A `Uint8Array` goes out as a binary
+   * frame, a string as text and anything else as JSON text.
    *
    * @param {WSPeer} peer - The peer to send the message to.
    * @param {unknown} message - The message to send.
@@ -187,23 +333,174 @@ export class WebsocketService {
 
   /**
    * Broadcast a message to all peers in the same namespace except the sender.
+   * For a parametric namespace, that is every peer connected to the same path.
    *
    * @param {WSPeer} peer - The sender peer (used to determine the namespace).
    * @param {unknown} message - The message to broadcast.
    * @returns {void}
    */
   public broadcastOthers(peer: WSPeer, message: unknown): void {
-    const namespace = peer.namespace?.toLowerCase();
-    if (!namespace) return;
-
-    const peers = this.fNamespaces[namespace];
-    if (!peers || peers.length === 0) return;
-
-    for (const p of peers) {
+    for (const p of this.getNamespacePeers(peer)) {
       if (p.id !== peer.id) {
         p.send(message);
       }
     }
+  }
+
+  /**
+   * Returns the parameters of the namespace a peer connected to, such as
+   * `{ boardId: '42' }` for `/ws/boards/42` on `/ws/boards/:boardId`.
+   *
+   * @param {WSPeer} peer - The peer
+   * @returns {WebsocketTypes.NamespaceParams} The parameters, empty for a static namespace
+   */
+  public getParams(peer: WSPeer): WebsocketTypes.NamespaceParams {
+    return this.fPeers.get(peer)?.params ?? this.matchNamespace(peer.namespace ?? '')?.params ?? {};
+  }
+
+  /**
+   * Returns the context of a peer: what its `@OnConnectionAttempt()` handler
+   * returned, merged into the `crossws` peer context.
+   *
+   * @param {WSPeer} peer - The peer
+   * @returns {T} The context
+   */
+  public getContext<T = Record<string, unknown>>(peer: WSPeer): T {
+    return peer.context as T;
+  }
+
+  /**
+   * Puts a peer in a room. A room is any name, independent of the namespace;
+   * the peer leaves it on its own when it disconnects.
+   *
+   * @param {WSPeer} peer - The peer
+   * @param {string} room - The room
+   * @returns {void}
+   */
+  public join(peer: WSPeer, room: string): void {
+    let peers = this.fRooms.get(room);
+
+    if (!peers) {
+      peers = new Set();
+      this.fRooms.set(room, peers);
+    }
+
+    peers.add(peer);
+    this.fPeers.get(peer)?.rooms.add(room);
+    this.syncSubscription(room);
+  }
+
+  /**
+   * Takes a peer out of a room.
+   *
+   * @param {WSPeer} peer - The peer
+   * @param {string} room - The room
+   * @returns {void}
+   */
+  public leave(peer: WSPeer, room: string): void {
+    const peers = this.fRooms.get(room);
+
+    if (peers) {
+      peers.delete(peer);
+
+      if (peers.size === 0) {
+        this.fRooms.delete(room);
+      }
+    }
+
+    this.fPeers.get(peer)?.rooms.delete(room);
+    this.syncSubscription(room);
+  }
+
+  /**
+   * Returns the local peers of a room.
+   *
+   * @param {string} room - The room
+   * @returns {WSPeer[]} The peers connected to this instance
+   */
+  public getRoomPeers(room: string): WSPeer[] {
+    return [...(this.fRooms.get(room) ?? [])];
+  }
+
+  /**
+   * Returns the rooms a peer is in.
+   *
+   * @param {WSPeer} peer - The peer
+   * @returns {string[]} The rooms
+   */
+  public getPeerRooms(peer: WSPeer): string[] {
+    const rooms: string[] = [];
+
+    for (const [room, peers] of this.fRooms) {
+      if (peers.has(peer)) rooms.push(room);
+    }
+
+    return rooms;
+  }
+
+  /**
+   * Sends a message to every peer in a room, on this instance and - through
+   * the adapter - on every other one. A `Uint8Array` goes out as a binary
+   * frame, a string as text and anything else as JSON text.
+   *
+   * Never rejects: a failing adapter is logged, and the local peers have the
+   * message either way.
+   *
+   * @param {string} room - The room
+   * @param {unknown} data - What to send
+   * @param {WebsocketTypes.PublishOptions} [options] - `except` skips a peer, typically the sender
+   * @returns {Promise<void>} Resolves once the adapter took the message
+   */
+  public async publish(room: string, data: unknown, options: WebsocketTypes.PublishOptions = {}): Promise<void> {
+    const frame = toFrame(data);
+    const except = typeof options.except === 'string' ? options.except : options.except?.id;
+
+    this.deliverLocal(room, frame, except);
+
+    if (!this.fAdapter) {
+      return;
+    }
+
+    try {
+      await this.fAdapterReady;
+      await this.fAdapter.publish({ room, instanceId: this.fInstanceId, data: frame });
+    } catch (error) {
+      this.gLogger?.error('WebsocketService::publish', `Failed to publish to room "${room}": ${error}`);
+    }
+  }
+
+  /**
+   * Listens to what other instances publish to a room, for an application
+   * keeping server-side state per room (a shared document, a game). The room
+   * stays subscribed on the adapter while a listener is registered, even
+   * without a local peer in it. Messages this instance published never come back.
+   *
+   * @param {string} room - The room
+   * @param {WebsocketTypes.RemoteMessageListener} listener - Receives the data and the room
+   * @returns {() => void} Removes the listener again
+   */
+  public onRemoteMessage(room: string, listener: WebsocketTypes.RemoteMessageListener): () => void {
+    let listeners = this.fRemoteListeners.get(room);
+
+    if (!listeners) {
+      listeners = new Set();
+      this.fRemoteListeners.set(room, listeners);
+    }
+
+    listeners.add(listener);
+    this.syncSubscription(room);
+
+    return () => {
+      const current = this.fRemoteListeners.get(room);
+
+      current?.delete(listener);
+
+      if (current?.size === 0) {
+        this.fRemoteListeners.delete(room);
+      }
+
+      this.syncSubscription(room);
+    };
   }
 
   /**
@@ -219,77 +516,55 @@ export class WebsocketService {
    */
   public initialize(options: WebsocketTypes.Options = {}): void {
     this.fAllowedOrigins = options.allowedOrigins;
+    this.fMaxPayload = options.maxPayload;
 
-    const hooks = defineHooks({
-      upgrade: async (request: Request) => {
-        if (!(await this.isOriginAllowed(request))) {
-          this.gLogger?.warn(
-            'WebsocketService::initialize',
-            `Origin "${request.headers.get('origin')}" is not allowed. Connection rejected.`,
-          );
-          return new Response('Origin not allowed', { status: 403 });
-        }
+    if (options.adapter) {
+      this.useAdapter(options.adapter);
+    }
 
-        const url = new URL(request.url);
-        const namespace = url.pathname;
-        const unsafeParameters = Object.fromEntries(url.searchParams);
-        // Sanitize URL parameters to prevent prototype pollution
-        const parameters = sanitizeObject(unsafeParameters);
-        const isNamespaceRegistered = !!this.fNamespaces?.[namespace?.toLowerCase()] as boolean;
+    const nodeOptions: NodeOptions = {
+      ...(options.idleTimeout === undefined ? {} : { idleTimeout: options.idleTimeout }),
+      ...(options.maxPayload === undefined ? {} : { serverOptions: { maxPayload: options.maxPayload } }),
+    };
 
-        if (!isNamespaceRegistered) {
-          this.gLogger?.warn('WebsocketService::initialize', `Namespace "${namespace}" is not registered. Connection rejected.`);
-          return new Response('Namespace not registered', { status: 403 });
-        }
-
-        const handler = this.fHandlers[WebsocketTypes.HandlerAction.CONNECTION]?.[namespace.toLowerCase()];
-
-        if (handler) {
-          try {
-            const result = await handler.callback(parameters, request);
-
-            if (result === false) {
-              return new Response('Unauthorized', { status: 403 });
-            }
-          } catch (error) {
-            if (error instanceof Error) {
-              return new Response(error.message, { status: 403 });
-            }
-
-            return new Response('Unknown error', { status: 403 });
-          }
-        }
-
-        return {
-          namespace,
-          headers: {},
-        };
-      },
-      open: async (peer) => {
-        const namespace = peer.namespace?.toLowerCase();
-        if (namespace && this.fNamespaces[namespace]) {
-          this.fNamespaces[namespace].push(peer);
-          countConnection(1, namespace);
-        }
-      },
+    const hooks: WebsocketHooks = defineHooks({
+      upgrade: (request: Request) => this.handleUpgrade(request),
+      open: (peer: WSPeer) => this.handleOpen(peer),
       message: async (peer: WSPeer, message: WSMessage) => {
+        await this.fPeers.get(peer)?.ready;
+
+        if (this.isTooBig(message)) {
+          this.gLogger?.warn('WebsocketService::message', `Peer "${peer.id}" sent a frame over maxPayload. Closing it.`);
+          peer.close(CLOSE_MESSAGE_TOO_BIG, 'Message too big');
+          return;
+        }
+
+        if (isBinaryMessage(message) && this.fHandlers[WebsocketTypes.HandlerAction.BINARY][this.resolvePattern(peer) ?? '']) {
+          await this.handleBinary(peer, message);
+          return;
+        }
+
         await this.handleMessage(peer, message);
       },
-      close: async (peer: WSPeer) => {
-        const namespace = peer.namespace?.toLowerCase();
-        if (namespace && this.fNamespaces[namespace]) {
-          const peers = this.fNamespaces[namespace];
-          this.fNamespaces[namespace] = peers.filter((p) => p.id !== peer.id);
-          countConnection(-1, namespace);
-        }
-      },
+      close: (peer: WSPeer, details: WebsocketTypes.CloseDetails) => this.handleClose(peer, details),
       error: async (peer: WSPeer, error: WSError) => {
         this.gLogger?.error('WebsocketService::initialize', `Error: ${error.message}`, {
           peer,
         });
+
+        await this.runLifecycle(WebsocketTypes.HandlerAction.ERROR, peer, error);
       },
     });
 
+    hooks.options = {
+      node: nodeOptions,
+      bun: options.idleTimeout === undefined ? {} : { idleTimeout: options.idleTimeout },
+      deno: options.idleTimeout === undefined ? {} : { idleTimeout: options.idleTimeout },
+    };
+
+    this.fHooks = hooks;
+
+    // `plugin()` takes the hooks object itself, and reads the adapter options from `hooks.options`
     const serverPlugin = plugin(hooks);
     this.gHttpServer.addPlugin(serverPlugin);
 
@@ -299,9 +574,347 @@ export class WebsocketService {
     // and normal deployments never load it. The adapter shares the same `hooks`,
     // so peer and namespace state stays consistent with the `srvx` path.
     (globalThis as WsUpgradeGlobal).__vercube_ws_upgrade__ = async (req, socket, head) => {
-      this.fNodeAdapter ??= (await import('crossws/adapters/node')).default({ hooks });
+      this.fNodeAdapter ??= (await import('crossws/adapters/node')).default({ hooks, ...nodeOptions });
       await this.fNodeAdapter.handleUpgrade(req, socket, head);
     };
+
+    this.gShutdownRegistry?.register(() => this.close());
+  }
+
+  /**
+   * Closes every connected peer and the adapter. Run by `app.close()`.
+   *
+   * @returns {Promise<void>} Resolves once the adapter is closed
+   */
+  public async close(): Promise<void> {
+    for (const peers of Object.values(this.fNamespaces)) {
+      for (const peer of peers) {
+        try {
+          peer.close(CLOSE_GOING_AWAY, 'Server shutting down');
+        } catch {
+          // already gone
+        }
+      }
+    }
+
+    await this.fNodeAdapter?.close().catch(() => {});
+
+    const adapter = this.fAdapter;
+    this.fAdapter = null;
+    this.fSubscribed.clear();
+
+    await adapter?.close();
+  }
+
+  /**
+   * Installs the pub/sub adapter.
+   *
+   * @param {WebsocketTypes.Adapter} adapter - The adapter
+   * @returns {void}
+   */
+  private useAdapter(adapter: WebsocketTypes.Adapter): void {
+    this.fAdapter = adapter;
+    this.fAdapterReady = Promise.resolve()
+      .then(() => adapter.init(this.fInstanceId, (message) => this.handleRemoteMessage(message)))
+      .catch((error) => {
+        this.gLogger?.error('WebsocketService::useAdapter', `Failed to initialize the adapter: ${error}`);
+      });
+  }
+
+  /**
+   * Accepts or rejects an upgrade request: checks the origin, finds the
+   * namespace and runs its `@OnConnectionAttempt()` handler. An object the
+   * handler returns becomes the context of the peer.
+   *
+   * A rejection is returned as a `Response`, which both the `srvx` plugin and
+   * the Node adapter answer instead of upgrading.
+   *
+   * @param {Request} request - The upgrade request
+   * @returns {Promise<Response | { namespace: string; headers: Record<string, string>; context?: Record<string, unknown> }>} The decision
+   */
+  private async handleUpgrade(
+    request: Request,
+  ): Promise<Response | { namespace: string; headers: Record<string, string>; context?: Record<string, unknown> }> {
+    if (!(await this.isOriginAllowed(request))) {
+      this.gLogger?.warn(
+        'WebsocketService::initialize',
+        `Origin "${request.headers.get('origin')}" is not allowed. Connection rejected.`,
+      );
+      return new Response('Origin not allowed', { status: 403 });
+    }
+
+    const url = new URL(request.url);
+    const namespace = url.pathname;
+    const unsafeParameters = Object.fromEntries(url.searchParams);
+    // Sanitize URL parameters to prevent prototype pollution
+    const parameters = sanitizeObject(unsafeParameters);
+    const match = this.matchNamespace(namespace);
+
+    if (!match) {
+      this.gLogger?.warn('WebsocketService::initialize', `Namespace "${namespace}" is not registered. Connection rejected.`);
+      return new Response('Namespace not registered', { status: 403 });
+    }
+
+    const handler = this.fHandlers[WebsocketTypes.HandlerAction.CONNECTION]?.[match.pattern];
+    let context: Record<string, unknown> | undefined;
+
+    if (handler) {
+      try {
+        const result = await handler.callback(parameters, request, match.params);
+
+        if (result === false) {
+          return new Response('Unauthorized', { status: 403 });
+        }
+
+        if (result instanceof Response) {
+          return result;
+        }
+
+        if (result !== null && typeof result === 'object') {
+          context = result as Record<string, unknown>;
+        }
+      } catch (error) {
+        if (error instanceof Response) {
+          return error;
+        }
+
+        if (error instanceof Error) {
+          return new Response(error.message, { status: 403 });
+        }
+
+        return new Response('Unknown error', { status: 403 });
+      }
+    }
+
+    return {
+      namespace,
+      headers: {},
+      ...(context ? { context } : {}),
+    };
+  }
+
+  /**
+   * Counts a peer in its namespace and runs the `@OnOpen()` handler. Messages
+   * of the peer wait until the handler settled.
+   *
+   * @param {WSPeer} peer - The peer
+   * @returns {Promise<void>} Resolves once the handler ran
+   */
+  private async handleOpen(peer: WSPeer): Promise<void> {
+    const match = this.matchNamespace(peer.namespace ?? '');
+
+    if (!match || !this.fNamespaces[match.pattern]) {
+      return;
+    }
+
+    let release!: () => void;
+    const ready = new Promise<void>((resolve) => (release = resolve));
+
+    this.fPeers.set(peer, { pattern: match.pattern, params: match.params, ready, rooms: new Set() });
+    this.fNamespaces[match.pattern].push(peer);
+    countConnection(1, match.pattern);
+
+    try {
+      await this.runLifecycle(WebsocketTypes.HandlerAction.OPEN, peer);
+    } finally {
+      release();
+    }
+  }
+
+  /**
+   * Takes a peer out of its namespace and every room, then runs the
+   * `@OnClose()` handler.
+   *
+   * @param {WSPeer} peer - The peer
+   * @param {WebsocketTypes.CloseDetails} details - Close code and reason
+   * @returns {Promise<void>} Resolves once the handler ran
+   */
+  private async handleClose(peer: WSPeer, details: WebsocketTypes.CloseDetails): Promise<void> {
+    const state = this.fPeers.get(peer);
+    await state?.ready;
+
+    const pattern = state?.pattern ?? this.matchNamespace(peer.namespace ?? '')?.pattern;
+
+    if (!pattern || !this.fNamespaces[pattern]) {
+      return;
+    }
+
+    const peers = this.fNamespaces[pattern];
+    this.fNamespaces[pattern] = peers.filter((p) => p.id !== peer.id);
+    countConnection(-1, pattern);
+
+    for (const room of state ? [...state.rooms] : this.getPeerRooms(peer)) {
+      this.leave(peer, room);
+    }
+
+    await this.runLifecycle(WebsocketTypes.HandlerAction.CLOSE, peer, details);
+    this.fPeers.delete(peer);
+  }
+
+  /**
+   * Runs the lifecycle handler of the namespace of a peer, logging what it throws.
+   *
+   * @param {WebsocketTypes.HandlerAction} action - OPEN, CLOSE or ERROR
+   * @param {WSPeer} peer - The peer
+   * @param {unknown} [data] - Close details or the error
+   * @returns {Promise<void>} Resolves once the handler ran
+   */
+  private async runLifecycle(action: WebsocketTypes.HandlerAction, peer: WSPeer, data?: unknown): Promise<void> {
+    const pattern = this.resolvePattern(peer);
+    const handler = pattern ? (this.fHandlers[action] as Record<string, WebsocketTypes.HandlerAttributes>)[pattern] : undefined;
+
+    if (!handler) {
+      return;
+    }
+
+    try {
+      await (action === WebsocketTypes.HandlerAction.OPEN ? handler.callback(peer) : handler.callback(peer, data));
+    } catch (error) {
+      this.gLogger?.error('WebsocketService::runLifecycle', `The ${action} handler of "${pattern}" failed: ${error}`);
+    }
+  }
+
+  /**
+   * Finds the namespace of a path.
+   *
+   * @param {string} path - The path
+   * @returns {NamespaceMatch | undefined} The namespace and its parameters
+   */
+  private matchNamespace(path: string): NamespaceMatch | undefined {
+    const lowered = path.toLowerCase();
+
+    if (this.fNamespaces[lowered] && !lowered.includes(':') && !lowered.includes('*')) {
+      return { pattern: lowered, params: {} };
+    }
+
+    const match = this.fMatcher.match(path);
+
+    return match && this.fNamespaces[match.pattern] ? match : undefined;
+  }
+
+  /**
+   * Returns the namespace pattern of a peer.
+   *
+   * @param {WSPeer} peer - The peer
+   * @returns {string | undefined} The lowercased pattern
+   */
+  private resolvePattern(peer: WSPeer): string | undefined {
+    return this.fPeers.get(peer)?.pattern ?? this.matchNamespace(peer.namespace ?? '')?.pattern ?? peer.namespace?.toLowerCase();
+  }
+
+  /**
+   * Returns the peers connected to the same path as a peer.
+   *
+   * @param {WSPeer} peer - The peer
+   * @returns {WSPeer[]} The peers, the peer included
+   */
+  private getNamespacePeers(peer: WSPeer): WSPeer[] {
+    const namespace = peer.namespace?.toLowerCase();
+    if (!namespace) return [];
+
+    const pattern = this.resolvePattern(peer);
+    const peers = pattern ? this.fNamespaces[pattern] : undefined;
+    if (!peers || peers.length === 0) return [];
+
+    return peers.filter((p) => p.namespace?.toLowerCase() === namespace);
+  }
+
+  /**
+   * Sends a frame to the local peers of a room.
+   *
+   * @param {string} room - The room
+   * @param {string | Uint8Array} frame - The frame
+   * @param {string} [except] - Id of a peer to skip
+   * @returns {void}
+   */
+  private deliverLocal(room: string, frame: string | Uint8Array, except?: string): void {
+    for (const peer of this.fRooms.get(room) ?? []) {
+      if (peer.id === except) continue;
+
+      try {
+        peer.send(frame);
+      } catch (error) {
+        this.gLogger?.warn('WebsocketService::publish', `Failed to send to peer "${peer.id}": ${error}`);
+      }
+    }
+  }
+
+  /**
+   * Delivers a message another instance published: to the local peers of the
+   * room, then to the remote listeners. The echo of this instance is dropped.
+   *
+   * @param {WebsocketTypes.AdapterMessage} message - The message
+   * @returns {void}
+   */
+  private handleRemoteMessage(message: WebsocketTypes.AdapterMessage): void {
+    if (message.instanceId === this.fInstanceId) {
+      return;
+    }
+
+    this.deliverLocal(message.room, message.data);
+
+    for (const listener of this.fRemoteListeners.get(message.room) ?? []) {
+      Promise.resolve()
+        .then(() => listener(message.data, message.room))
+        .catch((error) => {
+          this.gLogger?.error('WebsocketService::onRemoteMessage', `A listener of room "${message.room}" failed: ${error}`);
+        });
+    }
+  }
+
+  /**
+   * Subscribes a room on the adapter while it has a local peer or a remote
+   * listener, and unsubscribes it once it has neither.
+   *
+   * @param {string} room - The room
+   * @returns {void}
+   */
+  private syncSubscription(room: string): void {
+    const adapter = this.fAdapter;
+    if (!adapter) return;
+
+    const wanted = this.fRooms.has(room) || this.fRemoteListeners.has(room);
+    const subscribed = this.fSubscribed.has(room);
+
+    if (wanted === subscribed) return;
+
+    if (wanted) {
+      this.fSubscribed.add(room);
+    } else {
+      this.fSubscribed.delete(room);
+    }
+
+    this.fAdapterReady = this.fAdapterReady
+      .then(() => (wanted ? adapter.subscribe(room) : adapter.unsubscribe(room)))
+      .catch((error) => {
+        this.gLogger?.error(
+          'WebsocketService::syncSubscription',
+          `Failed to ${wanted ? 'subscribe to' : 'unsubscribe from'} room "${room}": ${error}`,
+        );
+      });
+  }
+
+  /**
+   * Whether a frame is larger than `maxPayload`.
+   *
+   * @param {WSMessage} message - The message
+   * @returns {boolean} Whether it has to be refused
+   */
+  private isTooBig(message: WSMessage): boolean {
+    const max = this.fMaxPayload;
+    if (max === undefined) return false;
+
+    const raw = (message as { rawData?: unknown }).rawData;
+
+    if (typeof raw === 'string') {
+      // a UTF-8 character takes 1 to 3 bytes per UTF-16 unit, so only measure near the limit
+      if (raw.length * 3 <= max) return false;
+      return new TextEncoder().encode(raw).byteLength > max;
+    }
+
+    if (raw === undefined || raw === null) return false;
+
+    return message.uint8Array().byteLength > max;
   }
 
   /**
@@ -353,6 +966,30 @@ export class WebsocketService {
   }
 
   /**
+   * Handle a binary frame for a peer with the `@OnBinary()` handler of its namespace.
+   *
+   * @param {WSPeer} peer - The peer the frame came from
+   * @param {WSMessage} message - The frame
+   * @returns {Promise<void>}
+   */
+  private async handleBinary(peer: WSPeer, message: WSMessage): Promise<void> {
+    await instrument.span(
+      'ws.binary',
+      { kind: SpanKind.CONSUMER, attributes: { [WS_NAMESPACE]: peer.namespace ?? '' } },
+      async () => {
+        const handler = this.fHandlers[WebsocketTypes.HandlerAction.BINARY][this.resolvePattern(peer) ?? ''];
+
+        try {
+          await handler?.callback(message.uint8Array(), peer);
+        } catch (error) {
+          this.gLogger?.error('WebsocketService::handleBinary', `Failed to process binary message: ${error}`);
+          this.emitError(peer, undefined, error);
+        }
+      },
+    );
+  }
+
+  /**
    * Handle an incoming websocket message for a peer.
    *
    * @param {WSPeer} peer - The peer receiving the message.
@@ -384,14 +1021,16 @@ export class WebsocketService {
 
     try {
       const msg = safeJsonParse(rawMessage.text()) as any;
-      const namespace = peer.namespace?.toLowerCase();
+      const namespace = this.resolvePattern(peer);
       event = msg.event;
       let data = msg.data;
 
       span.updateName(`ws.message ${String(event)}`);
       span.setAttribute('vercube.ws.event', String(event));
 
-      const handler = this.fHandlers[WebsocketTypes.HandlerAction.MESSAGE]?.[namespace]?.[event as string];
+      const handler = namespace
+        ? this.fHandlers[WebsocketTypes.HandlerAction.MESSAGE]?.[namespace]?.[event as string]
+        : undefined;
 
       if (!handler) {
         this.gLogger?.warn(
