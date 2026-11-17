@@ -598,6 +598,112 @@ describe('WebsocketService', () => {
     expect(errorLog).toHaveBeenCalled();
   });
 
+  describe('connection attempt results', () => {
+    const attempt = async (callback: () => unknown) => {
+      service.registerHandler(WebsocketTypes.HandlerAction.CONNECTION, '/chat', { callback: vi.fn(callback) });
+      service.initialize();
+      return getHooks(service, container.get(HttpServer))?.upgrade?.(new Request('http://localhost/chat'));
+    };
+
+    it('answers with a returned Response', async () => {
+      const result = await attempt(() => new Response('Login first', { status: 401 }));
+
+      expect((result as Response).status).toBe(401);
+    });
+
+    it('answers with a thrown Response', async () => {
+      const result = await attempt(() => {
+        throw new Response('Nope', { status: 401 });
+      });
+
+      expect((result as Response).status).toBe(401);
+      expect(await (result as Response).text()).toBe('Nope');
+    });
+
+    it('stores a returned object as the context', async () => {
+      const result = await attempt(() => ({ user: { id: 1 } }));
+
+      expect(result).toEqual({ namespace: '/chat', headers: {}, context: { user: { id: 1 } } });
+    });
+
+    it('accepts without a context on true, undefined or null', async () => {
+      for (const value of [true, undefined, null]) {
+        const result = await attempt(() => value);
+        expect(result).toEqual({ namespace: '/chat', headers: {} });
+      }
+    });
+  });
+
+  it('throws when the hooks are read before initialize()', () => {
+    expect(() => service.hooks).toThrow('not initialized');
+  });
+
+  it('hands idleTimeout and maxPayload to every runtime adapter', async () => {
+    const nodeAdapter = vi.mocked((await import('crossws/adapters/node')).default);
+    service.initialize({ idleTimeout: 10, maxPayload: 1024 });
+
+    expect(service.hooks.options).toEqual({
+      node: { idleTimeout: 10, serverOptions: { maxPayload: 1024 } },
+      bun: { idleTimeout: 10 },
+      deno: { idleTimeout: 10 },
+    });
+
+    await (globalThis as any).__vercube_ws_upgrade__({}, {}, Buffer.from(''));
+    expect(nodeAdapter).toHaveBeenCalledWith(expect.objectContaining({ idleTimeout: 10, serverOptions: { maxPayload: 1024 } }));
+  });
+
+  it('leaves the runtime defaults alone without options', () => {
+    service.initialize();
+
+    expect(service.hooks.options).toEqual({ node: {}, bun: {}, deno: {} });
+  });
+
+  it('closes a peer whose frame is over maxPayload, text or binary', async () => {
+    vi.spyOn(container.get(Logger), 'warn').mockImplementation(() => {});
+    const callback = vi.fn();
+    service.registerHandler(WebsocketTypes.HandlerAction.MESSAGE, '/room', { callback, event: 'e' });
+    service.registerHandler(WebsocketTypes.HandlerAction.BINARY, '/room', { callback });
+    service.initialize({ maxPayload: 20 });
+
+    const peer = { ...createMockPeer('1', '/room'), close: vi.fn() } as unknown as Peer;
+    const text = (raw: string) => ({ rawData: raw, text: () => raw }) as unknown as Message;
+    const binary = (raw: Uint8Array) => ({ rawData: raw, uint8Array: () => raw }) as unknown as Message;
+
+    await service.hooks.message!(peer, text('{"event":"e"}'));
+    await service.hooks.message!(peer, binary(new Uint8Array(20)));
+    expect(callback).toHaveBeenCalledTimes(2);
+    expect(peer.close).not.toHaveBeenCalled();
+
+    await service.hooks.message!(peer, text('{"event":"e","data":"€€€€€"}'));
+    await service.hooks.message!(peer, binary(new Uint8Array(21)));
+    expect(callback).toHaveBeenCalledTimes(2);
+    expect(peer.close).toHaveBeenCalledTimes(2);
+    expect(peer.close).toHaveBeenCalledWith(1009, 'Message too big');
+  });
+
+  it('parses binary frames as JSON messages when the namespace has no binary handler', async () => {
+    const callback = vi.fn();
+    service.registerHandler(WebsocketTypes.HandlerAction.MESSAGE, '/room', { callback, event: 'e' });
+    service.initialize();
+
+    const raw = new TextEncoder().encode('{"event":"e","data":1}');
+    const peer = createMockPeer('1', '/room');
+    await service.hooks.message!(peer, { rawData: raw, text: () => new TextDecoder().decode(raw) } as unknown as Message);
+
+    expect(callback).toHaveBeenCalledWith(1, peer);
+  });
+
+  it('rejects an upgrade to a parametric namespace path that does not match', async () => {
+    service.registerNamespace('/ws/boards/:boardId');
+    service.initialize();
+
+    const hooks = getHooks(service, container.get(HttpServer));
+
+    expect(await hooks?.upgrade?.(new Request('http://localhost/ws/boards/1'))).toMatchObject({ namespace: '/ws/boards/1' });
+    expect(((await hooks!.upgrade!(new Request('http://localhost/ws/boards'))) as Response).status).toBe(403);
+    expect(((await hooks!.upgrade!(new Request('http://localhost/ws/boards/1/x'))) as Response).status).toBe(403);
+  });
+
   describe('prototype pollution protection', () => {
     it('should filter out __proto__ from WebSocket message data', async () => {
       const handler = { callback: vi.fn() };

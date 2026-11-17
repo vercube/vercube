@@ -1009,6 +1009,9 @@ importers:
       '@vercube/telemetry':
         specifier: workspace:*
         version: link:../telemetry
+      '@vercube/ws':
+        specifier: workspace:*
+        version: link:../ws
       zod:
         specifier: 'catalog:'
         version: 4.6.7
@@ -1061,6 +1064,9 @@ importers:
       crossws:
         specifier: 0.4.17
         version: 0.4.17(srvx@1.0.8)
+      rou3:
+        specifier: 1.0.0
+        version: 1.0.0
       srvx:
         specifier: 'catalog:'
         version: 1.0.8
@@ -1068,6 +1074,10 @@ importers:
       zod:
         specifier: 'catalog:'
         version: 4.6.7
+    optionalDependencies:
+      ioredis:
+        specifier: 6.0.0
+        version: 6.0.0
 
   playground:
     dependencies:

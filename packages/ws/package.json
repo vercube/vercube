@@ -15,6 +15,7 @@
   "module": "./dist/index.mjs",
   "exports": {
     ".": "./dist/index.mjs",
+    "./adapters/RedisAdapter": "./dist/Adapters/RedisAdapter.mjs",
     "./package.json": "./package.json"
   },
   "types": "./dist/index.d.mts",
@@ -23,7 +24,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsdown --config ../../tsdown.config.ts --config-loader=unrun"
+    "build": "tsdown --config tsdown.config.ts --config-loader=unrun"
   },
   "devDependencies": {
     "zod": "catalog:"
@@ -34,7 +35,11 @@
     "@vercube/logger": "workspace:*",
     "@vercube/telemetry": "workspace:*",
     "crossws": "0.4.17",
+    "rou3": "1.0.0",
     "srvx": "catalog:"
+  },
+  "optionalDependencies": {
+    "ioredis": "6.0.0"
   },
   "publishConfig": {
     "access": "public"
