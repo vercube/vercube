@@ -23,7 +23,10 @@
 - **Decorator-based** - `@Namespace`, `@Message`, `@Emit`, `@Broadcast`
 - **Connection control** - validate who can connect with `@OnConnectionAttempt`
 - **Message validation** - use Zod schemas to validate incoming data
-- **Namespaces** - organize connections into logical groups
+- **Namespaces** - organize connections into logical groups, with parameters (`/ws/boards/:boardId`)
+- **Binary frames** - `@OnBinary()` for Yjs, protobuf or any binary protocol
+- **Lifecycle hooks** - `@OnOpen`, `@OnClose`, `@OnError`, with the peer context from `@OnConnectionAttempt`
+- **Rooms** - `join`, `leave` and `publish`, fanned out across instances with the Redis adapter
 
 ## 📦 Installation
 
