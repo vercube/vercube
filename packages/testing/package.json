@@ -17,6 +17,7 @@
     ".": "./dist/index.mjs",
     "./auth": "./dist/Auth.mjs",
     "./telemetry": "./dist/Telemetry.mjs",
+    "./ws": "./dist/Websocket.mjs",
     "./package.json": "./package.json"
   },
   "types": "./dist/index.d.mts",
@@ -42,7 +43,8 @@
   },
   "peerDependencies": {
     "@vercube/auth": "workspace:^",
-    "@vercube/telemetry": "workspace:^"
+    "@vercube/telemetry": "workspace:^",
+    "@vercube/ws": "workspace:^"
   },
   "peerDependenciesMeta": {
     "@vercube/auth": {
@@ -50,10 +52,14 @@
     },
     "@vercube/telemetry": {
       "optional": true
+    },
+    "@vercube/ws": {
+      "optional": true
     }
   },
   "devDependencies": {
     "@vercube/telemetry": "workspace:*",
+    "@vercube/ws": "workspace:*",
     "zod": "catalog:"
   },
   "publishConfig": {
