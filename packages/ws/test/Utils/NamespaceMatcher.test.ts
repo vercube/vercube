@@ -28,6 +28,16 @@ describe('NamespaceMatcher', () => {
     expect(matcher.match('/any/x/thing')?.params).toEqual({ 0: 'x' });
   });
 
+  it('ignores a trailing slash, like core routes', () => {
+    const local = new NamespaceMatcher();
+    local.add('/chat');
+    local.add('/ws/boards/:boardId');
+
+    expect(local.match('/chat/')).toEqual({ pattern: '/chat', params: {} });
+    expect(local.match('/ws/boards/42/')?.params).toEqual({ boardId: '42' });
+    expect(local.match('/chat/extra')).toBeUndefined();
+  });
+
   it('returns nothing for an unknown path', () => {
     expect(matcher.match('/ws/boards')).toBeUndefined();
     expect(matcher.match('/nope')).toBeUndefined();
