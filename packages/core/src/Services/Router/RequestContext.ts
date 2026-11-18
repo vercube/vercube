@@ -92,7 +92,9 @@ export class RequestContext {
    * @returns The response
    */
   public runRequest(fn: () => Response | Promise<Response>): Response | Promise<Response> {
-    const store = createRootStore();
+    // Keeps the span a caller opened around the request (the server span of
+    // an unmatched request) active inside it.
+    const store = createRootStore(this.fStorage.getStore()?.otel);
 
     // Settled inside the frame, so a callback still sees the request context.
     return this.fStorage.run(store, () => settleOn(store, fn()));
@@ -269,10 +271,30 @@ export class RequestContext {
  */
 function settleOn(root: RequestContextStore, response: Response | Promise<Response>): Response | Promise<Response> {
   if (response instanceof Promise) {
-    return response.then((settled) => (root.settled === null ? settled : notifySettled(root.settled, settled)));
+    return response.then((settled) => notifyOnce(root, settled));
   }
 
-  return root.settled === null ? response : notifySettled(root.settled, response);
+  return notifyOnce(root, response);
+}
+
+/**
+ * Takes the callbacks off the request before handing them the response, so a
+ * request settled twice (`settle` inside `runRequest`) notifies them once.
+ *
+ * @param root - The frame the request started in
+ * @param response - The response of the request
+ * @returns The response
+ */
+function notifyOnce(root: RequestContextStore, response: Response): Response | Promise<Response> {
+  const callbacks = root.settled;
+
+  if (callbacks === null) {
+    return response;
+  }
+
+  root.settled = null;
+
+  return notifySettled(callbacks, response);
 }
 
 /**

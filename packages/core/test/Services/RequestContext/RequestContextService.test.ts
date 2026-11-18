@@ -432,6 +432,33 @@ describe('RequestContext', () => {
       expect(seen).toEqual([202]);
     });
 
+    it('should notify each callback once when a request is settled inside runRequest', async () => {
+      const seen: number[] = [];
+
+      await service.runRequest(() => {
+        service.onSettled((settled) => void seen.push(settled.status));
+
+        return service.settle(Promise.resolve(new Response(null, { status: 202 })));
+      });
+
+      expect(seen).toEqual([202]);
+    });
+
+    it('should keep the OpenTelemetry context of the frame it is opened in', () => {
+      const otel = { span: 'server' };
+      let seen: unknown;
+
+      service.runWithOtelContext(otel, () =>
+        service.runRequest(() => {
+          seen = service.getOtelContext();
+
+          return new Response('ok');
+        }),
+      );
+
+      expect(seen).toBe(otel);
+    });
+
     it('should pass a response through when settled outside of a request', () => {
       const response = new Response('ok');
 
