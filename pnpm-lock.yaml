@@ -761,8 +761,8 @@ importers:
         specifier: workspace:*
         version: link:../di
       evlog:
-        specifier: ^2.35.1
-        version: 2.35.1(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
+        specifier: ^2.36.0
+        version: 2.36.0(nitro@3.0.261103-rc)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/nitro:
     dependencies:
@@ -3670,27 +3670,27 @@ packages:
   estree-walker@3.0.3:
     resolution: {integrity: sha512-7RUKfXgSMMkzt6ZuXmqapOurLGPPfgj6l9uRZ7lRGolvk0y2yocc35LdcxKC5PQZdn2DMqioAQ2NoWcrTKmm6g==}
 
-  evlog@2.35.1:
-    resolution: {integrity: sha512-/iA9tkG1O0O9YOHKHi6K5b7bNC53yrhBDTZ2wqMymHsj3+QhxFOsn5kP12ngPxNwUESSll5lkvU+bYVPaV0tgQ==}
+  evlog@2.36.0:
+    resolution: {integrity: sha512-S1DADaoiFDhJqEAHkVHEmXbHx+6f3PUaGhP5Kb366nFs267EtBGkwD2g0uJhpIQ1G+0C4kDeZuTJHVN6krdpEw==}
     engines: {node: '>=18.0.0'}
     hasBin: true
     peerDependencies:
       '@nestjs/common': '>=11.2.8'
       '@nestjs/core': '>=11.2.8'
-      '@nuxt/kit': ^4.6.3
-      '@orpc/server': '>=1.16.1'
+      '@nuxt/kit': ^4.6.4
+      '@orpc/server': '>=1.16.2'
       '@tanstack/start-client-core': ^1.170.39
       ai: '>=6.0.168 <8.0.0'
-      effect: ^4.1.1
-      elysia: '>=1.4.30'
+      effect: ^4.1.2
+      elysia: '>=1.4.31'
       eve: '>=0.30.0'
       express: '>=5.3.0'
-      fastify: '>=5.12.7'
+      fastify: '>=5.12.8'
       h3: ^1.15.11
-      hono: '>=4.13.14'
-      next: '>=16.4.3'
-      nitro: '>=3.0.260311-beta <4.0.0-0 || >=3.0.261029-rc <4.0.0-0'
-      nitropack: ^2.13.5
+      hono: '>=4.13.17'
+      next: '>=16.4.5'
+      nitro: '>=3.0.0-0 <4.0.0-0 || >=3.0.260311-beta <4.0.0-0 || >=3.0.261029-rc <4.0.0-0 || >=3.0.261103-rc <4.0.0-0'
+      nitropack: ^2.13.6
       ofetch: ^1.5.1
       react: '>=19.3.1'
       react-router: '>=7.18.5'
@@ -7023,8 +7023,9 @@ snapshots:
     dependencies:
       '@types/estree': 1.0.9
 
-  evlog@2.35.1(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)):
+  evlog@2.36.0(nitro@3.0.261103-rc)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)):
     optionalDependencies:
+      nitro: 3.0.261103-rc
       vite: 8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)
 
   execa@8.0.1:
