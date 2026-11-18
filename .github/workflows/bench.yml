@@ -1,0 +1,122 @@
+name: Bench
+
+permissions:
+  contents: read
+  pull-requests: write
+
+on:
+  pull_request:
+    branches: [main, v1, '[0-9]+.[0-9]+']
+    paths:
+      - 'packages/core/**'
+      - 'packages/di/**'
+      - 'packages/logger/**'
+      - 'packages/auth/**'
+      - '.github/workflows/bench.yml'
+      - 'pnpm-lock.yaml'
+  workflow_dispatch:
+
+concurrency:
+  group: bench-${{ github.ref }}
+  cancel-in-progress: true
+
+# Runs the benchmark ladder (packages/core/test/Bench/Ladder) on the base branch
+# and on the pull request in the same job, measuring them in turn, so a slow or
+# busy runner hits both alike. Absolute numbers of a shared runner mean little;
+# the change between the two columns is what the job is for.
+#
+# A rung more than THRESHOLD percent below the base, twice in a row, is listed
+# under the tables. It does not fail the job: on a shared runner two builds of
+# the same code were measured 15% apart on three rungs in a row, so this is a
+# reason to look and measure locally, and a gate only on a machine of our own.
+env:
+  THRESHOLD: 10
+  RUNGS: plain,param-query,body,body-schema,mw3,body-full,404,default-plain,default-body
+
+jobs:
+  ladder:
+    name: ladder
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install bombardier
+        run: |
+          mkdir -p "$RUNNER_TEMP/bin"
+          curl -fsSL -o "$RUNNER_TEMP/bin/bombardier" https://github.com/codesenberg/bombardier/releases/download/v2.0.2/bombardier-linux-amd64
+          chmod +x "$RUNNER_TEMP/bin/bombardier"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+
+      - name: Build the pull request
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      # A checkout of its own, so the base runs with its own dependencies and
+      # its own build of every package, not only of core. On a pull request it
+      # is the first parent of the merge commit being measured, not the branch
+      # tip, which may have moved since.
+      - name: Build the base
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            base=HEAD^1
+          else
+            base="origin/${{ github.event.repository.default_branch }}"
+          fi
+          git worktree add --detach ../base "$base"
+          cd ../base
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      # Exit code 3 is a measured regression, which is reported and not failed
+      # on. Anything else is the harness itself breaking.
+      - name: Run the ladder
+        run: |
+          set +e
+          NODE_ENV=production node packages/core/test/Bench/Ladder/Run.ts \
+            --runtime bun,node \
+            --rungs "$RUNGS" \
+            --target base=../base/packages/core/dist/index.mjs \
+            --target pr=packages/core/dist/index.mjs \
+            --threshold "$THRESHOLD" \
+            --out bench/ladder.json | tee bench.md
+          code=${PIPESTATUS[0]}
+          if [ "$code" -ne 0 ] && [ "$code" -ne 3 ]; then exit "$code"; fi
+
+      - name: Summary
+        if: ${{ !cancelled() && hashFiles('bench.md') != '' }}
+        run: |
+          {
+            echo '### Benchmark ladder'
+            echo
+            echo "\`base\` is \`${{ github.base_ref || github.event.repository.default_branch }}\`, measured in turn with this branch on the same runner. Shared runners are noisy: read the change, not the numbers."
+            echo
+            cat bench.md
+          } > comment.md
+          cat comment.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Comment on the pull request
+        if: ${{ !cancelled() && hashFiles('comment.md') != '' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr comment ${{ github.event.pull_request.number }} --edit-last --create-if-none --body-file comment.md
+
+      - uses: actions/upload-artifact@v6
+        if: ${{ !cancelled() }}
+        with:
+          name: ladder
+          path: bench/ladder.json
+          if-no-files-found: ignore
