@@ -20,7 +20,15 @@ interface RequestContextStore {
   map: Map<string, unknown> | null;
   /** Opaque OpenTelemetry `Context`. Core never inspects it. */
   otel: unknown;
+  /** Callbacks waiting for the response of the request. Only ever on the root. */
+  settled: SettledCallback[] | null;
 }
+
+/**
+ * Called with the response a request is answered with, see
+ * {@link RequestContext.onSettled}.
+ */
+export type SettledCallback = (response: Response) => unknown;
 
 /**
  * Creates a fresh root frame.
@@ -29,7 +37,7 @@ interface RequestContextStore {
  * @returns The new store, pointing at itself as its own root
  */
 function createRootStore(otel: unknown = undefined): RequestContextStore {
-  const store: RequestContextStore = { root: undefined as unknown as RequestContextStore, map: null, otel };
+  const store: RequestContextStore = { root: undefined as unknown as RequestContextStore, map: null, otel, settled: null };
   store.root = store;
 
   return store;
@@ -70,6 +78,63 @@ export class RequestContext {
   public run<T>(fn: () => T): T {
     // AsyncLocalStorage automatically cleans up the context when fn() completes
     return this.fStorage.run(createRootStore(), fn);
+  }
+
+  /**
+   * Runs a request within a request context and hands the response it is
+   * answered with to the callbacks registered through
+   * {@link RequestContext.onSettled}.
+   *
+   * A synchronous response stays synchronous unless a callback returned a
+   * promise, which is then waited for before the response is passed on.
+   *
+   * @param fn - Produces the response of the request
+   * @returns The response
+   */
+  public runRequest(fn: () => Response | Promise<Response>): Response | Promise<Response> {
+    // Keeps the span a caller opened around the request (the server span of
+    // an unmatched request) active inside it.
+    const store = createRootStore(this.fStorage.getStore()?.otel);
+
+    // Settled inside the frame, so a callback still sees the request context.
+    return this.fStorage.run(store, () => settleOn(store, fn()));
+  }
+
+  /**
+   * Hands a response to the callbacks registered through
+   * {@link RequestContext.onSettled} for the current request.
+   *
+   * {@link RequestContext.runRequest} does this itself. This is for a caller
+   * that has to settle the request somewhere inside the frame, such as inside
+   * the span that traces it.
+   *
+   * @param response - The response of the request
+   * @returns The response
+   */
+  public settle(response: Response | Promise<Response>): Response | Promise<Response> {
+    const store = this.fStorage.getStore();
+
+    return store ? settleOn(store.root, response) : response;
+  }
+
+  /**
+   * Registers a callback for the response this request is answered with,
+   * whatever produced it: the handler, a middleware that ended the request
+   * early, the error handler, or the answer to a request no route matched.
+   *
+   * A middleware `onResponse` hook does not see those: it runs before the
+   * response is built and is skipped when the request fails. A promise the
+   * callback returns is waited for before the response is sent; what it throws
+   * or rejects with is ignored. Outside of a request the callback is dropped.
+   *
+   * @param callback - Receives the final response
+   */
+  public onSettled(callback: SettledCallback): void {
+    const store = this.fStorage.getStore();
+
+    if (store) {
+      (store.root.settled ??= []).push(callback);
+    }
   }
 
   /**
@@ -193,6 +258,77 @@ export class RequestContext {
       return this.fStorage.run(createRootStore(otel), fn);
     }
 
-    return this.fStorage.run({ root: store.root, map: null, otel }, fn);
+    return this.fStorage.run({ root: store.root, map: null, otel, settled: null }, fn);
   }
 }
+
+/**
+ * Hands a response to the callbacks of a request once it is known.
+ *
+ * @param root - The frame the request started in
+ * @param response - The response of the request
+ * @returns The response
+ */
+function settleOn(root: RequestContextStore, response: Response | Promise<Response>): Response | Promise<Response> {
+  if (response instanceof Promise) {
+    return response.then((settled) => notifyOnce(root, settled));
+  }
+
+  return notifyOnce(root, response);
+}
+
+/**
+ * Takes the callbacks off the request before handing them the response, so a
+ * request settled twice (`settle` inside `runRequest`) notifies them once.
+ *
+ * @param root - The frame the request started in
+ * @param response - The response of the request
+ * @returns The response
+ */
+function notifyOnce(root: RequestContextStore, response: Response): Response | Promise<Response> {
+  const callbacks = root.settled;
+
+  if (callbacks === null) {
+    return response;
+  }
+
+  root.settled = null;
+
+  return notifySettled(callbacks, response);
+}
+
+/**
+ * Hands the response of a request to the callbacks waiting for it.
+ *
+ * @param callbacks - The callbacks registered during the request
+ * @param response - The response the request is answered with
+ * @returns The response, once every callback that returned a promise settled
+ */
+function notifySettled(callbacks: SettledCallback[], response: Response): Response | Promise<Response> {
+  let pending: Promise<unknown>[] | undefined;
+
+  for (const callback of callbacks) {
+    try {
+      const result = callback(response);
+
+      if (result instanceof Promise) {
+        (pending ??= []).push(result.catch(ignore));
+      }
+    } catch {
+      // a callback must not change what the request is answered with
+    }
+  }
+
+  if (pending === undefined) {
+    return response;
+  }
+
+  return (pending.length === 1 ? pending[0] : Promise.all(pending)).then(() => response);
+}
+
+/**
+ * Ignores a rejection.
+ *
+ * @returns {void}
+ */
+function ignore(): void {}
