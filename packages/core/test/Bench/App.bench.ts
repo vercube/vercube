@@ -109,36 +109,12 @@ describe('[Bench] Application', () => {
     });
   });
 
-  describe('[TRACE] methods', () => {
-    test('Fetch TRACE', async ({ bench }) => {
-      await bench('Fetch TRACE', async () => {
-        await app.fetch(
-          new Request('http://localhost/mock/trace', {
-            method: 'TRACE',
-          }),
-        );
-      }).run();
-    });
-  });
-
   describe('[HEAD] methods', () => {
     test('Fetch HEAD', async ({ bench }) => {
       await bench('Fetch HEAD', async () => {
         await app.fetch(
           new Request('http://localhost/mock/head', {
             method: 'HEAD',
-          }),
-        );
-      }).run();
-    });
-  });
-
-  describe('[CONNECT] methods', () => {
-    test('Fetch CONNECT', async ({ bench }) => {
-      await bench('Fetch CONNECT', async () => {
-        await app.fetch(
-          new Request('http://localhost/mock/connect', {
-            method: 'CONNECT',
           }),
         );
       }).run();
