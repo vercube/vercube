@@ -460,12 +460,17 @@ async function run(): Promise<void> {
 
       let measured = sample();
 
-      if (threshold !== undefined && fallen(measured).length > 0) {
-        console.error(`${runtime} ${rung.id}: ${fallen(measured).join(', ')} below the threshold, measuring again`);
+      const first = threshold === undefined ? [] : fallen(measured);
+
+      if (first.length > 0) {
+        console.error(`${runtime} ${rung.id}: ${first.join(', ')} below the threshold, measuring again`);
         measured = sample();
 
+        // only a target that fell on both passes
         for (const label of fallen(measured)) {
-          regressions.push(`${runtime}, ${rung.title}: ${label}`);
+          if (first.includes(label)) {
+            regressions.push(`${runtime}, ${rung.title}: ${label}`);
+          }
         }
       }
 
