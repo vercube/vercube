@@ -1,0 +1,54 @@
+name: CodSpeed
+
+permissions:
+  contents: read
+  id-token: write
+
+on:
+  # runs on the long-lived branches give pull requests a baseline to compare against
+  push:
+    branches: [main, v1, '[0-9]+.[0-9]+']
+  pull_request:
+    branches: [main, v1, '[0-9]+.[0-9]+']
+    paths:
+      - 'packages/**'
+      - '.github/workflows/codspeed.yml'
+      - 'pnpm-lock.yaml'
+      - 'vitest.config.ts'
+  workflow_dispatch:
+
+concurrency:
+  group: codspeed-${{ github.ref }}
+  cancel-in-progress: true
+
+# The in-process benches (`*.bench.ts`) under CodSpeed's CPU simulation: it
+# counts instructions instead of timing them, so a shared runner gives the same
+# number twice and a regression can fail the check. The socket ladder in
+# bench.yml stays as a report; it measures what this cannot (sockets, srvx).
+jobs:
+  benchmarks:
+    name: codspeed
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Build
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      - uses: CodSpeedHQ/action@v5
+        with:
+          mode: simulation
+          token: ${{ secrets.CODSPEED_TOKEN }}
+          run: pnpm test:bench
