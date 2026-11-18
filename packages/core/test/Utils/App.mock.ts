@@ -16,7 +16,8 @@ export const createTestApp = async (params: CreateAppOptions = {}) => {
       error: vi.fn(),
     });
     container.bindMock(ErrorHandlerProvider, {
-      handleError: vi.fn(),
+      // answers like the default handler would, so a bench of an error path measures a response
+      handleError: vi.fn((error: Error) => new Response(null, { status: (error as { status?: number }).status ?? 500 })),
     });
   });
 
