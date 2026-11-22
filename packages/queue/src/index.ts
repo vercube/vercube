@@ -9,6 +9,7 @@ export * from './Decorators/OnJobFailed';
 export * from './Plugins/QueuePlugin';
 
 // Errors
+export * from './Errors/Catalog';
 export * from './Errors/QueueError';
 
 // Services

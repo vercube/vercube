@@ -27,5 +27,6 @@ export function toSchedulerError(
  * @returns The value itself when it is an error, a wrapping error otherwise.
  */
 export function asError(error: unknown): Error {
+  // bare-error: wraps a value a handler threw that is not an error
   return error instanceof Error ? error : new Error(String(error));
 }

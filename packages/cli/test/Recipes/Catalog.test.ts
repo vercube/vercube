@@ -50,7 +50,8 @@ describe('module recipes', () => {
       ([name]) => name.startsWith('@vercube/') && !['@vercube/core', '@vercube/di', '@vercube/cli'].includes(name),
     );
 
-    expect(added.length).toBeGreaterThan(0);
+    // github-pages only adds a script and a workflow, every other recipe adds a package
+    expect(added.length > 0).toBe(id !== 'github-pages');
     expect(added.every(([, version]) => version === '1.5.0')).toBe(true);
   });
 
@@ -79,6 +80,89 @@ describe('module recipes', () => {
     expect(files['src/index.ts']).toContain(
       'export const handler: ReturnType<typeof toServerlessHandler> = toServerlessHandler(app);',
     );
+  });
+
+  it('turns the application into a Cloudflare Worker', async () => {
+    const dir = apiTemplate();
+
+    dirs.push(dir);
+
+    const summary = await applyRecipes(new Project(dir, { version: '1.5.0' }), ['cloudflare'], RECIPES);
+    const files = snapshot(dir);
+    const entry = files['src/index.ts'];
+
+    expect(summary.applied).toEqual(['cloudflare']);
+    // the configuration is bundled: a Worker has no file to read it from
+    expect(entry).toContain("import config from '../vercube.config'");
+    expect(entry.indexOf('provideConfig(config)')).toBeGreaterThan(-1);
+    expect(entry.indexOf('provideConfig(config)')).toBeLessThan(entry.indexOf('createApp('));
+    // Cloudflare runs the default export, which replaces the one of the template
+    expect(entry).toContain('const worker: CloudflareHandler = toServerlessHandler(app);');
+    expect(entry.match(/export default/g)).toHaveLength(1);
+    expect(entry.trimEnd().endsWith('export default worker;')).toBe(true);
+    expect(entry).not.toContain('RequestHandler');
+    expect(files['src/boot/Container.ts']).toContain('container.bind(CloudflareBindings)');
+    expect(files['vercube.config.ts']).toContain('dts: false');
+    expect(files['wrangler.jsonc']).toContain('"main": "dist/index.mjs"');
+    expect(files['wrangler.jsonc']).toContain('"nodejs_compat"');
+    expect(files['.gitignore']).toContain('.wrangler');
+    expect(JSON.parse(files['tsconfig.json']).compilerOptions).toMatchObject({ isolatedDeclarations: false, declaration: false });
+
+    const pkg = JSON.parse(files['package.json']);
+
+    expect(pkg.scripts).toMatchObject({ preview: 'vercube build && wrangler dev', deploy: 'vercube build && wrangler deploy' });
+    expect(pkg.devDependencies.wrangler).toBeDefined();
+    expect(pkg.dependencies['@vercube/serverless']).toBe('1.5.0');
+  });
+
+  it('turns the application into a Netlify Function', async () => {
+    const dir = apiTemplate();
+
+    dirs.push(dir);
+
+    const summary = await applyRecipes(new Project(dir, { version: '1.5.0' }), ['netlify'], RECIPES);
+    const files = snapshot(dir);
+    const entry = files['src/index.ts'];
+
+    expect(summary.applied).toEqual(['netlify']);
+    expect(entry.indexOf('provideConfig(config)')).toBeGreaterThan(-1);
+    expect(entry.indexOf('provideConfig(config)')).toBeLessThan(entry.indexOf('createApp('));
+    expect(entry).toContain('export const netlify: NetlifyHandler = toServerlessHandler(app);');
+    // the default export of the template stays: the function imports the named one
+    expect(entry).toContain('export default');
+    expect(files['netlify/functions/api.mts']).toContain("import { netlify } from '../../dist/index.mjs';");
+    expect(files['netlify/functions/api.mts']).toContain("path: '/*', preferStatic: true");
+    expect(files['netlify.toml']).toContain('publish = "public"');
+    expect(files['netlify.toml']).toContain('directory = "netlify/functions"');
+    expect(files['src/boot/Container.ts']).toContain('container.bind(NetlifyContext)');
+    expect(files['vercube.config.ts']).toContain('dts: false');
+    expect(files['.gitignore']).toContain('.netlify');
+
+    const pkg = JSON.parse(files['package.json']);
+
+    expect(pkg.scripts).toMatchObject({ preview: 'vercube build && netlify dev', deploy: 'netlify deploy --prod' });
+    expect(pkg.devDependencies['netlify-cli']).toBeDefined();
+    expect(pkg.devDependencies['@netlify/functions']).toBeDefined();
+  });
+
+  it('sets up a static export for GitHub Pages', async () => {
+    const dir = apiTemplate();
+
+    dirs.push(dir);
+
+    const entry = snapshot(dir)['src/index.ts'];
+    const summary = await applyRecipes(new Project(dir, { version: '1.5.0' }), ['github-pages'], RECIPES);
+    const files = snapshot(dir);
+
+    expect(summary.applied).toEqual(['github-pages']);
+    expect(files['.github/workflows/pages.yml']).toContain('pnpm run build:pages');
+    expect(files['.github/workflows/pages.yml']).toContain('actions/upload-pages-artifact');
+    expect(files['.github/workflows/pages.yml']).toContain('actions/deploy-pages');
+    expect(files['.github/workflows/pages.yml']).toContain('path: dist-static');
+    expect(JSON.parse(files['package.json']).scripts['build:pages']).toBe('vercube build --target github-pages');
+    expect(files['.gitignore']).toContain('dist-static');
+    // the application itself is not changed: it still runs as a server
+    expect(files['src/index.ts']).toBe(entry);
   });
 
   it('guards the storage and queue example endpoints with API_KEY', async () => {

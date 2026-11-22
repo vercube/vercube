@@ -1,5 +1,6 @@
 import { createViteTransport } from 'env-runner/vite';
 import { ESModulesEvaluator, ModuleRunner } from 'vite/module-runner';
+import { ViteErrors } from '../Errors/Catalog';
 import type { UpgradeContext } from 'env-runner';
 
 /**
@@ -90,7 +91,7 @@ class ViteEnvRunner {
     }
     const handler = this.#entry?.fetch ?? this.#entry?.default?.fetch;
     if (!handler) {
-      return renderError(new Error(`No fetch handler exported from ${this.#entryPath}`));
+      return renderError(ViteErrors.NO_FETCH_HANDLER({ entry: this.#entryPath }));
     }
     try {
       return await handler(req);
@@ -154,7 +155,7 @@ export function fetch(req: Request): Promise<Response> {
   const name = req?.headers.get('x-vite-env') || 'vercube';
   const env = envs[name];
   if (!env) {
-    return Promise.resolve(renderError(new Error(`Unknown vite environment "${name}"`)));
+    return Promise.resolve(renderError(ViteErrors.UNKNOWN_ENVIRONMENT({ name })));
   }
   return env.fetch(req);
 }

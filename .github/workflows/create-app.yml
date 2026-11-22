@@ -62,6 +62,9 @@ jobs:
           - { name: testing, template: api, args: '--modules testing' }
           - { name: aws-lambda, template: api, args: '--modules none --deploy aws-lambda' }
           - { name: azure-functions, template: api, args: '--modules none --deploy azure-functions' }
+          - { name: cloudflare, template: api, args: '--modules none --deploy cloudflare' }
+          - { name: netlify, template: api, args: '--modules none --deploy netlify' }
+          - { name: github-pages, template: api, args: '--modules none --deploy github-pages' }
           - {
               name: kitchen sink,
               template: api,

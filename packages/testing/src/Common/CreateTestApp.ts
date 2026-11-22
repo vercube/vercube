@@ -1,6 +1,6 @@
 import { createApp } from '@vercube/core';
 import { Logger } from '@vercube/logger';
-import { TestingError } from '../Errors/TestingError';
+import { TestingErrors } from '../Errors/Catalog';
 import { TestLogger } from '../Services/TestLogger';
 import { applyOverrides, bindProviders } from '../Utils/Bindings';
 import { TestApp } from './TestApp';
@@ -139,10 +139,10 @@ export async function createTestApp<R = Record<string, AnyRoute>>(
     // release what booted, the caller never gets a handle to close it
     await booted?.close({ timeout: 0 }).catch(() => {});
 
-    const message = error instanceof Error ? error.message : String(error);
+    const reason = error instanceof Error ? error.message : String(error);
     const where = current ? ` in ${current}` : '';
 
-    throw new TestingError(`createTestApp() failed during ${phase}${where}: ${message}`, { phase, cause: error });
+    throw TestingErrors.BOOT_FAILED({ phase, where, reason, cause: error });
   }
 }
 

@@ -1,3 +1,4 @@
+import { TestingErrors } from '../Errors/Catalog';
 import { TestingError } from '../Errors/TestingError';
 import { formatFailure } from '../Utils/Format';
 import { TestResponse } from './TestResponse';
@@ -307,7 +308,7 @@ export class TestRequest implements PromiseLike<TestResponse> {
       this.fExpectations.push({ kind: 'status', status: first });
     } else if (typeof first === 'string') {
       if (value === undefined) {
-        throw new TestingError(`expect("${first}") needs the expected value as its second argument.`);
+        throw TestingErrors.EXPECT_VALUE_MISSING({ header: first });
       }
 
       this.fExpectations.push({ kind: 'header', name: first, value });
@@ -435,6 +436,7 @@ export class TestRequest implements PromiseLike<TestResponse> {
           throw error;
         }
 
+        // a check threw something that is not an error: it is kept as the cause
         throw new TestingError(formatFailure(String(error), response.request, await response.snapshot()), { cause: error });
       }
 
@@ -462,7 +464,8 @@ export class TestRequest implements PromiseLike<TestResponse> {
     if (headline) {
       const snapshot = await response.snapshot();
 
-      throw new TestingError(formatFailure(headline, response.request, snapshot), {
+      throw TestingErrors.EXPECTATION_FAILED({
+        failure: formatFailure(headline, response.request, snapshot),
         request: response.request,
         response: snapshot,
       });

@@ -21,6 +21,37 @@ export interface LoadVercubeConfigOptions {
 }
 
 /**
+ * Where a configuration handed over with {@link provideConfig} is kept.
+ * Registered globally, so the copy of core an application bundles and a copy
+ * loaded beside it agree on it.
+ */
+const PROVIDED_CONFIG = Symbol.for('vercube.config.provided');
+
+/**
+ * Hands `createApp()` the configuration directly, in place of the
+ * `vercube.config` file it would read from disk. For a platform without a file
+ * system at run time (Cloudflare Workers, an edge function): import the
+ * configuration, so the bundler ships it with the application.
+ *
+ * `.env` files are not read either. Call it before `createApp()`.
+ *
+ * @example
+ * ```ts
+ * import config from '../vercube.config';
+ *
+ * provideConfig(config);
+ *
+ * const app = await createApp();
+ * ```
+ *
+ * @param {ConfigTypes.Config | undefined} config - The configuration, or undefined to go back to reading the file
+ * @returns {void}
+ */
+export function provideConfig(config: ConfigTypes.Config | undefined): void {
+  (globalThis as Record<symbol, unknown>)[PROVIDED_CONFIG] = config;
+}
+
+/**
  * Loads and merges `vercube` config from disk, applies defaults, runs env setup, then the plugin `config` and `cli` pipeline.
  *
  * @param overrides - Values merged on top of file-based config (wins over file).
@@ -32,6 +63,24 @@ export async function loadVercubeConfig(
   options?: LoadVercubeConfigOptions,
 ): Promise<ConfigTypes.Config> {
   const cwd = options?.cwd ?? process.cwd();
+
+  // A configuration that was handed over stands in for the file. An explicit
+  // `cwd` still reads from disk: the caller named where the file is.
+  const provided =
+    options?.configFile === false || options?.cwd !== undefined
+      ? undefined
+      : ((globalThis as Record<symbol, unknown>)[PROVIDED_CONFIG] as ConfigTypes.Config | undefined);
+
+  if (provided !== undefined) {
+    const merged = defu(overrides ?? {}, provided, defaultConfig) as ConfigTypes.Config;
+
+    return applyVercubePluginHooks(merged, {
+      cwd,
+      dev: merged.dev ?? defaultConfig.dev,
+      production: merged.production ?? defaultConfig.production,
+      command: options?.command,
+    });
+  }
 
   if (options?.configFile === false) {
     return applyVercubePluginHooks(defu(overrides ?? {}, defaultConfig) as ConfigTypes.Config, {

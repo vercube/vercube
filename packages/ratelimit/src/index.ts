@@ -11,6 +11,7 @@ export * from './Middleware/RateLimitMiddleware';
 export * from './Services/RateLimitManager';
 
 // Errors
+export * from './Errors/Catalog';
 export * from './Errors/RateLimitError';
 
 // Utils

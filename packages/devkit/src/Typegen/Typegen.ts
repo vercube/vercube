@@ -1,5 +1,6 @@
 import { createRouteTypesWriter, INSPECT_TIMEOUT, resolveTypegenOutput } from '@vercube/scan';
 import consola from 'consola';
+import { DevkitErrors } from '../Errors/Catalog';
 import { inspect } from './Inspect';
 import type { DevKitTypes } from '../Types/DevKitTypes';
 import type { IntrospectionTypes } from '@vercube/core';
@@ -45,7 +46,7 @@ export async function typegen(
 
     // an empty map would replace a good one and break every typed call
     if (!Array.isArray(sections.routes?.data)) {
-      throw new TypeError('The application did not report its routes');
+      throw DevkitErrors.ROUTES_NOT_REPORTED();
     }
 
     routes = sections.routes.data as IntrospectionTypes.RouteDescription[];

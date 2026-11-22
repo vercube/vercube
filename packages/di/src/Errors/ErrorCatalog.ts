@@ -24,6 +24,13 @@ export interface ErrorCatalogEntry<P = any> {
   status?: number;
   /** Whether `why`, `fix` and `link` may reach a client outside development. */
   expose?: boolean;
+  /**
+   * `false` builds the error without a stack trace. For an error raised as a
+   * matter of course on a request path (a rejected login, a rate limit hit):
+   * the trace would only show the framework's own frames, and capturing it is
+   * most of what such an error costs.
+   */
+  stack?: false;
   /** Builds the error. Defaults to the catalog's `create`, then to a plain `Error`. */
   create?: (message: string, params: P) => Error;
 }
@@ -145,10 +152,39 @@ export function defineErrorCatalog<
     const create = entry.create ?? options.create;
     const message = entry.message;
 
+    const stackless = entry.stack === false;
+
+    const build = (text: string, params: unknown): Error =>
+      // bare-error: the default class of a catalog
+      create ? create(text, params) : new Error(text);
+
     const factory = (params?: unknown, overrides?: ErrorFactoryOverrides): Error => {
       const text = typeof message === 'function' ? message(params) : message;
-      // bare-error: the default class of a catalog
-      const error = create ? create(text, params) : new Error(text);
+      let error: Error;
+
+      // a runtime without the limit, or with a frozen `Error`, builds the error as usual
+      if (stackless && typeof Error.stackTraceLimit === 'number' && Object.isExtensible(Error)) {
+        // No frames are collected while the error is constructed, which also
+        // goes for any error its constructor creates on the way.
+        const limit = Error.stackTraceLimit;
+
+        Error.stackTraceLimit = 0;
+
+        try {
+          error = build(text, params);
+        } finally {
+          Error.stackTraceLimit = limit;
+        }
+
+        // What is left of the trace is its first line. A class that builds its
+        // own stack, or sets its message after `super()`, would leave a bare
+        // "Error" there, and that line is what a log shows.
+        if (Object.isExtensible(error)) {
+          error.stack = `${error.name}: ${error.message}`;
+        }
+      } else {
+        error = build(text, params);
+      }
 
       // an error that cannot take new fields is still the error to throw
       if (!Object.isExtensible(error)) {
@@ -157,7 +193,7 @@ export function defineErrorCatalog<
 
       // The trace starts where the error was thrown, not in this function.
       // Nothing is captured for an error created with the stack turned off.
-      if (Error.stackTraceLimit !== 0) {
+      if (!stackless && Error.stackTraceLimit !== 0) {
         Error.captureStackTrace?.(error, factory);
       }
 

@@ -169,8 +169,30 @@ if (scripts['test:lint']) {
 step('Typechecking');
 run('pnpm', ['run', 'test:tscheck'], root);
 
+// before the build: a target that bundles its configuration reads it then
+const config = join(app, 'vercube.config.ts');
+
+writeFileSync(config, readFileSync(config, 'utf8').replace(/port: \d+/, `port: ${options.port}`));
+
 step('Building');
 run('pnpm', ['run', 'build'], root);
+
+if (appScripts['build:pages']) {
+  step('Exporting the static site');
+  run('pnpm', ['run', 'build:pages'], app);
+
+  const exported = join(app, 'dist-static/api/foo');
+
+  if (!existsSync(exported) || JSON.parse(readFileSync(exported, 'utf8')).message !== 'Hello, world!') {
+    throw new Error('dist-static/api/foo does not hold the answer of GET /api/foo');
+  }
+
+  if (!existsSync(join(app, 'dist-static/404.html'))) {
+    throw new Error('dist-static/404.html was not written');
+  }
+
+  console.log('✔ dist-static holds GET /api/foo and 404.html');
+}
 
 if (appScripts.test) {
   step('Testing');
@@ -185,11 +207,8 @@ if (needsServices && !options.services) {
   process.exit(0);
 }
 
-const config = join(app, 'vercube.config.ts');
-
-writeFileSync(config, readFileSync(config, 'utf8').replace(/port: \d+/, `port: ${options.port}`));
-
 let server;
+let emulatorGroup;
 
 try {
   // inside the try: services that fail their health check are torn down too
@@ -250,10 +269,84 @@ try {
   }
 
   console.log('✔ Exited on SIGTERM');
+
+  // 6. a project for a platform with a local emulator also has to answer from it
+  const emulators = [
+    // workerd, the runtime a Cloudflare Worker is deployed to
+    { file: 'wrangler.jsonc', name: 'the Worker', command: (port) => ['wrangler', 'dev', '--port', port, '--ip', '127.0.0.1'] },
+    // the Netlify Functions runtime, behind the static server Netlify's CDN stands in for
+    {
+      file: 'netlify.toml',
+      name: 'the Netlify Function',
+      command: (port) => ['netlify', 'dev', '--offline', '--no-open', '--port', port],
+    },
+  ];
+
+  for (const emulator of emulators) {
+    if (!existsSync(join(app, emulator.file))) {
+      continue;
+    }
+
+    const emulatorPort = Number(options.port) + 1;
+
+    step(`Booting ${emulator.name} on port ${emulatorPort}`);
+    server = spawn('pnpm', ['exec', ...emulator.command(String(emulatorPort))], {
+      cwd: app,
+      stdio: 'inherit',
+      // its own process group, so the processes it starts are stopped with it
+      detached: true,
+      env: { ...process.env, CI: '1', WRANGLER_SEND_METRICS: 'false' },
+    });
+    emulatorGroup = server.pid;
+
+    let emulatorGone = false;
+
+    server.once('exit', () => {
+      emulatorGone = true;
+    });
+
+    const emulatorUrl = `http://127.0.0.1:${emulatorPort}/api/foo`;
+    const emulatorDeadline = Date.now() + 90_000;
+    let emulatorBody = null;
+
+    while (Date.now() < emulatorDeadline && emulatorBody === null && !emulatorGone) {
+      try {
+        const response = await fetch(emulatorUrl);
+
+        if (response.ok) {
+          emulatorBody = await response.json();
+        }
+      } catch {
+        // not listening yet
+      }
+
+      if (emulatorBody === null) {
+        await new Promise((done) => setTimeout(done, 500));
+      }
+    }
+
+    if (emulatorBody?.message !== 'Hello, world!') {
+      throw new Error(
+        emulatorGone ? `${emulator.name} exited before it answered` : `GET ${emulatorUrl} did not answer within 90s`,
+      );
+    }
+
+    console.log(`\n✔ ${emulator.name} answered ${JSON.stringify(emulatorBody)}`);
+  }
 } finally {
   // whatever happened above, nothing outlives the run
   if (server && server.exitCode === null && server.signalCode === null) {
     server.kill('SIGKILL');
+  }
+
+  // an emulator leads a process group of its own: what it started must not
+  // outlive the run, even when the emulator itself is gone already
+  if (emulatorGroup !== undefined) {
+    try {
+      process.kill(-emulatorGroup, 'SIGKILL');
+    } catch {
+      // the group is gone
+    }
   }
 
   if (needsServices) {

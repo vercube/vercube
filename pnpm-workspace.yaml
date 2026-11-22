@@ -37,6 +37,10 @@ onlyBuiltDependencies:
 minimumReleaseAge: 0
 
 allowBuilds:
+  netlify-cli: false
+  sharp: false
+  unix-dgram: false
+  workerd: false
   msgpackr-extract: false
   esbuild: false
   serverless: true

@@ -2,7 +2,10 @@ import { authRecipe } from './Modules/Auth';
 import { awsLambdaRecipe } from './Modules/AwsLambda';
 import { azureFunctionsRecipe } from './Modules/AzureFunctions';
 import { cacheRecipe } from './Modules/Cache';
+import { cloudflareRecipe } from './Modules/Cloudflare';
 import { devtoolsRecipe } from './Modules/Devtools';
+import { githubPagesRecipe } from './Modules/GithubPages';
+import { netlifyRecipe } from './Modules/Netlify';
 import { queueRecipe } from './Modules/Queue';
 import { rateLimitRecipe } from './Modules/RateLimit';
 import { schedulerRecipe } from './Modules/Scheduler';
@@ -32,4 +35,7 @@ export const RECIPES: RecipeTypes.Recipe<any>[] = [
   testingRecipe,
   awsLambdaRecipe,
   azureFunctionsRecipe,
+  cloudflareRecipe,
+  netlifyRecipe,
+  githubPagesRecipe,
 ];

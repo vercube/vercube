@@ -15,7 +15,9 @@
     ".": "./dist/index.mjs",
     "./package.json": "./package.json",
     "./aws-lambda": "./dist/Adapters/aws-lambda/index.mjs",
-    "./azure-functions": "./dist/Adapters/azure-functions/index.mjs"
+    "./azure-functions": "./dist/Adapters/azure-functions/index.mjs",
+    "./cloudflare": "./dist/Adapters/cloudflare/index.mjs",
+    "./netlify": "./dist/Adapters/netlify/index.mjs"
   },
   "types": "./dist/index.d.mts",
   "files": [

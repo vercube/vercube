@@ -1,4 +1,5 @@
 import { HEALTH_ENDPOINTS, resolveHealthOptions } from '@vercube/core';
+import { NitroErrors } from '../Errors/Catalog';
 import type { HealthTypes } from '@vercube/core';
 
 /** The `health` option of `vercubeNitro()`. */
@@ -24,15 +25,11 @@ export function resolveNitroHealth(option: NitroHealthOption | undefined): false
   const raw = (option === true ? {} : option) as HealthTypes.Options;
 
   if (raw.token !== undefined) {
-    throw new Error(
-      'vercubeNitro: health.token would be baked into the server build. Set runtimeConfig.vercube.healthToken instead (NITRO_VERCUBE_HEALTH_TOKEN at runtime).',
-    );
+    throw NitroErrors.HEALTH_TOKEN_IN_BUILD();
   }
 
   if (raw.checks !== undefined) {
-    throw new Error(
-      'vercubeNitro: health.checks cannot be passed through the build. Register them with app.health.register() in the setupFile.',
-    );
+    throw NitroErrors.HEALTH_CHECKS_IN_BUILD();
   }
 
   // `full` needs the token, which only exists at runtime; the runtime checks it

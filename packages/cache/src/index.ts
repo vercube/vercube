@@ -6,6 +6,7 @@ export * from './Services/CacheManager';
 export * from './Services/CacheStorageAdapter';
 
 // Errors
+export * from './Errors/Catalog';
 export * from './Errors/CacheError';
 
 // Types

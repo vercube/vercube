@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { NitroErrors } from '../Errors/Catalog';
 import type { Nitro } from 'nitro/types';
 
 /**
@@ -14,10 +15,7 @@ export function validateTypescript(nitro: Nitro): void {
     // tsConfig is a path - read and validate
     const tsConfigContent = JSON.parse(readFileSync(tsConfig.tsConfig, 'utf8'));
     if (!tsConfigContent.compilerOptions?.experimentalDecorators) {
-      throw new Error(
-        `Vercube requires "experimentalDecorators" to be enabled in your tsconfig (${tsConfig.tsConfig}). ` +
-          'Please add "experimentalDecorators": true to your compilerOptions.',
-      );
+      throw NitroErrors.EXPERIMENTAL_DECORATORS_DISABLED({ file: tsConfig.tsConfig });
     }
   } else if (typeof tsConfig?.tsConfig === 'object' && tsConfig.tsConfig !== null) {
     // tsConfig is an object - add experimentalDecorators

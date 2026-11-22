@@ -1,4 +1,4 @@
-import { RecipeError } from './RecipeError';
+import { CliErrors } from '../Errors/Catalog';
 import type { RecipeTypes } from './RecipeTypes';
 
 /**
@@ -21,7 +21,7 @@ export function resolveRecipes(
   const duplicates = catalog.filter((recipe, index) => catalog.findIndex((other) => other.id === recipe.id) !== index);
 
   if (duplicates.length > 0) {
-    throw new RecipeError(`Two recipes share the id ${[...new Set(duplicates.map((recipe) => recipe.id))].join(', ')}.`);
+    throw CliErrors.RECIPE_ID_DUPLICATE({ ids: [...new Set(duplicates.map((recipe) => recipe.id))].join(', ') });
   }
 
   // asked once per recipe, so both passes below see the same answer
@@ -36,9 +36,11 @@ export function resolveRecipes(
   const unknown = selected.filter((id) => !byId.has(id));
 
   if (unknown.length > 0) {
-    throw new RecipeError(
-      `Unknown module${unknown.length > 1 ? 's' : ''}: ${unknown.join(', ')}. Available: ${[...byId.keys()].join(', ')}.`,
-    );
+    throw CliErrors.UNKNOWN_MODULE({
+      unknown: unknown.join(', '),
+      available: [...byId.keys()].join(', '),
+      many: unknown.length > 1,
+    });
   }
 
   // every recipe reachable through `requires`
@@ -56,7 +58,7 @@ export function resolveRecipes(
     const recipe = byId.get(id);
 
     if (!recipe) {
-      throw new RecipeError(`A recipe requires "${id}", which does not exist.`);
+      throw CliErrors.RECIPE_REQUIREMENT_MISSING({ id });
     }
 
     included.add(id);
@@ -71,7 +73,7 @@ export function resolveRecipes(
   const deploys = [...included].filter((id) => byId.get(id)!.kind === 'deploy');
 
   if (deploys.length > 1) {
-    throw new RecipeError(`Pick one deploy target, got ${deploys.join(' and ')}.`);
+    throw CliErrors.DEPLOY_TARGET_CONFLICT({ deploys: deploys.join(' and ') });
   }
 
   // depth-first topological order, modules before deploy targets, each group
@@ -85,7 +87,7 @@ export function resolveRecipes(
     }
 
     if (state.get(id) === 'visiting') {
-      throw new RecipeError(`Recipes depend on each other in a cycle: ${[...path, id].join(' -> ')}.`);
+      throw CliErrors.RECIPE_CYCLE({ path: [...path, id].join(' -> ') });
     }
 
     state.set(id, 'visiting');

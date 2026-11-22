@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { SchedulerError } from '../Errors/SchedulerError';
+import { SchedulerErrors } from '../Errors/Catalog';
 import { AUTOSTART_ENV, liveManagers } from '../Utils/Registry';
 import type { SchedulerManager } from '../Services/SchedulerManager';
 
@@ -40,13 +40,7 @@ export async function loadScheduler(options: LoadOptions): Promise<SchedulerMana
   const entry = resolve(options.cwd, options.entry);
 
   if (!existsSync(entry)) {
-    throw new SchedulerError(
-      `No built application at ${entry}. Run "vercube build" first, pass --build, or point --entry at the built entry.`,
-      'cli',
-      undefined,
-      { entry },
-      false,
-    );
+    throw SchedulerErrors.CLI_ENTRY_MISSING({ entry });
   }
 
   process.env[AUTOSTART_ENV] = 'false';
@@ -59,13 +53,7 @@ export async function loadScheduler(options: LoadOptions): Promise<SchedulerMana
   const manager = liveManagers().find((candidate) => !before.has(candidate)) ?? liveManagers().at(-1);
 
   if (!manager) {
-    throw new SchedulerError(
-      `The application at ${entry} has no scheduler. Is SchedulerPlugin registered?`,
-      'cli',
-      undefined,
-      { entry },
-      false,
-    );
+    throw SchedulerErrors.CLI_SCHEDULER_MISSING({ entry });
   }
 
   return manager;

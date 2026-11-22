@@ -9,6 +9,7 @@ import { BaseCommand } from '../BaseCommand';
 import { Arg } from '../Decorators/Arg';
 import { Command } from '../Decorators/Command';
 import { Flag } from '../Decorators/Flag';
+import { CliErrors } from '../Errors/Catalog';
 import { RECIPES } from '../Recipes/Catalog';
 import { RecipeError } from '../Recipes/RecipeError';
 import { findUnexpectedArgs, resolveInitPlan } from '../Scaffold/Plan';
@@ -114,7 +115,7 @@ export class InitCommand extends BaseCommand {
       );
 
       if (unexpected) {
-        throw new RecipeError(unexpected);
+        throw CliErrors.ARGUMENTS_INVALID({ problem: unexpected });
       }
 
       // known before any question, so a directory that is in the way is reported first
@@ -195,7 +196,7 @@ export class InitCommand extends BaseCommand {
     }
 
     if (!interactive) {
-      throw new RecipeError(`${dir} is not empty. Pass --force to replace its contents.`);
+      throw CliErrors.DIRECTORY_NOT_EMPTY({ dir });
     }
 
     const overwrite = await logger.prompt(`${colors.cyan(dir)} is not empty. Replace its contents?`, {
@@ -205,7 +206,7 @@ export class InitCommand extends BaseCommand {
     });
 
     if (!overwrite) {
-      throw new RecipeError('Aborted.');
+      throw CliErrors.INIT_ABORTED();
     }
 
     return true;

@@ -1,8 +1,9 @@
 import { Container, Destroy, Init, Inject, InjectOptional } from '@vercube/di';
 import { Logger } from '@vercube/logger';
 import { traceOperation } from '../Common/Instrument';
-import { StorageError } from '../Errors/StorageError';
+import { StorageErrors } from '../Errors/Catalog';
 import { Storage } from './Storage';
+import type { StorageError } from '../Errors/StorageError';
 import type { StorageTypes } from '../Types/StorageTypes';
 
 /**
@@ -212,7 +213,7 @@ export class StorageManager {
     const storageInstance = this.requireStorage(storage, 'increment');
 
     if (!Number.isFinite(by)) {
-      throw new StorageError(`Cannot increment "${key}" by ${by}`, 'increment', undefined, { mount: storage ?? 'default' });
+      throw StorageErrors.INCREMENT_INVALID({ key, by, mount: storage ?? 'default' });
     }
 
     if (typeof storageInstance.increment === 'function') {
@@ -314,7 +315,7 @@ export class StorageManager {
    */
   public async ping(name: string = 'default'): Promise<void> {
     if (!this.fInitialized) {
-      throw new StorageError(`Storage "${name}" is not initialized yet`, 'ping', undefined, { mount: name });
+      throw StorageErrors.NOT_INITIALIZED({ name });
     }
 
     await this.requireStorage(name, 'ping').ping?.();
@@ -391,10 +392,7 @@ export class StorageManager {
     try {
       await storage.close?.();
     } catch (error) {
-      this.gLogger?.error(
-        'Vercube/StorageManager::close',
-        new StorageError(`Failed to close storage "${name}"`, 'close', error as Error, { mount: name }),
-      );
+      this.gLogger?.error('Vercube/StorageManager::close', StorageErrors.CLOSE_FAILED({ name, cause: error }));
     }
   }
 
@@ -412,7 +410,7 @@ export class StorageManager {
     try {
       await storage?.initialize(initOptions as never);
     } catch (error) {
-      const failure = new StorageError(`Failed to initialize storage "${name}"`, 'initialize', error as Error, { mount: name });
+      const failure = StorageErrors.INIT_FAILED({ name, cause: error });
 
       this.fFailed.set(name, failure);
       this.gLogger?.error('Vercube/StorageManager::init', failure);
@@ -440,7 +438,7 @@ export class StorageManager {
     const storage = this.getStorage(name);
 
     if (!storage) {
-      throw new StorageError(`Storage "${name}" is not mounted`, operation, undefined, { mount: name });
+      throw StorageErrors.NOT_MOUNTED({ name, operation, metadata: { mount: name } });
     }
 
     return storage;

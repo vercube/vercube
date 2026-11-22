@@ -1,0 +1,26 @@
+{
+  "name": "@examples/cloudflare",
+  "version": "1.0.0",
+  "description": "Cloudflare Workers example for Vercube",
+  "packageManager": "pnpm@11.13.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vercube build",
+    "dev": "vercube dev",
+    "preview": "vercube build && wrangler dev",
+    "deploy": "vercube build && wrangler deploy"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@oxc-project/runtime": "catalog:",
+    "@vercube/cli": "workspace:*",
+    "@vercube/core": "workspace:*",
+    "@vercube/di": "workspace:*",
+    "@vercube/logger": "workspace:*",
+    "@vercube/serverless": "workspace:*"
+  },
+  "devDependencies": {
+    "wrangler": "4.166.0"
+  }
+}

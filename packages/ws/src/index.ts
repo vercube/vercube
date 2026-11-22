@@ -6,6 +6,9 @@ export * from './Decorators/Broadcast';
 export * from './Decorators/BroadcastOthers';
 export * from './Decorators/OnConnectionAttempt';
 
+// Errors
+export * from './Errors/Catalog';
+
 // Plugins
 export * from './Plugins/WebsocketPlugin';
 

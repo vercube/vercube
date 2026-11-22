@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs';
 import { createRouteTypesWriter, INSPECT_TIMEOUT, inspectEntry, resolveTypegenOutput } from '@vercube/scan';
 import { resolve } from 'pathe';
+import { ViteErrors } from './Errors/Catalog';
 import { VERCUBE_ENV } from './types';
 import type { VercubePluginContext } from './types';
 import type { ViteBuilder } from 'vite';
@@ -19,7 +20,7 @@ import type { ViteBuilder } from 'vite';
 export async function buildEnvironments(ctx: VercubePluginContext, builder: ViteBuilder): Promise<void> {
   const server = builder.environments[VERCUBE_ENV];
   if (!server) {
-    throw new Error(`[vercube] Environment "${VERCUBE_ENV}" is not configured.`);
+    throw ViteErrors.ENVIRONMENT_NOT_CONFIGURED({ name: VERCUBE_ENV });
   }
 
   // Build other environments (e.g. a frontend client) before the server. The
@@ -84,7 +85,7 @@ async function writeRouteTypes(ctx: VercubePluginContext, builder: ViteBuilder, 
     });
     // an empty map would replace a good one and break every typed call
     if (!Array.isArray(sections.routes?.data)) {
-      throw new TypeError('The application did not report its routes');
+      throw ViteErrors.ROUTES_NOT_REPORTED();
     }
     await write(sections.routes.data as Parameters<typeof write>[0], sections.discovery?.data as Parameters<typeof write>[1]);
   } catch (error) {

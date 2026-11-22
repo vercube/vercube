@@ -15,6 +15,8 @@ An ultra-efficient JavaScript server framework that runs anywhere - Node.js, Bun
 | `custom-plugin`   | [examples/custom-plugin](https://github.com/vercube/vercube/tree/main/examples/custom-plugin/)     | `npx giget gh:vercube/vercube/examples/custom-plugin vercube-custom-plugin` |
 | `aws-lambda`      | [examples/aws-lambda](https://github.com/vercube/vercube/tree/main/examples/aws-lambda/)           | `npx giget gh:vercube/vercube/examples/aws-lambda vercube-aws`              |
 | `azure-functions` | [examples/azure-functions](https://github.com/vercube/vercube/tree/main/examples/azure-functions/) | `npx giget gh:vercube/vercube/examples/azure-functions vercube-azure`       |
+| `cloudflare`      | [examples/cloudflare](https://github.com/vercube/vercube/tree/main/examples/cloudflare/)           | `npx giget gh:vercube/vercube/examples/cloudflare vercube-cloudflare`       |
+| `netlify`         | [examples/netlify](https://github.com/vercube/vercube/tree/main/examples/netlify/)                 | `npx giget gh:vercube/vercube/examples/netlify vercube-netlify`             |
 | `websockets`      | [examples/ws](https://github.com/vercube/vercube/tree/main/examples/ws/)                           | `npx giget gh:vercube/vercube/examples/ws vercube-ws`                       |
 | `queue`           | [examples/queue](https://github.com/vercube/vercube/tree/main/examples/queue/)                     | `npx giget gh:vercube/vercube/examples/queue vercube-queue`                 |
 | `client`          | [examples/client](https://github.com/vercube/vercube/tree/main/examples/client/)                   | `npx giget gh:vercube/vercube/examples/client vercube-client`               |
