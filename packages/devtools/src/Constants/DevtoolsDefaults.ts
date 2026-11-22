@@ -35,8 +35,9 @@ export const DEVTOOLS_PLAYGROUND_HEADER = 'x-devtools-playground';
 
 /**
  * Header naming the request headers of a playground request that hold
- * credentials, comma separated. Devtools withholds their values from
- * everything it serves, whatever their names look like.
+ * credentials, comma separated. Their values are withheld when the request
+ * headers are recorded, whatever their names look like, and again from
+ * everything devtools serves.
  */
 export const DEVTOOLS_PLAYGROUND_SECRETS_HEADER = 'x-devtools-playground-redact';
 

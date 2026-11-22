@@ -37,6 +37,45 @@ export const REQUEST_HEADERS_EVENT = 'http.request.headers';
 export const RESPONSE_HEADERS_EVENT = 'http.response.headers';
 
 /**
+ * Adds the header names a request asks to have withheld.
+ *
+ * Runs before the headers event is written, so the values never reach the
+ * span: every processor and exporter sees the same redacted event.
+ *
+ * @param headers - The request headers
+ * @param sources - Names of the headers that list more names, lowercase
+ * @param redacted - Names withheld by configuration, lowercase
+ * @returns The names to withhold for this request; `redacted` itself when the request names none
+ */
+export function withNamedRedactions(
+  headers: Headers,
+  sources: readonly string[],
+  redacted: ReadonlySet<string>,
+): ReadonlySet<string> {
+  let merged: Set<string> | undefined;
+
+  for (const source of sources) {
+    const value = headers.get(source);
+
+    if (!value) {
+      continue;
+    }
+
+    merged ??= new Set(redacted);
+
+    for (const name of value.split(',')) {
+      const lower = name.trim().toLowerCase();
+
+      if (lower) {
+        merged.add(lower);
+      }
+    }
+  }
+
+  return merged ?? redacted;
+}
+
+/**
  * Records a message's headers as a span event.
  *
  * Recorded as one event with one attribute per header rather than as span

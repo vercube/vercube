@@ -141,6 +141,23 @@ export namespace TelemetryTypes {
      * @default false
      */
     headers?: boolean | { redact?: string[] };
+
+    /**
+     * Request headers whose value names more request headers to withhold from
+     * that one request, comma separated.
+     *
+     * For a tool that sends a credential under a header the user picks, and so
+     * knows its name per request only, such as the devtools route playground.
+     * It sits beside `headers` and not inside it, so a package can contribute
+     * it whatever the application wrote for `headers`. It does nothing while
+     * headers are not captured.
+     *
+     * A client that sends such a header keeps the headers it names out of the
+     * trace, so leave this unset where traces serve as an audit record.
+     *
+     * @default []
+     */
+    redactHeadersNamedBy?: string[];
   }
 
   /**

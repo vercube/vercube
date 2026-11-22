@@ -39,11 +39,15 @@ interface Span {
  * Telemetry already withholds headers that look like credentials. The
  * playground lets the user pick the header an API key travels in, and a name
  * such as `x-client-id` does not look like one, so the playground names its
- * credential headers itself and they are withheld here.
+ * credential headers itself. Devtools hands that header name to telemetry
+ * (`spans.redactHeadersNamedBy`), which withholds the values before the
+ * headers event is written: no span processor and no exporter ever holds the
+ * key. Withholding them here as well covers an application that installed
+ * telemetry before devtools could contribute that setting, where the event was
+ * recorded without it. Then only what devtools serves is covered.
  *
  * This runs when spans are serialised for a UI, never while a request is
- * handled, and works on the serialised copy: the spans other processors and
- * exporters hold are left as they were.
+ * handled, and works on the serialised copy.
  *
  * @param payload - A parsed OTLP `ExportTraceServiceRequest`, modified in place
  * @returns The same payload

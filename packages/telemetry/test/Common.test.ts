@@ -1,7 +1,7 @@
 import { ROOT_CONTEXT, SpanStatusCode, trace, TraceFlags } from '@opentelemetry/api';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { captureRequestBody, captureResponseBody } from '../src/Common/BodyCapture';
-import { addHeadersEvent, REQUEST_HEADERS_EVENT } from '../src/Common/HeaderCapture';
+import { addHeadersEvent, REQUEST_HEADERS_EVENT, withNamedRedactions } from '../src/Common/HeaderCapture';
 import { extractFromHeaders, headersGetter, W3CTraceContextPropagator } from '../src/Common/Propagation';
 import { completeSpan, errorMessage, errorType, failSpan, runInSpan } from '../src/Common/SpanUtils';
 import { createTestTelemetry } from '../src/Testing';
@@ -203,6 +203,41 @@ describe('header capture', () => {
       expect(event.attributes![name.toLowerCase()]).toBe('<redacted>');
     }
     expect(event.attributes!['x-safe']).toBe('ok');
+  });
+
+  it('withholds the headers a request names', () => {
+    const base = new Set(['x-internal']);
+    const headers = new Headers({
+      'x-redact': ' X-Client-Id , ,x-tenant',
+      'x-client-id': 'k1',
+      'x-tenant': 'acme',
+      'x-safe': 'ok',
+    });
+    const named = withNamedRedactions(headers, ['x-redact', 'x-absent'], base);
+
+    expect([...named].toSorted()).toEqual(['x-client-id', 'x-internal', 'x-tenant']);
+    // The configured set is shared by every request and must not grow.
+    expect([...base]).toEqual(['x-internal']);
+
+    const span = trace.getTracer('test').startSpan('named-headers');
+
+    addHeadersEvent(span, REQUEST_HEADERS_EVENT, headers, named);
+    span.end();
+
+    expect(
+      telemetry.span('named-headers')!.events.find((entry) => entry.name === REQUEST_HEADERS_EVENT)!.attributes,
+    ).toMatchObject({
+      'x-client-id': '<redacted>',
+      'x-tenant': '<redacted>',
+      'x-safe': 'ok',
+    });
+  });
+
+  it('hands back the configured set when a request names nothing', () => {
+    const base = new Set(['x-internal']);
+
+    expect(withNamedRedactions(new Headers({ 'x-safe': 'ok' }), ['x-redact'], base)).toBe(base);
+    expect(withNamedRedactions(new Headers({ 'x-redact': 'x-a' }), [], base)).toBe(base);
   });
 });
 

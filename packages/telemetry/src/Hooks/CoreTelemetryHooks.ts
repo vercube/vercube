@@ -23,7 +23,7 @@ import {
   REQUEST_BODY_EVENT,
   RESPONSE_BODY_EVENT,
 } from '../Common/BodyCapture';
-import { addHeadersEvent, REQUEST_HEADERS_EVENT, RESPONSE_HEADERS_EVENT } from '../Common/HeaderCapture';
+import { addHeadersEvent, REQUEST_HEADERS_EVENT, RESPONSE_HEADERS_EVENT, withNamedRedactions } from '../Common/HeaderCapture';
 import { redactQuery } from '../Common/Redaction';
 import { errorType, failSpan, runInSpan } from '../Common/SpanUtils';
 import type { BodyPreview } from '../Common/BodyCapture';
@@ -71,6 +71,12 @@ export class CoreTelemetryHooks implements TelemetryTypes.Hooks {
   /** Extra header names to withhold, or null when headers are not captured. */
   private readonly fRedactHeaders: ReadonlySet<string> | null;
 
+  /**
+   * Request headers that name more headers to withhold. Empty unless a package
+   * asked for it, and then the request path does not look at it.
+   */
+  private readonly fRedactSources: readonly string[];
+
   /** Lazily created duration histogram. */
   private fDuration: Histogram | undefined;
 
@@ -87,6 +93,9 @@ export class CoreTelemetryHooks implements TelemetryTypes.Hooks {
     this.fExclude = options.exclude ?? [];
     this.fExcludeExact = new Set(options.excludeExact ?? []);
     this.fRedactHeaders = resolveHeaderRedaction(options.spans?.headers);
+    this.fRedactSources = this.fRedactHeaders
+      ? [...new Set((options.spans?.redactHeadersNamedBy ?? []).map((name) => name.toLowerCase()))]
+      : [];
   }
 
   /** @inheritdoc */
@@ -121,7 +130,14 @@ export class CoreTelemetryHooks implements TelemetryTypes.Hooks {
       parent,
       (span) => {
         if (redact) {
-          addHeadersEvent(span, REQUEST_HEADERS_EVENT, spanContext.request.headers, redact);
+          const headers = spanContext.request.headers;
+
+          addHeadersEvent(
+            span,
+            REQUEST_HEADERS_EVENT,
+            headers,
+            this.fRedactSources.length > 0 ? withNamedRedactions(headers, this.fRedactSources, redact) : redact,
+          );
         }
 
         return fn();

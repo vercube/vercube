@@ -2,7 +2,7 @@ import { vercubePluginFromClass } from '@vercube/core';
 import { createTestApp } from '@vercube/testing';
 import { DevtoolsPlugin } from '../../src/Plugins/DevtoolsPlugin';
 import type { DevtoolsTypes } from '../../src/Types/DevtoolsTypes';
-import type { App } from '@vercube/core';
+import type { App, ConfigTypes } from '@vercube/core';
 
 /**
  * Boots an application with devtools enabled.
@@ -14,15 +14,18 @@ import type { App } from '@vercube/core';
  *
  * @param options - Devtools options; `enabled` defaults to true
  * @param setup - Extra container wiring before the app initialises
+ * @param config - Application config to add, such as `telemetry`
  * @returns The running application
  */
 export async function createDevtoolsApp(
   options: DevtoolsTypes.Options = {},
   setup?: (app: App) => void | Promise<void>,
+  config: ConfigTypes.Config = {},
 ): Promise<App> {
   const testApp = await createTestApp({
     logger: false,
     config: {
+      ...config,
       logLevel: 'debug',
       plugins: [vercubePluginFromClass(DevtoolsPlugin, { enabled: true, ...options })],
     },
