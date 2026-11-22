@@ -1,6 +1,6 @@
 import { TelemetryPlugin } from '@vercube/telemetry';
 import { createTestTelemetry } from '@vercube/telemetry/testing';
-import { TestingError } from './Errors/TestingError';
+import { TestingErrors } from './Errors/Catalog';
 import type { TestingTypes } from './Types/TestingTypes';
 import type { TestTelemetry } from '@vercube/telemetry/testing';
 
@@ -40,7 +40,7 @@ export function testTelemetry(): TestTelemetryExtension {
 
   const handle = (): TestTelemetry => {
     if (!current) {
-      throw new TestingError('testTelemetry() is not set up yet: pass it to createTestApp({ extensions }) first.');
+      throw TestingErrors.TELEMETRY_NOT_SET_UP();
     }
 
     return current;

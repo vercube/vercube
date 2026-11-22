@@ -4,6 +4,9 @@ export * from './Plugins/DevtoolsPlugin';
 // Controller
 export * from './Controllers/DevtoolsController';
 
+// Errors
+export * from './Errors/Catalog';
+
 // Middleware
 export * from './Middleware/DevtoolsAuthMiddleware';
 

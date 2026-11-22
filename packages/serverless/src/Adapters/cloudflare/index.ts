@@ -1,5 +1,6 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { HttpServer } from '@vercube/core';
+import { ServerlessErrors } from '../../Errors/Catalog';
 import { flushTelemetry } from '../../Utils/flush';
 import type { App, MaybePromise } from '@vercube/core';
 
@@ -96,10 +97,7 @@ export class CloudflareBindings<Env = Record<string, unknown>> {
     const scope = storage.getStore();
 
     if (!scope) {
-      // bare-error: migrated with the serverless catalog
-      throw new Error(
-        'CloudflareBindings was read outside a request. Bindings exist only while the Cloudflare adapter handles a request.',
-      );
+      throw ServerlessErrors.CLOUDFLARE_BINDINGS_OUTSIDE_REQUEST();
     }
 
     return scope as CloudflareScope<Env>;

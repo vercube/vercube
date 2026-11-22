@@ -1,4 +1,4 @@
-import { TestingError } from '../Errors/TestingError';
+import { TestingErrors } from '../Errors/Catalog';
 
 /**
  * Properties that must read as missing even on a stub: `then` would make the
@@ -51,9 +51,7 @@ export function stub<T extends object>(partial: Partial<T> = {}, name: string = 
       }
 
       return function notStubbed(): never {
-        throw new TestingError(
-          `${name}.${String(property)} is not stubbed. Add it to the object passed to stub() or to the override.`,
-        );
+        throw TestingErrors.NOT_STUBBED({ name, property: String(property) });
       };
     },
   });

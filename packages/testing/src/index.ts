@@ -5,6 +5,7 @@ export * from './Common/TestApp';
 export * from './Common/TestClient';
 
 // Errors
+export * from './Errors/Catalog';
 export * from './Errors/TestingError';
 
 // Request

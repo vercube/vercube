@@ -1,3 +1,4 @@
+import { TelemetryErrors } from './Errors/Catalog';
 import type { PushMetricExporter } from '@opentelemetry/sdk-metrics';
 import type { SpanExporter } from '@opentelemetry/sdk-trace-base';
 
@@ -39,10 +40,7 @@ export async function createOtlpTraceExporter(options: OtlpExporterOptions): Pro
   try {
     module = await import('@opentelemetry/exporter-trace-otlp-http');
   } catch {
-    throw new Error(
-      'An OTLP endpoint is configured but @opentelemetry/exporter-trace-otlp-http is not installed. ' +
-        'Install it, or pass your own `exporter` to startNodeTelemetry().',
-    );
+    throw TelemetryErrors.OTLP_TRACE_EXPORTER_MISSING();
   }
 
   return new module.OTLPTraceExporter({
@@ -66,10 +64,7 @@ export async function createOtlpMetricExporter(options: OtlpExporterOptions): Pr
   try {
     module = await import('@opentelemetry/exporter-metrics-otlp-http');
   } catch {
-    throw new Error(
-      'An OTLP endpoint is configured for metrics but @opentelemetry/exporter-metrics-otlp-http is not installed. ' +
-        'Install it, or pass your own reader to addMetricReader().',
-    );
+    throw TelemetryErrors.OTLP_METRIC_EXPORTER_MISSING();
   }
 
   return new module.OTLPMetricExporter({
