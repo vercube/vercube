@@ -22,6 +22,7 @@ export type LogLevel = DevtoolsTypes.LogLevel;
 export type MetricsSample = DevtoolsTypes.MetricsSample;
 export type AuditReport = DevtoolsTypes.AuditReport;
 export type StorageValue = DevtoolsTypes.StorageValue;
+export type PlaygroundInfo = DevtoolsTypes.PlaygroundDescription;
 
 // Structural data comes from core's introspection registry, so its shapes are
 // owned by the packages that produce them rather than by devtools.
@@ -228,6 +229,15 @@ export function runScheduledJob(name: string): Promise<ScheduledRunResult> {
  */
 export function runHealthChecks(): Promise<HealthView> {
   return api<HealthView>('/api/health/check', { method: 'POST' });
+}
+
+/**
+ * Asks whether the route playground is offered, and for which routes.
+ *
+ * @returns Whether it is on, and the ids of the routes it leaves out
+ */
+export function playgroundInfo(): Promise<PlaygroundInfo> {
+  return api<PlaygroundInfo>('/api/playground');
 }
 
 export interface StreamHandlers {
