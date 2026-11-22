@@ -53,6 +53,9 @@ function defineCatalog<TMap extends Record<string, Entry>>(prefix: string, map: 
         Object.defineProperty(error, field, { value, enumerable: false, writable: true, configurable: true });
       }
 
+      // the mark `getErrorGuidance()` of `@vercube/di` looks for, by its registered name
+      Object.defineProperty(error, Symbol.for('vercube.error.guidance'), { value: true, enumerable: false, configurable: true });
+
       return error;
     };
 
@@ -74,8 +77,8 @@ function defineCatalog<TMap extends Record<string, Entry>>(prefix: string, map: 
 export const ViteErrors = defineCatalog('VERCUBE_VITE', {
   ENVIRONMENT_NOT_CONFIGURED: {
     message: ({ name }: { name: string }) => `[vercube] Environment "${name}" is not configured.`,
-    why: 'The production build looked for the server environment the `vercube()` plugin adds to the Vite config and did not find it. Another plugin or the config replaced the `environments` option after the plugin had set it.',
-    fix: 'Keep the `vercube` key when you set `environments` in `vite.config.ts`, and list `vercube()` from `@vercube/vite` in `plugins` before a plugin that rewrites `environments`.',
+    why: 'The production build looked for the server environment the `vercube()` plugin adds to the Vite config and did not find it. A plugin that runs after it replaced the `environments` option instead of adding to it.',
+    fix: 'List `vercube()` from `@vercube/vite` in `plugins` after any plugin that rewrites `environments`, or make that plugin keep the `vercube` key.',
   },
   ROUTES_NOT_REPORTED: {
     message: () => 'The application did not report its routes',
@@ -91,7 +94,7 @@ export const ViteErrors = defineCatalog('VERCUBE_VITE', {
   UNKNOWN_ENVIRONMENT: {
     message: ({ name }: { name: string }) => `Unknown vite environment "${name}"`,
     why: 'A request reached the dev worker with an `x-vite-env` header that names an environment the worker was never told about. The worker only knows the environments the dev server registered with it.',
-    fix: 'Send the request without the `x-vite-env` header to reach the `vercube` environment, or add the environment under `environments` in `vite.config.ts` and restart the dev server.',
+    fix: 'Send the request without the `x-vite-env` header, or with `x-vite-env: vercube`, to reach the application.',
   },
   ENV_RUNNER_NOT_INITIALIZED: {
     message: () => '[vercube] Env runner not initialized. Call initEnvRunner() first.',

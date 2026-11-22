@@ -49,6 +49,9 @@ function defineCatalog<TMap extends Record<string, Entry>>(prefix: string, map: 
         Object.defineProperty(error, field, { value, enumerable: false, writable: true, configurable: true });
       }
 
+      // the mark `getErrorGuidance()` of `@vercube/di` looks for, by its registered name
+      Object.defineProperty(error, Symbol.for('vercube.error.guidance'), { value: true, enumerable: false, configurable: true });
+
       return error;
     };
 
