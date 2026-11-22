@@ -15,6 +15,7 @@ vi.mock('c12', () => ({
   loadConfig: vi.fn().mockResolvedValue({
     config: {},
   }),
+  setupDotenv: vi.fn(),
 }));
 
 describe('createApp', () => {

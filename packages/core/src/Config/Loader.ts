@@ -1,4 +1,3 @@
-import { loadConfig, setupDotenv } from 'c12';
 import { defu } from 'defu';
 import { applyVercubePluginHooks } from '../Plugins/VercubePlugin';
 import { defaultConfig } from './DefaultConfig';
@@ -42,6 +41,10 @@ export async function loadVercubeConfig(
       command: options?.command,
     });
   }
+
+  // Loaded here, not at the top: importing c12 costs about 7 ms, and an app
+  // that never reads a config file (`configFile: false`, tests) should not pay it.
+  const { loadConfig, setupDotenv } = await import('c12');
 
   const config = await loadConfig<ConfigTypes.Config>({
     name: 'vercube',
