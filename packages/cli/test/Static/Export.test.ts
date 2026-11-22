@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { exportStatic, formatStaticReport, selectStaticRoutes, staticFileFor } from '../../src/Static/Export';
+import { exportStatic, formatStaticReport, selectStaticRoutes, StaticExportError, staticFileFor } from '../../src/Static/Export';
 import type { StaticRoute } from '../../src/Static/Export';
 
 const route = (method: string, path: string, extra: Partial<StaticRoute> = {}): StaticRoute => ({
@@ -27,6 +27,16 @@ describe('selectStaticRoutes()', () => {
 
     expect(selected.paths).toEqual(['/api/posts', '/']);
     expect(selected.skipped).toEqual([]);
+  });
+
+  it('asks for a route that ends in a slash without it, as a static host serves it', () => {
+    expect(selectStaticRoutes([route('GET', '/api/posts/'), route('GET', '/api/posts')]).paths).toEqual(['/api/posts']);
+  });
+
+  it('reports a HEAD route that has no GET beside it', () => {
+    expect(selectStaticRoutes([route('HEAD', '/ping')]).skipped).toEqual([
+      { route: 'HEAD /ping', reason: 'a HEAD has no body to save' },
+    ]);
   });
 
   it('says why every other route is left out', () => {
@@ -67,6 +77,9 @@ describe('staticFileFor()', () => {
     ['/legal.html', 'text/html', 'legal.html'],
     ['/api/posts?page=2', 'application/json', 'api/posts'],
     ['/raw', null, 'raw'],
+    ['/caf%C3%A9/a%20b', 'application/json', 'café/a b'],
+    ['/a%2Fb/%2E%2E/c', 'application/json', 'a%2Fb/%2E%2E/c'],
+    ['/bad%zz', 'application/json', 'bad%zz'],
   ])('writes %s (%s) to %s', (path, type, file) => {
     expect(staticFileFor(path, type)).toBe(file);
   });
@@ -97,6 +110,7 @@ describe('exportStatic()', () => {
     });
 
     const report = await exportStatic({
+      root,
       fetch,
       directory,
       routes: [route('GET', '/api/posts'), route('GET', '/about'), route('POST', '/api/posts')],
@@ -114,6 +128,7 @@ describe('exportStatic()', () => {
 
   it('renders the paths listed by hand, with or without a leading slash', async () => {
     const report = await exportStatic({
+      root,
       fetch: async (request) => json({ id: new URL(request.url).pathname.split('/').pop() }),
       directory,
       routes: [route('GET', '/posts/:id', { args: [{ type: 'param' }] })],
@@ -127,6 +142,22 @@ describe('exportStatic()', () => {
     expect(report.skipped).toHaveLength(1);
   });
 
+  it('does not report a route as left out once its path is listed by hand', async () => {
+    const report = await exportStatic({
+      root,
+      fetch: async () => json({ ok: true }),
+      directory,
+      routes: [
+        route('GET', '/me', { args: [{ type: 'request' }] }),
+        route('GET', '/search/', { args: [{ type: 'query-param' }] }),
+      ],
+      paths: ['/me', '/search'],
+    });
+
+    expect(report.written.map((file) => file.file)).toEqual(['me', 'search']);
+    expect(report.skipped).toEqual([]);
+  });
+
   it('copies the public directories first and skips the ones that are missing', async () => {
     const assets = join(root, 'public');
 
@@ -135,6 +166,7 @@ describe('exportStatic()', () => {
     writeFileSync(join(assets, 'index.html'), '<div id="app"></div>');
 
     const report = await exportStatic({
+      root,
       fetch: async () => json({ ok: true }),
       directory,
       routes: [route('GET', '/api/health')],
@@ -147,16 +179,22 @@ describe('exportStatic()', () => {
   });
 
   it('starts from an empty directory', async () => {
-    mkdirSync(directory, { recursive: true });
+    await exportStatic({ root, fetch: async () => json({}), directory, routes: [] });
     writeFileSync(join(directory, 'stale.txt'), 'from the last run');
 
-    await exportStatic({ fetch: async () => json({}), directory, routes: [] });
+    await exportStatic({
+      root,
+      fetch: async () => json({}),
+      directory,
+      routes: [],
+    });
 
     expect(existsSync(join(directory, 'stale.txt'))).toBe(false);
   });
 
   it('reports a path that does not answer 200 and one whose request fails', async () => {
     const report = await exportStatic({
+      root,
       fetch: async (request) => {
         const { pathname } = new URL(request.url);
 
@@ -180,34 +218,85 @@ describe('exportStatic()', () => {
     expect(existsSync(join(directory, 'missing'))).toBe(false);
   });
 
-  it('gives up on a stream that does not end, and saves one that does', async () => {
+  it('gives up on a stream that does not end and stops its source, and saves one that does', async () => {
     const encoder = new TextEncoder();
-    const report = await exportStatic({
-      fetch: async (request) => {
-        const endless = new URL(request.url).pathname === '/ticks';
+    let cancelled = false;
+    let timer: ReturnType<typeof setInterval> | undefined;
 
+    const report = await exportStatic({
+      root,
+      fetch: async (request) => {
+        if (new URL(request.url).pathname === '/export.csv') {
+          return new Response('a,b\n1,2\n', { headers: { 'content-type': 'text/csv' } });
+        }
+
+        // keeps producing, like a feed
         return new Response(
           new ReadableStream<Uint8Array>({
             start(controller): void {
-              controller.enqueue(encoder.encode('a,b\n1,2\n'));
-
-              if (!endless) {
-                controller.close();
-              }
+              timer = setInterval(() => controller.enqueue(encoder.encode('tick\n')), 5);
+            },
+            cancel(): void {
+              cancelled = true;
+              clearInterval(timer);
             },
           }),
-          { headers: { 'content-type': 'text/csv' } },
+          { headers: { 'content-type': 'text/plain' } },
         );
       },
       directory,
       routes: [route('GET', '/export.csv'), route('GET', '/ticks')],
-      timeout: 50,
+      timeout: 60,
     });
 
     expect(read('export.csv')).toBe('a,b\n1,2\n');
     expect(report.skipped).toEqual([
-      { route: 'GET /ticks', reason: 'did not finish within 0.05s: a stream that does not end needs a server' },
+      { route: 'GET /ticks', reason: 'did not finish within 0.06s: a stream that does not end needs a server' },
     ]);
+    // the source was told to stop, so nothing keeps the build from exiting
+    expect(cancelled).toBe(true);
+    expect(existsSync(join(directory, 'ticks'))).toBe(false);
+  });
+
+  it('refuses an output directory it must not empty', async () => {
+    const options = { fetch: async () => json({}), routes: [] };
+    const assets = join(root, 'public');
+
+    mkdirSync(assets);
+    writeFileSync(join(assets, 'hello.txt'), 'kept');
+    mkdirSync(join(root, 'notes'));
+    writeFileSync(join(root, 'notes/todo.md'), 'kept');
+
+    for (const target of [
+      root,
+      join(root, '..'),
+      join(root, 'src'),
+      join(root, 'src/pages'),
+      assets,
+      join(root, 'dist'),
+      tmpdir(),
+    ]) {
+      await expect(
+        exportStatic({ ...options, root, directory: target, publicDirs: [assets], protect: [join(root, 'dist')] }),
+      ).rejects.toBeInstanceOf(StaticExportError);
+    }
+
+    // a directory with files of the user's own
+    await expect(exportStatic({ ...options, root, directory: join(root, 'notes') })).rejects.toThrow('is not empty');
+
+    expect(readFileSync(join(assets, 'hello.txt'), 'utf8')).toBe('kept');
+    expect(readFileSync(join(root, 'notes/todo.md'), 'utf8')).toBe('kept');
+  });
+
+  it('empties a directory it wrote before, and an empty one', async () => {
+    mkdirSync(join(root, 'empty'));
+
+    await exportStatic({ root, fetch: async () => json({}), routes: [], directory: join(root, 'empty') });
+    await exportStatic({ root, fetch: async () => json({ ok: true }), routes: [route('GET', '/a')], directory });
+    await exportStatic({ root, fetch: async () => json({ ok: true }), routes: [route('GET', '/b')], directory });
+
+    expect(existsSync(join(directory, 'a'))).toBe(false);
+    expect(existsSync(join(directory, 'b'))).toBe(true);
   });
 
   it('reports a file that cannot exist next to another', async () => {
@@ -217,6 +306,7 @@ describe('exportStatic()', () => {
     writeFileSync(join(assets, 'robots.txt'), 'User-agent: *');
 
     const report = await exportStatic({
+      root,
       fetch: async () => json({ ok: true }),
       directory,
       publicDirs: [assets],
@@ -238,6 +328,7 @@ describe('exportStatic()', () => {
 
   it('never writes outside the output directory', async () => {
     const report = await exportStatic({
+      root,
       fetch: async () => json({ ok: true }),
       directory,
       routes: [],
@@ -251,7 +342,13 @@ describe('exportStatic()', () => {
   });
 
   it('writes what GitHub Pages looks for', async () => {
-    await exportStatic({ fetch: async () => json({}), directory, routes: [], githubPages: true });
+    await exportStatic({
+      root,
+      fetch: async () => json({}),
+      directory,
+      routes: [],
+      githubPages: true,
+    });
 
     expect(read('.nojekyll')).toBe('');
     expect(read('404.html')).toContain('Not found');
@@ -263,19 +360,38 @@ describe('exportStatic()', () => {
     mkdirSync(assets);
     writeFileSync(join(assets, 'index.html'), '<div id="app"></div>');
 
-    await exportStatic({ fetch: async () => json({}), directory, routes: [], publicDirs: [assets], githubPages: true });
+    await exportStatic({
+      root,
+      fetch: async () => json({}),
+      directory,
+      routes: [],
+      publicDirs: [assets],
+      githubPages: true,
+    });
 
     expect(read('404.html')).toBe('<div id="app"></div>');
 
     writeFileSync(join(assets, '404.html'), '<h1>Lost</h1>');
 
-    await exportStatic({ fetch: async () => json({}), directory, routes: [], publicDirs: [assets], githubPages: true });
+    await exportStatic({
+      root,
+      fetch: async () => json({}),
+      directory,
+      routes: [],
+      publicDirs: [assets],
+      githubPages: true,
+    });
 
     expect(read('404.html')).toBe('<h1>Lost</h1>');
   });
 
   it('does not write the GitHub Pages files unless asked', async () => {
-    await exportStatic({ fetch: async () => json({}), directory, routes: [] });
+    await exportStatic({
+      root,
+      fetch: async () => json({}),
+      directory,
+      routes: [],
+    });
 
     expect(existsSync(join(directory, '.nojekyll'))).toBe(false);
     expect(existsSync(join(directory, '404.html'))).toBe(false);
@@ -283,6 +399,7 @@ describe('exportStatic()', () => {
 
   it('formats a report for the terminal', async () => {
     const report = await exportStatic({
+      root,
       fetch: async () => json({ ok: true }),
       directory,
       routes: [route('GET', '/api/posts'), route('POST', '/api/posts')],

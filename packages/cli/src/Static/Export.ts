@@ -1,5 +1,5 @@
-import { cpSync, existsSync, mkdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
-import { dirname, join, resolve, sep } from 'node:path';
+import { cpSync, existsSync, mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { dirname, join, relative, resolve, sep } from 'node:path';
 
 /** What the static export needs to know about a route, a subset of the `routes` introspection section. */
 export interface StaticRoute {
@@ -46,6 +46,13 @@ export interface StaticExportOptions {
   routes: StaticRoute[];
   /** Where the files go. Emptied first. */
   directory: string;
+  /**
+   * The project the export belongs to. The output has to be a directory of its
+   * own inside it. Defaults to the current directory.
+   */
+  root?: string;
+  /** Directories the output must not be, contain or be inside of, such as `src` and the build output. */
+  protect?: string[];
   /** Directories copied into the output before anything is rendered, such as `public`. */
   publicDirs?: string[];
   /** Paths to render besides the routes that need no input, such as `/users/1` for `/users/:id`. */
@@ -57,6 +64,17 @@ export interface StaticExportOptions {
   /** Writes `.nojekyll` and a `404.html`, which GitHub Pages looks for. */
   githubPages?: boolean;
 }
+
+/** Thrown when an export cannot go where it was told to. */
+export class StaticExportError extends Error {
+  public override name: string = 'StaticExportError';
+}
+
+/**
+ * Left in a directory the export wrote, so the next run knows the directory
+ * is its own to empty.
+ */
+const MARKER = '.vercube-static';
 
 /** The fallback page of a static host that has no `index.html` to fall back to. */
 const NOT_FOUND_PAGE = `<!doctype html>
@@ -87,14 +105,18 @@ export function selectStaticRoutes(routes: StaticRoute[]): { paths: string[]; sk
   const skipped: StaticSkip[] = [];
 
   for (const route of routes) {
-    // infrastructure, and the HEAD twin every GET registers
-    if (route.internal || route.method === 'HEAD' || route.method === 'OPTIONS') {
+    if (route.internal || route.method === 'OPTIONS') {
       continue;
     }
 
     const name = `${route.method} ${route.path}`;
 
-    if (route.method !== 'GET') {
+    if (route.method === 'HEAD') {
+      // the twin every GET registers says nothing new; one without a GET has no body to save
+      if (!routes.some((other) => other.method === 'GET' && other.path === route.path)) {
+        skipped.push({ route: name, reason: 'a HEAD has no body to save' });
+      }
+    } else if (route.method !== 'GET') {
       skipped.push({ route: name, reason: `a ${route.method} needs a server` });
     } else if (route.sse) {
       skipped.push({ route: name, reason: 'an event stream needs a server' });
@@ -108,7 +130,9 @@ export function selectStaticRoutes(routes: StaticRoute[]): { paths: string[]; sk
         reason: `the handler reads the request (${kinds}): list the path with --routes to render it anyway`,
       });
     } else {
-      paths.push(route.path);
+      // `@Controller('/api/posts')` with `@Get('/')` is the route `/api/posts/`:
+      // the file is `api/posts`, which a static host serves without the slash
+      paths.push(route.path.length > 1 ? route.path.replace(/\/+$/, '') : route.path);
     }
   }
 
@@ -126,7 +150,12 @@ export function selectStaticRoutes(routes: StaticRoute[]): { paths: string[]; sk
  * @returns {string} The file, relative to the output directory
  */
 export function staticFileFor(path: string, contentType: string | null): string {
-  const clean = path.split(/[?#]/)[0].replaceAll(/^\/+|\/+$/g, '');
+  const clean = path
+    .split(/[?#]/)[0]
+    .replaceAll(/^\/+|\/+$/g, '')
+    .split('/')
+    .map(decodeSegment)
+    .join('/');
   const html = (contentType ?? '').toLowerCase().startsWith('text/html');
 
   if (html) {
@@ -158,8 +187,11 @@ export async function exportStatic(options: StaticExportOptions): Promise<Static
   const selected = selectStaticRoutes(options.routes);
   const report: StaticReport = { directory, written: [], skipped: [...selected.skipped], copied: [] };
 
+  assertOutput(directory, resolve(options.root ?? process.cwd()), [...(options.protect ?? []), ...(options.publicDirs ?? [])]);
+
   rmSync(directory, { recursive: true, force: true });
   mkdirSync(directory, { recursive: true });
+  writeFileSync(join(directory, MARKER), 'Written by `vercube build --target`. The directory is emptied on every export.\n');
 
   for (const source of options.publicDirs ?? []) {
     if (existsSync(source) && statSync(source).isDirectory()) {
@@ -170,7 +202,11 @@ export async function exportStatic(options: StaticExportOptions): Promise<Static
 
   const requested = (options.paths ?? []).map((path) => (path.startsWith('/') ? path : `/${path}`));
 
-  // a path listed by hand is no longer "left out", whatever its route reads
+  // a path listed by hand is rendered whatever its route reads, so it is not "left out"
+  report.skipped = report.skipped.filter(
+    (skip) => !requested.some((path) => skip.route === `GET ${path}` || skip.route === `GET ${path}/`),
+  );
+
   const explicit = new Set(requested);
   const paths = [...new Set([...selected.paths, ...requested])];
 
@@ -181,26 +217,22 @@ export async function exportStatic(options: StaticExportOptions): Promise<Static
     let body: Uint8Array = EMPTY;
 
     try {
-      // the answer and its whole body: a stream is only a file once it has ended
-      const answered = await withTimeout(
-        (async () => {
-          const result = await options.fetch(new Request(url));
+      response = await options.fetch(new Request(url));
 
-          return { result, bytes: result.status === 200 ? new Uint8Array(await result.arrayBuffer()) : undefined };
-        })(),
-        timeout,
-      );
+      if (response.status === 200) {
+        // the whole body: a stream is only a file once it has ended
+        const read = await readBody(response, timeout);
 
-      if (answered === TIMED_OUT) {
-        report.skipped.push({
-          route: `GET ${path}`,
-          reason: `did not finish within ${timeout / 1000}s: a stream that does not end needs a server`,
-        });
-        continue;
+        if (read === TIMED_OUT) {
+          report.skipped.push({
+            route: `GET ${path}`,
+            reason: `did not finish within ${timeout / 1000}s: a stream that does not end needs a server`,
+          });
+          continue;
+        }
+
+        body = read;
       }
-
-      response = answered.result;
-      body = answered.bytes ?? EMPTY;
     } catch (error) {
       report.skipped.push({ route: `GET ${path}`, reason: `the request failed: ${(error as Error).message}` });
       continue;
@@ -240,7 +272,9 @@ export async function exportStatic(options: StaticExportOptions): Promise<Static
   }
 
   if (options.githubPages) {
-    // without it GitHub runs Jekyll over the files, which drops the ones starting with an underscore
+    // For a site published from a branch: without it GitHub runs Jekyll over
+    // the files, which drops the ones starting with an underscore. A deploy
+    // through GitHub Actions runs no Jekyll and leaves dotfiles out anyway.
     writeFileSync(join(directory, '.nojekyll'), '');
 
     const notFound = join(directory, '404.html');
@@ -259,31 +293,130 @@ export async function exportStatic(options: StaticExportOptions): Promise<Static
   return report;
 }
 
-/** The body of an answer that is not kept. */
+/** The body of an answer that has none. */
 const EMPTY = new Uint8Array(0);
 
-/** What {@link withTimeout} resolves to when the time is up. */
+/** What {@link readBody} resolves to when the time is up. */
 const TIMED_OUT: unique symbol = Symbol('timed out');
 
 /**
- * Waits for a promise for a limited time.
+ * Reads the body of a response to its end, for a limited time. A body that is
+ * still going when the time is up is cancelled, so its source stops and the
+ * process is free to exit.
  *
- * @param {Promise<T>} promise - What to wait for
- * @param {number} ms - How long
- * @returns {Promise<T | typeof TIMED_OUT>} The value, or `TIMED_OUT`
+ * @param {Response} response - The response
+ * @param {number} ms - How long the body may take
+ * @returns {Promise<Uint8Array | typeof TIMED_OUT>} The body, or `TIMED_OUT`
  */
-async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | typeof TIMED_OUT> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
+async function readBody(response: Response, ms: number): Promise<Uint8Array | typeof TIMED_OUT> {
+  const reader = response.body?.getReader();
+
+  if (!reader) {
+    return EMPTY;
+  }
+
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  let expired = false;
+
+  const timer = setTimeout(() => {
+    expired = true;
+    reader.cancel().catch(() => {});
+  }, ms);
 
   try {
-    return await Promise.race([
-      promise,
-      new Promise<typeof TIMED_OUT>((resolve) => {
-        timer = setTimeout(() => resolve(TIMED_OUT), ms);
-      }),
-    ]);
+    for (;;) {
+      const { done, value } = await reader.read();
+
+      if (done) {
+        break;
+      }
+
+      chunks.push(value);
+      size += value.byteLength;
+    }
+  } catch (error) {
+    if (!expired) {
+      throw error;
+    }
   } finally {
     clearTimeout(timer);
+  }
+
+  if (expired) {
+    return TIMED_OUT;
+  }
+
+  const body = new Uint8Array(size);
+  let offset = 0;
+
+  for (const chunk of chunks) {
+    body.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+
+  return body;
+}
+
+/**
+ * Decodes one segment of a path for use as a file name: a static host looks
+ * for `café`, not `caf%C3%A9`. A segment that would decode to something that
+ * is not a name (a separator, a parent directory) is kept as it is.
+ *
+ * @param {string} segment - A segment of a URL path
+ * @returns {string} The file name
+ */
+function decodeSegment(segment: string): string {
+  try {
+    const decoded = decodeURIComponent(segment);
+
+    return /[\\/\0]/.test(decoded) || decoded === '..' || decoded === '.' ? segment : decoded;
+  } catch {
+    return segment;
+  }
+}
+
+/**
+ * Refuses an output directory that the export must not empty: anything that
+ * is not a directory of its own inside the project, and a directory that has
+ * files in it the export did not write.
+ *
+ * @param {string} directory - The output directory
+ * @param {string} root - The project
+ * @param {string[]} reserved - Directories of the project the output must stay clear of
+ * @returns {void}
+ * @throws {StaticExportError} When the directory is not safe to empty
+ */
+function assertOutput(directory: string, root: string, reserved: string[]): void {
+  const inside = (parent: string, child: string): boolean => {
+    const path = relative(parent, child);
+
+    return path === '' || (!path.startsWith('..') && !path.startsWith(sep) && !/^[a-zA-Z]:/.test(path));
+  };
+
+  if (directory === root || !inside(root, directory)) {
+    throw new StaticExportError(
+      `The static export cannot be written to ${directory}: choose a directory of its own inside the project, such as dist-static.`,
+    );
+  }
+
+  for (const other of [
+    join(root, 'src'),
+    join(root, 'node_modules'),
+    join(root, '.git'),
+    ...reserved.map((path) => resolve(path)),
+  ]) {
+    if (inside(other, directory) || inside(directory, other)) {
+      throw new StaticExportError(
+        `The static export cannot be written to ${directory}: it would replace ${other}. Choose a directory of its own, such as dist-static.`,
+      );
+    }
+  }
+
+  if (existsSync(directory) && !existsSync(join(directory, MARKER)) && readdirSync(directory).length > 0) {
+    throw new StaticExportError(
+      `${directory} is not empty and was not written by a static export. Remove it, or choose another directory with --out.`,
+    );
   }
 }
 

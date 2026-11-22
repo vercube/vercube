@@ -50,8 +50,8 @@ describe('module recipes', () => {
       ([name]) => name.startsWith('@vercube/') && !['@vercube/core', '@vercube/di', '@vercube/cli'].includes(name),
     );
 
-    // a recipe that only adds files and scripts adds no package
-    expect(added.length > 0 || first.dependencies.length === 0).toBe(true);
+    // github-pages only adds a script and a workflow, every other recipe adds a package
+    expect(added.length > 0).toBe(id !== 'github-pages');
     expect(added.every(([, version]) => version === '1.5.0')).toBe(true);
   });
 

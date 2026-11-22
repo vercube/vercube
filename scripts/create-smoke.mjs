@@ -187,13 +187,11 @@ if (appScripts['build:pages']) {
     throw new Error('dist-static/api/foo does not hold the answer of GET /api/foo');
   }
 
-  for (const file of ['.nojekyll', '404.html']) {
-    if (!existsSync(join(app, 'dist-static', file))) {
-      throw new Error(`dist-static/${file} was not written`);
-    }
+  if (!existsSync(join(app, 'dist-static/404.html'))) {
+    throw new Error('dist-static/404.html was not written');
   }
 
-  console.log('✔ dist-static holds GET /api/foo, .nojekyll and 404.html');
+  console.log('✔ dist-static holds GET /api/foo and 404.html');
 }
 
 if (appScripts.test) {

@@ -5,8 +5,7 @@ import consola from 'consola';
 import { BaseCommand } from '../BaseCommand';
 import { Command } from '../Decorators/Command';
 import { Flag } from '../Decorators/Flag';
-import { RecipeError } from '../Recipes/RecipeError';
-import { exportStatic, formatStaticReport } from '../Static/Export';
+import { exportStatic, formatStaticReport, StaticExportError } from '../Static/Export';
 import type { StaticRoute } from '../Static/Export';
 
 /**
@@ -62,7 +61,7 @@ export class BuildCommand extends BaseCommand {
 
     if (this.target !== undefined) {
       if (this.target !== 'github-pages') {
-        throw new RecipeError(`Unknown build target "${this.target}". Available: github-pages.`);
+        throw new StaticExportError(`Unknown build target "${this.target}". Available: github-pages.`);
       }
 
       await this.exportStatic(app);
@@ -74,7 +73,9 @@ export class BuildCommand extends BaseCommand {
    * directories, and the answer of every route that needs no input.
    *
    * The built entry is imported with `VERCUBE_LISTEN=0`, so it binds no port,
-   * and asked through the `fetch` of its default export.
+   * and asked through the `fetch` of its default export. The process exits
+   * when the files are written, with a failure when a path listed in
+   * `--routes` is not among them.
    *
    * @param {Awaited<ReturnType<typeof createVercube>>} app - The application that was just built
    * @returns {Promise<void>} Resolves once the files are written
@@ -85,28 +86,35 @@ export class BuildCommand extends BaseCommand {
     const sections = await inspect(app, ['routes']);
     const routes = (sections.routes?.data ?? []) as StaticRoute[];
 
+    // The entry is imported to be asked, not to serve: no port, and no jobs
+    // fired by a scheduler while the files are written.
     process.env.VERCUBE_LISTEN = '0';
+    process.env.VERCUBE_SCHEDULER_AUTOSTART = 'false';
 
     const module = (await import(pathToFileURL(entry).href)) as { default?: { fetch?: (request: Request) => Promise<Response> } };
     const handler = module.default?.fetch;
 
     if (typeof handler !== 'function') {
-      throw new RecipeError(
+      throw new StaticExportError(
         `${entry} has no default export with a fetch handler. Add \`export default { fetch: app.fetch.bind(app) };\` to the entry.`,
       );
     }
 
+    const requested = this.routes
+      ? this.routes
+          .split(',')
+          .map((path) => path.trim())
+          .filter(Boolean)
+      : [];
+
     const report = await exportStatic({
       fetch: (request) => handler.call(module.default, request),
       routes,
+      root,
       directory: resolve(root, this.out),
+      protect: [resolve(root, app.config.build?.output?.dir ?? 'dist')],
       publicDirs: (app.config.server?.static?.dirs ?? ['public']).map((dir) => resolve(root, dir)),
-      paths: this.routes
-        ? this.routes
-            .split(',')
-            .map((path) => path.trim())
-            .filter(Boolean)
-        : [],
+      paths: requested,
       githubPages: true,
     });
 
@@ -118,5 +126,18 @@ export class BuildCommand extends BaseCommand {
     for (const line of formatStaticReport(report)) {
       consola.log(line);
     }
+
+    // A path asked for by name that is not in the export is a broken site, so
+    // the build fails. The application that was imported may hold timers and
+    // connections open, so the process is ended rather than left to drain.
+    const written = new Set(report.written.map((file) => file.path));
+    const missing = requested.map((path) => (path.startsWith('/') ? path : `/${path}`)).filter((path) => !written.has(path));
+
+    if (missing.length > 0) {
+      consola.error({ tag: 'static', message: `Not exported, though listed in --routes: ${missing.join(', ')}` });
+    }
+
+    // oxlint-disable-next-line unicorn/no-process-exit
+    process.exit(missing.length > 0 ? 1 : 0);
   }
 }
