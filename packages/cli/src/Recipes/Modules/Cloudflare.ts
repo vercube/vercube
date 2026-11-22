@@ -44,6 +44,8 @@ export const cloudflareRecipe = defineRecipe({
     project.createFile('wrangler.jsonc', WRANGLER);
     project.createFile('public/.gitkeep', '');
     // a Worker bundle is deployed, not imported: it needs no declarations
+    const hadBuild = /\bbuild\s*:/.test(project.read('vercube.config.ts') ?? '');
+
     project.setConfig('build', '{ dts: false }');
     // Importing the configuration puts it under the type check, and its default
     // export has no declared type. With no declarations to emit, the compiler
@@ -64,7 +66,10 @@ export const cloudflareRecipe = defineRecipe({
     project.addScript('preview', 'vercube build && wrangler dev');
     project.addScript('deploy', 'vercube build && wrangler deploy');
     project.addLines('.gitignore', ['.wrangler', '.dev.vars']);
-    project.note('Run the Worker locally with `preview`, deploy it with `deploy` (needs `wrangler login` once)');
-    project.note('If vercube.config.ts already had a `build` option, add `dts: false` to it');
+    project.note('Run the Worker locally with `preview`, deploy it with `run deploy` (needs `wrangler login` once)');
+
+    if (hadBuild) {
+      project.note('Add `dts: false` to the `build` option of vercube.config.ts: a Worker bundle needs no declarations');
+    }
   },
 });

@@ -1,3 +1,6 @@
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { Controller, createApp, Get, loadVercubeConfig, provideConfig, RuntimeConfig } from '../../src';
 
@@ -39,16 +42,31 @@ describe('provideConfig()', () => {
     expect((await app.fetch(new Request('http://localhost/provided'))).status).toBe(200);
   });
 
-  it('is ignored when the caller turns the config file off or names where it is', async () => {
+  it('is ignored when the caller turns the config file off', async () => {
     provideConfig({ server: { port: 4321 } });
 
     expect((await loadVercubeConfig({}, { configFile: false })).server?.port).toBe(3000);
   });
 
-  it('goes back to the file once it is cleared', async () => {
-    provideConfig({ server: { port: 4321 } });
+  it('is ignored when the caller names the directory to read the file from', async () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'vercube-provided-'));
+
+    try {
+      provideConfig({ server: { port: 4321 } });
+
+      // an empty directory: the defaults, not what was provided
+      expect((await loadVercubeConfig({}, { cwd })).server?.port).toBe(3000);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('is no longer used once it is cleared', async () => {
+    provideConfig({ runtime: { region: 'weur' } as never });
     provideConfig(undefined);
 
-    expect((await loadVercubeConfig({}, { configFile: false })).server?.port).toBe(3000);
+    const app = await createApp({ cfg: { requestLogging: false, logLevel: 'error' }, configFile: { cwd: tmpdir() } });
+
+    expect(app.container.get(RuntimeConfig).runtimeConfig).toEqual({});
   });
 });

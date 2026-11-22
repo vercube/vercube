@@ -191,6 +191,7 @@ if (needsServices && !options.services) {
 }
 
 let server;
+let workerGroup;
 
 try {
   // inside the try: services that fail their health check are torn down too
@@ -265,6 +266,8 @@ try {
       env: { ...process.env, CI: '1', WRANGLER_SEND_METRICS: 'false' },
     });
 
+    workerGroup = server.pid;
+
     let workerGone = false;
 
     server.once('exit', () => {
@@ -302,11 +305,16 @@ try {
 } finally {
   // whatever happened above, nothing outlives the run
   if (server && server.exitCode === null && server.signalCode === null) {
+    server.kill('SIGKILL');
+  }
+
+  // wrangler leads a process group of its own: workerd must not outlive the run,
+  // even when wrangler itself is gone already
+  if (workerGroup !== undefined) {
     try {
-      // a detached child leads a process group: stop the whole group
-      process.kill(server.spawnargs.includes('wrangler') ? -server.pid : server.pid, 'SIGKILL');
+      process.kill(-workerGroup, 'SIGKILL');
     } catch {
-      server.kill('SIGKILL');
+      // the group is gone
     }
   }
 

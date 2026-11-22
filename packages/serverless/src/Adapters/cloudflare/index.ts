@@ -124,19 +124,33 @@ export interface CloudflareHandler<Env = Record<string, unknown>> {
  *
  * @example
  * ```ts
- * const app = await createApp({ cfg: config, configFile: false });
+ * provideConfig(config);
+ *
+ * const app = await createApp();
  *
  * export default toServerlessHandler(app);
  * ```
  *
  * Pass a function instead of the application to create it on the first
  * request, for an application whose setup does something Workers only allow
- * inside a request (a `fetch()`, a timer, a random value):
+ * inside a request (a `fetch()`, a timer, a random value). The function does
+ * everything the entry would: bind the controllers and start the application.
  *
  * @example
  * ```ts
- * export default toServerlessHandler(() => createApp({ cfg: config, configFile: false }));
+ * export default toServerlessHandler(async () => {
+ *   const app = await createApp();
+ *
+ *   app.container.expand(useContainer);
+ *   await app.listen();
+ *
+ *   return app;
+ * });
  * ```
+ *
+ * `CloudflareBindings` is a service of the application: bind it in the
+ * container setup (`container.bind(CloudflareBindings)`) before a controller
+ * injects it.
  *
  * @param {App | (() => MaybePromise<App>)} app - The application, or a function that creates it
  * @returns {CloudflareHandler<Env>} The module's default export
@@ -149,10 +163,6 @@ export function toServerlessHandler<Env = Record<string, unknown>>(app: App | ((
 
     // Cloudflare compresses responses at the edge, and negotiates the encoding itself
     instance.container.get(HttpServer).disableCompression();
-
-    if (!instance.container.getOptional(CloudflareBindings)) {
-      instance.container.bind(CloudflareBindings);
-    }
 
     return instance;
   };
@@ -189,15 +199,23 @@ export interface CloudflarePagesContext<Env = Record<string, unknown>> extends C
 /**
  * Turns a Vercube application into a Cloudflare Pages Function. Put it in
  * `functions/[[path]].ts`, so every path that is not a static file of the
- * Pages project reaches the application:
+ * Pages project reaches the application. Pages cannot build a function that
+ * awaits at the top of a module, so the application is created by a function,
+ * on the first request:
  *
  * @example
  * ```ts
  * // functions/[[path]].ts
- * import { app } from '../src/index';
- * import { toPagesFunction } from '@vercube/serverless/cloudflare';
+ * provideConfig(config);
  *
- * export const onRequest = toPagesFunction(app);
+ * export const onRequest = toPagesFunction(async () => {
+ *   const app = await createApp();
+ *
+ *   app.container.expand(useContainer);
+ *   await app.listen();
+ *
+ *   return app;
+ * });
  * ```
  *
  * @param {App | (() => MaybePromise<App>)} app - The application, or a function that creates it

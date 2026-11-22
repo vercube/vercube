@@ -5,7 +5,7 @@ A Vercube application deployed as a Cloudflare Worker, with a variable from `wra
 ```sh
 pnpm dev       # the application on Node, with reload
 pnpm preview   # the built Worker on workerd, at http://localhost:8787
-pnpm deploy    # needs `wrangler login`
+pnpm run deploy   # needs `wrangler login`
 ```
 
 `GET /api/foo` answers with the `GREETING` variable, `GET /hello.txt` is `public/hello.txt`.

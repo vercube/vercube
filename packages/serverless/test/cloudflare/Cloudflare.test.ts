@@ -137,17 +137,6 @@ describe('Cloudflare adapter', () => {
     expect(app.container.get(HttpServer).compressionEncodings).toEqual([]);
   });
 
-  it('binds CloudflareBindings for an application that did not', async () => {
-    const app = await createApp({ cfg: { requestLogging: false, logLevel: 'error' }, configFile: false });
-    const handler = toServerlessHandler(app);
-
-    expect(app.container.getOptional(CloudflareBindings)).toBeNull();
-
-    await handler.fetch(new Request('http://localhost/none'), {}, context());
-
-    expect(app.container.getOptional(CloudflareBindings)).toBeInstanceOf(CloudflareBindings);
-  });
-
   it('creates the application on the first request when given a function, once', async () => {
     const create = vi.fn(() => createCloudflareApp());
     const handler = toServerlessHandler<Env>(create);

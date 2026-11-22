@@ -357,6 +357,15 @@ describe('Project', () => {
       expect(entry).toContain("import { toServerlessHandler } from '@vercube/serverless/cloudflare'");
     });
 
+    it('should refuse to replace a default export that is more than the template handler', () => {
+      const api = project({
+        'src/index.ts': 'const app = await createApp();\nexport default { fetch: app.fetch.bind(app), websocket: {} };\n',
+      });
+
+      expect(() => api.setDefaultExport('export default worker;')).toThrow('already has a default export');
+      expect(read(api, 'src/index.ts')).toContain('websocket');
+    });
+
     it('should add a default export to an entry that has none', () => {
       const api = project({ 'src/index.ts': 'const app = await createApp();\n' });
 
