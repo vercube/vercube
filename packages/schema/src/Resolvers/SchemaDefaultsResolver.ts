@@ -138,7 +138,8 @@ function defaultResponses(metadata: MetadataTypes.Method): RouteConfig['response
       description: STATUS_DESCRIPTIONS[status] ?? 'Response',
       ...(Object.keys(headers).length > 0 ? { headers } : {}),
       ...(meta.sse ? { content: { 'text/event-stream': { schema: { type: 'string' } } } } : {}),
-      ...(stream ? { content: { [stream.type ?? 'application/octet-stream']: { schema: STREAM_SCHEMA } } } : {}),
+      // without a declared type the first chunk decides, which a document cannot know
+      ...(stream ? { content: { [stream.type ?? '*/*']: { schema: STREAM_SCHEMA } } } : {}),
     },
   } as RouteConfig['responses'];
 }

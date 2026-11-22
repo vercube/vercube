@@ -41,6 +41,12 @@ class SseDecorator extends BaseDecorator<SseDecoratorOptions> {
     initializeMetadata(this.prototype);
     const method = initializeMetadataMethod(this.prototype, this.propertyName);
     method.method = 'GET';
+    if (method.meta.stream) {
+      throw new Error(
+        `${this.instance?.constructor?.name}::${this.propertyName}: @Sse() cannot be combined with @Stream(), it already streams its own format.`,
+      );
+    }
+
     // declarative marker, for tools such as the OpenAPI generator
     method.meta.sse = true;
 

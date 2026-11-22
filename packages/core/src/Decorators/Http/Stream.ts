@@ -24,11 +24,16 @@ class StreamDecorator extends BaseDecorator<StreamOptions, MetadataTypes.Metadat
     initializeMetadata(this.prototype);
     const method = initializeMetadataMethod(this.prototype, this.propertyName);
 
+    const name = `${this.instance?.constructor?.name}::${this.propertyName}`;
+
+    if (method.meta.sse) {
+      throw new Error(`${name}: @Stream() cannot be combined with @Sse(), which already streams its own format.`);
+    }
+
     // declarative marker, for tools such as the OpenAPI generator
     method.meta.stream = { type: this.options.type };
 
     const original = (this.prototype as unknown as Record<string, Function>)[this.propertyName];
-    const name = `${this.instance?.constructor?.name}::${this.propertyName}`;
     const options: StreamOptions = {
       type: this.options.type,
       serialize: this.options.serialize,

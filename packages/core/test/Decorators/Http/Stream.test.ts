@@ -10,6 +10,7 @@ import {
   Middleware,
   NotFoundError,
   SetHeader,
+  Sse,
   Status,
   Stream,
   streamFile,
@@ -24,6 +25,18 @@ const state = {
 class TagMiddleware extends BaseMiddleware {
   public override onRequest(_request: Request, response: Response): void {
     response.headers.set('x-mw', 'yes');
+  }
+}
+
+class ReplaceMiddleware extends BaseMiddleware {
+  public override onResponse(): Response {
+    return new Response('replaced', { status: 203 });
+  }
+}
+
+class ThrowingAfterMiddleware extends BaseMiddleware {
+  public override onResponse(): void {
+    throw new Error('after hook failed');
   }
 }
 
@@ -160,6 +173,99 @@ class StreamController {
     } finally {
       state.closed++;
     }
+  }
+
+  @Get('/guessed-overridden')
+  @Stream()
+  @SetHeader('Content-Type', 'text/csv')
+  public *guessedOverridden(): Generator<string> {
+    yield 'a,b\n';
+  }
+
+  @Get('/explicit-wins')
+  @Stream({ type: 'text/tab-separated-values' })
+  @SetHeader('Content-Type', 'text/csv')
+  public *explicitWins(): Generator<string> {
+    yield 'a\tb\n';
+  }
+
+  @Get('/objects-stream')
+  @Stream({ type: 'application/x-ndjson', serialize: (row: { id: number }) => `${JSON.stringify(row)}\n` })
+  public objectsStream(): ReadableStream<{ id: number }> {
+    return new ReadableStream({
+      start(controller) {
+        controller.enqueue({ id: 1 });
+        controller.enqueue({ id: 2 });
+        controller.close();
+      },
+    });
+  }
+
+  @Get('/failing-stream')
+  @Stream({ onError: (error) => state.errors.push(error) })
+  public failingStream(): ReadableStream<Uint8Array> {
+    let sent = false;
+
+    return new ReadableStream({
+      pull(controller) {
+        if (sent) {
+          controller.error(new Error('upstream reset'));
+        } else {
+          sent = true;
+          controller.enqueue(new Uint8Array([1]));
+        }
+      },
+    });
+  }
+
+  @Get('/aborts')
+  @Stream({ onError: (error) => state.errors.push(error) })
+  public async *aborts(): AsyncGenerator<string> {
+    yield 'partial';
+    throw new DOMException('upstream timed out', 'AbortError');
+  }
+
+  @Get('/bare-generator')
+  public async *bareGenerator(): AsyncGenerator<string> {
+    yield 'never sent';
+  }
+
+  @Get('/bare-readable')
+  @Status(201)
+  public bareReadable(): Readable {
+    return Readable.from(['never sent']);
+  }
+
+  @Get('/dropped')
+  @Middleware(ReplaceMiddleware)
+  @Stream()
+  public async *dropped(): AsyncGenerator<string> {
+    try {
+      yield 'one';
+      yield 'two';
+    } finally {
+      state.closed++;
+    }
+  }
+
+  @Get('/dropped-by-error')
+  @Middleware(ThrowingAfterMiddleware)
+  public droppedByError(): ReadableStream {
+    return new ReadableStream({
+      cancel() {
+        state.closed++;
+      },
+    });
+  }
+
+  @Get('/short-file')
+  public shortFile(): Promise<Response> {
+    return streamFile([new Uint8Array(3)], { size: 100 });
+  }
+
+  @Get('/long-file')
+  public longFile(): Promise<Response> {
+    return streamFile([new Uint8Array(4), new Uint8Array(4)], { size: 6 });
   }
 
   @Get('/manual')
@@ -343,6 +449,105 @@ describe('streaming responses', () => {
     });
   });
 
+  describe('content type precedence', () => {
+    it('lets @SetHeader name the type of a stream whose type was only guessed', async () => {
+      expect((await call('/guessed-overridden')).headers.get('content-type')).toBe('text/csv');
+    });
+
+    it('keeps the type given to @Stream over @SetHeader', async () => {
+      expect((await call('/explicit-wins')).headers.get('content-type')).toBe('text/tab-separated-values');
+    });
+  });
+
+  describe('a ReadableStream under @Stream', () => {
+    it('is serialized chunk by chunk when a serializer is given', async () => {
+      const response = await call('/objects-stream');
+
+      expect(response.headers.get('content-type')).toBe('application/x-ndjson');
+      expect(await response.text()).toBe('{"id":1}\n{"id":2}\n');
+    });
+
+    it('reports a failure of the stream to onError', async () => {
+      state.errors.length = 0;
+
+      const response = await call('/failing-stream');
+
+      await expect(response.arrayBuffer()).rejects.toThrow();
+      expect((state.errors[0] as Error).message).toBe('upstream reset');
+    });
+  });
+
+  describe('what must not pass for a complete response', () => {
+    it('cuts off a stream whose source aborted, without reporting a failure', async () => {
+      state.errors.length = 0;
+
+      const response = await call('/aborts');
+
+      await expect(response.text()).rejects.toThrow();
+      expect(state.errors).toHaveLength(0);
+    });
+
+    it('refuses an async generator returned without @Stream', async () => {
+      const response = await call('/bare-generator');
+
+      expect(response.status).toBe(500);
+      expect(await response.text()).toContain('without @Stream()');
+    });
+
+    it('refuses a Node Readable returned without @Stream, on a route with actions too', async () => {
+      const response = await call('/bare-readable');
+
+      expect(response.status).toBe(500);
+      expect(await response.text()).toContain('without @Stream()');
+    });
+
+    it('refuses @Stream and @Sse on one handler', async () => {
+      class Both {
+        @Sse('/both')
+        @Stream()
+        public async *both(): AsyncGenerator<string> {
+          yield 'x';
+        }
+      }
+      Controller('/conflict')(Both);
+
+      await expect(
+        createApp({
+          cfg: { requestLogging: false, logLevel: 'error' },
+          configFile: false,
+          setup: (app) => app.container.bind(Both),
+        }),
+      ).rejects.toThrow('cannot be combined');
+    });
+  });
+
+  describe('a stream that is not sent', () => {
+    it('is closed when an after-middleware answers in its place', async () => {
+      state.closed = 0;
+
+      const response = await call('/dropped');
+
+      expect(response.status).toBe(203);
+      expect(await response.text()).toBe('replaced');
+      await vi.waitFor(() => expect(state.closed).toBe(1));
+    });
+
+    it('is cancelled when an after-middleware throws', async () => {
+      state.closed = 0;
+
+      expect((await call('/dropped-by-error')).status).toBe(500);
+      await vi.waitFor(() => expect(state.closed).toBe(1));
+    });
+  });
+
+  it('serves a second application from the same controller', async () => {
+    const first = await createStreamApp();
+    const second = await createStreamApp();
+
+    expect(await (await first.fetch(new Request('http://localhost/stream/ndjson'))).text()).toBe('{"line":1}\n{"line":2}\n');
+    expect(await (await second.fetch(new Request('http://localhost/stream/ndjson'))).text()).toBe('{"line":1}\n{"line":2}\n');
+  });
+
   describe('createStream', () => {
     it('streams from a handler without the decorator', async () => {
       const response = await call('/manual');
@@ -361,7 +566,7 @@ describe('streaming responses', () => {
       const response = await call('/file');
 
       expect(response.status).toBe(200);
-      expect(response.headers.get('content-type')).toBe('text/csv');
+      expect(response.headers.get('content-type')).toBe('text/csv; charset=utf-8');
       expect(response.headers.get('content-length')).toBe('15');
       expect(response.headers.get('content-disposition')).toBe(
         `attachment; filename="raport Zo_.csv"; filename*=UTF-8''raport%20Zo%C3%AB.csv`,
@@ -384,7 +589,43 @@ describe('streaming responses', () => {
       expect(response.headers.get('content-disposition')).toBe(
         'attachment; filename="_passwd_.txt"; filename*=UTF-8\'\'%22passwd%22.txt',
       );
-      expect(response.headers.get('content-type')).toBe('text/plain');
+      expect(response.headers.get('content-type')).toBe('text/plain; charset=utf-8');
+    });
+
+    it('fails a file that is shorter or longer than the size it declares', async () => {
+      const short = await call('/short-file');
+      const long = await call('/long-file');
+
+      expect(short.headers.get('content-length')).toBe('100');
+      await expect(short.arrayBuffer()).rejects.toThrow('ended after 3 bytes');
+      await expect(long.arrayBuffer()).rejects.toThrow('longer than the 6 bytes');
+    });
+
+    it('uses the size of a Blob, whatever the options say', async () => {
+      const response = await streamFile(new Blob(['abcdef']), { size: 2 });
+
+      expect(response.headers.get('content-length')).toBe('6');
+    });
+
+    it('sets its own headers over the ones passed in, and keeps the rest', async () => {
+      const response = await streamFile(new Blob(['x']), {
+        filename: 'a.pdf',
+        headers: { 'content-type': 'text/html', 'content-length': '999', 'cache-control': 'no-store' },
+      });
+
+      expect(response.headers.get('content-type')).toBe('application/pdf');
+      expect(response.headers.get('content-length')).toBe('1');
+      expect(response.headers.get('cache-control')).toBe('no-store');
+    });
+
+    it('survives file names that cannot be encoded or are only a path', async () => {
+      expect((await streamFile(new Blob(['x']), { filename: 'a\uD800.txt' })).headers.get('content-disposition')).toBe(
+        'attachment; filename="a_.txt"',
+      );
+      expect((await streamFile(new Blob(['x']), { filename: 'dir/' })).headers.get('content-disposition')).toBe('attachment');
+      expect((await streamFile(new Blob(['x']), { filename: '100%.txt' })).headers.get('content-disposition')).toBe(
+        `attachment; filename="100_.txt"; filename*=UTF-8''100%25.txt`,
+      );
     });
 
     it('falls back to bytes for an unknown type', async () => {

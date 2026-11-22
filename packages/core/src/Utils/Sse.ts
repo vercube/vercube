@@ -136,6 +136,8 @@ export async function createSseResponse(source: SseSource, options: SseOptions =
     {
       encode: encodeSseMessage,
       onError: options.onError,
+      // an event feed has no end to cut short: a source that aborts simply stops
+      onAbort: 'close',
       heartbeat: options.heartbeat && options.heartbeat > 0 ? { interval: options.heartbeat, chunk: SSE_PING } : undefined,
     },
   );

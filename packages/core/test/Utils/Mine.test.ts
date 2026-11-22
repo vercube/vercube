@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mime } from '../../src/Utils/Mine';
+import { getFileContentType, mime } from '../../src/Utils/Mine';
 
 describe('Mine', () => {
   describe('mime.getType', () => {
@@ -61,6 +61,21 @@ describe('Mine', () => {
 
     it('should return null for null extension', () => {
       expect(mime.getType(null as any)).toBe(null);
+    });
+  });
+
+  describe('getFileContentType', () => {
+    it('reads the type from the extension, whatever its case', () => {
+      expect(getFileContentType('report.csv')).toBe('text/csv; charset=utf-8');
+      expect(getFileContentType('/data/Scan.PDF')).toBe('application/pdf');
+      expect(getFileContentType('archive.tar.gz')).toBe('application/gzip');
+    });
+
+    it('knows nothing about a name without a known extension', () => {
+      expect(getFileContentType('README')).toBeUndefined();
+      expect(getFileContentType('file.unknown')).toBeUndefined();
+      expect(getFileContentType('file.constructor')).toBeUndefined();
+      expect(getFileContentType()).toBeUndefined();
     });
   });
 });

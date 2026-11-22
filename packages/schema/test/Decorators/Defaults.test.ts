@@ -158,7 +158,7 @@ describe('defaults derived from the route', () => {
       200: { description: 'OK', content: { 'application/x-ndjson': { schema: { type: 'string', format: 'binary' } } } },
     });
     expect(schema.paths['/items/download']?.get?.responses).toEqual({
-      200: { description: 'OK', content: { 'application/octet-stream': { schema: { type: 'string', format: 'binary' } } } },
+      200: { description: 'OK', content: { '*/*': { schema: { type: 'string', format: 'binary' } } } },
     });
   });
 

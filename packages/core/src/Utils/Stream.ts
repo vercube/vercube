@@ -1,4 +1,4 @@
-import { mime } from './Mine';
+import { getFileContentType } from './Mine';
 
 /**
  * What a streaming handler may hand over: a Web stream, or anything that can be
@@ -43,14 +43,27 @@ export interface IterableStreamOptions {
   onError?: (error: unknown) => void;
 
   /**
+   * What an `AbortError` thrown by the source does to the stream. `close` ends
+   * it as if the source had finished, which suits a feed without an end, such
+   * as server-sent events. `error` cuts it off, so a client can tell an
+   * export that was interrupted from one that is complete. Neither reports to
+   * `onError`: an abort is a decision, not a failure.
+   * @default 'error'
+   */
+  onAbort?: 'close' | 'error';
+
+  /**
    * Sends `chunk` every `interval` milliseconds while the client keeps reading,
    * so a proxy does not close a connection that is merely quiet.
    */
   heartbeat?: { interval: number; chunk: Uint8Array };
 }
 
-/** Content type a stream was given by `@Stream()` or {@link createStream}, by stream. */
+/** Content type a stream was given explicitly, by `@Stream({ type })` or {@link createStream}. */
 const STREAM_TYPES: WeakMap<ReadableStream, string> = new WeakMap();
+
+/** Content type the first chunk of a stream implied, used when nothing else names one. */
+const GUESSED_TYPES: WeakMap<ReadableStream, string> = new WeakMap();
 
 const encoder = new TextEncoder();
 
@@ -168,6 +181,9 @@ export async function iterableToStream(
             controller.enqueue(beat.chunk);
           }
         }, beat.interval);
+
+        // a beat must not be what keeps the process alive
+        (heartbeat as { unref?: () => void }).unref?.();
       }
     },
 
@@ -204,10 +220,15 @@ export async function iterableToStream(
         // `yield`, and an errored stream never calls cancel(); close it here.
         closeStreamIterator(iterator);
 
-        // A generator that bails out through an AbortSignal (`req.signal` on
-        // disconnect) ends the stream on purpose - it is not a failure.
         if (isAbortError(error)) {
-          controller.close();
+          // A source that bails out through an AbortSignal (`req.signal` on
+          // disconnect, its own timeout) stopped on purpose.
+          if (options.onAbort === 'close') {
+            controller.close();
+          } else {
+            controller.error(error);
+          }
+
           return;
         }
 
@@ -273,13 +294,24 @@ function typeOfChunk(chunk: unknown): string {
 }
 
 /**
- * The content type a stream was given, if any.
+ * The content type a stream was given explicitly, if any.
  *
  * @param {ReadableStream} stream - A stream a handler returned
- * @returns {string | undefined} The content type, undefined for a stream of unknown content
+ * @returns {string | undefined} The content type
  */
 export function getStreamType(stream: ReadableStream): string | undefined {
   return STREAM_TYPES.get(stream);
+}
+
+/**
+ * The content type the first chunk of a stream implied, if the stream was
+ * built from an iterable.
+ *
+ * @param {ReadableStream} stream - A stream a handler returned
+ * @returns {string | undefined} The content type
+ */
+export function getStreamGuessedType(stream: ReadableStream): string | undefined {
+  return GUESSED_TYPES.get(stream);
 }
 
 /**
@@ -305,7 +337,11 @@ export async function createStream<T = unknown>(
   source: StreamSource<T>,
   options: StreamOptions<T> = {},
 ): Promise<ReadableStream<Uint8Array>> {
-  if (source instanceof ReadableStream) {
+  const serialize = options.serialize as ((chunk: unknown) => string | Uint8Array) | undefined;
+
+  // A stream is passed through as it is, unless its chunks are to be
+  // serialized or its failure reported: then it is read like any iterable.
+  if (source instanceof ReadableStream && !serialize && !options.onError) {
     if (options.type) {
       STREAM_TYPES.set(source, options.type);
     }
@@ -314,12 +350,11 @@ export async function createStream<T = unknown>(
   }
 
   const iterator = getStreamIterator(source, 'A streaming handler must return a ReadableStream, an AsyncIterable or an Iterable');
-  const serialize = options.serialize as ((chunk: unknown) => string | Uint8Array) | undefined;
-  let type = options.type;
+  let guessed: string | undefined;
 
   const encode = (chunk: unknown): Uint8Array => {
     // decided by the first chunk, which is encoded before the response exists
-    type ??= serialize ? 'application/octet-stream' : typeOfChunk(chunk);
+    guessed ??= serialize ? 'application/octet-stream' : typeOfChunk(chunk);
 
     if (!serialize) {
       return encodeChunk(chunk);
@@ -332,8 +367,12 @@ export async function createStream<T = unknown>(
 
   const stream = await iterableToStream(iterator, { encode, onError: options.onError });
 
-  // an empty source never saw a chunk
-  STREAM_TYPES.set(stream, type ?? 'application/octet-stream');
+  if (options.type) {
+    STREAM_TYPES.set(stream, options.type);
+  } else if (guessed) {
+    // an empty source never saw a chunk and implies nothing
+    GUESSED_TYPES.set(stream, guessed);
+  }
 
   return stream;
 }
@@ -351,7 +390,11 @@ export interface StreamFileOptions {
   /** Content type. Defaults to the type of a `Blob`, then to the extension of `filename`. */
   type?: string;
 
-  /** Size in bytes, sent as `Content-Length`. Known already for a `Blob`. */
+  /**
+   * Size in bytes, sent as `Content-Length`. A source that turns out shorter
+   * or longer fails the response instead of sending a body that contradicts
+   * the header. Ignored for a `Blob`, which knows its own size.
+   */
   size?: number;
 
   /**
@@ -361,7 +404,10 @@ export interface StreamFileOptions {
    */
   disposition?: 'attachment' | 'inline';
 
-  /** Extra response headers. */
+  /**
+   * Extra response headers. `Content-Type`, `Content-Disposition` and
+   * `Content-Length` are set from the options above and win over these.
+   */
   headers?: HeadersInit;
 }
 
@@ -375,19 +421,82 @@ export interface StreamFileOptions {
  * @returns {string} The header value
  */
 function contentDisposition(disposition: 'attachment' | 'inline', filename?: string): string {
-  if (!filename) {
+  // no path, and nothing that could end the quoted string or the header
+  const name = filename?.replaceAll(/^.*[/\\]/g, '').replaceAll(/[\r\n\0]/g, '');
+
+  if (!name) {
     return disposition;
   }
 
-  // no path, and nothing that could end the quoted string or the header
-  const name = filename.replaceAll(/^.*[/\\]/g, '').replaceAll(/[\r\n\0]/g, '');
+  // `%` is left out as well: some browsers decode it in the plain parameter
   // eslint-disable-next-line no-control-regex
-  const fallback = name.replaceAll(/[^\u0020-\u007E]/g, '_').replaceAll(/["\\]/g, '_');
-  const encoded = encodeURIComponent(name).replaceAll(/['()*]/g, (char) => `%${char.codePointAt(0)!.toString(16).toUpperCase()}`);
+  const fallback = name.replaceAll(/[^\u0020-\u007E]/g, '_').replaceAll(/["\\%]/g, '_');
 
-  return fallback === name
-    ? `${disposition}; filename="${fallback}"`
-    : `${disposition}; filename="${fallback}"; filename*=UTF-8''${encoded}`;
+  if (fallback === name) {
+    return `${disposition}; filename="${fallback}"`;
+  }
+
+  try {
+    const encoded = encodeURIComponent(name).replaceAll(
+      /['()*]/g,
+      (char) => `%${char.codePointAt(0)!.toString(16).toUpperCase()}`,
+    );
+
+    return `${disposition}; filename="${fallback}"; filename*=UTF-8''${encoded}`;
+  } catch {
+    // a lone surrogate cannot be encoded: the fallback is all there is
+    return `${disposition}; filename="${fallback}"`;
+  }
+}
+
+/**
+ * Passes a byte stream on while holding it to a declared length: a chunk past
+ * it, or an end before it, fails the stream. A body that disagrees with its
+ * `Content-Length` leaves a keep-alive connection out of step, which is worse
+ * than a response that visibly failed.
+ *
+ * @param {ReadableStream<Uint8Array>} source - The stream to pass on
+ * @param {number} size - The number of bytes it has to carry
+ * @returns {ReadableStream<Uint8Array>} The checked stream
+ */
+function enforceLength(source: ReadableStream<Uint8Array>, size: number): ReadableStream<Uint8Array> {
+  const reader = source.getReader();
+  let sent = 0;
+
+  return new ReadableStream<Uint8Array>({
+    async pull(controller) {
+      try {
+        const { value, done } = await reader.read();
+
+        if (done) {
+          if (sent === size) {
+            controller.close();
+          } else {
+            controller.error(new RangeError(`streamFile: the source ended after ${sent} bytes, size says ${size}.`));
+          }
+
+          return;
+        }
+
+        sent += value.byteLength;
+
+        if (sent > size) {
+          reader.cancel().catch(() => {});
+          controller.error(new RangeError(`streamFile: the source is longer than the ${size} bytes size says.`));
+
+          return;
+        }
+
+        controller.enqueue(value);
+      } catch (error) {
+        controller.error(error);
+      }
+    },
+
+    cancel(reason) {
+      return reader.cancel(reason);
+    },
+  });
 }
 
 /**
@@ -416,21 +525,33 @@ export async function streamFile(
   source: ReadableStream<Uint8Array> | AsyncIterable<Uint8Array> | Iterable<Uint8Array> | Blob,
   options: StreamFileOptions = {},
 ): Promise<Response> {
-  const isBlob = typeof Blob !== 'undefined' && source instanceof Blob;
-  const extension = options.filename?.includes('.') ? options.filename.slice(options.filename.lastIndexOf('.')) : '';
-  const type = options.type || (isBlob && (source as Blob).type) || mime.getType(extension) || 'application/octet-stream';
-  const size = options.size ?? (isBlob ? (source as Blob).size : undefined);
+  const blob = typeof Blob !== 'undefined' && source instanceof Blob ? source : undefined;
+  const type = options.type || blob?.type || getFileContentType(options.filename) || 'application/octet-stream';
+  const declared =
+    options.size !== undefined && Number.isSafeInteger(options.size) && options.size >= 0 ? options.size : undefined;
+  // a Blob knows its size, and a wrong one given for it would only break the response
+  const size = blob ? blob.size : declared;
 
   const headers = new Headers(options.headers);
 
   headers.set('content-type', type);
   headers.set('content-disposition', contentDisposition(options.disposition ?? 'attachment', options.filename));
 
-  if (size !== undefined && Number.isSafeInteger(size) && size >= 0) {
+  if (size === undefined) {
+    headers.delete('content-length');
+  } else {
     headers.set('content-length', String(size));
   }
 
-  const body = isBlob ? (source as Blob) : await createStream(source as StreamSource<Uint8Array>);
+  let body: Blob | ReadableStream<Uint8Array>;
+
+  if (blob) {
+    body = blob;
+  } else {
+    const stream = await createStream(source as StreamSource<Uint8Array>);
+
+    body = size === undefined ? stream : enforceLength(stream, size);
+  }
 
   // the global Response: it knows how to send a Blob and a stream on every runtime
   return new Response(body, { status: 200, headers });
