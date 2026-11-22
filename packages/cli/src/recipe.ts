@@ -8,4 +8,5 @@ export { resolveRecipes } from './Recipes/Resolve';
 export { RECIPES } from './Recipes/Catalog';
 export { Project } from './Recipes/Project';
 export { RecipeError } from './Recipes/RecipeError';
+export { CliErrors } from './Errors/Catalog';
 export type { RecipeTypes } from './Recipes/RecipeTypes';

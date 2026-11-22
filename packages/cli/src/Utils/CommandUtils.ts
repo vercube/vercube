@@ -1,5 +1,6 @@
 import { COMMAND_ARGS_KEY } from '../Decorators/Arg';
 import { COMMAND_META_KEY } from '../Decorators/Command';
+import { CliErrors } from '../Errors/Catalog';
 import type { BaseCommand } from '../BaseCommand';
 import type { CliTypes } from '../Types/CliTypes';
 
@@ -14,7 +15,7 @@ export function getCommandMeta(CommandClass: new () => unknown): CliTypes.Comman
   const meta: CliTypes.CommandMeta | undefined = (CommandClass as any).prototype[COMMAND_META_KEY];
 
   if (!meta) {
-    throw new Error(`[CommandRegistry] Class "${CommandClass.name}" is missing the @Command decorator.`);
+    throw CliErrors.COMMAND_DECORATOR_MISSING({ name: CommandClass.name });
   }
 
   return meta;

@@ -1,6 +1,7 @@
 import { createRequire } from 'node:module';
 import { loadRunner, RunnerManager } from 'env-runner';
 import { isAbsolute, resolve } from 'pathe';
+import { ViteErrors } from './Errors/Catalog';
 import { devWorker } from './meta';
 import { VERCUBE_ENV } from './types';
 import type { VercubePluginContext } from './types';
@@ -223,7 +224,7 @@ export async function initEnvRunner(ctx: VercubePluginContext): Promise<RunnerMa
  */
 export function getEnvRunner(ctx: VercubePluginContext): RunnerManager {
   if (!ctx._envRunner) {
-    throw new Error('[vercube] Env runner not initialized. Call initEnvRunner() first.');
+    throw ViteErrors.ENV_RUNNER_NOT_INITIALIZED();
   }
   return ctx._envRunner;
 }

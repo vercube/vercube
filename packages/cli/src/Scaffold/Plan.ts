@@ -1,4 +1,4 @@
-import { RecipeError } from '../Recipes/RecipeError';
+import { CliErrors } from '../Errors/Catalog';
 import type { RecipeTypes } from '../Recipes/RecipeTypes';
 import type { Template } from './Templates';
 
@@ -129,7 +129,7 @@ export async function resolveInitPlan(
   const template = catalogs.templates.find((candidate) => candidate.id === templateId);
 
   if (!template) {
-    throw new RecipeError(`Unknown template "${templateId}". Available: ${catalogs.templates.map((t) => t.id).join(', ')}.`);
+    throw CliErrors.UNKNOWN_TEMPLATE({ template: templateId, available: catalogs.templates.map((t) => t.id).join(', ') });
   }
 
   const selected = await answer(
@@ -147,9 +147,11 @@ export async function resolveInitPlan(
   const unknown = selected.filter((id) => !modules.some((recipe) => recipe.id === id));
 
   if (unknown.length > 0) {
-    throw new RecipeError(
-      `Unknown module${unknown.length > 1 ? 's' : ''}: ${unknown.join(', ')}. Available: ${modules.map((r) => r.id).join(', ')}.`,
-    );
+    throw CliErrors.UNKNOWN_MODULE({
+      unknown: unknown.join(', '),
+      available: modules.map((r) => r.id).join(', '),
+      many: unknown.length > 1,
+    });
   }
 
   const answers: Record<string, Record<string, string>> = {};
@@ -186,9 +188,7 @@ export async function resolveInitPlan(
   );
 
   if (deploy !== DEFAULT_DEPLOY && !deploys.some((recipe) => recipe.id === deploy)) {
-    throw new RecipeError(
-      `Unknown deploy target "${deploy}". Available: ${[DEFAULT_DEPLOY, ...deploys.map((r) => r.id)].join(', ')}.`,
-    );
+    throw CliErrors.UNKNOWN_DEPLOY_TARGET({ deploy, available: [DEFAULT_DEPLOY, ...deploys.map((r) => r.id)].join(', ') });
   }
 
   const deployRecipe = deploys.find((recipe) => recipe.id === deploy);
@@ -220,23 +220,22 @@ export async function resolveInitPlan(
     .map(([flag]) => `--${flag}`);
 
   if (unused.length > 0) {
-    throw new RecipeError(
-      `${unused.join(', ')} only applies to a module that is not selected. Add the module to --modules, or drop the flag.`,
-    );
+    throw CliErrors.FLAG_UNUSED({ flags: unused.join(', ') });
   }
 
   if (missing.length > 0) {
-    throw new RecipeError(
-      `Missing ${missing.join(', ')}. Pass them, or --yes for the defaults, when there is no terminal to ask in. Example: vercube init my-app --template api --modules schema,testing --deploy node --yes`,
-    );
+    throw CliErrors.ANSWERS_MISSING({
+      missing: missing.join(', '),
+      example: 'vercube init my-app --template api --modules schema,testing --deploy node --yes',
+    });
   }
 
   if (!PACKAGE_MANAGERS.includes(packageManager)) {
-    throw new RecipeError(`Unknown package manager "${packageManager}". Available: ${PACKAGE_MANAGERS.join(', ')}.`);
+    throw CliErrors.UNKNOWN_PACKAGE_MANAGER({ packageManager, available: PACKAGE_MANAGERS.join(', ') });
   }
 
   if (packageManager === 'deno' && template.id !== 'api') {
-    throw new RecipeError(`Deno supports the api template only, got ${template.id}.`);
+    throw CliErrors.DENO_TEMPLATE_UNSUPPORTED({ template: template.id });
   }
 
   return {
@@ -273,9 +272,11 @@ async function answerPrompts(
     );
 
     if (!prompt.options.some((option) => option.value === value)) {
-      throw new RecipeError(
-        `--${prompt.flag} must be one of ${prompt.options.map((option) => option.value).join(', ')}, got ${value}.`,
-      );
+      throw CliErrors.FLAG_VALUE_INVALID({
+        flag: prompt.flag,
+        options: prompt.options.map((option) => option.value).join(', '),
+        value,
+      });
     }
 
     result[prompt.name] = value;

@@ -13,3 +13,6 @@ export * from './Server/DevServer';
 
 export * from './Typegen/Inspect';
 export * from './Typegen/Typegen';
+
+/** Errors */
+export { DevkitErrors } from './Errors/Catalog';

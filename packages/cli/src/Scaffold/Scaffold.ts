@@ -4,9 +4,9 @@ import { downloadTemplate } from 'giget';
 import { installDependencies } from 'nypm';
 import { join } from 'pathe';
 import { x } from 'tinyexec';
+import { CliErrors } from '../Errors/Catalog';
 import { applyRecipes } from '../Recipes/Apply';
 import { listFiles, Project } from '../Recipes/Project';
-import { RecipeError } from '../Recipes/RecipeError';
 import { DEFAULT_DEPLOY } from './Plan';
 import { TEMPLATE_REGISTRY } from './Templates';
 import type { RecipeTypes } from '../Recipes/RecipeTypes';
@@ -55,7 +55,7 @@ export async function scaffoldProject(plan: InitPlan, options: ScaffoldOptions):
   const log = options.log ?? (() => {});
 
   if (!options.force && existsSync(options.dir) && readdirSync(options.dir).length > 0) {
-    throw new RecipeError(`${options.dir} is not empty. Pass --force to replace its contents.`);
+    throw CliErrors.DIRECTORY_NOT_EMPTY({ dir: options.dir });
   }
 
   // replace, not merge: files of an earlier project would outlive the new one.

@@ -1,3 +1,4 @@
+import { NitroErrors } from '../Errors/Catalog';
 import type { Nitro } from 'nitro/types';
 
 /**
@@ -7,6 +8,6 @@ import type { Nitro } from 'nitro/types';
  */
 export function validateBundler(nitro: Nitro): void {
   if (nitro.options.builder !== 'rolldown') {
-    throw new Error('Vercube Nitro module requires the rolldown builder');
+    throw NitroErrors.BUILDER_NOT_ROLLDOWN();
   }
 }
