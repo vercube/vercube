@@ -2,7 +2,8 @@ import { defineRecipe } from '../Apply';
 import { bundleConfig } from './BundledConfig';
 import { VERSIONS } from './Versions';
 
-const FUNCTION = `import { netlify } from '../../dist/index.mjs';
+const FUNCTION = `// @ts-expect-error the build emits no declarations for the entry
+import { netlify } from '../../dist/index.mjs';
 import type { Config } from '@netlify/functions';
 
 export default netlify;
@@ -18,7 +19,6 @@ const NETLIFY_TOML = `[build]
 
 [functions]
   directory = "netlify/functions"
-  node_bundler = "esbuild"
 `;
 
 export const netlifyRecipe = defineRecipe({
@@ -46,7 +46,7 @@ export const netlifyRecipe = defineRecipe({
     project.createFile('public/.gitkeep', '');
     project.bind({ name: 'NetlifyContext', from: '@vercube/serverless/netlify' });
     project.addScript('preview', 'vercube build && netlify dev');
-    project.addScript('deploy', 'netlify deploy --build --prod');
+    project.addScript('deploy', 'netlify deploy --prod');
     project.addLines('.gitignore', ['.netlify']);
     project.note(
       'Run the function locally with `preview`, deploy it with `run deploy` (needs `netlify login` and `netlify link` once)',

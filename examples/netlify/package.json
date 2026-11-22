@@ -9,7 +9,7 @@
     "build": "vercube build",
     "dev": "vercube dev",
     "preview": "vercube build && netlify dev",
-    "deploy": "netlify deploy --build --prod"
+    "deploy": "netlify deploy --prod"
   },
   "license": "MIT",
   "dependencies": {

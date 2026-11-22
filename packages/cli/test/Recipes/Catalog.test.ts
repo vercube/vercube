@@ -139,7 +139,7 @@ describe('module recipes', () => {
 
     const pkg = JSON.parse(files['package.json']);
 
-    expect(pkg.scripts).toMatchObject({ preview: 'vercube build && netlify dev', deploy: 'netlify deploy --build --prod' });
+    expect(pkg.scripts).toMatchObject({ preview: 'vercube build && netlify dev', deploy: 'netlify deploy --prod' });
     expect(pkg.devDependencies['netlify-cli']).toBeDefined();
     expect(pkg.devDependencies['@netlify/functions']).toBeDefined();
   });
