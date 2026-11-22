@@ -162,8 +162,10 @@ export function defineErrorCatalog<
       const text = typeof message === 'function' ? message(params) : message;
       let error: Error;
 
-      if (stackless) {
-        // no frames are collected while the error is constructed
+      // a runtime without the limit, or with a frozen `Error`, builds the error as usual
+      if (stackless && typeof Error.stackTraceLimit === 'number' && Object.isExtensible(Error)) {
+        // No frames are collected while the error is constructed, which also
+        // goes for any error its constructor creates on the way.
         const limit = Error.stackTraceLimit;
 
         Error.stackTraceLimit = 0;
@@ -172,6 +174,13 @@ export function defineErrorCatalog<
           error = build(text, params);
         } finally {
           Error.stackTraceLimit = limit;
+        }
+
+        // What is left of the trace is its first line. A class that builds its
+        // own stack, or sets its message after `super()`, would leave a bare
+        // "Error" there, and that line is what a log shows.
+        if (Object.isExtensible(error)) {
+          error.stack = `${error.name}: ${error.message}`;
         }
       } else {
         error = build(text, params);

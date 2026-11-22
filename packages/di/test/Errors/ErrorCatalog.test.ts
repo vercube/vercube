@@ -178,16 +178,64 @@ describe('defineErrorCatalog()', () => {
     });
     const limit = Error.stackTraceLimit;
 
-    for (const error of [catalog.HOT(), catalog.PLAIN()]) {
-      expect(error.stack!.split('\n')).toHaveLength(1);
-      expect(getErrorGuidance(error)?.code).toMatch(/^X_/);
-    }
+    // one line, and it says what the error is
+    expect(catalog.HOT().stack).toBe('PlanError: Too many requests');
+    expect(catalog.PLAIN().stack).toBe('Error: Rejected');
+    expect(getErrorGuidance(catalog.HOT())?.code).toBe('X_HOT');
 
     expect(catalog.HOT()).toBeInstanceOf(PlanError);
     expect(() => catalog.THROWS()).toThrow('constructor failed');
     expect(Error.stackTraceLimit).toBe(limit);
     // an error built right after has its trace
     expect(new Error('after').stack!.split('\n').length).toBeGreaterThan(1);
+  });
+
+  it('names the error in the stack of a class that builds its own, as HttpError does', () => {
+    class LateMessageError extends Error {
+      public override name: string = 'LateMessageError';
+
+      constructor(message: string) {
+        super();
+        this.message = message;
+        // eslint-disable-next-line unicorn/error-message
+        this.stack = new Error().stack;
+      }
+    }
+
+    const catalog = defineErrorCatalog('X', {
+      HOT: { message: 'Quota exceeded', why: 'w', fix: 'f', stack: false, create: (message) => new LateMessageError(message) },
+    });
+
+    expect(catalog.HOT().stack).toBe('LateMessageError: Quota exceeded');
+  });
+
+  it('builds the error as usual where the stack limit cannot be changed', () => {
+    const catalog = defineErrorCatalog('X', { HOT: { message: 'Rejected', why: 'w', fix: 'f', stack: false } });
+    const descriptor = Object.getOwnPropertyDescriptor(Error, 'stackTraceLimit')!;
+
+    delete (Error as { stackTraceLimit?: number }).stackTraceLimit;
+
+    try {
+      expect(catalog.HOT().message).toBe('Rejected');
+      expect('stackTraceLimit' in Error).toBe(false);
+    } finally {
+      Object.defineProperty(Error, 'stackTraceLimit', descriptor);
+    }
+  });
+
+  it('leaves the limit alone when the message of a stackless entry throws', () => {
+    const catalog = defineErrorCatalog('X', {
+      HOT: {
+        message: (params: { name: string }) => params.name.toUpperCase(),
+        why: 'w',
+        fix: 'f',
+        stack: false,
+      },
+    });
+    const limit = Error.stackTraceLimit;
+
+    expect(() => catalog.HOT(undefined as never)).toThrow(TypeError);
+    expect(Error.stackTraceLimit).toBe(limit);
   });
 
   it('returns an error that cannot take new fields as it is', () => {
