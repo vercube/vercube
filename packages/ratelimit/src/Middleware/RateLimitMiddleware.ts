@@ -1,6 +1,7 @@
-import { BaseMiddleware, getRequestIP, RequestContext, ServiceUnavailableError, TooManyRequestsError } from '@vercube/core';
+import { BaseMiddleware, getRequestIP, RequestContext, TooManyRequestsError } from '@vercube/core';
 import { Container, Inject, InjectOptional } from '@vercube/di';
 import { countError, countLimited } from '../Common/Instrument';
+import { RateLimitErrors } from '../Errors/Catalog';
 import { RateLimitManager } from '../Services/RateLimitManager';
 import type { RateLimitTypes } from '../Types/RateLimitTypes';
 import type { MiddlewareOptions } from '@vercube/core';
@@ -71,7 +72,7 @@ export class RateLimitMiddleware extends BaseMiddleware<RateLimitTypes.DeclaredO
       manager.reportStorageError(options, error);
 
       if (options.onStorageError === 'deny') {
-        throw new ServiceUnavailableError('Rate limit storage unavailable');
+        throw RateLimitErrors.STORAGE_UNAVAILABLE();
       }
 
       return;
@@ -99,7 +100,7 @@ export class RateLimitMiddleware extends BaseMiddleware<RateLimitTypes.DeclaredO
 
       response.headers.set('retry-after', String(retry));
 
-      throw new TooManyRequestsError('Too many requests');
+      throw RateLimitErrors.LIMIT_EXCEEDED();
     }
 
     return options.headers ? { headers } : undefined;

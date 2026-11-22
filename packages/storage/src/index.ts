@@ -3,6 +3,7 @@ export * from './Service/StorageManager';
 export * from './Service/Storage';
 
 // Errors
+export * from './Errors/Catalog';
 export * from './Errors/StorageError';
 
 // Types

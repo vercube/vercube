@@ -1,4 +1,4 @@
-import { QueueError } from '../Errors/QueueError';
+import { QueueErrors } from '../Errors/Catalog';
 import { QueueStrategy } from '../Services/QueueStrategy';
 import { ATTEMPT_HEADER, generateJobId, readNumericHeader } from '../Utils/Job';
 import type { QueueTypes } from '../Types/QueueTypes';
@@ -101,13 +101,7 @@ export class MemoryStrategy extends QueueStrategy {
     const delay = request.options.delay ?? 0;
 
     if (Number.isNaN(delay) || delay === Infinity) {
-      throw new QueueError(
-        `Invalid job delay: ${delay}`,
-        'publish',
-        undefined,
-        { queue: request.queue, job: request.job },
-        false,
-      );
+      throw QueueErrors.DELAY_INVALID({ delay, operation: 'publish', metadata: { queue: request.queue, job: request.job } });
     }
 
     if (delay > 0) {

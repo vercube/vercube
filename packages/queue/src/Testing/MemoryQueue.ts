@@ -1,3 +1,4 @@
+import { QueueErrors } from '../Errors/Catalog';
 import { QueuePlugin } from '../Plugins/QueuePlugin';
 import { QueueManager } from '../Services/QueueManager';
 import { MemoryStrategy } from '../Strategies/MemoryStrategy';
@@ -49,7 +50,7 @@ export function withMemoryQueue(options: Omit<QueueTypes.PluginOptions, 'strateg
 
   const current = (): QueueManager => {
     if (!manager) {
-      throw new Error('withMemoryQueue() is not set up yet: pass it to createTestApp({ extensions }) first.');
+      throw QueueErrors.TESTING_NOT_SET_UP();
     }
 
     return manager;

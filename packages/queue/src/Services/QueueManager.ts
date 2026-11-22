@@ -2,8 +2,8 @@ import { HealthRegistry, ValidationProvider } from '@vercube/core';
 import { Container, Destroy, Init, Inject, InjectOptional } from '@vercube/di';
 import { Logger } from '@vercube/logger';
 import { countOutcome, injectTraceContext, traceProcess, tracePublish } from '../Common/Instrument';
+import { QueueErrors } from '../Errors/Catalog';
 import { QueueError } from '../Errors/QueueError';
-import { toQueueError } from '../Utils/Errors';
 import {
   ATTEMPT_HEADER,
   ATTEMPTS_HEADER,
@@ -247,20 +247,16 @@ export class QueueManager {
     const mount = this.fStrategies.get(name);
 
     if (!mount || this.fClosed) {
-      throw new QueueError(
-        this.fClosed ? 'The queue manager is closed' : `No queue strategy is mounted under "${name}"`,
-        'ping',
-        undefined,
-        undefined,
-        false,
-      );
+      throw this.fClosed
+        ? QueueErrors.MANAGER_CLOSED({ operation: 'ping' })
+        : QueueErrors.STRATEGY_NOT_MOUNTED({ name, operation: 'ping' });
     }
 
     await this.ensureReady(mount);
 
     // unmounted or closed meanwhile: the strategy belongs to nobody now
     if (this.fStrategies.get(name) !== mount || this.fClosed) {
-      throw new QueueError(`The queue strategy "${name}" was closed`, 'ping', undefined, undefined, false);
+      throw QueueErrors.STRATEGY_CLOSED({ name, operation: 'ping' });
     }
 
     await mount.strategy.ping?.();
@@ -292,7 +288,9 @@ export class QueueManager {
 
         return ref;
       } catch (error) {
-        throw toQueueError(error, 'Failed to publish job', 'add', { strategy: mount.name, queue, job });
+        throw error instanceof QueueError
+          ? error
+          : QueueErrors.PUBLISH_FAILED({ cause: error, metadata: { strategy: mount.name, queue, job } });
       }
     });
   }
@@ -330,7 +328,9 @@ export class QueueManager {
 
         return refs;
       } catch (error) {
-        throw toQueueError(error, 'Failed to publish jobs', 'addMany', { strategy: mount.name, queue, job });
+        throw error instanceof QueueError
+          ? error
+          : QueueErrors.PUBLISH_MANY_FAILED({ cause: error, metadata: { strategy: mount.name, queue, job } });
       }
     });
   }
@@ -351,13 +351,12 @@ export class QueueManager {
     const existing = this.fRegistrations.get(key);
 
     if (existing) {
-      throw new QueueError(
-        `Job "${registration.job}" of queue "${registration.queue}" already has a handler`,
-        'register',
-        undefined,
-        { registered: existing.source, duplicate: registration.source },
-        false,
-      );
+      throw QueueErrors.HANDLER_DUPLICATE({
+        job: registration.job,
+        queue: registration.queue,
+        operation: 'register',
+        metadata: { registered: existing.source, duplicate: registration.source },
+      });
     }
 
     this.fRegistrations.set(key, registration);
@@ -683,7 +682,7 @@ export class QueueManager {
       countOutcome({ queue, job: incoming.job }, 'unhandled');
 
       if (this.fDefaults.onUnhandled === 'fail') {
-        throw new QueueError(`No handler registered for job "${incoming.job}"`, 'process', undefined, { strategy, queue }, false);
+        throw QueueErrors.HANDLER_MISSING({ job: incoming.job, operation: 'process', metadata: { strategy, queue } });
       }
 
       return;
@@ -851,13 +850,11 @@ export class QueueManager {
             options,
           })
         : Promise.reject(
-            new QueueError(
-              `Strategy "${registration.strategy}" is no longer mounted`,
-              'publish',
-              undefined,
-              { queue: registration.queue, job: context.job },
-              false,
-            ),
+            QueueErrors.STRATEGY_UNMOUNTED_BEFORE_RETRY({
+              strategy: registration.strategy,
+              operation: 'publish',
+              metadata: { queue: registration.queue, job: context.job },
+            }),
           );
     };
 
@@ -932,9 +929,10 @@ export class QueueManager {
         new Promise<never>((_, reject) => {
           timer = setTimeout(() => {
             reject(
-              new QueueError(`Job "${registration.job}" timed out after ${timeout}ms`, 'timeout', undefined, {
-                queue: registration.queue,
-                id: context.id,
+              QueueErrors.JOB_TIMEOUT({
+                job: registration.job,
+                timeout,
+                metadata: { queue: registration.queue, id: context.id },
               }),
             );
           }, timeout);
@@ -962,25 +960,17 @@ export class QueueManager {
     }
 
     if (!this.gValidation) {
-      throw new QueueError(
-        'A job declares a schema but no ValidationProvider is bound in the container',
-        'validate',
-        undefined,
-        { queue: registration.queue, job },
-        false,
-      );
+      throw QueueErrors.VALIDATION_PROVIDER_MISSING({ operation: 'validate', metadata: { queue: registration.queue, job } });
     }
 
     const result = await this.gValidation.validate(schema, payload);
 
     if (result.issues) {
-      throw new QueueError(
-        `Payload of job "${job}" failed validation`,
-        'validate',
-        undefined,
-        { queue: registration.queue, issues: result.issues },
-        false,
-      );
+      throw QueueErrors.PAYLOAD_INVALID({
+        job,
+        operation: 'validate',
+        metadata: { queue: registration.queue, issues: result.issues },
+      });
     }
 
     return result.value;
@@ -1227,7 +1217,9 @@ export class QueueManager {
         mount.error = error;
         this.gLogger?.error(`Vercube/QueueManager::Failed to initialize strategy "${mount.name}"`, error);
 
-        throw toQueueError(error, `Failed to initialize strategy "${mount.name}"`, 'initialize', { strategy: mount.name });
+        throw error instanceof QueueError
+          ? error
+          : QueueErrors.STRATEGY_INIT_FAILED({ name: mount.name, cause: error, metadata: { strategy: mount.name } });
       },
     );
 
@@ -1247,8 +1239,10 @@ export class QueueManager {
     const mount = this.fStrategies.get(mountName);
 
     if (!mount) {
-      throw new QueueError(`No queue strategy is mounted as "${mountName}"`, operation, undefined, {
-        mounted: [...this.fStrategies.keys()],
+      throw QueueErrors.STRATEGY_UNKNOWN({
+        name: mountName,
+        operation,
+        metadata: { mounted: [...this.fStrategies.keys()] },
       });
     }
 
@@ -1279,13 +1273,11 @@ export class QueueManager {
   ): QueueTypes.JobOptions {
     // Delaying in this process would lose the job on a restart, so it is refused instead.
     if (options.delay !== undefined && options.delay > 0 && !mount.strategy.capabilities.delay) {
-      throw new QueueError(
-        `The "${mount.strategy.transport}" transport cannot delay jobs`,
+      throw QueueErrors.DELAY_UNSUPPORTED({
+        transport: mount.strategy.transport,
         operation,
-        undefined,
-        { strategy: mount.name, queue, job },
-        false,
-      );
+        metadata: { strategy: mount.name, queue, job },
+      });
     }
 
     const handler = (

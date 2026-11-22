@@ -1,9 +1,9 @@
 import { InjectOptional } from '@vercube/di';
 import { Logger } from '@vercube/logger';
 import { Queue, UnrecoverableError, Worker } from 'bullmq';
+import { QueueErrors } from '../Errors/Catalog';
 import { QueueError } from '../Errors/QueueError';
 import { QueueStrategy } from '../Services/QueueStrategy';
-import { toQueueError } from '../Utils/Errors';
 import { prune } from '../Utils/Job';
 import type { QueueTypes } from '../Types/QueueTypes';
 import type { ConnectionOptions, Job, JobsOptions, QueueOptions, WorkerOptions } from 'bullmq';
@@ -98,7 +98,7 @@ export class BullMQStrategy extends QueueStrategy<BullMQStrategyOptions> {
    */
   public initialize(options: BullMQStrategyOptions): void {
     if (!options?.connection) {
-      throw new QueueError('BullMQ needs a Redis connection', 'initialize', undefined, undefined, false);
+      throw QueueErrors.BULLMQ_CONNECTION_MISSING();
     }
 
     this.fOptions = options;
@@ -121,10 +121,9 @@ export class BullMQStrategy extends QueueStrategy<BullMQStrategyOptions> {
 
       return { id: String(job.id), queue: request.queue, job: request.job, strategy: this.transport };
     } catch (error) {
-      throw toQueueError(error, 'Failed to add job to BullMQ', 'publish', {
-        queue: request.queue,
-        job: request.job,
-      });
+      throw error instanceof QueueError
+        ? error
+        : QueueErrors.BULLMQ_PUBLISH_FAILED({ cause: error, metadata: { queue: request.queue, job: request.job } });
     }
   }
 
@@ -156,7 +155,9 @@ export class BullMQStrategy extends QueueStrategy<BullMQStrategyOptions> {
         strategy: this.transport,
       }));
     } catch (error) {
-      throw toQueueError(error, 'Failed to add jobs to BullMQ', 'publishMany', { queue: requests[0].queue });
+      throw error instanceof QueueError
+        ? error
+        : QueueErrors.BULLMQ_PUBLISH_MANY_FAILED({ cause: error, metadata: { queue: requests[0].queue } });
     }
   }
 
@@ -251,7 +252,7 @@ export class BullMQStrategy extends QueueStrategy<BullMQStrategyOptions> {
         delayed: counts.delayed,
       };
     } catch (error) {
-      throw toQueueError(error, 'Failed to read BullMQ job counts', 'stats', { queue });
+      throw error instanceof QueueError ? error : QueueErrors.BULLMQ_STATS_FAILED({ cause: error, metadata: { queue } });
     }
   }
 
@@ -281,7 +282,9 @@ export class BullMQStrategy extends QueueStrategy<BullMQStrategyOptions> {
         }
       }
     } catch (error) {
-      throw toQueueError(error, 'Failed to read the BullMQ queue', 'peek', { queue: request.queue });
+      throw error instanceof QueueError
+        ? error
+        : QueueErrors.BULLMQ_PEEK_FAILED({ cause: error, metadata: { queue: request.queue } });
     }
 
     return messages;
@@ -448,7 +451,7 @@ export class BullMQStrategy extends QueueStrategy<BullMQStrategyOptions> {
    */
   private requireOptions(operation: string): BullMQStrategyOptions {
     if (!this.fOptions) {
-      throw new QueueError('BullMQ strategy is not initialized', operation, undefined, undefined, false);
+      throw QueueErrors.BULLMQ_NOT_INITIALIZED({ operation });
     }
 
     return this.fOptions;

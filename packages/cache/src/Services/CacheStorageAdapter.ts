@@ -2,7 +2,7 @@ import { InjectOptional } from '@vercube/di';
 import { Logger } from '@vercube/logger';
 import { StorageManager } from '@vercube/storage';
 import { MemoryStorage } from '@vercube/storage/drivers/MemoryStorage';
-import { CacheError } from '../Errors/CacheError';
+import { CacheErrors } from '../Errors/Catalog';
 import type { Storage } from '@vercube/storage';
 import type { StorageInterface } from 'ocache';
 
@@ -25,9 +25,7 @@ export function cacheBaseForStorage(storage?: string): string {
   if (storage?.includes(':')) {
     // the base is read back by splitting on the first colon, so a colon in the
     // name would silently resolve to a different (or non-existent) storage
-    throw new CacheError('Storage name used for caching must not contain a colon', 'cacheBaseForStorage', undefined, {
-      storage,
-    });
+    throw CacheErrors.STORAGE_NAME_HAS_COLON({ storage });
   }
 
   return storage && storage !== 'default' ? `${CACHE_BASE_PREFIX}/${storage}` : CACHE_BASE_PREFIX;
@@ -126,12 +124,7 @@ export class CacheStorageAdapter implements StorageInterface {
     const manager = this.gStorageManager;
 
     if (!manager) {
-      throw new CacheError(
-        'StorageManager is not registered in the container - bind it so cached entries have a storage to live in',
-        'resolveStorage',
-        undefined,
-        { key },
-      );
+      throw CacheErrors.STORAGE_MANAGER_MISSING({ key });
     }
 
     const name = storageNameFromCacheKey(key);
@@ -161,7 +154,7 @@ export class CacheStorageAdapter implements StorageInterface {
       const storage = manager.getStorage(name);
 
       if (!storage) {
-        throw new CacheError('Unable to mount a fallback cache storage', 'mountFallback', undefined, { storage: name });
+        throw CacheErrors.FALLBACK_MOUNT_FAILED({ storage: name });
       }
 
       // mount() only initializes once the manager has started, so a fallback

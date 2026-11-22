@@ -3,7 +3,7 @@ import { Logger } from '@vercube/logger';
 import { StorageManager } from '@vercube/storage';
 import { MemoryStorage } from '@vercube/storage/drivers/MemoryStorage';
 import { KEY_PREFIX, STORAGE_WARNING_INTERVAL } from '../Common/Constants';
-import { RateLimitError } from '../Errors/RateLimitError';
+import { RateLimitErrors } from '../Errors/Catalog';
 import { parseDuration } from '../Utils/Duration';
 import type { RateLimitTypes } from '../Types/RateLimitTypes';
 import type { RouteInfo } from '@vercube/core';
@@ -89,11 +89,7 @@ export class RateLimitManager {
     const windowMs = declared.windowMs ?? (defaults.window === undefined ? undefined : parseDuration(defaults.window, 'window'));
 
     if (limit === undefined || windowMs === undefined) {
-      throw new RateLimitError(
-        `Rate limit "${name}" needs a limit and a window, set them on @RateLimit() or in the rateLimit config`,
-        'configure',
-        { name },
-      );
+      throw RateLimitErrors.LIMIT_OR_WINDOW_MISSING({ name });
     }
 
     return {
@@ -288,7 +284,7 @@ export class RateLimitManager {
     // only an unmounted default gets memory, for development; a named mount that
     // is missing is a mistake (a typo, a forgotten mount) and fails like a storage that is down
     if (mount !== 'default') {
-      throw new RateLimitError(`Storage "${mount}" is not mounted`, 'storage', { mount });
+      throw RateLimitErrors.STORAGE_NOT_MOUNTED({ mount });
     }
 
     let mounting = this.fMounting.get(mount);
@@ -348,38 +344,38 @@ export function counterKey(name: string, client: string, index: number): string 
  * @throws {RateLimitError} When an option is invalid
  */
 export function validate(options: Partial<RateLimitTypes.Options> | RateLimitTypes.Config, where: string): number | undefined {
-  const fail = (message: string): never => {
-    throw new RateLimitError(`${where}: ${message}`, 'configure', { name: options.name });
-  };
-
   if (options.limit !== undefined && (!Number.isInteger(options.limit) || options.limit < 1)) {
-    fail(`limit must be a positive integer, got ${JSON.stringify(options.limit)}`);
+    throw RateLimitErrors.LIMIT_INVALID({ where, name: options.name, value: JSON.stringify(options.limit) });
   }
 
   if (options.algorithm !== undefined && options.algorithm !== 'fixed' && options.algorithm !== 'sliding') {
-    fail(`algorithm must be 'fixed' or 'sliding', got ${JSON.stringify(options.algorithm)}`);
+    throw RateLimitErrors.ALGORITHM_INVALID({ where, name: options.name, value: JSON.stringify(options.algorithm) });
   }
 
   if (options.onStorageError !== undefined && options.onStorageError !== 'allow' && options.onStorageError !== 'deny') {
-    fail(`onStorageError must be 'allow' or 'deny', got ${JSON.stringify(options.onStorageError)}`);
+    throw RateLimitErrors.ON_STORAGE_ERROR_INVALID({
+      where,
+      name: options.name,
+      value: JSON.stringify(options.onStorageError),
+    });
   }
 
   if (options.key !== undefined && typeof options.key !== 'function') {
-    fail('key must be a function');
+    throw RateLimitErrors.KEY_NOT_FUNCTION({ where, name: options.name });
   }
 
   if (options.name !== undefined && options.name === '') {
-    fail('name must not be empty');
+    throw RateLimitErrors.NAME_EMPTY({ where, name: options.name });
   }
 
   if (options.priority !== undefined && !Number.isFinite(options.priority)) {
-    fail('priority must be a number');
+    throw RateLimitErrors.PRIORITY_INVALID({ where, name: options.name });
   }
 
   const trustProxy = (options as RateLimitTypes.Config).trustProxy;
 
   if (trustProxy !== undefined && typeof trustProxy !== 'boolean' && !(Number.isInteger(trustProxy) && trustProxy >= 0)) {
-    fail(`trustProxy must be a boolean or a number of proxies, got ${JSON.stringify(trustProxy)}`);
+    throw RateLimitErrors.TRUST_PROXY_INVALID({ where, name: options.name, value: JSON.stringify(trustProxy) });
   }
 
   return options.window === undefined ? undefined : parseDuration(options.window, 'window');

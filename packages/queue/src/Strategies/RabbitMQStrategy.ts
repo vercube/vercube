@@ -1,9 +1,9 @@
 import { InjectOptional } from '@vercube/di';
 import { Logger } from '@vercube/logger';
 import { connect } from 'amqplib';
+import { QueueErrors } from '../Errors/Catalog';
 import { QueueError } from '../Errors/QueueError';
 import { QueueStrategy } from '../Services/QueueStrategy';
-import { toQueueError } from '../Utils/Errors';
 import {
   ATTEMPT_HEADER,
   decodePayload,
@@ -159,7 +159,7 @@ export class RabbitMQStrategy extends QueueStrategy<RabbitMQStrategyOptions> {
    */
   public async initialize(options: RabbitMQStrategyOptions): Promise<void> {
     if (!options?.url) {
-      throw new QueueError('RabbitMQ needs a broker url', 'initialize', undefined, undefined, false);
+      throw QueueErrors.RABBITMQ_URL_MISSING();
     }
 
     this.fOptions = options;
@@ -171,7 +171,7 @@ export class RabbitMQStrategy extends QueueStrategy<RabbitMQStrategyOptions> {
         ? connect(options.url, { ...options.socketOptions, recovery: recovery === true ? {} : recovery })
         : connect(options.url, options.socketOptions));
     } catch (error) {
-      throw toQueueError(error, 'Failed to connect to RabbitMQ', 'initialize');
+      throw error instanceof QueueError ? error : QueueErrors.RABBITMQ_CONNECT_FAILED({ cause: error });
     }
 
     this.fConnection.on('error', (error: Error) => {
@@ -230,7 +230,7 @@ export class RabbitMQStrategy extends QueueStrategy<RabbitMQStrategyOptions> {
         await new Promise<void>((resolve, reject) => {
           const drained = (): void => settle();
           const failed = (channelError: Error): void => settle(channelError);
-          const closed = (): void => settle(new Error('The channel closed before the job was flushed'));
+          const closed = (): void => settle(QueueErrors.RABBITMQ_CHANNEL_CLOSED());
 
           // Whichever of the three arrives first wins. The two that did not fire
           // have to be taken off again: the publish channel is long lived, so a
@@ -255,10 +255,9 @@ export class RabbitMQStrategy extends QueueStrategy<RabbitMQStrategyOptions> {
 
       return { id, queue: request.queue, job: request.job, strategy: this.transport };
     } catch (error) {
-      throw toQueueError(error, 'Failed to send job to RabbitMQ', 'publish', {
-        queue: request.queue,
-        job: request.job,
-      });
+      throw error instanceof QueueError
+        ? error
+        : QueueErrors.RABBITMQ_PUBLISH_FAILED({ cause: error, metadata: { queue: request.queue, job: request.job } });
     }
   }
 
@@ -291,7 +290,9 @@ export class RabbitMQStrategy extends QueueStrategy<RabbitMQStrategyOptions> {
 
       this.fRequests.delete(request.queue);
 
-      throw toQueueError(error, 'Failed to consume RabbitMQ queue', 'consume', { queue: request.queue });
+      throw error instanceof QueueError
+        ? error
+        : QueueErrors.RABBITMQ_CONSUME_FAILED({ cause: error, metadata: { queue: request.queue } });
     }
 
     return {
@@ -400,7 +401,7 @@ export class RabbitMQStrategy extends QueueStrategy<RabbitMQStrategyOptions> {
 
       return { waiting: info.messageCount, active: consumer?.active ?? 0 };
     } catch (error) {
-      throw toQueueError(error, 'Failed to inspect RabbitMQ queue', 'stats', { queue });
+      throw error instanceof QueueError ? error : QueueErrors.RABBITMQ_STATS_FAILED({ cause: error, metadata: { queue } });
     } finally {
       await channel?.close().catch(() => undefined);
     }
@@ -414,7 +415,7 @@ export class RabbitMQStrategy extends QueueStrategy<RabbitMQStrategyOptions> {
    */
   public override async ping(): Promise<void> {
     if (!this.fConnection) {
-      throw new QueueError('RabbitMQ strategy is not connected', 'ping', undefined, undefined, false);
+      throw QueueErrors.RABBITMQ_NOT_CONNECTED({ operation: 'ping' });
     }
 
     // opening a channel is a round trip to the broker, unlike reading a flag
@@ -571,7 +572,7 @@ export class RabbitMQStrategy extends QueueStrategy<RabbitMQStrategyOptions> {
    */
   private requireOptions(operation: string): RabbitMQStrategyOptions {
     if (!this.fOptions) {
-      throw new QueueError('RabbitMQ strategy is not initialized', operation, undefined, undefined, false);
+      throw QueueErrors.RABBITMQ_NOT_INITIALIZED({ operation });
     }
 
     return this.fOptions;
@@ -586,7 +587,7 @@ export class RabbitMQStrategy extends QueueStrategy<RabbitMQStrategyOptions> {
    */
   private requireConnection(operation: string): ChannelModel | RecoveringChannelModel {
     if (!this.fConnection) {
-      throw new QueueError('RabbitMQ strategy is not connected', operation, undefined, undefined, false);
+      throw QueueErrors.RABBITMQ_NOT_CONNECTED({ operation });
     }
 
     return this.fConnection;

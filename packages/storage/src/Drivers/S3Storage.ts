@@ -8,6 +8,7 @@ import {
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
+import { StorageErrors } from '../Errors/Catalog';
 import { StorageError } from '../Errors/StorageError';
 import type { Storage } from '../Service/Storage';
 import type { ListObjectsV2CommandOutput, S3ClientConfig } from '@aws-sdk/client-s3';
@@ -209,15 +210,11 @@ export class S3Storage implements Storage<S3BaseOptions> {
       try {
         return JSON.parse(body) as T;
       } catch (parseError) {
-        throw new StorageError(
-          `Failed to parse item "${key}" from S3: the object is not valid JSON`,
-          'getItem',
-          parseError as Error,
-          {
-            bucket: this.bucket,
-            errorName: 'SyntaxError',
-          },
-        );
+        throw StorageErrors.S3_ITEM_NOT_JSON({
+          key,
+          cause: parseError,
+          metadata: { bucket: this.bucket, errorName: 'SyntaxError' },
+        });
       }
     } catch (error: any) {
       if (error.name === 'NoSuchKey') {
@@ -237,10 +234,10 @@ export class S3Storage implements Storage<S3BaseOptions> {
       });
 
       // Wrap the error with StorageError
-      throw new StorageError(`Failed to retrieve item from S3: ${error.name}`, 'getItem', error, {
-        bucket: this.bucket,
+      throw StorageErrors.S3_GET_FAILED({
         errorName: error.name,
-        statusCode: error.$metadata?.httpStatusCode,
+        cause: error,
+        metadata: { bucket: this.bucket, errorName: error.name, statusCode: error.$metadata?.httpStatusCode },
       });
     }
   }
@@ -338,10 +335,10 @@ export class S3Storage implements Storage<S3BaseOptions> {
       });
 
       // Wrap the error with StorageError
-      throw new StorageError(`Failed to check item existence in S3: ${error.name}`, 'hasItem', error, {
-        bucket: this.bucket,
+      throw StorageErrors.S3_HAS_FAILED({
         errorName: error.name,
-        statusCode: error.$metadata?.httpStatusCode,
+        cause: error,
+        metadata: { bucket: this.bucket, errorName: error.name, statusCode: error.$metadata?.httpStatusCode },
       });
     }
   }
@@ -414,9 +411,9 @@ export class S3Storage implements Storage<S3BaseOptions> {
         );
 
         if (deleted?.Errors?.length) {
-          throw new StorageError(`Failed to delete ${deleted.Errors.length} items from S3`, 'clear', undefined, {
-            bucket: this.bucket,
-            errorName: deleted.Errors[0]?.Code,
+          throw StorageErrors.S3_CLEAR_INCOMPLETE({
+            count: deleted.Errors.length,
+            metadata: { bucket: this.bucket, errorName: deleted.Errors[0]?.Code },
           });
         }
       }

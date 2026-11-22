@@ -1,4 +1,4 @@
-import { QueueError } from '../Errors/QueueError';
+import { QueueErrors } from '../Errors/Catalog';
 import type { QueueTypes } from '../Types/QueueTypes';
 
 /**
@@ -151,7 +151,7 @@ export function encodePayload(payload: unknown): Buffer {
   try {
     return Buffer.from(JSON.stringify(payload ?? null), 'utf8');
   } catch (error) {
-    throw new QueueError('Job payload is not serializable', 'encode', error as Error, undefined, false);
+    throw QueueErrors.PAYLOAD_NOT_SERIALIZABLE({ cause: error });
   }
 }
 

@@ -1,5 +1,5 @@
 import { Pool } from 'pg';
-import { SchedulerError } from '../Errors/SchedulerError';
+import { SchedulerErrors } from '../Errors/Catalog';
 import { SchedulerStore } from '../Services/SchedulerStore';
 import type { SchedulerTypes } from '../Types/SchedulerTypes';
 
@@ -300,7 +300,7 @@ export class PostgresStore extends SchedulerStore<PostgresStoreOptions | undefin
   /** @inheritdoc */
   public override async ping(): Promise<void> {
     if (!this.fPool) {
-      throw new Error('The Postgres store is not initialized');
+      throw SchedulerErrors.POSTGRES_STORE_PING_NOT_INITIALIZED();
     }
 
     await this.fPool.query('SELECT 1');
@@ -345,7 +345,7 @@ export class PostgresStore extends SchedulerStore<PostgresStoreOptions | undefin
    */
   private get pool(): PostgresQueryable {
     if (!this.fPool) {
-      throw new SchedulerError('PostgresStore is not initialized', 'store', undefined, undefined, false);
+      throw SchedulerErrors.POSTGRES_STORE_NOT_INITIALIZED();
     }
 
     return this.fPool;

@@ -1,5 +1,5 @@
 import { Cron } from 'croner';
-import { SchedulerError } from '../Errors/SchedulerError';
+import { SchedulerErrors } from '../Errors/Catalog';
 import { formatDuration } from './Duration';
 
 /** Shortest interval `@Every()` accepts. */
@@ -48,13 +48,7 @@ export function assertTimezone(timezone: string, job?: string): void {
   try {
     new Intl.DateTimeFormat('en-US', { timeZone: timezone });
   } catch {
-    throw new SchedulerError(
-      `Unknown time zone "${timezone}"${job ? ` for job "${job}"` : ''}, use an IANA name such as 'Europe/Warsaw' or 'UTC'`,
-      'register',
-      undefined,
-      { job, timezone },
-      false,
-    );
+    throw SchedulerErrors.TIMEZONE_UNKNOWN({ timezone, job, operation: 'register', metadata: { job, timezone } });
   }
 }
 
@@ -84,13 +78,13 @@ export function cronSchedule(expression: string, timezone: string, job: string):
   try {
     cron = new Cron(expression, { timezone, paused: true });
   } catch (error) {
-    throw new SchedulerError(
-      `Invalid cron expression "${expression}" for job "${job}": ${(error as Error).message}`,
-      'register',
-      error as Error,
-      { job, expression },
-      false,
-    );
+    throw SchedulerErrors.CRON_INVALID({
+      expression,
+      job,
+      reason: (error as Error).message,
+      cause: error,
+      metadata: { job, expression },
+    });
   }
 
   return {
@@ -119,13 +113,13 @@ export function cronSchedule(expression: string, timezone: string, job: string):
  */
 export function everySchedule(interval: number, offset: number, job: string): Schedule {
   if (interval < MIN_INTERVAL) {
-    throw new SchedulerError(
-      `Interval of job "${job}" is ${interval}ms, the shortest one allowed is ${MIN_INTERVAL}ms`,
-      'register',
-      undefined,
-      { job, interval },
-      false,
-    );
+    throw SchedulerErrors.INTERVAL_TOO_SHORT({
+      job,
+      interval,
+      shortest: MIN_INTERVAL,
+      operation: 'register',
+      metadata: { job, interval },
+    });
   }
 
   const previous = (at: number): number => Math.floor((at - offset) / interval) * interval + offset;

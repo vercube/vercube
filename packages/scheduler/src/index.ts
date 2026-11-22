@@ -6,6 +6,7 @@ export * from './Decorators/Every';
 export * from './Plugins/SchedulerPlugin';
 
 // Errors
+export * from './Errors/Catalog';
 export * from './Errors/SchedulerError';
 
 // Services

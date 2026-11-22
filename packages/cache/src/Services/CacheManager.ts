@@ -3,7 +3,7 @@ import { Logger } from '@vercube/logger';
 import { StorageManager } from '@vercube/storage';
 import { defineCachedFunction, expireCache, invalidateCache, resolveCacheKeys } from 'ocache';
 import { countLookup, countMiss, traceLookup } from '../Common/Instrument';
-import { CacheError } from '../Errors/CacheError';
+import { CacheErrors } from '../Errors/Catalog';
 import { cacheBaseForStorage, CacheStorageAdapter } from './CacheStorageAdapter';
 import type { CacheTypes } from '../Types/CacheTypes';
 import type { CacheOptions } from 'ocache';
@@ -91,7 +91,7 @@ export class CacheManager {
     options: CacheTypes.Options<T, ArgsT> = {},
   ): CacheTypes.CachedFunction<T, ArgsT> {
     if (typeof fn !== 'function') {
-      throw new CacheError('Cached target must be a function', 'cached', undefined, { received: typeof fn });
+      throw CacheErrors.TARGET_NOT_FUNCTION({ received: typeof fn });
     }
 
     const resolved = this.resolveOptions(options);
@@ -188,9 +188,7 @@ export class CacheManager {
     if (storages.length === 0) {
       // an empty tier list would make every read miss and every write a no-op,
       // silently disabling the cache instead of failing where the mistake is
-      throw new CacheError('At least one storage must be given when caching', 'resolveOptions', undefined, {
-        name: rest.name,
-      });
+      throw CacheErrors.STORAGE_LIST_EMPTY({ name: rest.name });
     }
 
     const base = storages.map((name) => cacheBaseForStorage(name));

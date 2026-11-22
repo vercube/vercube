@@ -1,10 +1,11 @@
 import { Container, Destroy, Init, Inject, InjectOptional } from '@vercube/di';
 import { Logger } from '@vercube/logger';
 import { countRun, recordDuration, recordLag, reportRun, traceRun } from '../Common/Instrument';
+import { SchedulerErrors } from '../Errors/Catalog';
 import { SchedulerError } from '../Errors/SchedulerError';
 import { MAX_TIMEOUT, SystemClock } from '../Utils/Clock';
 import { parseDuration } from '../Utils/Duration';
-import { asError, toSchedulerError } from '../Utils/Errors';
+import { asError } from '../Utils/Errors';
 import { hasGeneratedName } from '../Utils/Metadata';
 import { AUTOSTART_ENV, registerManager, unregisterManager } from '../Utils/Registry';
 import { createInstanceId, isProduction, randomHex, readEnv } from '../Utils/Runtime';
@@ -135,6 +136,16 @@ const MIN_LOCK_TTL = 1000;
 
 /** Longest error message kept in the store. */
 const MAX_ERROR_LENGTH = 1024;
+
+/**
+ * Lists job names for an error message, each in quotes.
+ *
+ * @param {string[]} names - Names of the jobs
+ * @returns {string} `"a", "b"`
+ */
+function quoteNames(names: string[]): string {
+  return names.map((name) => `"${name}"`).join(', ');
+}
 
 /**
  * Central entry point of the scheduler module.
@@ -346,23 +357,21 @@ export class SchedulerManager {
     const { name, schedule, handler, source, external, paused, target, ...options } = definition;
 
     if (typeof name !== 'string' || name.trim() === '') {
-      throw new SchedulerError('A job needs a name', 'register', undefined, { source }, false);
+      throw SchedulerErrors.JOB_NAME_MISSING({ operation: 'register', metadata: { source } });
     }
 
     const existing = this.fJobs.get(name);
 
     if (existing) {
-      throw new SchedulerError(
-        `Job "${name}" is already registered`,
-        'register',
-        undefined,
-        { registered: existing.source, duplicate: source },
-        false,
-      );
+      throw SchedulerErrors.JOB_DUPLICATE({
+        name,
+        operation: 'register',
+        metadata: { registered: existing.source, duplicate: source },
+      });
     }
 
     if (typeof handler !== 'function') {
-      throw new SchedulerError(`Job "${name}" needs a handler function`, 'register', undefined, { source }, false);
+      throw SchedulerErrors.JOB_HANDLER_MISSING({ name, operation: 'register', metadata: { source } });
     }
 
     const registration: Registration = {
@@ -1022,7 +1031,10 @@ export class SchedulerManager {
       }
     } catch (error) {
       // without a claim nobody can tell whether another replica runs it, so it does not run here
-      const failure = toSchedulerError(error, `Failed to claim "${occurrenceId}"`, 'claim', { job: registration.name });
+      const failure =
+        error instanceof SchedulerError
+          ? error
+          : SchedulerErrors.CLAIM_FAILED({ occurrenceId, cause: error, metadata: { job: registration.name } });
 
       this.gLogger?.error(`Vercube/SchedulerManager::Failed to claim "${occurrenceId}"`, error);
 
@@ -1104,11 +1116,7 @@ export class SchedulerManager {
     const timeout =
       options.timeout > 0
         ? this.fClock.setTimeout(() => {
-            controller.abort(
-              new SchedulerError(`Job "${registration.name}" timed out after ${options.timeout}ms`, 'timeout', undefined, {
-                job: registration.name,
-              }),
-            );
+            controller.abort(SchedulerErrors.JOB_TIMEOUT({ name: registration.name, timeout: options.timeout }));
           }, options.timeout)
         : undefined;
 
@@ -1222,7 +1230,7 @@ export class SchedulerManager {
     const run = Promise.resolve().then(() => registration.handler(context));
     const settled = run.then(
       () => ({ error: undefined }),
-      (error: unknown) => ({ error: error ?? new Error('Job failed') }),
+      (error: unknown) => ({ error: error ?? SchedulerErrors.JOB_FAILED_WITHOUT_REASON() }),
     );
 
     let onAbort: (() => void) | undefined;
@@ -1270,7 +1278,7 @@ export class SchedulerManager {
 
     const lost = (cause?: Error): void => {
       this.gLogger?.warn(`Vercube/SchedulerManager::Job "${name}" lost its lock, aborting the run`, cause);
-      controller.abort(new SchedulerError(`Job "${name}" lost its lock`, 'lock-lost', cause, { job: name }));
+      controller.abort(SchedulerErrors.LOCK_LOST({ name, cause }));
     };
 
     const beat = async (): Promise<void> => {
@@ -1347,7 +1355,7 @@ export class SchedulerManager {
     this.gLogger?.warn(`Vercube/SchedulerManager::Aborting ${this.fRuns.size} run(s) still going after ${timeout}ms`);
 
     for (const controller of this.fRuns) {
-      controller.abort(new SchedulerError('The scheduler is shutting down', 'shutdown'));
+      controller.abort(SchedulerErrors.SHUTTING_DOWN());
     }
 
     await this.drain();
@@ -1368,14 +1376,11 @@ export class SchedulerManager {
       .map((job) => job.name);
 
     if (localQueued.length > 0) {
-      throw new SchedulerError(
-        `Jobs ${localQueued.map((name) => `"${name}"`).join(', ')} target a queue with scope: 'instance', ` +
-          'so every replica would enqueue every occurrence. A queue target needs cluster scope.',
-        'start',
-        undefined,
-        { jobs: localQueued },
-        false,
-      );
+      throw SchedulerErrors.QUEUE_TARGET_INSTANCE_SCOPE({
+        jobs: quoteNames(localQueued),
+        operation: 'start',
+        metadata: { jobs: localQueued },
+      });
     }
 
     const clusterJobs = registrations.filter((registration) => this.optionsOf(registration).scope === 'cluster');
@@ -1387,15 +1392,11 @@ export class SchedulerManager {
     }
 
     if (unnamed.length > 0) {
-      throw new SchedulerError(
-        `Cluster jobs ${unnamed.map((name) => `"${name}"`).join(', ')} need an explicit name. ` +
-          'The name is part of every lock key, and a name derived from the class can change between builds ' +
-          "(bundlers rename colliding classes, Jobs becomes Jobs$1), so replicas of two builds would run the same occurrence. Add { name: 'billing.close-day' } to the decorator, or set scope: 'instance'.",
-        'start',
-        undefined,
-        { jobs: unnamed },
-        false,
-      );
+      throw SchedulerErrors.CLUSTER_JOB_UNNAMED({
+        jobs: quoteNames(unnamed),
+        operation: 'start',
+        metadata: { jobs: unnamed },
+      });
     }
 
     if (!this.fStore) {
@@ -1407,18 +1408,16 @@ export class SchedulerManager {
     }
 
     const message =
-      `Cluster jobs ${cluster.map((name) => `"${name}"`).join(', ')} use the "${this.fStore.store.name}" store, ` +
+      `Cluster jobs ${quoteNames(cluster)} use the "${this.fStore.store.name}" store, ` +
       'which only coordinates a single process, so every replica would run them.';
 
     if (isProduction()) {
-      throw new SchedulerError(
-        `${message} Mount a distributed store such as RedisStore or PostgresStore, set scope: 'instance', ` +
-          'or set allowLocalCluster: true if this really runs as a single process.',
-        'start',
-        undefined,
-        { jobs: cluster },
-        false,
-      );
+      throw SchedulerErrors.CLUSTER_STORE_LOCAL({
+        jobs: quoteNames(cluster),
+        store: this.fStore.store.name,
+        operation: 'start',
+        metadata: { jobs: cluster },
+      });
     }
 
     if (!this.fWarnedLocal) {
@@ -1496,7 +1495,14 @@ export class SchedulerManager {
         options: { jobId: base.occurrenceId.replaceAll(':', '_') },
       });
     } catch (error) {
-      const failure = toSchedulerError(error, `Failed to enqueue "${base.occurrenceId}"`, 'enqueue', { job: registration.name });
+      const failure =
+        error instanceof SchedulerError
+          ? error
+          : SchedulerErrors.ENQUEUE_FAILED({
+              occurrenceId: base.occurrenceId,
+              cause: error,
+              metadata: { job: registration.name },
+            });
 
       this.gLogger?.error(`Vercube/SchedulerManager::Failed to enqueue "${base.occurrenceId}"`, error);
       await this.saveState(store, registration.name, {
@@ -1559,15 +1565,11 @@ export class SchedulerManager {
     const result = await this.execute(registration, { ...options, retries: 0 }, base, 'queue', lock, store, attempt);
 
     if (result.outcome === 'failed' || result.outcome === 'aborted') {
-      throw new SchedulerError(
-        result.error?.message ?? `Job "${registration.name}" ${result.outcome}`,
-        result.error?.operation ?? 'run',
-        undefined,
-        {
-          job: registration.name,
-          occurrenceId: payload.occurrenceId,
-        },
-      );
+      throw SchedulerErrors.QUEUED_RUN_FAILED({
+        message: result.error?.message ?? `Job "${registration.name}" ${result.outcome}`,
+        operation: result.error?.operation ?? 'run',
+        metadata: { job: registration.name, occurrenceId: payload.occurrenceId },
+      });
     }
   }
 
@@ -1652,14 +1654,7 @@ export class SchedulerManager {
    * @returns {SchedulerError} The error to throw
    */
   protected missingQueueError(jobs: string[]): SchedulerError {
-    return new SchedulerError(
-      `Jobs ${jobs.map((name) => `"${name}"`).join(', ')} target a queue, but no QueueManager is bound. ` +
-        "Install @vercube/queue and add QueuePlugin, or remove the job's target.",
-      'start',
-      undefined,
-      { jobs },
-      false,
-    );
+    return SchedulerErrors.QUEUE_MANAGER_MISSING({ jobs: quoteNames(jobs), operation: 'start', metadata: { jobs } });
   }
 
   /**
@@ -1679,13 +1674,12 @@ export class SchedulerManager {
       return { ...target, strategy: target.strategy ?? 'default' };
     }
 
-    throw new SchedulerError(
-      `Invalid target ${JSON.stringify(target)} for "${name}", expected 'inline' or { queue: 'name' }`,
-      'register',
-      undefined,
-      { job: name },
-      false,
-    );
+    throw SchedulerErrors.TARGET_INVALID({
+      target: JSON.stringify(target),
+      name,
+      operation: 'register',
+      metadata: { job: name },
+    });
   }
 
   /**
@@ -1696,14 +1690,7 @@ export class SchedulerManager {
    * @returns {SchedulerError} The error to throw
    */
   protected missingStoreError(jobs: string[], operation: string): SchedulerError {
-    return new SchedulerError(
-      `Cluster jobs ${jobs.map((name) => `"${name}"`).join(', ')} need a store to decide which replica runs them. ` +
-        "Mount one (RedisStore, PostgresStore, or MemoryStore for a single process), or set scope: 'instance' to run them on every replica.",
-      operation,
-      undefined,
-      { jobs },
-      false,
-    );
+    return SchedulerErrors.CLUSTER_STORE_MISSING({ jobs: quoteNames(jobs), operation, metadata: { jobs } });
   }
 
   /**
@@ -1881,13 +1868,14 @@ export class SchedulerManager {
       }
 
       if (!allowed.includes(value as T)) {
-        throw new SchedulerError(
-          `Invalid ${key} ${JSON.stringify(value)} for "${owner}", expected one of ${allowed.join(', ')}`,
-          'configure',
-          undefined,
-          { option: key },
-          false,
-        );
+        throw SchedulerErrors.OPTION_INVALID({
+          option: key,
+          value: JSON.stringify(value),
+          owner,
+          allowed: allowed.join(', '),
+          operation: 'configure',
+          metadata: { option: key },
+        });
       }
 
       (parsed as Record<string, unknown>)[key] = value;
@@ -1904,18 +1892,18 @@ export class SchedulerManager {
     }
 
     if (parsed.lockTtl !== undefined && parsed.lockTtl < MIN_LOCK_TTL) {
-      throw new SchedulerError(
-        `lockTtl of "${owner}" is ${parsed.lockTtl}ms, the shortest one allowed is ${MIN_LOCK_TTL}ms`,
-        'configure',
-        undefined,
-        { option: 'lockTtl' },
-        false,
-      );
+      throw SchedulerErrors.LOCK_TTL_TOO_SHORT({
+        owner,
+        lockTtl: parsed.lockTtl,
+        shortest: MIN_LOCK_TTL,
+        operation: 'configure',
+        metadata: { option: 'lockTtl' },
+      });
     }
 
     if (options.retries !== undefined) {
       if (!Number.isInteger(options.retries) || options.retries < 0) {
-        throw new SchedulerError(`retries of "${owner}" must be a whole number of 0 or more`, 'configure', undefined, {}, false);
+        throw SchedulerErrors.RETRIES_INVALID({ owner, operation: 'configure', metadata: {} });
       }
 
       parsed.retries = options.retries;
@@ -1936,13 +1924,7 @@ export class SchedulerManager {
     const registration = this.fJobs.get(name);
 
     if (!registration) {
-      throw new SchedulerError(
-        `No job is registered as "${name}"`,
-        operation,
-        undefined,
-        { registered: [...this.fJobs.keys()] },
-        false,
-      );
+      throw SchedulerErrors.JOB_UNKNOWN({ name, operation, metadata: { registered: [...this.fJobs.keys()] } });
     }
 
     return registration;
@@ -1968,7 +1950,7 @@ export class SchedulerManager {
    */
   protected async readyStore(operation: string): Promise<SchedulerStore<unknown>> {
     if (!this.fStore) {
-      throw new SchedulerError('No scheduler store is mounted', operation, undefined, undefined, false);
+      throw SchedulerErrors.STORE_MISSING({ operation });
     }
 
     await this.ensureReady(this.fStore);
@@ -1986,7 +1968,7 @@ export class SchedulerManager {
    */
   public async ping(): Promise<void> {
     if (this.fClosed) {
-      throw new SchedulerError('The scheduler is closed', 'ping', undefined, undefined, false);
+      throw SchedulerErrors.CLOSED();
     }
 
     const store = await this.readyStore('ping');
@@ -2015,7 +1997,9 @@ export class SchedulerManager {
         mounted.error = error;
         this.gLogger?.error(`Vercube/SchedulerManager::Failed to initialize store "${mounted.store.name}"`, error);
 
-        throw toSchedulerError(error, `Failed to initialize store "${mounted.store.name}"`, 'initialize');
+        throw error instanceof SchedulerError
+          ? error
+          : SchedulerErrors.STORE_INIT_FAILED({ store: mounted.store.name, cause: error });
       },
     );
 

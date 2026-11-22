@@ -1,5 +1,6 @@
-import { initializeMetadata, initializeMetadataMethod, InternalServerError, RequestContext, setMetadataArg } from '@vercube/core';
+import { initializeMetadata, initializeMetadataMethod, RequestContext, setMetadataArg } from '@vercube/core';
 import { BaseDecorator, Container, createDecorator, Inject, InjectOptional } from '@vercube/di';
+import { AuthErrors } from '../Errors/Catalog';
 import { AuthProvider } from '../Services/AuthProvider';
 import { recallUser } from '../Utils/AuthenticatedUsers';
 import type { RouterTypes } from '@vercube/core';
@@ -58,7 +59,7 @@ class UserDecorator extends BaseDecorator<UserDecoratorOptions> {
         // fail closed, like AuthMiddleware: a handler must never mistake a
         // missing provider for an anonymous caller
         if (!provider) {
-          throw new InternalServerError(`@User(): auth provider "${providerKey.name}" is not registered in the container`);
+          throw AuthErrors.PROVIDER_NOT_REGISTERED({ source: '@User()', provider: providerKey.name });
         }
 
         return provider.getCurrentUser(event.request);

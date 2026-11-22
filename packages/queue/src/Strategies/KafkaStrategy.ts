@@ -1,9 +1,9 @@
 import { InjectOptional } from '@vercube/di';
 import { Logger } from '@vercube/logger';
 import { Kafka } from 'kafkajs';
+import { QueueErrors } from '../Errors/Catalog';
 import { QueueError } from '../Errors/QueueError';
 import { QueueStrategy } from '../Services/QueueStrategy';
-import { toQueueError } from '../Utils/Errors';
 import { ATTEMPT_HEADER, decodePayload, encodePayload, JOB_HEADER, normalizeHeaders, readNumericHeader } from '../Utils/Job';
 import type { QueueTypes } from '../Types/QueueTypes';
 import type {
@@ -134,7 +134,7 @@ export class KafkaStrategy extends QueueStrategy<KafkaStrategyOptions> {
    */
   public async initialize(options: KafkaStrategyOptions): Promise<void> {
     if (!options?.client?.brokers) {
-      throw new QueueError('Kafka needs at least one broker', 'initialize', undefined, undefined, false);
+      throw QueueErrors.KAFKA_BROKERS_MISSING();
     }
 
     this.fOptions = options;
@@ -146,7 +146,7 @@ export class KafkaStrategy extends QueueStrategy<KafkaStrategyOptions> {
     } catch (error) {
       this.fProducer = null;
 
-      throw toQueueError(error, 'Failed to connect the Kafka producer', 'initialize');
+      throw error instanceof QueueError ? error : QueueErrors.KAFKA_CONNECT_FAILED({ cause: error });
     }
   }
 
@@ -201,7 +201,7 @@ export class KafkaStrategy extends QueueStrategy<KafkaStrategyOptions> {
         strategy: this.transport,
       }));
     } catch (error) {
-      throw toQueueError(error, 'Failed to produce Kafka records', 'publish', { queue: topic });
+      throw error instanceof QueueError ? error : QueueErrors.KAFKA_PUBLISH_FAILED({ cause: error, metadata: { queue: topic } });
     }
   }
 
@@ -219,7 +219,7 @@ export class KafkaStrategy extends QueueStrategy<KafkaStrategyOptions> {
     this.requireClient('consume');
 
     if (!options.groupId) {
-      throw new QueueError('Kafka needs a groupId to consume a topic', 'consume', undefined, { queue: request.queue }, false);
+      throw QueueErrors.KAFKA_GROUP_ID_MISSING({ operation: 'consume', metadata: { queue: request.queue } });
     }
 
     // a second call for the same topic replaces the first one's route
@@ -237,7 +237,9 @@ export class KafkaStrategy extends QueueStrategy<KafkaStrategyOptions> {
         this.gLogger?.error('Vercube/KafkaStrategy::Failed to restart the consumer', restartError),
       );
 
-      throw toQueueError(error, 'Failed to consume the Kafka topic', 'consume', { queue: request.queue });
+      throw error instanceof QueueError
+        ? error
+        : QueueErrors.KAFKA_CONSUME_FAILED({ cause: error, metadata: { queue: request.queue } });
     }
 
     return {
@@ -287,7 +289,7 @@ export class KafkaStrategy extends QueueStrategy<KafkaStrategyOptions> {
 
       return { waiting };
     } catch (error) {
-      throw toQueueError(error, 'Failed to read Kafka offsets', 'stats', { queue });
+      throw error instanceof QueueError ? error : QueueErrors.KAFKA_STATS_FAILED({ cause: error, metadata: { queue } });
     }
   }
 
@@ -460,7 +462,7 @@ export class KafkaStrategy extends QueueStrategy<KafkaStrategyOptions> {
       if (this.fAdminConnecting !== connecting) {
         await admin.disconnect().catch(() => undefined);
 
-        throw new QueueError('Kafka strategy was closed', operation, undefined, undefined, false);
+        throw QueueErrors.KAFKA_CLOSED({ operation });
       }
 
       this.fAdmin = admin;
@@ -483,7 +485,7 @@ export class KafkaStrategy extends QueueStrategy<KafkaStrategyOptions> {
    */
   private requireOptions(operation: string): KafkaStrategyOptions {
     if (!this.fOptions) {
-      throw new QueueError('Kafka strategy is not initialized', operation, undefined, undefined, false);
+      throw QueueErrors.KAFKA_NOT_INITIALIZED({ operation });
     }
 
     return this.fOptions;
@@ -498,7 +500,7 @@ export class KafkaStrategy extends QueueStrategy<KafkaStrategyOptions> {
    */
   private requireClient(operation: string): Kafka {
     if (!this.fKafka) {
-      throw new QueueError('Kafka strategy is not initialized', operation, undefined, undefined, false);
+      throw QueueErrors.KAFKA_NOT_INITIALIZED({ operation });
     }
 
     return this.fKafka;
@@ -513,7 +515,7 @@ export class KafkaStrategy extends QueueStrategy<KafkaStrategyOptions> {
    */
   private requireProducer(operation: string): Producer {
     if (!this.fProducer) {
-      throw new QueueError('Kafka strategy is not initialized', operation, undefined, undefined, false);
+      throw QueueErrors.KAFKA_NOT_INITIALIZED({ operation });
     }
 
     return this.fProducer;

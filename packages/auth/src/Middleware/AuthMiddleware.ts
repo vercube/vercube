@@ -1,6 +1,7 @@
-import { InternalServerError, RequestContext, UnauthorizedError } from '@vercube/core';
+import { RequestContext } from '@vercube/core';
 import { Container, Inject, InjectOptional } from '@vercube/di';
 import { createInstrument, ValueType } from '@vercube/telemetry/instrument';
+import { AuthErrors } from '../Errors/Catalog';
 import { AuthProvider } from '../Services/AuthProvider';
 import { rememberUser } from '../Utils/AuthenticatedUsers';
 import type { AuthTypes } from '../Types/AuthTypes';
@@ -78,7 +79,7 @@ export class AuthMiddleware implements BaseMiddleware<AuthTypes.MiddlewareOption
 
     if (!provider) {
       recordOutcome('unconfigured');
-      throw new InternalServerError(`AuthMiddleware: auth provider "${providerKey.name}" is not registered in the container`);
+      throw AuthErrors.PROVIDER_NOT_REGISTERED({ source: 'AuthMiddleware', provider: providerKey.name });
     }
 
     const result: unknown = await provider.validate(request, args.middlewareArgs);
@@ -93,13 +94,13 @@ export class AuthMiddleware implements BaseMiddleware<AuthTypes.MiddlewareOption
     // ...or an error message
     if (typeof result === 'string') {
       recordOutcome('denied');
-      throw new UnauthorizedError(result);
+      throw AuthErrors.UNAUTHORIZED({ message: result });
     }
 
     if (typeof result === 'object' && Object.hasOwn(result, 'error')) {
       recordOutcome('denied');
       const { error } = result as { error: unknown };
-      throw new UnauthorizedError(typeof error === 'string' ? error : undefined);
+      throw AuthErrors.UNAUTHORIZED({ message: typeof error === 'string' ? error : undefined });
     }
 
     if (typeof result === 'object' && Object.hasOwn(result, 'user')) {
@@ -111,9 +112,10 @@ export class AuthMiddleware implements BaseMiddleware<AuthTypes.MiddlewareOption
     // anything else (`false`, `undefined`, a forgotten `return`, an object
     // without `user` or `error`) is a provider bug; fail closed, never open
     recordOutcome('invalid');
-    throw new InternalServerError(
-      `AuthMiddleware: auth provider "${providerName(provider, providerKey)}" returned an invalid validate() result (${describeValue(result)}); expected null, a string, { user } or { error }`,
-    );
+    throw AuthErrors.PROVIDER_RESULT_INVALID({
+      provider: providerName(provider, providerKey),
+      received: describeValue(result),
+    });
   }
 }
 
