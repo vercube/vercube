@@ -1,11 +1,11 @@
-import { parseSetCookie } from '@vercube/core';
-import type { ParsedSetCookie } from '@vercube/core';
+import { parseSetCookieHeader } from '@vercube/core';
+import type { SetCookieAttributes } from '@vercube/core';
 
 /**
  * Generic cookie interface for cross-platform compatibility.
  * This interface represents the common properties of cookies across different platforms.
  */
-export type GenericCookie = ParsedSetCookie;
+export type GenericCookie = SetCookieAttributes;
 
 /**
  * Parses a `Set-Cookie` header string into a generic cookie object: name, value, path,
@@ -20,7 +20,7 @@ export type GenericCookie = ParsedSetCookie;
  * @throws {Error} If the cookie string format is invalid or cannot be parsed
  */
 export function parseCookieString(cookieString: string): GenericCookie {
-  return parseSetCookie(cookieString);
+  return parseSetCookieHeader(cookieString);
 }
 
 /**

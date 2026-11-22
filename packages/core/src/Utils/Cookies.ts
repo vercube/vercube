@@ -23,9 +23,9 @@ export interface CookieOptions {
 }
 
 /**
- * What a `Set-Cookie` header value says, read by {@link parseSetCookie}.
+ * What a `Set-Cookie` header value says, read by {@link parseSetCookieHeader}.
  */
-export interface ParsedSetCookie {
+export interface SetCookieAttributes {
   name: string;
   value: string;
   path?: string;
@@ -44,8 +44,17 @@ const COOKIE_NAME = /^[\w!#$%&'*+.^`|~-]+$/;
 // eslint-disable-next-line no-control-regex
 const ATTRIBUTE_VALUE = /^[^;\u0000-\u001F\u007F]*$/;
 
-const SAME_SITE = { strict: 'Strict', lax: 'Lax', none: 'None' } as const;
-const PRIORITY = { low: 'Low', medium: 'Medium', high: 'High' } as const;
+const SAME_SITE: Readonly<Record<string, 'Strict' | 'Lax' | 'None'>> = Object.assign(Object.create(null), {
+  strict: 'Strict',
+  lax: 'Lax',
+  none: 'None',
+});
+
+const PRIORITY: Readonly<Record<string, string>> = Object.assign(Object.create(null), {
+  low: 'Low',
+  medium: 'Medium',
+  high: 'High',
+});
 
 /**
  * Decodes a cookie value. A value that is not valid percent-encoding is
@@ -108,18 +117,18 @@ export function parseCookies(header: string | null | undefined): Record<string, 
   }
 
   let index = 0;
+  let separator = header.indexOf('=');
 
-  while (index < header.length) {
+  // every cookie needs a `=`, so once none is left the rest carries nothing
+  while (separator !== -1 && index < header.length) {
     let end = header.indexOf(';', index);
 
     if (end === -1) {
       end = header.length;
     }
 
-    const separator = header.indexOf('=', index);
-
     // a pair without `=` carries no name to read it by
-    if (separator !== -1 && separator < end) {
+    if (separator < end) {
       const name = header.slice(index, separator).trim();
 
       if (name && cookies[name] === undefined) {
@@ -128,6 +137,10 @@ export function parseCookies(header: string | null | undefined): Record<string, 
     }
 
     index = end + 1;
+
+    if (separator < index) {
+      separator = header.indexOf('=', index);
+    }
   }
 
   return cookies;
@@ -147,21 +160,24 @@ export function parseCookie(header: string | null | undefined, name: string): st
   }
 
   let index = 0;
+  let separator = header.indexOf('=');
 
-  while (index < header.length) {
+  while (separator !== -1 && index < header.length) {
     let end = header.indexOf(';', index);
 
     if (end === -1) {
       end = header.length;
     }
 
-    const separator = header.indexOf('=', index);
-
-    if (separator !== -1 && separator < end && header.slice(index, separator).trim() === name) {
+    if (separator < end && header.slice(index, separator).trim() === name) {
       return readValue(header, separator + 1, end);
     }
 
     index = end + 1;
+
+    if (separator < index) {
+      separator = header.indexOf('=', index);
+    }
   }
 
   return undefined;
@@ -178,7 +194,7 @@ export function parseCookie(header: string | null | undefined, name: string): st
  * @param value - The cookie value
  * @param options - Attributes of the cookie
  * @returns The header value
- * @throws {TypeError} When the name or an attribute cannot be written safely
+ * @throws {TypeError} When the name, the value or an attribute cannot be written safely
  */
 export function serializeCookie(name: string, value: string, options: CookieOptions = {}): string {
   if (!COOKIE_NAME.test(name)) {
@@ -191,7 +207,16 @@ export function serializeCookie(name: string, value: string, options: CookieOpti
     throw new TypeError(`Invalid cookie path: ${JSON.stringify(path)}`);
   }
 
-  let cookie = `${name}=${encodeURIComponent(value)}; Path=${path}`;
+  let encoded: string;
+
+  try {
+    encoded = encodeURIComponent(value);
+  } catch {
+    // a lone surrogate cannot be encoded
+    throw new TypeError(`Invalid cookie value for ${JSON.stringify(name)}: not a well-formed string`);
+  }
+
+  let cookie = `${name}=${encoded}; Path=${path}`;
 
   if (options.domain !== undefined) {
     if (!ATTRIBUTE_VALUE.test(options.domain)) {
@@ -202,7 +227,7 @@ export function serializeCookie(name: string, value: string, options: CookieOpti
   }
 
   if (options.maxAge !== undefined) {
-    if (!Number.isFinite(options.maxAge)) {
+    if (!Number.isSafeInteger(Math.trunc(options.maxAge))) {
       throw new TypeError(`Invalid cookie maxAge: ${options.maxAge}`);
     }
 
@@ -266,12 +291,36 @@ export function getSetCookieName(cookie: string): string {
 }
 
 /**
- * Adds a cookie to a response. Other cookies stay as they are; a cookie the
- * response already sets under the same name is replaced, so calling this twice
- * does not send the name twice.
+ * Tells whether a `Set-Cookie` header value sets the cookie a browser would
+ * store under this name, path and domain. Those three together are what
+ * identifies a cookie, so `sid` on `/` and `sid` on `/admin` are two cookies.
+ *
+ * @param header - An existing `Set-Cookie` header value
+ * @param name - The cookie name
+ * @param path - The path of the cookie being written
+ * @param domain - The domain of the cookie being written
+ * @returns True when both describe the same cookie
+ */
+function isSameCookie(header: string, name: string, path: string, domain: string | undefined): boolean {
+  if (getSetCookieName(header) !== name) {
+    return false;
+  }
+
+  const existing = parseSetCookieHeader(header);
+
+  return (existing.path ?? '/') === path && existing.domain?.toLowerCase() === domain?.toLowerCase();
+}
+
+/**
+ * Adds a cookie to a response. Other cookies stay as they are. A cookie the
+ * response already sets under the same name, path and domain is replaced, so
+ * calling this twice does not send the same cookie twice; the same name on
+ * another path or domain is another cookie and is kept.
  *
  * Pass the `@Response()` argument of a handler, the response a middleware
- * receives, or any `Response` or `Headers` you are about to return.
+ * receives, or the `Headers` you are about to build a `Response` from. The
+ * headers of a response that came from `fetch()` or `Response.redirect()` are
+ * immutable and cannot be written to.
  *
  * @param target - The response, or its headers
  * @param name - The cookie name
@@ -281,13 +330,15 @@ export function getSetCookieName(cookie: string): string {
 export function setCookie(target: Response | Headers, name: string, value: string, options?: CookieOptions): void {
   const headers = target instanceof Headers ? target : target.headers;
   const cookie = serializeCookie(name, value, options);
-  const kept = headers.getSetCookie().filter((existing) => getSetCookieName(existing) !== name);
+  const path = options?.path ?? '/';
+  const existing = headers.getSetCookie();
+  const kept = existing.filter((header) => !isSameCookie(header, name, path, options?.domain));
 
-  if (kept.length !== headers.getSetCookie().length) {
+  if (kept.length !== existing.length) {
     headers.delete('set-cookie');
 
-    for (const existing of kept) {
-      headers.append('set-cookie', existing);
+    for (const header of kept) {
+      headers.append('set-cookie', header);
     }
   }
 
@@ -331,7 +382,7 @@ function splitOnce(part: string): [string, string | undefined] {
  * @returns The cookie and its attributes
  * @throws {Error} When the value has no `name=value` pair
  */
-export function parseSetCookie(header: string): ParsedSetCookie {
+export function parseSetCookieHeader(header: string): SetCookieAttributes {
   if (!header || typeof header !== 'string') {
     throw new Error('Invalid cookie string: must be a non-empty string');
   }
@@ -358,7 +409,7 @@ export function parseSetCookie(header: string): ParsedSetCookie {
     name,
     value: value.trim(),
     path: attrs['path'],
-    sameSite: sameSite && sameSite in SAME_SITE ? SAME_SITE[sameSite as keyof typeof SAME_SITE] : undefined,
+    sameSite: sameSite ? SAME_SITE[sameSite] : undefined,
     secure: attrs['secure'] === 'true',
     httpOnly: attrs['httponly'] === 'true',
     domain: attrs['domain'],

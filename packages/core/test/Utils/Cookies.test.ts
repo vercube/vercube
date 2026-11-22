@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { deleteCookie, getSetCookieName, parseCookie, parseCookies, parseSetCookie, serializeCookie, setCookie } from '../../src';
+import {
+  deleteCookie,
+  getSetCookieName,
+  parseCookie,
+  parseCookies,
+  parseSetCookieHeader,
+  serializeCookie,
+  setCookie,
+} from '../../src';
 
 describe('parseCookies', () => {
   it('returns an empty object without a header', () => {
@@ -30,6 +38,20 @@ describe('parseCookies', () => {
 
   it('skips pairs without a name or without `=`', () => {
     expect(parseCookies('flag; =orphan; a=1;;')).toEqual({ a: '1' });
+  });
+
+  it('reads nothing out of a header without any `=`', () => {
+    expect(parseCookies('a; b; c')).toEqual({});
+    expect(parseCookie('a; b; c', 'a')).toBeUndefined();
+  });
+
+  it('stays linear on a long header of pairs without `=`', () => {
+    const header = `${'a;'.repeat(200_000)}z=1`;
+    const started = performance.now();
+
+    expect(parseCookies(header)).toEqual({ z: '1' });
+    expect(parseCookie(header, 'z')).toBe('1');
+    expect(performance.now() - started).toBeLessThan(500);
   });
 
   it('keeps an empty value', () => {
@@ -106,6 +128,10 @@ describe('serializeCookie', () => {
     expect(() => serializeCookie('a', '1', { path: '/; Domain=evil.com' })).toThrow(TypeError);
     expect(() => serializeCookie('a', '1', { domain: 'x\r\nSet-Cookie: b=1' })).toThrow(TypeError);
     expect(() => serializeCookie('a', '1', { maxAge: Number.NaN })).toThrow(TypeError);
+    expect(() => serializeCookie('a', '1', { maxAge: 1e21 })).toThrow(TypeError);
+    expect(() => serializeCookie('a', '\uD800')).toThrow(TypeError);
+    expect(() => serializeCookie('a', '1', { sameSite: 'toString' as never })).toThrow(TypeError);
+    expect(() => serializeCookie('a', '1', { priority: 'constructor' as never })).toThrow(TypeError);
     expect(() => serializeCookie('a', '1', { expires: new Date('nope') })).toThrow(TypeError);
     expect(() => serializeCookie('a', '1', { sameSite: 'bogus' as never })).toThrow(TypeError);
     expect(() => serializeCookie('a', '1', { priority: 'bogus' as never })).toThrow(TypeError);
@@ -131,6 +157,25 @@ describe('setCookie and deleteCookie', () => {
     expect(headers.getSetCookie()).toEqual(['b=2; Path=/', 'a=3; Path=/']);
   });
 
+  it('treats the same name on another path or domain as another cookie', () => {
+    const headers = new Headers();
+
+    deleteCookie(headers, 'sid', { domain: 'example.com' });
+    deleteCookie(headers, 'sid', { path: '/old' });
+    setCookie(headers, 'sid', 'new');
+    setCookie(headers, 'sid', 'newer', { domain: 'EXAMPLE.com' });
+
+    expect(headers.getSetCookie()).toEqual([
+      'sid=; Path=/old; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT',
+      'sid=new; Path=/',
+      'sid=newer; Path=/; Domain=EXAMPLE.com',
+    ]);
+  });
+
+  it('throws on immutable headers instead of dropping the cookie', () => {
+    expect(() => setCookie(Response.redirect('http://localhost/'), 'a', '1')).toThrow(TypeError);
+  });
+
   it('deletes with an expiry in the past', () => {
     const headers = new Headers();
 
@@ -140,9 +185,11 @@ describe('setCookie and deleteCookie', () => {
   });
 });
 
-describe('parseSetCookie', () => {
+describe('parseSetCookieHeader', () => {
   it('reads the cookie and its attributes', () => {
-    expect(parseSetCookie('SessionID=abc==; Path=/; Secure; HttpOnly; SameSite=lax; Domain=example.com; Max-Age=3600')).toEqual({
+    expect(
+      parseSetCookieHeader('SessionID=abc==; Path=/; Secure; HttpOnly; SameSite=lax; Domain=example.com; Max-Age=3600'),
+    ).toEqual({
       name: 'SessionID',
       value: 'abc==',
       path: '/',
@@ -156,18 +203,20 @@ describe('parseSetCookie', () => {
   });
 
   it('reads back what serializeCookie wrote', () => {
-    const parsed = parseSetCookie(serializeCookie('a', 'x y', { sameSite: 'strict', maxAge: 5 }));
+    const parsed = parseSetCookieHeader(serializeCookie('a', 'x y', { sameSite: 'strict', maxAge: 5 }));
 
     expect(parsed).toMatchObject({ name: 'a', value: 'x%20y', path: '/', sameSite: 'Strict', maxAge: 5 });
   });
 
   it('throws without a name and value', () => {
-    expect(() => parseSetCookie('')).toThrow('non-empty string');
-    expect(() => parseSetCookie('; Path=/')).toThrow('name and value');
+    expect(() => parseSetCookieHeader('')).toThrow('non-empty string');
+    expect(() => parseSetCookieHeader('; Path=/')).toThrow('name and value');
   });
 
   it('ignores an unknown SameSite', () => {
-    expect(parseSetCookie('a=1; SameSite=bogus').sameSite).toBeUndefined();
+    expect(parseSetCookieHeader('a=1; SameSite=bogus').sameSite).toBeUndefined();
+    expect(parseSetCookieHeader('a=1; SameSite=constructor').sameSite).toBeUndefined();
+    expect(parseSetCookieHeader('a=1; SameSite=__proto__').sameSite).toBeUndefined();
   });
 });
 

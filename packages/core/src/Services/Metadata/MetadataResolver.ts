@@ -8,6 +8,7 @@ import { resolveRouterParam } from '../../Resolvers/RouterParam';
 import type { MetadataTypes } from '../../Types/MetadataTypes';
 import type { RouterTypes } from '../../Types/RouterTypes';
 import type { ValidationTypes } from '../../Types/ValidationTypes';
+import type { StandardSchemaV1 } from '@standard-schema/spec';
 
 /**
  * Validates one resolved argument against its schema. Returns `undefined` when
@@ -23,6 +24,24 @@ export type ArgValidator = (
  * resolved synchronously, which lets a route skip promises entirely.
  */
 const ASYNC_ARG_TYPES: ReadonlySet<string> = new Set(['body', 'multipart-form-data', 'session', 'custom']);
+
+/**
+ * Argument types whose value is a credential. A validation issue of one of
+ * them is reported with its message and path only: validators may attach the
+ * rejected input to an issue, which would send the value back in the 400
+ * response and into the error log.
+ */
+const SECRET_ARG_TYPES: ReadonlySet<string> = new Set(['cookie', 'cookies']);
+
+/**
+ * Reduces validation issues to what is safe to report for a secret value.
+ *
+ * @param {ReadonlyArray<StandardSchemaV1.Issue>} issues - The issues the validator reported.
+ * @returns {StandardSchemaV1.Issue[]} The same issues, message and path only.
+ */
+function withoutInput(issues: ReadonlyArray<StandardSchemaV1.Issue>): StandardSchemaV1.Issue[] {
+  return issues.map((issue) => ({ message: issue.message, ...(issue.path ? { path: issue.path } : {}) }));
+}
 
 /**
  * Class responsible for resolving metadata for route handlers.
@@ -97,6 +116,7 @@ export class MetadataResolver {
   ): RouterTypes.ArgResolver {
     const schema = arg.validationSchema as ValidationTypes.Schema;
     const message = `Validation error - ${arg.type}`;
+    const secret = SECRET_ARG_TYPES.has(arg.type);
 
     const unwrap = (result: ValidationTypes.Result | undefined, value: unknown): unknown => {
       if (result === undefined) {
@@ -104,7 +124,7 @@ export class MetadataResolver {
       }
 
       if (result.issues?.length) {
-        throw new BadRequestError(message, result.issues);
+        throw new BadRequestError(message, secret ? withoutInput(result.issues) : result.issues);
       }
 
       return 'value' in result ? result.value : value;

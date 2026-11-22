@@ -1,20 +1,56 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import {
+  BaseMiddleware,
   Controller,
   Cookie,
   Cookies,
   createApp,
   Get,
   initializeMetadata,
+  Middleware,
   Response as Res,
   setCookie,
   StandardSchemaValidationProvider,
   ValidationProvider,
 } from '../../../src';
+import type { StandardSchemaV1 } from '@standard-schema/spec';
+
+/** A schema that reports the rejected value in its issue, as some validators do. */
+const leaky: StandardSchemaV1<string> = {
+  '~standard': {
+    version: 1,
+    vendor: 'test',
+    validate: (value) => ({ issues: [{ message: 'bad', path: ['x'], input: value } as StandardSchemaV1.Issue] }),
+  },
+};
+
+class CookieMiddleware extends BaseMiddleware {
+  public override onRequest(_request: Request, response: Response): void {
+    setCookie(response, 'mw', '1');
+  }
+}
 
 @Controller('/cookies')
 class CookieController {
+  @Get('/leaky')
+  public leaky(@Cookie('session', { validationSchema: leaky }) session: string) {
+    return { session };
+  }
+
+  @Get('/optional')
+  public optional(@Cookie('page', { validationSchema: z.coerce.number().optional() }) page?: number) {
+    return { page: page ?? null };
+  }
+
+  @Get('/middleware')
+  @Middleware(CookieMiddleware)
+  public middleware(@Res() response: Response) {
+    setCookie(response, 'handler', '2');
+
+    return { ok: true };
+  }
+
   @Get('/one')
   public one(@Cookie('session') session?: string, @Cookie('theme') theme: string = 'light') {
     return { session, theme };
@@ -131,5 +167,31 @@ describe('Cookie decorators', () => {
 
     expect(response.headers.getSetCookie()).toEqual(['session=a%20b; Path=/; HttpOnly']);
     expect(await response.json()).toEqual({ ok: true });
+  });
+
+  it('does not send a rejected cookie value back', async () => {
+    const app = await createCookieApp();
+
+    const response = await app.fetch(request('/leaky', 'session=SECRET-TOKEN'));
+    const body = await response.text();
+
+    expect(response.status).toBe(400);
+    expect(body).toContain('bad');
+    expect(body).not.toContain('SECRET-TOKEN');
+  });
+
+  it('lets an optional schema accept a missing cookie', async () => {
+    const app = await createCookieApp();
+
+    expect(await (await app.fetch(request('/optional'))).json()).toEqual({ page: null });
+    expect(await (await app.fetch(request('/optional', 'page=4'))).json()).toEqual({ page: 4 });
+  });
+
+  it('keeps cookies set by a middleware and by the handler', async () => {
+    const app = await createCookieApp();
+
+    const response = await app.fetch(request('/middleware'));
+
+    expect(response.headers.getSetCookie().toSorted()).toEqual(['handler=2; Path=/', 'mw=1; Path=/']);
   });
 });

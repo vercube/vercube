@@ -33,7 +33,7 @@ class CookieDecorator extends BaseDecorator<CookieDecoratorParams, MetadataTypes
 
     setMetadataArg(method, {
       idx: this.propertyIndex,
-      ...(name ? { type: 'cookie', data: { name } } : { type: 'cookies' }),
+      ...(name === undefined ? { type: 'cookies' } : { type: 'cookie', data: { name } }),
       validate: validationSchema ? true : false,
       validationSchema,
     });
