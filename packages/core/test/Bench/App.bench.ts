@@ -2,10 +2,10 @@ import { describe, test } from 'vitest';
 import { createTestApp } from '../Utils/App.mock';
 import type { App } from '@vercube/core';
 
-// Without request logging, like the other benches: a log line per request is
-// buffered and written once per event loop turn, so the flush lands inside one
-// measurement or the next and the result moves by 10 to 20% between runs of
-// the same code. The default configuration is measured by `pnpm bench:ladder`.
+// Without request logging, like the other benches: with it every request
+// writes a wide event to the console, and that I/O makes the result move by 10
+// to 20% between runs of the same code. The default configuration is measured
+// on real sockets by `pnpm bench:ladder`.
 const app: App = await createTestApp({ cfg: { requestLogging: false, requestContext: false }, configFile: false });
 
 // This bench should simulate a 404 request when no route is found
