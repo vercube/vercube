@@ -1,5 +1,5 @@
 import { FastResponse } from '../Types/CommonTypes';
-import { getStreamIterator, iterableToStream } from './Stream';
+import { getStreamIterator, iterableToStream, markLiveStream } from './Stream';
 
 /**
  * A single Server-Sent Event.
@@ -141,6 +141,8 @@ export async function createSseResponse(source: SseSource, options: SseOptions =
       heartbeat: options.heartbeat && options.heartbeat > 0 ? { interval: options.heartbeat, chunk: SSE_PING } : undefined,
     },
   );
+
+  markLiveStream(stream);
 
   return new FastResponse(stream, { status: 200, headers: SSE_HEADERS });
 }

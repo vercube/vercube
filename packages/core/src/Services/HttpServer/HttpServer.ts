@@ -6,6 +6,7 @@ import { MethodNotAllowedError } from '../../Errors/Http/MethodNotAllowedError';
 import { NotFoundError } from '../../Errors/Http/NotFoundError';
 import { withoutStack } from '../../Utils/Errors';
 import { getRequestPathname } from '../../Utils/Url';
+import { ResponseCompressor } from '../Compression/ResponseCompressor';
 import { ErrorHandlerProvider } from '../ErrorHandler/ErrorHandlerProvider';
 import { RequestHandler } from '../Router/RequestHandler';
 import { Router } from '../Router/Router';
@@ -99,6 +100,12 @@ export class HttpServer {
   private fTelemetry: TelemetryTypes.Hooks | null | undefined;
 
   /**
+   * Compresses responses, `null` while compression is off.
+   * @private
+   */
+  private fCompressor: ResponseCompressor | null = null;
+
+  /**
    * Whether the server is bound and accepting connections. False before
    * `listen()`, once `close()` began, and when the application is driven
    * through `app.fetch()` alone.
@@ -128,12 +135,39 @@ export class HttpServer {
   }
 
   /**
+   * Turns response compression off, whatever the configuration says. For a
+   * platform that compresses responses itself, or one that cannot carry a
+   * compressed body: the serverless adapters call it where that is the case.
+   *
+   * @returns {void}
+   */
+  public disableCompression(): void {
+    this.fCompressor = null;
+    this.gStaticRequestHandler.setPrecompressed(null);
+  }
+
+  /**
+   * The encodings responses are compressed with, most preferred first. Empty
+   * while compression is off.
+   *
+   * @returns {readonly ConfigTypes.CompressionEncoding[]} The encodings
+   */
+  public get compressionEncodings(): readonly ConfigTypes.CompressionEncoding[] {
+    return this.fCompressor?.encodings ?? [];
+  }
+
+  /**
    * Initializes the HTTP server and starts listening for requests
    *
    * @returns {Promise<void>} A promise that resolves when the server is ready
    */
   public async initialize(config: ConfigTypes.Config): Promise<void> {
     const { port, host, reusePort } = config.server ?? {};
+
+    const compressor = await ResponseCompressor.create(config.compression);
+
+    this.fCompressor = compressor;
+    this.gStaticRequestHandler.setPrecompressed(compressor?.precompressed ? (header) => compressor.accepted(header) : null);
 
     this.fServer = serve({
       bun: {
@@ -236,11 +270,20 @@ export class HttpServer {
    * @private
    */
   public handleRequest(request: Request): Response | Promise<Response> {
+    // read once: with compression off this comparison is all a request pays for it
+    const compressor = this.fCompressor;
+
     try {
       const route = this.gRouter.match(request.method, getRequestPathname(request));
 
       if (route) {
-        return this.gRequestHandler.handleRequest(request, route);
+        const response = this.gRequestHandler.handleRequest(request, route);
+
+        if (compressor === null || route.data.compression === false) {
+          return response;
+        }
+
+        return compressor.apply(request, response, route.data.compression);
       }
 
       // handle preflight request
@@ -250,12 +293,12 @@ export class HttpServer {
 
       // no route matched - static assets and the SPA fallback are the slow path
       const telemetry = this.telemetry;
+      const response =
+        telemetry === null
+          ? this.handleUnmatchedRequest(request)
+          : telemetry.server({ request, name: request.method }, () => this.handleUnmatchedRequest(request));
 
-      if (telemetry !== null) {
-        return telemetry.server({ request, name: request.method }, () => this.handleUnmatchedRequest(request));
-      }
-
-      return this.handleUnmatchedRequest(request);
+      return compressor === null ? response : compressor.apply(request, response);
     } catch (error) {
       return this.handleError(error);
     }

@@ -1,3 +1,4 @@
+import { HttpServer } from '@vercube/core';
 import { toLambdaHandler } from 'srvx/aws-lambda';
 import { flushTelemetry } from '../../Utils/flush';
 import type { ServerlessHandler } from '../../Types/ServerlessTypes';
@@ -36,6 +37,10 @@ export function toServerlessHandler(
   AWS.APIGatewayProxyResult | AWS.APIGatewayProxyResultV2,
   AWS.Context
 > {
+  // API Gateway compresses responses itself when asked to, and a Lambda result
+  // carries a text body as a string: a compressed one would not survive it.
+  app.container.get(HttpServer).disableCompression();
+
   return toLambdaHandler({
     fetch: async (request) => {
       const response = await app.fetch(request);

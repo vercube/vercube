@@ -29,9 +29,23 @@ export namespace RouterTypes {
    */
   export type ArgResolver = (event: RouterTypes.RouterEvent) => unknown;
 
+  /** What a route asks of response compression with `@Compression()`. */
+  export interface RouteCompression {
+    /**
+     * Whether a streamed response (`@Stream()`, `@Sse()`, a returned
+     * `ReadableStream`) is compressed. Overrides `compression.streams`.
+     */
+    streams?: boolean;
+  }
+
   export interface RouterHandler {
     instance: any;
     propertyName: string;
+    /**
+     * False when the route opted out of response compression, its own options
+     * when it set any. Absent for a route that follows the configuration.
+     */
+    compression?: RouteCompression | false;
     args: MetadataTypes.Arg[];
     middlewares: {
       beforeMiddlewares: MiddlewareDefinition[];
