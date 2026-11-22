@@ -99,9 +99,11 @@ export namespace DevtoolsTypes {
 
     /**
      * Routes the playground must not offer, as patterns matched against the
-     * route template: `/admin/**`, `/users/:id`, or with a method in front,
-     * `DELETE /users/:id`. `*` stands for one path segment and `**` for any
-     * number of them. Devtools' own routes are always excluded.
+     * route template: `/admin/**`, `/users/:id`, with a method in front
+     * (`DELETE /users/:id`), or a method alone (`DELETE`). `*` stands for one
+     * path segment and `**` for any number of them, none included, wherever it
+     * is written. A template starts with `/`; a pattern that cannot be read
+     * stops the plugin with an error. Devtools' own routes are always excluded.
      * @default []
      */
     exclude?: string[];

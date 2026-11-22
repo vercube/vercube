@@ -14,48 +14,121 @@ function trim(path: string): string {
   return path.replace(/\/+$/, '') || '/';
 }
 
-/**
- * Whether a route matches an exclusion pattern.
- *
- * A pattern is a route template, optionally with a method in front:
- * `/admin/**`, `/users/:id`, `DELETE /users/:id`. It is compared with the
- * template the route was registered under, not with a concrete URL, so
- * `/users/:id` names exactly that route. `*` stands for one path segment
- * (whatever it is called in the template) and `**` for any number of them,
- * none included: `/admin/**` covers `/admin` itself.
- *
- * @param pattern - The exclusion pattern
- * @param method - Method of the route
- * @param path - Template of the route
- * @returns True when the pattern covers the route
- */
-export function matchesRoutePattern(pattern: string, method: string, path: string): boolean {
-  const parts = pattern.trim().split(/\s+/);
-  const hasMethod = parts.length > 1 && METHODS.has(parts[0].toUpperCase());
+/** An exclusion pattern, taken apart. */
+interface RoutePattern {
+  /** Method the pattern is narrowed to, uppercase. Absent when it covers every method. */
+  method?: string;
+  /** Segments of the path pattern. Absent for a method on its own, which covers every path. */
+  segments?: string[];
+}
 
-  if (hasMethod && parts[0].toUpperCase() !== method.toUpperCase()) {
+/**
+ * Takes an exclusion pattern apart.
+ *
+ * A pattern is a route template (`/admin/**`), a method and a template
+ * (`DELETE /users/:id`), or a method alone (`DELETE`). Anything else is a
+ * mistake, and a mistake in a list of routes that must not be called is not
+ * something to guess at: `admin/**` silently matching nothing would leave
+ * every admin route on offer.
+ *
+ * @param pattern - The pattern as written in the options
+ * @returns The parts of the pattern
+ * @throws Error naming what is wrong with the pattern
+ */
+export function parseRoutePattern(pattern: string): RoutePattern {
+  const words = pattern.trim().split(/\s+/).filter(Boolean);
+  const [first, second] = words;
+
+  if (words.length === 1 && first.startsWith('/')) {
+    return { segments: trim(first).split('/') };
+  }
+
+  if (words.length === 1 && METHODS.has(first.toUpperCase())) {
+    return { method: first.toUpperCase() };
+  }
+
+  if (words.length === 2 && METHODS.has(first.toUpperCase()) && second.startsWith('/')) {
+    return { method: first.toUpperCase(), segments: trim(second).split('/') };
+  }
+
+  if (words.length === 2 && second.startsWith('/')) {
+    throw new Error(`Invalid route pattern "${pattern}": "${first}" is not an HTTP method.`);
+  }
+
+  throw new Error(
+    `Invalid route pattern "${pattern}": write a route template that starts with "/" (such as "/admin/**"), ` +
+      'a method and a template ("DELETE /users/:id"), or a method alone ("DELETE").',
+  );
+}
+
+/**
+ * Whether path segments match pattern segments.
+ *
+ * @param expected - Segments of the pattern
+ * @param actual - Segments of the route template
+ * @returns True when the pattern covers the template
+ */
+function matchesSegments(expected: string[], actual: string[]): boolean {
+  if (expected.length === 0) {
+    return actual.length === 0;
+  }
+
+  const [segment, ...rest] = expected;
+
+  if (segment === '**') {
+    // Any number of segments, none included: try every place the rest could start.
+    for (let skipped = 0; skipped <= actual.length; skipped++) {
+      if (matchesSegments(rest, actual.slice(skipped))) {
+        return true;
+      }
+    }
+
     return false;
   }
 
-  const expected = trim(hasMethod ? parts.slice(1).join(' ') : pattern.trim()).split('/');
-  const actual = trim(path).split('/');
+  return actual.length > 0 && (segment === '*' || segment === actual[0]) && matchesSegments(rest, actual.slice(1));
+}
 
-  for (const [index, segment] of expected.entries()) {
-    if (segment === '**') {
-      // Everything below, and the parent itself.
-      return true;
-    }
+/**
+ * Whether a route matches an exclusion pattern.
+ *
+ * A pattern is a route template, optionally with a method in front, or a
+ * method alone: `/admin/**`, `/users/:id`, `DELETE /users/:id`, `DELETE`. It
+ * is compared with the template the route was registered under, not with a
+ * concrete URL, so `/users/:id` names exactly that route. `*` stands for one
+ * path segment (whatever it is called in the template) and `**` for any number
+ * of them, none included, wherever it is written: `/admin/**` covers `/admin`
+ * itself, and `/**\/refund` covers `/refund` and `/orders/:id/refund`.
+ *
+ * A route that answers two methods (a `GET` with its `HEAD` twin) matches a
+ * pattern that names either.
+ *
+ * @param pattern - The exclusion pattern
+ * @param method - Method of the route, or its methods joined with ` / `
+ * @param path - Template of the route
+ * @returns True when the pattern covers the route; false for a pattern that is not valid
+ */
+export function matchesRoutePattern(pattern: string, method: string, path: string): boolean {
+  let parsed: RoutePattern;
 
-    if (index >= actual.length) {
-      return false;
-    }
-
-    if (segment !== '*' && segment !== actual[index]) {
-      return false;
-    }
+  try {
+    parsed = parseRoutePattern(pattern);
+  } catch {
+    // The plugin refuses an invalid pattern when it starts. Here it covers nothing.
+    return false;
   }
 
-  return expected.length === actual.length;
+  if (
+    parsed.method !== undefined &&
+    !method
+      .toUpperCase()
+      .split('/')
+      .some((entry) => entry.trim() === parsed.method)
+  ) {
+    return false;
+  }
+
+  return parsed.segments === undefined || matchesSegments(parsed.segments, trim(path).split('/'));
 }
 
 /**
