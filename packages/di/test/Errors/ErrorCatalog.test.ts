@@ -162,6 +162,34 @@ describe('defineErrorCatalog()', () => {
     expect(frames[1]).toContain('thrower');
   });
 
+  it('builds an entry marked `stack: false` without a trace, and leaves the limit as it was', () => {
+    const catalog = defineErrorCatalog('X', {
+      HOT: { message: 'Too many requests', why: 'w', fix: 'f', stack: false, create: (message) => new PlanError(message) },
+      PLAIN: { message: 'Rejected', why: 'w', fix: 'f', stack: false },
+      THROWS: {
+        message: 'never built',
+        why: 'w',
+        fix: 'f',
+        stack: false,
+        create: () => {
+          throw new TypeError('constructor failed');
+        },
+      },
+    });
+    const limit = Error.stackTraceLimit;
+
+    for (const error of [catalog.HOT(), catalog.PLAIN()]) {
+      expect(error.stack!.split('\n')).toHaveLength(1);
+      expect(getErrorGuidance(error)?.code).toMatch(/^X_/);
+    }
+
+    expect(catalog.HOT()).toBeInstanceOf(PlanError);
+    expect(() => catalog.THROWS()).toThrow('constructor failed');
+    expect(Error.stackTraceLimit).toBe(limit);
+    // an error built right after has its trace
+    expect(new Error('after').stack!.split('\n').length).toBeGreaterThan(1);
+  });
+
   it('returns an error that cannot take new fields as it is', () => {
     const catalog = defineErrorCatalog('X', {
       FROZEN: { message: 'frozen', why: 'w', fix: 'f', create: (message) => Object.freeze(new Error(message)) },
