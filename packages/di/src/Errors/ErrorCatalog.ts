@@ -1,3 +1,4 @@
+import { GUIDANCE_BRAND, GUIDANCE_BRAND_DESCRIPTOR } from './ErrorGuidance';
 import type { ErrorGuidance } from './ErrorGuidance';
 
 /** Where the documentation of an error code lives. */
@@ -41,10 +42,18 @@ type EntryParams<TEntry> = TEntry extends { message: (params: infer P) => string
 /** The error an entry builds. */
 type EntryError<TEntry, TDefault> = TEntry extends { create: (...args: never[]) => infer E } ? E : TDefault;
 
-/** The arguments of a factory: parameters when the message takes any, then the overrides. */
+/**
+ * The arguments of a factory: the parameters of the message, then the
+ * overrides. The parameters may be left out when the message takes none, or
+ * takes them optionally.
+ */
 type FactoryArgs<TEntry> = [EntryParams<TEntry>] extends [never]
   ? [params?: undefined, overrides?: ErrorFactoryOverrides]
-  : [params: EntryParams<TEntry>, overrides?: ErrorFactoryOverrides];
+  : unknown extends EntryParams<TEntry>
+    ? [params?: undefined, overrides?: ErrorFactoryOverrides]
+    : undefined extends EntryParams<TEntry>
+      ? [params?: EntryParams<TEntry>, overrides?: ErrorFactoryOverrides]
+      : [params: EntryParams<TEntry>, overrides?: ErrorFactoryOverrides];
 
 /** Creates one error of a catalog. Its metadata is readable without creating one. */
 export type ErrorFactory<TCode extends string, TEntry, TDefault = Error> = ((
@@ -131,6 +140,8 @@ export function defineErrorCatalog<
       }
     }
 
+    (descriptors as Record<symbol, PropertyDescriptor>)[GUIDANCE_BRAND] = GUIDANCE_BRAND_DESCRIPTOR;
+
     const create = entry.create ?? options.create;
     const message = entry.message;
 
@@ -138,6 +149,17 @@ export function defineErrorCatalog<
       const text = typeof message === 'function' ? message(params) : message;
       // bare-error: the default class of a catalog
       const error = create ? create(text, params) : new Error(text);
+
+      // an error that cannot take new fields is still the error to throw
+      if (!Object.isExtensible(error)) {
+        return error;
+      }
+
+      // The trace starts where the error was thrown, not in this function.
+      // Nothing is captured for an error created with the stack turned off.
+      if (Error.stackTraceLimit !== 0) {
+        Error.captureStackTrace?.(error, factory);
+      }
 
       Object.defineProperties(error, descriptors);
 

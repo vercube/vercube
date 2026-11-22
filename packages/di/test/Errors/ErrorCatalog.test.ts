@@ -70,6 +70,14 @@ describe('getErrorGuidance()', () => {
     });
   });
 
+  it('believes `expose` only on an error this package described', () => {
+    // `http-errors` marks a message as safe to show with the same field name
+    const foreign = Object.assign(new Error('bad json'), { code: 'ENTITY_PARSE_FAILED', expose: true });
+
+    expect(getErrorGuidance(foreign)).toEqual({ code: 'ENTITY_PARSE_FAILED' });
+    expect(getErrorGuidance(describeError(new Error('x'), { code: 'A', expose: true }))).toEqual({ code: 'A', expose: true });
+  });
+
   it.each([undefined, null, 'text', 42, new Error('plain'), { code: 404 }, { why: '' }])('finds none on %s', (value) => {
     expect(getErrorGuidance(value)).toBeUndefined();
   });
@@ -129,6 +137,39 @@ describe('defineErrorCatalog()', () => {
     expect(error.cause).toBe(cause);
     expect(getErrorGuidance(error)?.internal).toEqual({ provider: 'stripe' });
     expect(JSON.stringify(error)).toBe('{}');
+  });
+
+  it('lets the parameters be left out when the message takes none or takes them optionally', () => {
+    const catalog = defineErrorCatalog('X', {
+      NONE: { message: () => 'no parameters', why: 'w', fix: 'f' },
+      OPTIONAL: { message: (params?: { name?: string }) => `hello ${params?.name ?? 'you'}`, why: 'w', fix: 'f' },
+    });
+
+    expect(catalog.NONE().message).toBe('no parameters');
+    expect(catalog.OPTIONAL().message).toBe('hello you');
+    expect(catalog.OPTIONAL({ name: 'Ada' }).message).toBe('hello Ada');
+    expect(catalog.NONE(undefined, { internal: { a: 1 } })).toBeInstanceOf(Error);
+  });
+
+  it('starts the stack where the error was thrown, not in the catalog', () => {
+    function thrower(): Error {
+      return Errors.DOWN();
+    }
+
+    const frames = thrower().stack!.split('\n');
+
+    expect(frames[0]).toBe('Error: Billing is unavailable');
+    expect(frames[1]).toContain('thrower');
+  });
+
+  it('returns an error that cannot take new fields as it is', () => {
+    const catalog = defineErrorCatalog('X', {
+      FROZEN: { message: 'frozen', why: 'w', fix: 'f', create: (message) => Object.freeze(new Error(message)) },
+    });
+
+    expect(catalog.FROZEN().message).toBe('frozen');
+    expect(getErrorGuidance(catalog.FROZEN())).toBeUndefined();
+    expect(describeError(Object.freeze(new Error('x')), { code: 'A' }).message).toBe('x');
   });
 
   it('exposes the metadata of an entry without creating an error', () => {

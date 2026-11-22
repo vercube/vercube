@@ -24,6 +24,24 @@ export interface ErrorGuidance {
   internal?: Record<string, unknown>;
 }
 
+/**
+ * Marks an error whose guidance was attached by this package. Registered
+ * globally, so a second copy of the package recognises it too.
+ *
+ * Reading goes by shape, but `expose` is only believed on a marked error:
+ * other libraries set an `expose` flag of their own (`http-errors` does, to
+ * say the message is safe), and that is not a statement about guidance.
+ */
+export const GUIDANCE_BRAND: unique symbol = Symbol.for('vercube.error.guidance') as never;
+
+/** The descriptor that marks an error, see {@link GUIDANCE_BRAND}. */
+export const GUIDANCE_BRAND_DESCRIPTOR: PropertyDescriptor = Object.freeze({
+  value: true,
+  enumerable: false,
+  writable: false,
+  configurable: true,
+});
+
 /** The guidance fields, in the order they are attached. */
 const FIELDS = ['code', 'why', 'fix', 'link', 'expose', 'internal'] as const;
 
@@ -48,6 +66,11 @@ const FIELDS = ['code', 'why', 'fix', 'link', 'expose', 'internal'] as const;
  * @returns {T} The same error
  */
 export function describeError<T extends Error>(error: T, guidance: ErrorGuidance): T {
+  // an error that cannot take new fields is still the error to throw
+  if (!Object.isExtensible(error)) {
+    return error;
+  }
+
   for (const field of FIELDS) {
     const value = guidance[field];
 
@@ -56,13 +79,17 @@ export function describeError<T extends Error>(error: T, guidance: ErrorGuidance
     }
   }
 
+  Object.defineProperty(error, GUIDANCE_BRAND, GUIDANCE_BRAND_DESCRIPTOR);
+
   return error;
 }
 
 /**
  * Reads the guidance an error carries. It goes by the shape of the error and
  * not by its class, so an error from another copy of this package, or from
- * evlog's `createError()`, is read the same way.
+ * evlog's `createError()`, is read the same way. Only `expose` needs an error
+ * described by `describeError()` or a catalog, as it decides what a client is
+ * shown.
  *
  * @param {unknown} error - Anything that was thrown
  * @returns {ErrorGuidance | undefined} The guidance, or undefined when the error carries none
@@ -89,7 +116,7 @@ export function getErrorGuidance(error: unknown): ErrorGuidance | undefined {
     return undefined;
   }
 
-  if (source.expose === true) {
+  if (source.expose === true && (source as { [GUIDANCE_BRAND]?: boolean })[GUIDANCE_BRAND] === true) {
     guidance.expose = true;
   }
 

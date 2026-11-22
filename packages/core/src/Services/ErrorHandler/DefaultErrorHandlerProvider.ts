@@ -43,9 +43,9 @@ export class DefaultErrorHandlerProvider extends ErrorHandlerProvider {
       const body: Record<string, unknown> = { ...error };
 
       if (guidance !== undefined) {
-        // An HttpError is an answer, not a failure, so it is not logged by
-        // itself. What it says about its cause still belongs in the log.
-        this.record(guidance);
+        // An HttpError is an answer, not a failure, so it is not logged as
+        // one. What it says about its cause still belongs in the log.
+        this.record(error, guidance, status);
 
         // the code is what a client branches on, so it is always sent
         body.code = guidance.code;
@@ -66,6 +66,9 @@ export class DefaultErrorHandlerProvider extends ErrorHandlerProvider {
     const internalError = new InternalServerError(detail ?? 'Internal Server Error');
     const body: Record<string, unknown> = { ...internalError };
 
+    // the status the response is sent with, which an error may carry itself
+    body.status = status;
+
     if (guidance !== undefined) {
       // The code of an unexpected failure names a part of the application, so
       // it stays in the log unless the error asks to be shown.
@@ -83,23 +86,42 @@ export class DefaultErrorHandlerProvider extends ErrorHandlerProvider {
   }
 
   /**
-   * Adds what an error says about its cause to the wide event of the request
-   * being answered, when request logging is on.
+   * Logs what an `HttpError` says about its cause. With request logging on it
+   * goes into the wide event of the request being answered, so the request
+   * and its explanation are one line. Without it the error is logged by
+   * itself: a server error as an error, anything else at debug level, as an
+   * application that turned request logging off did not ask for a line per
+   * rejected request.
    *
-   * @param {ErrorGuidance} guidance - The guidance of the error
+   * @param {Error} error - The error being answered
+   * @param {ErrorGuidance} guidance - Its guidance
+   * @param {number} status - The status it is answered with
    * @returns {void}
    * @private
    */
-  private record(guidance: ErrorGuidance): void {
+  private record(error: Error, guidance: ErrorGuidance, status: number): void {
     const context = this.gRequestContext;
+    const requestLogger = context?.active ? context.get<EvlogRequestLogger>(EVLOG_REQUEST_LOGGER_KEY) : undefined;
 
-    if (!context?.active) {
+    if (requestLogger) {
+      requestLogger.set({
+        error: {
+          code: guidance.code,
+          why: guidance.why,
+          fix: guidance.fix,
+          link: guidance.link,
+          internal: guidance.internal,
+        },
+      } as never);
+
       return;
     }
 
-    context.get<EvlogRequestLogger>(EVLOG_REQUEST_LOGGER_KEY)?.set({
-      error: { code: guidance.code, why: guidance.why, fix: guidance.fix, link: guidance.link },
-    } as never);
+    if (status >= 500) {
+      this.gLogger.error(error);
+    } else {
+      this.gLogger.debug(error);
+    }
   }
 }
 

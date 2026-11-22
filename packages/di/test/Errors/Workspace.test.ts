@@ -59,6 +59,27 @@ function sourceFiles(directory: string): string[] {
   });
 }
 
+/**
+ * The numbers of the lines that create a plain `Error`, with or without `new`,
+ * and say nothing about why. Comment lines are skipped: documentation shows
+ * errors in its examples.
+ */
+function findBareErrors(lines: string[]): number[] {
+  const found: number[] = [];
+
+  for (const [index, line] of lines.entries()) {
+    if (!/(?<![\w$])(?:globalThis\.)?Error\(/.test(line.replaceAll(/\bnew\s+/g, '')) || /^\s*(\*|\/\/|\/\*)/.test(line)) {
+      continue;
+    }
+
+    if (!line.includes(ALLOW) && !(lines[index - 1] ?? '').includes(ALLOW)) {
+      found.push(index + 1);
+    }
+  }
+
+  return found;
+}
+
 function renderCodes(): string {
   const sections = catalogs.map(({ package: name, catalog }) => {
     const errors = catalog
@@ -106,32 +127,34 @@ describe('error catalogs of the workspace', () => {
     expect(entries.filter((entry) => entry.message.length === 0).map((entry) => entry.code)).toEqual([]);
   });
 
+  it('recognises a bare Error, and the comment that allows one', () => {
+    const find = (text: string): number[] => findBareErrors(text.split('\n'));
+
+    expect(find("throw new Error('x');")).toEqual([1]);
+    expect(find("return Error('x');")).toEqual([1]);
+    expect(find("const e = new globalThis.Error('x');")).toEqual([1]);
+    expect(find('reject(new Error(`a ${b}`));')).toEqual([1]);
+    expect(find("// bare-error: rethrown as it is\nthrow new Error('x');")).toEqual([]);
+    expect(find("throw new Error('x'); // bare-error: the default class")).toEqual([]);
+    expect(find("throw new TypeError('x');\nthrow new HttpError(500);\nError.captureStackTrace(e);")).toEqual([]);
+    expect(find(" * throw new Error('in a doc comment');\n// new Error('in a comment')")).toEqual([]);
+  });
+
   it('throws no bare Error in a package that has a catalog', () => {
     const offenders: string[] = [];
+    let scanned = 0;
 
     for (const name of new Set(catalogs.map((entry) => entry.package))) {
-      const source = join(ROOT, 'packages', name, 'src');
+      for (const file of sourceFiles(join(ROOT, 'packages', name, 'src'))) {
+        scanned++;
 
-      for (const file of sourceFiles(source)) {
-        const lines = readFileSync(file, 'utf8').split('\n');
-
-        for (const [index, line] of lines.entries()) {
-          if (!/\bnew Error\(/.test(line)) {
-            continue;
-          }
-
-          // documentation comments show errors in examples
-          if (/^\s*(\*|\/\/|\/\*)/.test(line)) {
-            continue;
-          }
-
-          if (!line.includes(ALLOW) && !(lines[index - 1] ?? '').includes(ALLOW)) {
-            offenders.push(`${relative(ROOT, file)}:${index + 1}`);
-          }
+        for (const line of findBareErrors(readFileSync(file, 'utf8').split('\n'))) {
+          offenders.push(`${relative(ROOT, file)}:${line}`);
         }
       }
     }
 
+    expect(scanned).toBeGreaterThan(0);
     // Use the package's catalog (`src/Errors/Catalog.ts`), or say why a plain
     // error is right with a `// bare-error: <reason>` comment.
     expect(offenders).toEqual([]);

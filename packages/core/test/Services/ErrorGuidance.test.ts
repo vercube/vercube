@@ -1,5 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { Controller, createApp, defineErrorCatalog, describeError, ForbiddenError, Get, type App } from '../../src';
+import {
+  Controller,
+  createApp,
+  defineErrorCatalog,
+  describeError,
+  ForbiddenError,
+  Get,
+  ServiceUnavailableError,
+  type App,
+} from '../../src';
 
 const Errors = defineErrorCatalog('SHOP', {
   PLAN_LIMIT: {
@@ -19,6 +28,12 @@ const Errors = defineErrorCatalog('SHOP', {
     message: ({ table }: { table: string }) => `Table ${table} is missing`,
     why: 'The migrations did not run.',
     fix: 'Run `pnpm migrate`.',
+  },
+  UPSTREAM: {
+    message: 'Ledger unavailable',
+    why: 'The ledger service did not answer.',
+    fix: 'Check the ledger deployment.',
+    create: (message) => new ServiceUnavailableError(message),
   },
   BROKEN_PUBLIC: {
     message: 'Maintenance',
@@ -56,6 +71,17 @@ class ErrorsController {
     throw describeError(new ForbiddenError('No'), { code: 'SHOP_NO', why: 'Because.', fix: 'Ask.' });
   }
 
+  @Get('/foreign')
+  public foreign(): never {
+    // what `http-errors` (body-parser, raw-body) throws
+    throw Object.assign(new Error('bad json'), { status: 400, expose: true, code: 'ENTITY_PARSE_FAILED', why: 'x', fix: 'y' });
+  }
+
+  @Get('/server')
+  public server(): never {
+    throw Errors.UPSTREAM(undefined, { internal: { upstream: 'ledger' } });
+  }
+
   @Get('/plain')
   public plain(): never {
     throw new ForbiddenError('Plain');
@@ -68,6 +94,7 @@ async function captureOutput(run: () => Promise<void>): Promise<string> {
   const collect = (...args: unknown[]): void =>
     void written.push(args.map((arg) => (typeof arg === 'string' ? arg : JSON.stringify(arg))).join(' '));
   const spies = [
+    vi.spyOn(console, 'debug').mockImplementation(collect),
     vi.spyOn(console, 'log').mockImplementation(collect),
     vi.spyOn(console, 'info').mockImplementation(collect),
     vi.spyOn(console, 'warn').mockImplementation(collect),
@@ -156,11 +183,27 @@ describe('error guidance in responses', () => {
       });
 
       expect(response.status).toBe(503);
-      expect(await response.json()).toMatchObject({
+      expect(await response.json()).toEqual({
+        status: 503,
+        name: 'InternalServerError',
+        message: 'Internal Server Error',
         code: 'SHOP_BROKEN_PUBLIC',
         why: 'The shop is being upgraded.',
         fix: 'Come back in an hour.',
+        link: 'https://vercube.dev/docs/core-features/errors#shop_broken_public',
       });
+    });
+
+    it('does not take the `expose` of another library for permission to show guidance', async () => {
+      const app = await create(false);
+      let response!: Response;
+
+      await captureOutput(async () => {
+        response = await get(app, '/foreign');
+      });
+
+      expect(response.status).toBe(400);
+      expect(await response.json()).toEqual({ status: 400, name: 'InternalServerError', message: 'Internal Server Error' });
     });
 
     it('never sends internal context', async () => {
@@ -235,15 +278,50 @@ describe('error guidance in responses', () => {
       expect(output).toContain('postgres://secret');
     });
 
-    it('adds the guidance of an HttpError to the wide event of the request', async () => {
+    it('logs the guidance and internal context of an HttpError with the request', async () => {
       const app = await create(false, true);
       const output = await captureOutput(async () => {
         await get(app, '/limit');
       });
+      const line = output.split('\n').find((entry) => entry.includes('SHOP_PLAN_LIMIT'))!;
 
-      expect(output).toContain('SHOP_PLAN_LIMIT');
-      expect(output).toContain('The workspace is on a plan with a fixed number of projects.');
-      expect(output).toContain('Upgrade the workspace, or delete a project.');
+      // one line: the wide event of the request carries the explanation
+      expect(line).toContain('"status":403');
+      expect(line).toContain('The workspace is on a plan with a fixed number of projects.');
+      expect(line).toContain('Upgrade the workspace, or delete a project.');
+      expect(line).toContain('ws_1');
+    });
+
+    it('logs a server HttpError by itself when request logging is off', async () => {
+      const app = await create(false);
+      const output = await captureOutput(async () => {
+        await get(app, '/server');
+      });
+
+      expect(output).toContain('SHOP_UPSTREAM');
+      expect(output).toContain('The ledger service did not answer.');
+      expect(output).toContain('ledger');
+    });
+
+    it('keeps a client HttpError at debug level when request logging is off', async () => {
+      // the log level is one per process, so each application is used before the next is created
+      const quiet = await create(false);
+      const silent = await captureOutput(async () => {
+        await get(quiet, '/limit');
+      });
+
+      const verbose = await createApp({
+        cfg: { dev: false, production: true, requestLogging: false, logLevel: 'debug' },
+        configFile: false,
+        setup: (app) => app.container.bind(ErrorsController),
+      });
+      const logged = await captureOutput(async () => {
+        await get(verbose, '/limit');
+      });
+
+      expect(silent).not.toContain('SHOP_PLAN_LIMIT');
+      expect(logged).toContain('SHOP_PLAN_LIMIT');
+      expect(logged).toContain('ws_1');
     });
   });
 });
