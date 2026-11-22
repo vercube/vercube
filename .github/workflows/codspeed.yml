@@ -22,9 +22,8 @@ concurrency:
   cancel-in-progress: true
 
 # The in-process benches (`*.bench.ts`) under CodSpeed's CPU simulation: it
-# counts instructions instead of timing them, so a shared runner gives the same
-# number twice and a regression can fail the check. The socket ladder in
-# bench.yml stays as a report; it measures what this cannot (sockets, srvx).
+# counts instructions instead of timing them. The numbers that count come from
+# real sockets, `pnpm bench:ladder`, run by hand: read a red check against it.
 jobs:
   benchmarks:
     name: codspeed
