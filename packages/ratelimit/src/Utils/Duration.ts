@@ -1,4 +1,5 @@
-import { RateLimitError } from '../Errors/RateLimitError';
+import { RateLimitErrors } from '../Errors/Catalog';
+import type { RateLimitError } from '../Errors/RateLimitError';
 import type { RateLimitTypes } from '../Types/RateLimitTypes';
 
 /** Milliseconds per unit a duration string may use. */
@@ -68,9 +69,5 @@ export function parseDuration(value: RateLimitTypes.Duration, option: string): n
  * @returns The error to throw
  */
 function invalid(value: unknown, option: string): RateLimitError {
-  return new RateLimitError(
-    `Invalid duration ${JSON.stringify(value)} for "${option}", use milliseconds or a string such as '30s', '1m' or '1h'`,
-    'configure',
-    { option },
-  );
+  return RateLimitErrors.DURATION_INVALID({ value: JSON.stringify(value), option });
 }

@@ -1,3 +1,4 @@
+import { SchedulerErrors } from '../Errors/Catalog';
 import { SchedulerPlugin } from '../Plugins/SchedulerPlugin';
 import { SchedulerManager } from '../Services/SchedulerManager';
 import { MemoryStore } from '../Stores/MemoryStore';
@@ -50,7 +51,7 @@ export function withManualClock(
     clock,
     get scheduler() {
       if (!scheduler) {
-        throw new Error('withManualClock() is not set up yet: pass it to createTestApp({ extensions }) first.');
+        throw SchedulerErrors.TESTING_NOT_SET_UP();
       }
 
       return scheduler;

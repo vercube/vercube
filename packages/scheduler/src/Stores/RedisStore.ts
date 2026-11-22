@@ -1,5 +1,5 @@
 import { Redis } from 'ioredis';
-import { SchedulerError } from '../Errors/SchedulerError';
+import { SchedulerErrors } from '../Errors/Catalog';
 import { SchedulerStore } from '../Services/SchedulerStore';
 import type { SchedulerTypes } from '../Types/SchedulerTypes';
 import type { Cluster } from 'ioredis';
@@ -170,7 +170,7 @@ export class RedisStore extends SchedulerStore<RedisStoreOptions | undefined> {
    */
   private get client(): Redis | Cluster {
     if (!this.fClient) {
-      throw new SchedulerError('RedisStore is not initialized', 'store', undefined, undefined, false);
+      throw SchedulerErrors.REDIS_STORE_NOT_INITIALIZED();
     }
 
     return this.fClient;

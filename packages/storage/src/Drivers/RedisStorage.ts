@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { Redis } from 'ioredis';
-import { StorageError } from '../Errors/StorageError';
+import { StorageErrors } from '../Errors/Catalog';
 import { Storage } from '../Service/Storage';
 import type { StorageTypes } from '../Types/StorageTypes';
 import type { Cluster } from 'ioredis';
@@ -118,7 +118,7 @@ export class RedisStorage implements Storage<RedisStorageOptions | undefined> {
    */
   public get client(): Redis | Cluster {
     if (!this.fClient) {
-      throw new StorageError('RedisStorage is not initialized', 'client');
+      throw StorageErrors.REDIS_NOT_INITIALIZED();
     }
 
     return this.fClient;

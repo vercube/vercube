@@ -1,6 +1,6 @@
 import { BaseDecorator, createDecorator, Inject } from '@vercube/di';
 import { hash } from 'ohash';
-import { CacheError } from '../Errors/CacheError';
+import { CacheErrors } from '../Errors/Catalog';
 import { CacheManager } from '../Services/CacheManager';
 import type { CacheTypes } from '../Types/CacheTypes';
 
@@ -32,10 +32,7 @@ export class CacheDecorator extends BaseDecorator<CacheTypes.DecoratorOptions> {
     const original = this.instance[this.propertyName];
 
     if (typeof original !== 'function') {
-      throw new CacheError('@Cache() can only be applied to methods', 'decorate', undefined, {
-        property: this.propertyName,
-        received: typeof original,
-      });
+      throw CacheErrors.DECORATOR_NOT_ON_METHOD({ property: this.propertyName, received: typeof original });
     }
 
     this.fOriginalMethod = original;

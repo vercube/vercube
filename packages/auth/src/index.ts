@@ -1,6 +1,7 @@
 // Decorators
 export * from './Decorators/Auth';
 export * from './Decorators/User';
+export * from './Errors/Catalog';
 
 // Middlewares
 export * from './Middleware/AuthMiddleware';

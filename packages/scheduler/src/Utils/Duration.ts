@@ -1,3 +1,4 @@
+import { SchedulerErrors } from '../Errors/Catalog';
 import { SchedulerError } from '../Errors/SchedulerError';
 import type { SchedulerTypes } from '../Types/SchedulerTypes';
 
@@ -94,11 +95,10 @@ export function formatDuration(ms: number): string {
  * @returns The error to throw
  */
 function invalid(value: unknown, option: string): SchedulerError {
-  return new SchedulerError(
-    `Invalid duration ${JSON.stringify(value)} for "${option}", use milliseconds or a string such as '30s', '5m', '1h' or '1d'`,
-    'configure',
-    undefined,
-    { option },
-    false,
-  );
+  return SchedulerErrors.DURATION_INVALID({
+    value: JSON.stringify(value),
+    option,
+    operation: 'configure',
+    metadata: { option },
+  });
 }

@@ -1,6 +1,7 @@
 import { PluginsRegistry } from '@vercube/core';
 import { StorageManager } from '@vercube/storage';
 import { MemoryStorage } from '@vercube/storage/drivers/MemoryStorage';
+import { RateLimitErrors } from '../Errors/Catalog';
 import { RateLimitPlugin } from '../Plugins/RateLimitPlugin';
 import { RateLimitManager } from '../Services/RateLimitManager';
 import type { RateLimitTypes } from '../Types/RateLimitTypes';
@@ -62,7 +63,7 @@ export function withRateLimit(options: WithRateLimitOptions = {}): RateLimitExte
 
   const current = (): RateLimitManager => {
     if (!manager) {
-      throw new Error('withRateLimit() is not set up yet: pass it to createTestApp({ extensions }) first.');
+      throw RateLimitErrors.TESTING_NOT_SET_UP();
     }
 
     return manager;
@@ -87,9 +88,7 @@ export function withRateLimit(options: WithRateLimitOptions = {}): RateLimitExte
 
       // registering it again would replace the test's own plugin options
       if (config.limit !== undefined && config.window !== undefined) {
-        throw new Error(
-          'withRateLimit(): RateLimitPlugin is already registered, set the app-wide limit on it rather than on withRateLimit().',
-        );
+        throw RateLimitErrors.TESTING_PLUGIN_ALREADY_REGISTERED();
       }
     },
     beforeInitialize: (app) => {

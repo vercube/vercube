@@ -1,6 +1,6 @@
 import { BasePlugin, MetadataResolver, resolveModuleHealth, skipGlobalMiddlewares } from '@vercube/core';
 import { DEFAULT_HTTP_PATH, SchedulerController } from '../Controllers/SchedulerController';
-import { SchedulerError } from '../Errors/SchedulerError';
+import { SchedulerErrors } from '../Errors/Catalog';
 import { SchedulerManager } from '../Services/SchedulerManager';
 import { $SchedulerHttpOptions } from '../Symbols/SchedulerSymbols';
 import type { SchedulerTypes } from '../Types/SchedulerTypes';
@@ -132,13 +132,7 @@ export class SchedulerPlugin extends BasePlugin<SchedulerTypes.PluginOptions> {
    */
   private mountHttp(app: App, http: SchedulerTypes.HttpOptions): void {
     if (typeof http.secret !== 'string' || http.secret === '') {
-      throw new SchedulerError(
-        'The scheduler HTTP trigger needs a secret, such as http: { secret: process.env.CRON_SECRET }',
-        'use',
-        undefined,
-        undefined,
-        false,
-      );
+      throw SchedulerErrors.HTTP_SECRET_MISSING();
     }
 
     if (app.container.getOptional(SchedulerController)) {
