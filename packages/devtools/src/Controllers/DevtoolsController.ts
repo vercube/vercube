@@ -1,4 +1,5 @@
 import {
+  AppLifecycle,
   Controller,
   Get,
   Header,
@@ -12,6 +13,7 @@ import {
   SetHeader,
 } from '@vercube/core';
 import { Inject } from '@vercube/di';
+import { createInstrument, SpanKind, SpanStatusCode } from '@vercube/telemetry/instrument';
 import { DEFAULT_DEVTOOLS_OPTIONS } from '../Constants/DevtoolsDefaults';
 import { DEVTOOLS_UI_HTML } from '../Generated/UI';
 import { DevtoolsAuthMiddleware } from '../Middleware/DevtoolsAuthMiddleware';
@@ -28,6 +30,15 @@ import type { QueueMessages } from '../Services/QueueIntrospection';
 import type { SchedulerRunResult } from '../Services/SchedulerIntrospection';
 import type { DevtoolsTypes } from '../Types/DevtoolsTypes';
 import type { HealthTypes } from '@vercube/core';
+
+const instrument = createInstrument('@vercube/devtools');
+
+/**
+ * Told apart from the revision in an `ETag`: revisions are small counters that
+ * start over with the process, so after a restart the same number can stand
+ * for other data.
+ */
+const BOOT_ID = Math.random().toString(36).slice(2, 10);
 
 /** Interval between keep-alive frames, in milliseconds. */
 const PING_INTERVAL_MS = 20_000;
@@ -80,6 +91,12 @@ export class DevtoolsController {
   @Inject(HealthRegistry)
   private readonly gHealth!: HealthRegistry;
 
+  @Inject(AppLifecycle)
+  private readonly gLifecycle!: AppLifecycle;
+
+  /** The health run in progress, shared by every caller that asks while it runs. */
+  private fHealthRun: Promise<HealthTypes.Report> | null = null;
+
   /** Streams currently open. */
   private fStreams: number = 0;
 
@@ -131,7 +148,7 @@ export class DevtoolsController {
       throw new NotFoundError(`Unknown introspection section: ${id}`);
     }
 
-    const etag = `"${section.revision}"`;
+    const etag = `"${BOOT_ID}-${section.revision}"`;
 
     if (ifNoneMatch === etag) {
       return new Response(null, { status: 304, headers: { ETag: etag, 'Cache-Control': 'no-cache' } });
@@ -251,17 +268,66 @@ export class DevtoolsController {
    * it works with the probe routes off. POST, because it calls the backends
    * the checks watch.
    *
+   * Callers that ask while a run is in progress share it, so several open
+   * inspectors cost one round trip per backend. Outside the `ready` state
+   * nothing runs, as with the readiness probe: a check may connect to its
+   * backend, which is not this endpoint's to decide while the application
+   * starts or drains.
+   *
+   * The run is recorded as a `health.check` trace with one event per check,
+   * so it shows up next to the requests.
+   *
    * @returns The health section with the fresh report
    */
   @Post('/api/health/check')
   @SetHeader('Cache-Control', 'no-store')
   public async runHealthChecks(): Promise<HealthTypes.Description> {
-    await this.gHealth.check({ fresh: true });
+    let report: HealthTypes.Report | null = null;
 
-    // other open inspectors learn that there is a newer report
-    this.gIntrospection.touch('health');
+    if (this.gLifecycle.state === 'ready') {
+      this.fHealthRun ??= this.traceHealthRun().finally(() => {
+        this.fHealthRun = null;
+      });
 
-    return (await this.gIntrospection.describe<HealthTypes.Description>('health'))!.data;
+      report = await this.fHealthRun;
+
+      // other open inspectors learn that there is a newer report
+      this.gIntrospection.touch('health');
+    }
+
+    const health = (await this.gIntrospection.describe<HealthTypes.Description>('health'))!.data;
+
+    // the registry forgets a run the checks changed under; the caller still gets what it ran
+    return health.report || !report ? health : { ...health, report };
+  }
+
+  /**
+   * Runs the checks inside a span that carries the outcome.
+   *
+   * @returns The report
+   */
+  private traceHealthRun(): Promise<HealthTypes.Report> {
+    return instrument.span('health.check', { kind: SpanKind.INTERNAL }, async (span) => {
+      const report = await this.gHealth.check({ fresh: true });
+
+      span.setAttribute('vercube.health.status', report.status);
+      span.setAttribute('vercube.health.checks', Object.keys(report.checks).length);
+
+      for (const [name, result] of Object.entries(report.checks)) {
+        span.addEvent(name, {
+          'vercube.health.check.status': result.status,
+          'vercube.health.check.critical': result.critical,
+          'vercube.health.check.duration_ms': result.duration,
+          ...(result.error ? { 'vercube.health.check.error': result.error } : {}),
+        });
+      }
+
+      if (report.status === 'down') {
+        span.setStatus({ code: SpanStatusCode.ERROR, message: 'a critical health check failed' });
+      }
+
+      return report;
+    });
   }
 
   /**

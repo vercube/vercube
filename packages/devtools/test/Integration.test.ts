@@ -1,4 +1,5 @@
 import {
+  AppLifecycle,
   BaseMiddleware,
   Body,
   Controller,
@@ -489,6 +490,66 @@ describe('devtools API', () => {
     const overview = await devtoolsJson<DevtoolsTypes.Overview>(app, '/_devtools/api/overview');
 
     expect(overview.health).toMatchObject({ status: 'degraded', checks: 2 });
+
+    // the run is a trace of its own, one event per check
+    await settle();
+
+    const traces = await devtoolsJson<unknown>(app, '/_devtools/api/signals/traces');
+    const run = spansOf(traces).find((span) => span.name === 'health.check');
+
+    expect(run).toBeDefined();
+    expect(JSON.stringify(run)).toContain('queue:orders');
+  });
+
+  it('shares one health run between callers and runs nothing once the application drains', async () => {
+    let runs = 0;
+    let release!: () => void;
+    const app = await createDevtoolsApp({}, (setup) => {
+      setup.health.register({ name: 'slow', check: () => (runs++, new Promise<void>((resolve) => (release = resolve))) });
+    });
+    const post = (): Promise<Response> =>
+      devtoolsFetch(app, '/_devtools/api/health/check', { method: 'POST', headers: { 'x-devtools-request': '1' } });
+
+    const first = post();
+    const second = post();
+
+    await settle();
+    expect(runs).toBe(1);
+
+    release();
+
+    const [a, b] = (await Promise.all([first, second].map(async (r) => (await r).json()))) as HealthTypes.Description[];
+
+    expect(a.report?.status).toBe('ok');
+    expect(b.report?.timestamp).toBe(a.report?.timestamp);
+
+    app.container.get(AppLifecycle).advance('draining');
+
+    const draining = (await (await post()).json()) as HealthTypes.Description;
+
+    expect(draining.state).toBe('draining');
+    expect(runs).toBe(1);
+  });
+
+  it('answers with the report it ran even when the checks changed meanwhile', async () => {
+    let release!: () => void;
+    const app = await createDevtoolsApp({}, (setup) => {
+      setup.health.register({ name: 'slow', check: () => new Promise<void>((resolve) => (release = resolve)) });
+    });
+
+    const pending = devtoolsFetch(app, '/_devtools/api/health/check', {
+      method: 'POST',
+      headers: { 'x-devtools-request': '1' },
+    });
+
+    await settle();
+    app.health.register({ name: 'late', check: () => {} });
+    release();
+
+    const health = (await (await pending).json()) as HealthTypes.Description;
+
+    expect(app.health.last).toBeNull();
+    expect(health.report?.checks.slow.status).toBe('ok');
   });
 
   it('runs a scheduled job through the scheduler, on POST only', async () => {

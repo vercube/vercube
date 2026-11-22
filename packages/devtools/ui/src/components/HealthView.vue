@@ -134,6 +134,13 @@ const lastRun = computed(() => {
   return seconds < 60 ? `${seconds}s ago` : `${Math.floor(seconds / 60)}m ${seconds % 60}s ago`;
 });
 
+/** What a probe answers with: `full` is only ever given to a request that carries the token. */
+function detailsLevel(details: string, token: boolean): string {
+  const anonymous = details === 'full' ? 'summary' : details;
+
+  return token ? `${anonymous}, full with the token` : anonymous;
+}
+
 function toggle(on: boolean): string {
   return on ? 'on' : 'off';
 }
@@ -152,7 +159,7 @@ const settings = computed(() => {
     { label: 'live', value: config.endpoints.live ?? '--' },
     { label: 'ready', value: config.endpoints.ready ?? '--' },
     { label: 'startup', value: config.endpoints.startup ?? '--' },
-    { label: 'details', value: config.token ? `${config.details}, full with the token` : config.details },
+    { label: 'details', value: detailsLevel(config.details, config.token) },
     { label: 'timeout', value: `${config.timeout} ms` },
     { label: 'cacheTtl', value: `${config.cacheTtl} ms` },
     { label: 'drainDelay', value: `${config.drainDelay} ms` },
@@ -214,7 +221,11 @@ async function run(): Promise<void> {
   failure.value = null;
 
   try {
-    data.value = await runHealthChecks();
+    const health = await runHealthChecks();
+
+    if (mounted) {
+      data.value = health;
+    }
   } catch (error_) {
     failure.value = error_ instanceof Error ? error_.message : String(error_);
   } finally {
@@ -252,24 +263,34 @@ watch(
   },
 );
 
-onMounted(async () => {
-  await reload();
+let mounted = false;
 
-  // a first look should show results, not a column of dashes
-  if (data.value && data.value.checks.length > 0 && !data.value.report) {
-    void run();
-  }
+onMounted(() => {
+  mounted = true;
 
+  // started before anything is awaited, so leaving the panel always finds them
   schedule();
   clock = setInterval(() => (now.value = Date.now()), 1000);
+
+  void reload().then(() => {
+    // a first look should show results, not a column of dashes
+    if (mounted && data.value?.state === 'ready' && data.value.checks.length > 0 && !data.value.report) {
+      void run();
+    }
+  });
 });
 
 onUnmounted(() => {
+  mounted = false;
+
   for (const timer of [refresh, clock]) {
     if (timer) {
       clearInterval(timer);
     }
   }
+
+  refresh = null;
+  clock = null;
 });
 </script>
 

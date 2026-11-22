@@ -100,7 +100,7 @@ export namespace HealthTypes {
       /** The path of each probe, `null` when it is not registered. */
       endpoints: Record<Endpoint, string | null>;
 
-      /** What anonymous probe requests see. */
+      /** The `details` option as configured. Anonymous requests never get more than `summary`. */
       details: DetailsLevel;
 
       /** Whether a token unlocks the full report. The token itself is never shown. */
