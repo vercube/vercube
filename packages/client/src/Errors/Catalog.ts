@@ -33,11 +33,28 @@ function define<P extends Record<string, string>>(
     descriptors[field] = { value, enumerable: false, writable: true, configurable: true };
   }
 
+  // the mark `getErrorGuidance()` of `@vercube/di` looks for, by its registered name
+  (descriptors as Record<symbol, PropertyDescriptor>)[Symbol.for('vercube.error.guidance')] = {
+    value: true,
+    enumerable: false,
+    writable: false,
+    configurable: true,
+  };
+
   const named = new Proxy({}, { get: (_target, name) => `<${String(name)}>` }) as P;
 
   descriptions.push({ ...guidance, message: message(named) });
 
-  return Object.assign((params: P) => Object.defineProperties(new TypeError(message(params)), descriptors), guidance);
+  const factory = (params: P): TypeError => {
+    const error = new TypeError(message(params));
+
+    // the trace starts where the error was thrown, not in this function
+    (Error as { captureStackTrace?: (target: object, skip?: Function) => void }).captureStackTrace?.(error, factory);
+
+    return Object.defineProperties(error, descriptors);
+  };
+
+  return Object.assign(factory, guidance);
 }
 
 /**

@@ -6,8 +6,8 @@ import { defineErrorCatalog } from '@vercube/di';
 export const ServerlessErrors = defineErrorCatalog('VERCUBE_SERVERLESS', {
   STREAM_ABORTED: {
     message: ({ reason }: { reason: unknown }) => `Stream aborted: ${String(reason)}`,
-    why: '`toBuffer()` was collecting a `ReadableStream` into a buffer, and the stream errored before it ended. The message ends with the reason the stream gave.',
-    fix: 'Handle failures in the source of the stream: catch them in its `start()` or `pull()` callback and call `controller.close()`, so the stream ends instead of erroring.',
+    why: 'The body of a response was being collected into a buffer, and its stream errored before it ended. The message ends with the reason the stream gave.',
+    fix: 'Look at the reason at the end of the message: it is the error of whatever produced the body, such as a generator of a `@Stream()` route that threw or an upstream `fetch()` that was cut off. Fix it there.',
   },
   CLOUDFLARE_BINDINGS_OUTSIDE_REQUEST: {
     message: 'CloudflareBindings was read outside a request. Bindings exist only while the Cloudflare adapter handles a request.',

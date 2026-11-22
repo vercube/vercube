@@ -8,7 +8,7 @@ export const WsErrors = defineErrorCatalog('VERCUBE_WS', {
   SCHEMA_WITHOUT_VALIDATION_PROVIDER: {
     message: ({ event, namespace }: { event: string; namespace: string }) =>
       `Message handler for event "${event}" in namespace "${namespace}" has a validationSchema, but no ValidationProvider is registered.`,
-    why: 'A `@Message()` handler declares a `validationSchema`, and the container has no `ValidationProvider` to check messages with. Every message of the event would be dropped, so the application fails at boot instead.',
+    why: 'A `@Message()` handler declares a `validationSchema`, and the container has no `ValidationProvider` to check messages with. `createApp()` binds one, so the container was built by hand or the binding was removed. Every message of the event would be dropped, so the application fails at boot instead.',
     fix: 'Bind a provider before the controllers are registered: `container.bind(ValidationProvider, StandardSchemaValidationProvider)`, both from `@vercube/core`. Or remove `validationSchema` from the `@Message()` options.',
   },
   VALIDATION_PROVIDER_MISSING: {

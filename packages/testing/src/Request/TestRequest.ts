@@ -436,7 +436,7 @@ export class TestRequest implements PromiseLike<TestResponse> {
           throw error;
         }
 
-        // bare-error: wraps a value a check threw that is not an error, there is no cause to name
+        // a check threw something that is not an error: it is kept as the cause
         throw new TestingError(formatFailure(String(error), response.request, await response.snapshot()), { cause: error });
       }
 
