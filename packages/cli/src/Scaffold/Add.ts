@@ -3,9 +3,9 @@ import { pathToFileURL } from 'node:url';
 import { installDependencies } from 'nypm';
 import { dirname, join } from 'pathe';
 import { x } from 'tinyexec';
+import { CliErrors } from '../Errors/Catalog';
 import { applyRecipes } from '../Recipes/Apply';
 import { Project } from '../Recipes/Project';
-import { RecipeError } from '../Recipes/RecipeError';
 import { approveBuilds } from './Scaffold';
 import type { RecipeTypes } from '../Recipes/RecipeTypes';
 import type { Prompter } from './Plan';
@@ -65,9 +65,7 @@ export interface AddOptions {
  */
 export async function addModules(ids: string[], options: AddOptions): Promise<RecipeTypes.Summary> {
   if (ids.length === 0) {
-    throw new RecipeError(
-      `Name the modules to add, such as vercube add queue. Available: ${options.recipes.map((r) => r.id).join(', ')}.`,
-    );
+    throw CliErrors.NO_MODULES_NAMED({ available: options.recipes.map((r) => r.id).join(', ') });
   }
 
   const project = new Project(options.root, { version: options.version, appDir: options.appDir });
@@ -118,9 +116,7 @@ export async function addModules(ids: string[], options: AddOptions): Promise<Re
   }
 
   if (missing.length > 0) {
-    throw new RecipeError(
-      `Missing ${missing.join(', ')}. Pass them, or --yes for the defaults, when there is no terminal to ask in.`,
-    );
+    throw CliErrors.ANSWERS_MISSING({ missing: missing.join(', ') });
   }
 
   const summary = await applyRecipes(project, ids, recipes, answers);
@@ -184,15 +180,11 @@ function assertAlias(project: Project): void {
   const target = paths?.['@/*']?.[0]?.replace(/^\.\//, '');
 
   if (target && target !== 'src/*') {
-    throw new RecipeError(
-      `tsconfig.json maps @/* to ${paths!['@/*'][0]}, the recipes write their files under src/. Map @/* to ./src/*, or add the module by hand.`,
-    );
+    throw CliErrors.ALIAS_TARGET_UNSUPPORTED({ target: paths!['@/*'][0] });
   }
 
   if (!paths?.['@/*']) {
-    throw new RecipeError(
-      'The recipes import project files as @/..., which tsconfig.json does not map. Add "paths": { "@/*": ["./src/*"] } to its compilerOptions.',
-    );
+    throw CliErrors.ALIAS_MISSING();
   }
 }
 
@@ -207,21 +199,19 @@ function assertAlias(project: Project): void {
  */
 async function loadPackageRecipe(project: Project, name: string): Promise<RecipeTypes.Recipe<any>> {
   if (!/^(@[\w.-]+\/)?[\w.-]+$/.test(name) || name.split('/').some((segment) => /^\.+$/.test(segment) || segment === '@')) {
-    throw new RecipeError(`Unknown module "${name}".`);
+    throw CliErrors.MODULE_NAME_INVALID({ name });
   }
 
   const dir = findPackage(project.appDir, name);
 
   if (!dir) {
-    throw new RecipeError(
-      `"${name}" is not a built-in module, and no package of that name is installed. Install it first, or pick a built-in module.`,
-    );
+    throw CliErrors.PACKAGE_NOT_INSTALLED({ name });
   }
 
   const entry = recipeEntry(dir);
 
   if (!entry) {
-    throw new RecipeError(`${name} does not export a recipe at ${name}/recipe.`);
+    throw CliErrors.PACKAGE_WITHOUT_RECIPE({ name });
   }
 
   const exported = (await import(pathToFileURL(join(dir, entry)).href)) as Record<string, any>;
@@ -231,7 +221,7 @@ async function loadPackageRecipe(project: Project, name: string): Promise<Recipe
   ) as RecipeTypes.Recipe<any> | undefined;
 
   if (!recipe) {
-    throw new RecipeError(`${name}/recipe does not export a recipe made with defineRecipe().`);
+    throw CliErrors.RECIPE_EXPORT_INVALID({ name });
   }
 
   // added by its package name, whatever id it declares
@@ -338,7 +328,7 @@ function flagFromArgv(argv: string[], name: string): string | undefined {
 
       // given without a value: an error, not the default --yes would pick
       if (next === undefined || next.startsWith('-')) {
-        throw new RecipeError(`--${name} needs a value.`);
+        throw CliErrors.FLAG_VALUE_MISSING({ flag: name });
       }
 
       return next;
@@ -430,8 +420,6 @@ function assertVersion(project: Project, version: string): void {
   const core = pkg.dependencies?.['@vercube/core'] ?? pkg.devDependencies?.['@vercube/core'];
 
   if (core && /^\d+\.\d+\.\d+/.test(core) && core !== version) {
-    throw new RecipeError(
-      `The project uses @vercube/core ${core}, this CLI is ${version}. Run the project's own CLI (\`npx vercube add\`), or upgrade every @vercube package to ${version} first.`,
-    );
+    throw CliErrors.VERSION_MISMATCH({ core, version });
   }
 }

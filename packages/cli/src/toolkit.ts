@@ -7,4 +7,5 @@ export { BaseCommand } from './BaseCommand';
 export { Command } from './Decorators/Command';
 export { Arg } from './Decorators/Arg';
 export { Flag } from './Decorators/Flag';
+export { CliErrors } from './Errors/Catalog';
 export type { CliTypes } from './Types/CliTypes';

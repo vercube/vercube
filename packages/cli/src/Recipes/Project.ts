@@ -3,7 +3,7 @@ import { parseYAML, stringifyYAML } from 'confbox/yaml';
 import { builders, generateCode, parseModule } from 'magicast';
 import { getDefaultExportOptions } from 'magicast/helpers';
 import { dirname, isAbsolute, join, relative } from 'pathe';
-import { RecipeError } from './RecipeError';
+import { CliErrors } from '../Errors/Catalog';
 import type { RecipeTypes } from './RecipeTypes';
 
 /** A module parsed by magicast. */
@@ -83,7 +83,7 @@ export class Project {
       this.appDir = root;
       this.webDir = null;
     } else {
-      throw new RecipeError(`No package.json in ${root}. Run this in the root of a Vercube project.`);
+      throw CliErrors.PACKAGE_JSON_MISSING({ root });
     }
 
     // a recipe must not wire Vercube into a package that is something else
@@ -93,9 +93,7 @@ export class Project {
     >;
 
     if (!pkg.dependencies?.['@vercube/core'] && !pkg.devDependencies?.['@vercube/core']) {
-      throw new RecipeError(
-        `${relative(root, join(this.appDir, 'package.json'))} does not depend on @vercube/core. Run this in a Vercube project.`,
-      );
+      throw CliErrors.NOT_A_VERCUBE_PROJECT({ file: relative(root, join(this.appDir, 'package.json')) });
     }
   }
 
@@ -246,7 +244,7 @@ export class Project {
   public addEnv(variables: Record<string, string>, comment?: string, example: Record<string, string> = {}): void {
     for (const [name, value] of Object.entries({ ...variables, ...example })) {
       if (/[\n\r]/.test(value)) {
-        throw new RecipeError(`The value of ${name} spans lines, which .env cannot hold.`);
+        throw CliErrors.ENV_VALUE_MULTILINE({ name });
       }
     }
 
@@ -325,9 +323,7 @@ export class Project {
       const plugins = config.plugins as unknown[] & { $type?: string };
 
       if (plugins.$type !== 'array') {
-        throw new RecipeError(
-          `the \`plugins\` option of ${CONFIG_FILE} is not an array literal. Add ${plugin.name} from ${plugin.from} to it yourself.`,
-        );
+        throw CliErrors.PLUGINS_NOT_ARRAY({ file: CONFIG_FILE, name: plugin.name, from: plugin.from });
       }
 
       if (plugins.map((entry) => pluginName(entry)).includes(plugin.name)) {
@@ -387,9 +383,7 @@ export class Project {
       const setup = findContainerSetup(mod);
 
       if (!setup) {
-        throw new RecipeError(
-          `Could not find the container setup in ${CONTAINER_FILE}: a function taking the container. Bind ${binding.name} yourself with container.bind(${binding.name}).`,
-        );
+        throw CliErrors.CONTAINER_SETUP_NOT_FOUND({ file: CONTAINER_FILE, binding: binding.name });
       }
 
       if (setup.body.some((statement: any) => isBindOf(statement, setup.param, binding.name))) {
@@ -418,9 +412,7 @@ export class Project {
       const setup = findContainerSetup(mod);
 
       if (!setup) {
-        throw new RecipeError(
-          `Could not find the container setup in ${CONTAINER_FILE}: a function taking the container. Add this to it yourself: ${code}`,
-        );
+        throw CliErrors.CONTAINER_SETUP_NOT_FOUND({ file: CONTAINER_FILE, code });
       }
 
       // the variable, not a property or a string that happens to say "container"
@@ -466,7 +458,7 @@ export class Project {
         const index = body.findIndex((statement) => callsFunction(statement, 'createApp'));
 
         if (index === -1) {
-          throw new RecipeError(`Could not find the createApp() call in ${ENTRY_FILE}. Add this before it yourself: ${code}`);
+          throw CliErrors.CREATE_APP_NOT_FOUND({ file: ENTRY_FILE, code });
         }
 
         body.splice(index, 0, ...statements);
@@ -509,7 +501,7 @@ export class Project {
         body.splice(index, 1, ...statements);
       } else {
         // whatever else it exports is the user's, and replacing it would lose it
-        throw new RecipeError(`${ENTRY_FILE} already has a default export. Replace it with this yourself: ${code}`);
+        throw CliErrors.DEFAULT_EXPORT_CONFLICT({ file: ENTRY_FILE, code });
       }
 
       addImports(mod, options.imports);
@@ -538,14 +530,14 @@ export class Project {
     const path = join(this.appDir, file);
 
     if (!existsSync(path)) {
-      throw new RecipeError(`${relative(this.root, path)} not found.`);
+      throw CliErrors.JSON_FILE_NOT_FOUND({ file: relative(this.root, path) });
     }
 
     try {
       this.editJson(path, edit);
     } catch (error) {
       if (error instanceof SyntaxError) {
-        throw new RecipeError(`${relative(this.root, path)} is not plain JSON (comments?), edit it yourself.`);
+        throw CliErrors.JSON_NOT_PLAIN({ file: relative(this.root, path) });
       }
 
       throw error;
@@ -639,7 +631,7 @@ export class Project {
     const inside = relative(this.appDir, path);
 
     if (inside.startsWith('..') || isAbsolute(inside)) {
-      throw new RecipeError(`${file} is outside the application.`);
+      throw CliErrors.PATH_OUTSIDE_APP({ file });
     }
 
     return path;
@@ -663,7 +655,7 @@ export class Project {
     }
 
     if ((config as { $type?: string } | undefined)?.$type !== 'object') {
-      throw new RecipeError(`${CONFIG_FILE} must export its config as \`export default defineConfig({ ... })\`.`);
+      throw CliErrors.CONFIG_EXPORT_UNSUPPORTED({ file: CONFIG_FILE });
     }
 
     return config!;
@@ -682,7 +674,7 @@ export class Project {
     const path = join(this.appDir, file);
 
     if (!existsSync(path)) {
-      throw new RecipeError(`${relative(this.root, path)} not found. The recipe needs it to wire the module in.`);
+      throw CliErrors.SOURCE_FILE_NOT_FOUND({ file: relative(this.root, path) });
     }
 
     let mod: Module;
@@ -690,7 +682,7 @@ export class Project {
     try {
       mod = parseModule(readFileSync(path, 'utf8'));
     } catch (error) {
-      throw new RecipeError(`${relative(this.root, path)} could not be parsed: ${(error as Error).message}`);
+      throw CliErrors.SOURCE_FILE_UNPARSABLE({ file: relative(this.root, path), reason: (error as Error).message });
     }
 
     if (edit(mod)) {
@@ -774,9 +766,7 @@ function addImport(mod: Module, name: string, from: string, isDefault?: boolean,
   if (existing) {
     // the same name from another module would bind or register the wrong class
     if (existing.from !== from || (existing.imported === 'default') !== Boolean(isDefault)) {
-      throw new RecipeError(
-        `${name} is already imported from ${existing.from}, not ${from}. Rename one of them and add it yourself.`,
-      );
+      throw CliErrors.IMPORT_NAME_CONFLICT({ name, existing: existing.from, from });
     }
 
     return;

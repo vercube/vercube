@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { parseSync } from 'oxc-parser';
 import { dirname, isAbsolute, join, relative, resolve } from 'pathe';
 import { glob } from 'tinyglobby';
+import { ScanErrors } from './Errors/Catalog';
 import { GLOB_SCAN_PATTERN } from './Scan';
 import type { ScanLogger } from './Types';
 
@@ -585,7 +586,7 @@ export async function inspectEntry(
         timeout > 0
           ? setTimeout(() => {
               child.kill('SIGKILL');
-              finish(new Error(`Inspect did not finish within ${timeout / 1000}s`));
+              finish(ScanErrors.INSPECT_TIMEOUT({ seconds: timeout / 1000 }));
             }, timeout)
           : undefined;
 
@@ -602,7 +603,7 @@ export async function inspectEntry(
         if (code === 0) {
           finish();
         } else {
-          finish(new Error(`Inspect exited with code ${code}`));
+          finish(ScanErrors.INSPECT_FAILED({ code }));
         }
       });
     });

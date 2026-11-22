@@ -1,3 +1,5 @@
+import { describeError, getErrorGuidance } from '@vercube/di';
+import { CliErrors } from '../Errors/Catalog';
 import { RecipeError } from './RecipeError';
 import { resolveRecipes } from './Resolve';
 import type { Project } from './Project';
@@ -32,9 +34,11 @@ export async function applyRecipes(
       const value = resolvedAnswers[recipe.id][prompt.name];
 
       if (prompt.options.length > 0 && !prompt.options.some((option) => option.value === value)) {
-        throw new RecipeError(
-          `--${prompt.flag} must be one of ${prompt.options.map((option) => option.value).join(', ')}, got ${value}.`,
-        );
+        throw CliErrors.FLAG_VALUE_INVALID({
+          flag: prompt.flag,
+          options: prompt.options.map((option) => option.value).join(', '),
+          value,
+        });
       }
     }
   }
@@ -46,7 +50,7 @@ export async function applyRecipes(
     const reason = recipe.unsupported?.(project);
 
     if (reason) {
-      throw new RecipeError(`${recipe.label} cannot be added to this project: ${reason}`);
+      throw CliErrors.RECIPE_UNSUPPORTED({ label: recipe.label, reason });
     }
   }
 
@@ -59,10 +63,16 @@ export async function applyRecipes(
     } catch (error) {
       // all or nothing: a module half wired in is worse than none
       const unrestored = project.rollback();
-      const left = unrestored.length > 0 ? ` These files could not be restored: ${unrestored.join(', ')}.` : '';
 
-      if (error instanceof RecipeError || left) {
-        throw new RecipeError(`${recipe.label}: ${(error as Error).message}${left}`, { cause: error });
+      if (error instanceof RecipeError || unrestored.length > 0) {
+        const failure = CliErrors.RECIPE_FAILED(
+          { label: recipe.label, reason: (error as Error).message, unrestored: unrestored.join(', ') },
+          { cause: error },
+        );
+        const guidance = error instanceof RecipeError ? getErrorGuidance(error) : undefined;
+
+        // the error of the recipe says more than "a recipe failed": its code and fix are kept
+        throw guidance?.why ? describeError(failure, guidance) : failure;
       }
 
       throw error;
