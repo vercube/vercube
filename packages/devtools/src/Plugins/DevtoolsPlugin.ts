@@ -266,8 +266,9 @@ export class DevtoolsPlugin extends BasePlugin<DevtoolsTypes.Options> {
 
     // A pattern that cannot be read would cover nothing and leave the routes it
     // was written for on offer. That is refused here, when the plugin starts,
-    // and not found out later in the browser.
-    for (const pattern of exclude) {
+    // and not found out later in the browser. With the playground off no
+    // pattern is ever used, so none is read.
+    for (const pattern of playground.enabled === false ? [] : exclude) {
       try {
         parseRoutePattern(pattern);
       } catch (error) {

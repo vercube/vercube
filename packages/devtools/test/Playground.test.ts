@@ -190,7 +190,7 @@ describe('route playground', () => {
     });
 
     it('reads no pattern while the playground or devtools is off', async () => {
-      await expect(createShopApp({ playground: { enabled: false, exclude: ['/shop/**'] } })).resolves.toBeDefined();
+      await expect(createShopApp({ playground: { enabled: false, exclude: ['nonsense'] } })).resolves.toBeDefined();
       await expect(createShopApp({ enabled: false, playground: { exclude: ['nonsense'] } })).resolves.toBeDefined();
     });
 

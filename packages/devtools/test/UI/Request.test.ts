@@ -254,8 +254,10 @@ describe('validateDraft', () => {
 
     expect(check('1')).toEqual([]);
     expect(check('1', '2')).toEqual([]);
-    expect(check('1', '0')).toEqual([{ path: 'ids[1]', message: 'must be at least 1' }]);
-    expect(check('1', 'abc')).toEqual([{ path: 'ids[1]', message: 'must be number, got string' }]);
+    expect(check('0')).toEqual([{ path: 'ids[0]', message: 'must be at least 1' }]);
+    // Only the first entry is judged: without `arrays` on the decorator the server sees no other.
+    expect(check('1', 'abc')).toEqual([]);
+    expect(check('abc', '1')).toEqual([{ path: 'ids[0]', message: 'must be number, got string' }]);
   });
 
   it('checks named query entries on their own when there is no object schema', () => {

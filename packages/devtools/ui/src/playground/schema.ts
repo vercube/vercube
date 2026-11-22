@@ -32,9 +32,13 @@ export interface CheckOptions {
    * True for a path, query or header value, which is text on the wire. A
    * string is then accepted wherever a coercion could turn it into what the
    * schema asks for: a number written out, any text for a boolean, one value
-   * for a list of them. A repeated query name arrives as a list, and stands
-   * for its first value where the schema does not take a list, as core
-   * resolves it.
+   * for a list of them.
+   *
+   * A repeated query name arrives as a list. Core hands the handler its first
+   * value, and every value only for a key named in the `arrays` option of
+   * `@QueryParams()`, which a schema does not show. So only the first value is
+   * checked, as itself or as the one member of a list, and the length of a
+   * list is never judged: that much holds whichever way the server reads it.
    */
   wire?: boolean;
 }
@@ -214,8 +218,8 @@ function fromWire(schema: Record<string, unknown>, value: unknown): unknown {
   }
 
   if (Array.isArray(value)) {
-    // Only a parameter declared as a list keeps every value; any other reads the first.
-    return types.includes('array') ? value : fromWire(schema, value[0]);
+    // The first value is the one the server is sure to see.
+    return fromWire(schema, value[0]);
   }
 
   if (typeof value !== 'string') {
@@ -229,8 +233,14 @@ function fromWire(schema: Record<string, unknown>, value: unknown): unknown {
   }
 
   if (types.includes('array')) {
-    // One entry of a repeated name is a list of one.
+    // One entry is a list of one, and so is the first of several.
     return [value];
+  }
+
+  // `Number(' ')` is 0 and `Number('Infinity')` is a number: a coercion takes
+  // both, and whether the schema then does is not for this checker to say.
+  if ((types.includes('number') || types.includes('integer')) && !Number.isNaN(Number(value))) {
+    return UNDECIDED;
   }
 
   // A boolean coercion takes any text, and how text becomes an object or a
@@ -480,7 +490,16 @@ function check(
   } else if (typeof value === 'number') {
     checkNumber(resolved, value, path, issues);
   } else if (Array.isArray(value)) {
-    checkArray(resolved, value, path, root, issues, depth, wire);
+    // On the wire the list is the first value alone, so its length says nothing.
+    checkArray(
+      wire ? { ...resolved, minItems: undefined, maxItems: undefined } : resolved,
+      value,
+      path,
+      root,
+      issues,
+      depth,
+      wire,
+    );
   } else if (isObject(value)) {
     checkObject(resolved, value, path, root, issues, depth, wire);
   }

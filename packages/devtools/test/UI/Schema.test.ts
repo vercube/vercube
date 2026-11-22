@@ -352,6 +352,12 @@ describe('checkSchema of values that are text on the wire', () => {
     expect(wire({ type: 'integer' }, 'abc')).toEqual(['must be integer, got string']);
   });
 
+  it('reports no text that Number() accepts', () => {
+    for (const text of ['1e3', '+5', '.5', '-0', '0x10', ' ', ' 7 ', 'Infinity']) {
+      expect(wire({ type: 'number' }, text)).toEqual([]);
+    }
+  });
+
   it('reports nothing for a boolean: what text a coercion takes is not known here', () => {
     for (const text of ['true', 'false', 'yes', '1', 'on', '']) {
       expect(wire({ type: 'boolean' }, text)).toEqual([]);
@@ -363,8 +369,17 @@ describe('checkSchema of values that are text on the wire', () => {
 
     expect(wire(ids, '1')).toEqual([]);
     expect(wire(ids, ['1', '2'])).toEqual([]);
-    expect(wire(ids, ['1', 'x'])).toEqual(['[1] must be number, got string']);
-    expect(wire({ ...ids, minItems: 2 }, '1')).toEqual(['must have at least 2 items']);
+    expect(wire(ids, 'x')).toEqual(['[0] must be number, got string']);
+  });
+
+  it('judges a repeated name by its first value only, which is all the server may see', () => {
+    const ids = { type: 'array', items: { type: 'number' }, minItems: 2, maxItems: 2 };
+
+    // Core keeps every value only for keys named in `arrays`, which the schema does not show.
+    expect(wire(ids, ['1', 'x'])).toEqual([]);
+    expect(wire(ids, ['x', '1'])).toEqual(['[0] must be number, got string']);
+    expect(wire(ids, '1')).toEqual([]);
+    expect(wire(ids, ['1', '2', '3'])).toEqual([]);
   });
 
   it('reads a repeated name as its first value where the schema takes no list', () => {
