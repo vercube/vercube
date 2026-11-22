@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { z } from '../../src';
-import { SchemaHeaderResolver, SchemaQueryParamResolver } from '../../src/Resolvers/SchemaNamedArgsResolver';
+import {
+  SchemaCookieResolver,
+  SchemaHeaderResolver,
+  SchemaQueryParamResolver,
+} from '../../src/Resolvers/SchemaNamedArgsResolver';
 import type { RouteConfig } from '@asteasolutions/zod-to-openapi';
 import type { DeepPartial, MetadataTypes } from '@vercube/core';
 
@@ -92,5 +96,28 @@ describe('SchemaHeaderResolver', () => {
     SchemaHeaderResolver(method([{ idx: 0, type: 'header', data: { name: 'x-tenant' } }]), schema);
 
     expect(Object.keys(shapeOf(schema.request?.headers))).toEqual(['x-tenant']);
+  });
+});
+
+describe('SchemaCookieResolver', () => {
+  it('should document @Cookie args and skip @Cookies', () => {
+    const schema: DeepPartial<RouteConfig> = {};
+    SchemaCookieResolver(
+      method([
+        { idx: 0, type: 'cookie', data: { name: 'session' } },
+        { idx: 1, type: 'cookie', data: { name: 'page' }, validate: true, validationSchema: z.coerce.number() },
+        { idx: 2, type: 'cookies' },
+      ]),
+      schema,
+    );
+
+    expect(Object.keys(shapeOf(schema.request?.cookies))).toEqual(['session', 'page']);
+  });
+
+  it('should leave a route without cookies alone', () => {
+    const schema: DeepPartial<RouteConfig> = {};
+    SchemaCookieResolver(method([{ idx: 0, type: 'header', data: { name: 'x-tenant' } }]), schema);
+
+    expect(schema.request).toBeUndefined();
   });
 });

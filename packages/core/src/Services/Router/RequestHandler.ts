@@ -3,6 +3,7 @@ import { Logger } from '@vercube/logger';
 import { MethodNotAllowedError } from '../../Errors/Http/MethodNotAllowedError';
 import { NotFoundError } from '../../Errors/Http/NotFoundError';
 import { FastResponse } from '../../Types/CommonTypes';
+import { getSetCookieName } from '../../Utils/Cookies';
 import { withoutStack } from '../../Utils/Errors';
 import { isSameMiddleware, resolveSlots } from '../../Utils/MiddlewareUtils';
 import { skipsGlobalMiddlewares } from '../../Utils/Utils';
@@ -1795,8 +1796,8 @@ function mergeResponseHeaders(target: Response, source: Response, ownsBody: bool
   }
 
   // A cookie the target set itself wins over a middleware cookie of the same name.
-  const targetCookies = new Set(target.headers.getSetCookie().map(toCookieName));
-  const cookies = source.headers.getSetCookie().filter((cookie) => !targetCookies.has(toCookieName(cookie)));
+  const targetCookies = new Set(target.headers.getSetCookie().map(getSetCookieName));
+  const cookies = source.headers.getSetCookie().filter((cookie) => !targetCookies.has(getSetCookieName(cookie)));
 
   // A response from `fetch()` carries an already decoded body, but still the
   // encoding and length of the original one - sent as is, the client would
@@ -1875,15 +1876,4 @@ function mergeVary(target: string, source: string): string {
   }
 
   return seen.has('*') ? '*' : tokens.join(', ');
-}
-
-/**
- * Extracts the name from a `Set-Cookie` header value.
- *
- * @param {string} cookie - The header value, e.g. `session=abc; HttpOnly`
- * @returns {string} The cookie name, e.g. `session`
- */
-function toCookieName(cookie: string): string {
-  const index = cookie.indexOf('=');
-  return (index === -1 ? cookie : cookie.slice(0, index)).trim();
 }

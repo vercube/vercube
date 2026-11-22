@@ -1,6 +1,6 @@
 import { SchemaBodyResolver } from '../Resolvers/SchemaBodyResolver';
 import { SchemaDefaultsResolver } from '../Resolvers/SchemaDefaultsResolver';
-import { SchemaHeaderResolver, SchemaQueryParamResolver } from '../Resolvers/SchemaNamedArgsResolver';
+import { SchemaCookieResolver, SchemaHeaderResolver, SchemaQueryParamResolver } from '../Resolvers/SchemaNamedArgsResolver';
 import { SchemaPathParamsResolver } from '../Resolvers/SchemaPathParamsResolver';
 import { SchemaQueryParamsResolver } from '../Resolvers/SchemaQueryParamsResolver';
 import { toOpenApiPath } from './OpenApiPath';
@@ -67,6 +67,7 @@ export function createRouteConfig(
   SchemaQueryParamsResolver(metadata, schema, warn);
   SchemaQueryParamResolver(metadata, schema, warn);
   SchemaHeaderResolver(metadata, schema, warn);
+  SchemaCookieResolver(metadata, schema, warn);
 
   return schema as RouteConfig;
 }

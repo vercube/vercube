@@ -1,5 +1,6 @@
 import { BadRequestError } from '../../Errors/Http/BadRequestError';
 import { resolveRequestBody } from '../../Resolvers/Body';
+import { getRequestCookie, getRequestCookies } from '../../Resolvers/Cookies';
 import { getRequestHeader, getRequestHeaders } from '../../Resolvers/Headers';
 import { resolveMultipartFormData } from '../../Resolvers/MultipartFormData';
 import { resolveQueryParam, resolveQueryParamAll, resolveQueryParams } from '../../Resolvers/Query';
@@ -159,6 +160,13 @@ export class MetadataResolver {
       }
       case 'headers': {
         return (event) => getRequestHeaders(event);
+      }
+      case 'cookie': {
+        const name = arg.data?.name ?? '';
+        return (event) => getRequestCookie(name, event);
+      }
+      case 'cookies': {
+        return (event) => getRequestCookies(event);
       }
       case 'request': {
         return (event) => event.request;
