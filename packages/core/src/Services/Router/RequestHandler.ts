@@ -6,6 +6,7 @@ import { FastResponse } from '../../Types/CommonTypes';
 import { getSetCookieName } from '../../Utils/Cookies';
 import { withoutStack } from '../../Utils/Errors';
 import { isSameMiddleware, resolveSlots } from '../../Utils/MiddlewareUtils';
+import { getStreamGuessedType, getStreamType } from '../../Utils/Stream';
 import { skipsGlobalMiddlewares } from '../../Utils/Utils';
 import { DefaultErrorHandlerProvider } from '../ErrorHandler/DefaultErrorHandlerProvider';
 import { ErrorHandlerProvider } from '../ErrorHandler/ErrorHandlerProvider';
@@ -1068,10 +1069,15 @@ export class RequestHandler {
   private applyHookResult(state: Pipeline, result: Response | ResponseInit): Response | undefined {
     if (result instanceof PendingResponse) {
       // a hook that returned the intermediate response it was handed
+      discardResult(state.result);
+
       return result.toResponse();
     }
 
     if (result instanceof Response) {
+      // the hook answers in place of the handler, whose result is not sent
+      discardResult(state.result);
+
       return mergeResponseHeaders(result, state.response, false);
     }
 
@@ -1131,6 +1137,12 @@ export class RequestHandler {
       return mergeResponseHeaders(result, response);
     }
 
+    // A stream is answered like a response of the handler's own, except that it
+    // takes the status the actions and middlewares chose.
+    if (isStream(result)) {
+      return createStreamResponse(result, response.status, response);
+    }
+
     // No middleware set a header or a status, so the response is the one a
     // route without middlewares answers with, built from a shared init.
     if (isUntouched(response)) {
@@ -1150,6 +1162,9 @@ export class RequestHandler {
    * @private
    */
   private fail(state: Pipeline, error: unknown): Response | Promise<Response> {
+    // an after-middleware failed on a result that will not be sent any more
+    discardResult(state.result);
+
     const response = this.handleError(error);
 
     return response instanceof Promise
@@ -1215,9 +1230,17 @@ export class RequestHandler {
         return mergeResponseHeaders(handlerResponse, fixed.source);
       }
 
-      return handlerResponse === undefined
-        ? new FastResponse(null, fixed.empty)
-        : new FastResponse(JSON.stringify(handlerResponse), fixed.json);
+      if (isStream(handlerResponse)) {
+        return createStreamResponse(handlerResponse, fixed.source.status, fixed.source);
+      }
+
+      if (handlerResponse === undefined) {
+        return new FastResponse(null, fixed.empty);
+      }
+
+      assertSerializable(handlerResponse);
+
+      return new FastResponse(JSON.stringify(handlerResponse), fixed.json);
     }
 
     if (handlerResponse instanceof Response) {
@@ -1228,6 +1251,12 @@ export class RequestHandler {
     if (handlerResponse === undefined) {
       return new FastResponse(null, NO_CONTENT_RESPONSE_INIT);
     }
+
+    if (isStream(handlerResponse)) {
+      return createStreamResponse(handlerResponse, 200);
+    }
+
+    assertSerializable(handlerResponse);
 
     return new FastResponse(JSON.stringify(handlerResponse), JSON_RESPONSE_INIT);
   }
@@ -1461,6 +1490,10 @@ export class RequestHandler {
       });
     }
 
+    if (fakeResponseBody === null) {
+      assertSerializable(handlerResponse);
+    }
+
     const body = fakeResponseBody ?? JSON.stringify(handlerResponse);
 
     // FastResponse leaves the body untouched until it is written to the socket,
@@ -1668,6 +1701,87 @@ function createPendingResponse(fixed?: RouterTypes.StaticResponse): Response {
  */
 function isUntouched(response: Response): response is Response & PendingResponse {
   return response instanceof PendingResponse && !response.touched;
+}
+
+/**
+ * Tells whether a handler returned a stream to send as the response body.
+ *
+ * The `typeof` check comes first, so a handler that returned a string, a
+ * number or nothing does not pay for the `instanceof`.
+ *
+ * @param {unknown} value - What the handler returned
+ * @returns {boolean} True for a `ReadableStream`
+ */
+function isStream(value: unknown): value is ReadableStream<Uint8Array> {
+  return typeof value === 'object' && value !== null && value instanceof ReadableStream;
+}
+
+/**
+ * Wraps a stream a handler returned into the response that sends it, with the
+ * headers middlewares and actions set on the intermediate response.
+ *
+ * The content type is, in this order: the `type` given to `@Stream()`, one set
+ * on the intermediate response (`@SetHeader('Content-Type', ...)`), the one
+ * the first chunk implied, and `application/octet-stream`, as a stream of
+ * unknown content is bytes.
+ *
+ * @param {ReadableStream<Uint8Array>} stream - The stream
+ * @param {number} status - The status to answer with
+ * @param {Response} [source] - The intermediate response, when the route has one
+ * @returns {Response} The streaming response
+ */
+function createStreamResponse(stream: ReadableStream<Uint8Array>, status: number, source?: Response): Response {
+  const type = getStreamType(stream);
+  const created = new FastResponse(stream, { status, headers: type ? { 'content-type': type } : undefined });
+  const response = source ? mergeResponseHeaders(created, source) : created;
+
+  if (!response.headers.has('content-type')) {
+    response.headers.set('content-type', getStreamGuessedType(stream) ?? 'application/octet-stream');
+  }
+
+  return response;
+}
+
+/**
+ * Releases a handler result that is not going to be sent: a hook answered in
+ * its place, or failed after the handler ran. A stream nobody reads would
+ * otherwise stay open, with its generator paused and its timers running.
+ *
+ * @param {unknown} result - What the handler returned, if it ran
+ * @returns {void}
+ */
+function discardResult(result: unknown): void {
+  if (typeof result !== 'object' || result === null) {
+    return;
+  }
+
+  try {
+    const stream = result instanceof Response ? result.body : result;
+
+    if (stream instanceof ReadableStream && !stream.locked) {
+      stream.cancel().catch(() => {});
+    }
+  } catch {
+    // nothing to release
+  }
+}
+
+/**
+ * Refuses a result that can only be streamed but was returned from a handler
+ * that does not stream. Serialized as JSON, an async generator is `{}` and a
+ * Node `Readable` its internal state, which is never what was meant.
+ *
+ * @param {unknown} value - What the handler returned, already known not to be a `Response` or a `ReadableStream`
+ * @returns {void}
+ * @throws {TypeError} When the value is an async iterable
+ */
+function assertSerializable(value: unknown): void {
+  if (typeof value === 'object' && value !== null && (value as AsyncIterable<unknown>)[Symbol.asyncIterator] !== undefined) {
+    throw new TypeError(
+      'A handler returned an async iterable (an async generator or a Node Readable) without @Stream(). ' +
+        'Add @Stream() to the handler, or return createStream(iterable).',
+    );
+  }
 }
 
 /**

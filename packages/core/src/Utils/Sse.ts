@@ -1,4 +1,5 @@
 import { FastResponse } from '../Types/CommonTypes';
+import { getStreamIterator, iterableToStream } from './Stream';
 
 /**
  * A single Server-Sent Event.
@@ -114,83 +115,6 @@ export function formatSseMessage(message: SseMessage | string | number | boolean
 }
 
 /**
- * Checks whether an error comes from an aborted `AbortSignal`.
- *
- * @param {unknown} error - The error to check
- * @returns {boolean} True for an `AbortError`
- */
-function isAbortError(error: unknown): boolean {
-  return (error as { name?: unknown } | null)?.name === 'AbortError';
-}
-
-/**
- * Returns an iterator over a sync or async iterable.
- *
- * @param {SseSource} source - The event source
- * @returns {AsyncIterator<unknown> | Iterator<unknown>} The iterator
- */
-function getIterator(source: SseSource): AsyncIterator<unknown> | Iterator<unknown> {
-  // A string is iterable too, but streaming it char by char is never intended.
-  if (typeof source === 'string') {
-    throw new TypeError('SSE handler must return an AsyncIterable or Iterable of messages');
-  }
-
-  if (source != null && typeof (source as AsyncIterable<unknown>)[Symbol.asyncIterator] === 'function') {
-    return (source as AsyncIterable<unknown>)[Symbol.asyncIterator]();
-  }
-
-  if (source != null && typeof (source as Iterable<unknown>)[Symbol.iterator] === 'function') {
-    return (source as Iterable<unknown>)[Symbol.iterator]();
-  }
-
-  throw new TypeError('SSE handler must return an AsyncIterable or Iterable of messages');
-}
-
-/**
- * Pulls and formats the first message before the response is created, so that
- * both a source failing at its start and an invalid first message become a
- * regular error response instead of a broken `200` stream.
- *
- * @param {AsyncIterator<unknown> | Iterator<unknown>} iterator - The source iterator
- * @returns {Promise<string | null>} The first chunk, or `null` for an empty source
- */
-async function formatFirst(iterator: AsyncIterator<unknown> | Iterator<unknown>): Promise<string | null> {
-  const { value, done } = await iterator.next();
-
-  if (done) {
-    return null;
-  }
-
-  try {
-    return formatSseMessage(value as SseMessage);
-  } catch (error) {
-    // The source is paused at its first `yield`; close it so `finally` runs.
-    closeIterator(iterator);
-    throw error;
-  }
-}
-
-/**
- * Closes the source so `finally` blocks in an async generator run.
- *
- * Not awaited: an async generator handles return() only once it reaches its
- * next `yield`, which may never happen (see `req.signal` in the docs), and
- * nothing should hang on it.
- *
- * @param {AsyncIterator<unknown> | Iterator<unknown>} iterator - The source iterator
- * @param {(error: unknown) => void} [onError] - Called when return() fails with anything but an AbortError
- */
-function closeIterator(iterator: AsyncIterator<unknown> | Iterator<unknown>, onError?: (error: unknown) => void): void {
-  Promise.resolve()
-    .then(() => iterator.return?.())
-    .catch((error: unknown) => {
-      if (!isAbortError(error)) {
-        onError?.(error);
-      }
-    });
-}
-
-/**
  * Creates a streaming `text/event-stream` response from an iterable of messages.
  *
  * The first event is pulled before the response is created. Generators run
@@ -207,81 +131,31 @@ function closeIterator(iterator: AsyncIterator<unknown> | Iterator<unknown>, onE
  * @returns {Promise<Response>} The streaming response
  */
 export async function createSseResponse(source: SseSource, options: SseOptions = {}): Promise<Response> {
-  const iterator = getIterator(source);
-  // The first chunk: `null` when the source is empty, `undefined` once sent.
-  let pending: string | null | undefined = await formatFirst(iterator);
-  const encoder = new TextEncoder();
-  let heartbeat: ReturnType<typeof setInterval> | undefined;
-  let closed = false;
-
-  const stop = (): void => {
-    closed = true;
-    clearInterval(heartbeat);
-  };
-
-  const stream = new ReadableStream<Uint8Array>({
-    start(controller) {
-      if (options.heartbeat && options.heartbeat > 0) {
-        heartbeat = setInterval(() => {
-          // A full queue means the client is not reading; skip the ping rather
-          // than piling them up for as long as the connection stays open.
-          if ((controller.desiredSize ?? 0) > 0) {
-            controller.enqueue(encoder.encode(': ping\n\n'));
-          }
-        }, options.heartbeat);
-      }
+  const stream = await iterableToStream(
+    getStreamIterator(source, 'SSE handler must return an AsyncIterable or Iterable of messages'),
+    {
+      encode: encodeSseMessage,
+      onError: options.onError,
+      // an event feed has no end to cut short: a source that aborts simply stops
+      onAbort: 'close',
+      heartbeat: options.heartbeat && options.heartbeat > 0 ? { interval: options.heartbeat, chunk: SSE_PING } : undefined,
     },
-
-    async pull(controller) {
-      try {
-        let chunk: string | null;
-
-        if (pending === undefined) {
-          const { value, done } = await iterator.next();
-          chunk = done ? null : formatSseMessage(value as SseMessage);
-        } else {
-          chunk = pending;
-          pending = undefined;
-        }
-
-        if (closed) {
-          return;
-        }
-
-        if (chunk === null) {
-          stop();
-          controller.close();
-          return;
-        }
-
-        controller.enqueue(encoder.encode(chunk));
-      } catch (error) {
-        if (closed) {
-          return;
-        }
-
-        stop();
-        // A message that failed to format leaves the source paused at its
-        // `yield`, and an errored stream never calls cancel(); close it here.
-        closeIterator(iterator);
-
-        // A generator that bails out through an AbortSignal (e.g. `req.signal`
-        // on disconnect) ends the stream on purpose - it is not a failure.
-        if (isAbortError(error)) {
-          controller.close();
-          return;
-        }
-
-        controller.error(error);
-        options.onError?.(error);
-      }
-    },
-
-    cancel() {
-      stop();
-      closeIterator(iterator, options.onError);
-    },
-  });
+  );
 
   return new FastResponse(stream, { status: 200, headers: SSE_HEADERS });
+}
+
+const encoder = new TextEncoder();
+
+/** The keep-alive comment a heartbeat sends. */
+const SSE_PING = encoder.encode(': ping\n\n');
+
+/**
+ * Formats and encodes one message for the wire.
+ *
+ * @param {unknown} message - What the source yielded
+ * @returns {Uint8Array} The encoded event
+ */
+function encodeSseMessage(message: unknown): Uint8Array {
+  return encoder.encode(formatSseMessage(message as SseMessage));
 }
