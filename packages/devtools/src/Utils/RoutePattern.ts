@@ -1,3 +1,4 @@
+import { DevtoolsErrors } from '../Errors/Catalog';
 import { isUnderMount } from './Mount';
 import type { IntrospectionTypes } from '@vercube/core';
 
@@ -52,13 +53,10 @@ export function parseRoutePattern(pattern: string): RoutePattern {
   }
 
   if (words.length === 2 && second.startsWith('/')) {
-    throw new Error(`Invalid route pattern "${pattern}": "${first}" is not an HTTP method.`);
+    throw DevtoolsErrors.PLAYGROUND_PATTERN_METHOD_UNKNOWN({ pattern, method: first });
   }
 
-  throw new Error(
-    `Invalid route pattern "${pattern}": write a route template that starts with "/" (such as "/admin/**"), ` +
-      'a method and a template ("DELETE /users/:id"), or a method alone ("DELETE").',
-  );
+  throw DevtoolsErrors.PLAYGROUND_PATTERN_INVALID({ pattern });
 }
 
 /**

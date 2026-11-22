@@ -11,6 +11,7 @@ import { TelemetryPlugin } from '@vercube/telemetry';
 import { defu } from 'defu';
 import { DEFAULT_DEVTOOLS_OPTIONS, DEVTOOLS_PLAYGROUND_SECRETS_HEADER } from '../Constants/DevtoolsDefaults';
 import { DevtoolsController } from '../Controllers/DevtoolsController';
+import { DevtoolsErrors } from '../Errors/Catalog';
 import { AuditService } from '../Services/AuditService';
 import { DevtoolsFrameBus } from '../Services/DevtoolsFrameBus';
 import { OverviewCollector } from '../Services/OverviewCollector';
@@ -274,7 +275,7 @@ export class DevtoolsPlugin extends BasePlugin<DevtoolsTypes.Options> {
       try {
         parseRoutePattern(pattern);
       } catch (error) {
-        throw new Error(`[DevtoolsPlugin] playground.exclude: ${(error as Error).message}`, { cause: error });
+        throw DevtoolsErrors.PLAYGROUND_EXCLUDE_INVALID({ reason: (error as Error).message }, { cause: error });
       }
     }
 
