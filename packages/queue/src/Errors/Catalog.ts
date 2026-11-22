@@ -106,7 +106,7 @@ export const QueueErrors = defineErrorCatalog('VERCUBE_QUEUE', {
   VALIDATION_PROVIDER_MISSING: {
     message: (_: Refused) => 'A job declares a schema but no ValidationProvider is bound in the container',
     why: 'A handler has a `schema` option, and the `QueueManager` found no `ValidationProvider` in its container to run it with. `createApp()` binds one, so the manager lives in a container that was built by hand.',
-    fix: 'Bind one: `container.bind(ValidationProvider, StandardSchemaValidationProvider)`, both exported by `@vercube/core`. Or remove `schema` from the options of `@Job()`.',
+    fix: 'Bind one: `container.bind(ValidationProvider, StandardSchemaValidationProvider)`, both exported by `@vercube/core`. Or remove `schema` from the options of the handler decorator (`@Job()`, `@AnyJob()` or `@Consumer()`).',
     create: refused,
   },
   PAYLOAD_INVALID: {

@@ -29,12 +29,16 @@ export const RateLimitErrors = defineErrorCatalog('VERCUBE_RATELIMIT', {
     message: 'Too many requests',
     why: 'The client sent more requests than the `limit` allows within the `window`. The `retry-after` header of the response says when the next one is let through.',
     fix: 'Send fewer requests, or wait for the time in the `retry-after` header. To allow more, raise `limit` or shorten `window` on `@RateLimit()` or in the `rateLimit` config.',
+    // raised for requests as a matter of course: the trace would only show the middleware
+    stack: false,
     create: (message) => new TooManyRequestsError(message),
   },
   STORAGE_UNAVAILABLE: {
     message: 'Rate limit storage unavailable',
     why: 'The storage that holds the counters threw while a request was counted, and `onStorageError` is `deny`, so the request is answered with 503 and not let through uncounted.',
     fix: "Make the storage mount named by the `storage` option reachable, the log of `RateLimitManager` names it. Set `onStorageError: 'allow'` to let requests through while the storage is down.",
+    // raised for requests as a matter of course: the trace would only show the middleware
+    stack: false,
     create: (message) => new ServiceUnavailableError(message),
   },
   STORAGE_NOT_MOUNTED: {
@@ -46,8 +50,8 @@ export const RateLimitErrors = defineErrorCatalog('VERCUBE_RATELIMIT', {
   LIMIT_OR_WINDOW_MISSING: {
     message: ({ name }: { name: string }) =>
       `Rate limit "${name}" needs a limit and a window, set them on @RateLimit() or in the rateLimit config`,
-    why: 'A `@RateLimit()` without a `limit` or a `window` takes them from the defaults, and the `rateLimit` config sets none.',
-    fix: "Give both to the decorator, `@RateLimit({ limit: 100, window: '1m' })`, or set `limit` and `window` in the `rateLimit` config.",
+    why: 'A `@RateLimit()` without a `limit` or a `window` takes them from the defaults, and neither the `rateLimit` config nor the options of `RateLimitPlugin` set them.',
+    fix: "Give both to the decorator, `@RateLimit({ limit: 100, window: '1m' })`, or set `limit` and `window` in the `rateLimit` config or in the options of `RateLimitPlugin`.",
     create: (message, params: { name: string }) => new RateLimitError(message, 'configure', { name: params.name }),
   },
   DURATION_INVALID: {
@@ -98,7 +102,7 @@ export const RateLimitErrors = defineErrorCatalog('VERCUBE_RATELIMIT', {
     message: ({ where, value }: Invalid & { value: string }) =>
       `${where}: trustProxy must be a boolean or a number of proxies, got ${value}`,
     why: 'The `trustProxy` option says how many proxies in front of the application may set the client address. It is neither a boolean nor a whole number of 0 or more.',
-    fix: 'Set `trustProxy` in the `rateLimit` config to `true`, `false`, or the number of proxies in front of the application, for example `trustProxy: 1`.',
+    fix: 'Set `trustProxy` in the `rateLimit` config (or the options of `RateLimitPlugin`) to `true`, `false`, or the number of proxies in front of the application, for example `trustProxy: 1`.',
     create: invalid,
   },
   TESTING_NOT_SET_UP: {

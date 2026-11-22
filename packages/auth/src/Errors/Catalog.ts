@@ -9,6 +9,8 @@ export const AuthErrors = defineErrorCatalog('VERCUBE_AUTH', {
     message: ({ message }: { message: string | undefined }) => `${message ?? ''}`,
     why: 'The auth provider rejected the request: its `validate()` returned an error message, or an object with an `error`. The message is the one the provider gave.',
     fix: 'Send the credentials the provider expects. To change who is let in, change `validate()` of the `AuthProvider` that `@Auth()` uses.',
+    // raised for every request that is turned away: the trace would only show the middleware
+    stack: false,
     create: (message) => new UnauthorizedError(message),
   },
   PROVIDER_NOT_REGISTERED: {
