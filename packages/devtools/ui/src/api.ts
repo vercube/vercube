@@ -10,7 +10,7 @@ import type {
 } from '../../src/Services/SchedulerIntrospection';
 import type { StorageDescription } from '../../src/Services/StorageIntrospection';
 import type { DevtoolsTypes } from '../../src/Types/DevtoolsTypes';
-import type { IntrospectionTypes } from '@vercube/core';
+import type { HealthTypes, IntrospectionTypes } from '@vercube/core';
 import type { Describe } from '@vercube/di';
 import type { Ref, ShallowRef } from 'vue';
 
@@ -30,6 +30,8 @@ export type ServiceNode = Describe.ServiceNode;
 export type RouteInfo = IntrospectionTypes.RouteDescription;
 export type ConfigView = IntrospectionTypes.ConfigDescription;
 export type ConfigEntry = IntrospectionTypes.ConfigEntry;
+export type HealthView = HealthTypes.Description;
+export type HealthCheckResult = HealthTypes.CheckResult;
 export type StorageView = StorageDescription;
 export type QueueView = QueueDescription;
 export type QueueLineInfo = QueueLine;
@@ -217,6 +219,15 @@ export function queueMessages(queue: string, strategy: string, limit = 20): Prom
  */
 export function runScheduledJob(name: string): Promise<ScheduledRunResult> {
   return api<ScheduledRunResult>(`/api/scheduler/run/${encodeURIComponent(name)}`, { method: 'POST' });
+}
+
+/**
+ * Runs every health check now, past the cached report.
+ *
+ * @returns The health section with the fresh report
+ */
+export function runHealthChecks(): Promise<HealthView> {
+  return api<HealthView>('/api/health/check', { method: 'POST' });
 }
 
 export interface StreamHandlers {

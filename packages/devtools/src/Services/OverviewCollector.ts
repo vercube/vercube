@@ -8,7 +8,7 @@ import { isUnderMount } from '../Utils/Mount';
 import { AuditService } from './AuditService';
 import { bootstrapTotalMs, requestStats } from './SignalsDigest';
 import type { DevtoolsTypes } from '../Types/DevtoolsTypes';
-import type { ConfigTypes, IntrospectionTypes } from '@vercube/core';
+import type { ConfigTypes, HealthTypes, IntrospectionTypes } from '@vercube/core';
 import type { Describe } from '@vercube/di';
 
 /** Cached `package.json` lookup for the process lifetime. */
@@ -64,6 +64,7 @@ export class OverviewCollector {
     const routes = (await this.gIntrospection.describe<IntrospectionTypes.RouteDescription[]>('routes'))!.data;
     const pkg = this.readPackage();
     const audit = await this.gAudit.run();
+    const health = (await this.gIntrospection.describe<HealthTypes.Description>('health'))?.data;
     const spans = this.gTelemetry.spans.spans();
 
     // Middlewares are resolved per route; the route table is the source of truth.
@@ -89,6 +90,11 @@ export class OverviewCollector {
         issues: audit.issues.length,
       },
       score: audit.score,
+      health: {
+        state: health?.state ?? 'ready',
+        status: health?.report?.status ?? null,
+        checks: health?.checks.length ?? 0,
+      },
       plugins,
       globalMiddlewares: this.gGlobalMiddlewares.middlewares.map((m) => m.middleware?.name ?? 'Middleware'),
       bootstrapMs: bootstrapTotalMs(spans),

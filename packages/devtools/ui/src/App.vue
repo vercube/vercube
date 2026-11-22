@@ -4,6 +4,7 @@ import { apiUrl, openStream } from './api';
 import AuditView from './components/AuditView.vue';
 import ConfigView from './components/ConfigView.vue';
 import GraphView from './components/GraphView.vue';
+import HealthView from './components/HealthView.vue';
 import LogsView from './components/LogsView.vue';
 import OverviewView from './components/OverviewView.vue';
 import QueuesView from './components/QueuesView.vue';
@@ -14,7 +15,18 @@ import StorageView from './components/StorageView.vue';
 import VercubeMark from './components/VercubeMark.vue';
 import type { LogEntry, MetricsSample, RequestRecord } from './api';
 
-type TabId = 'overview' | 'requests' | 'logs' | 'storage' | 'queues' | 'scheduler' | 'routes' | 'graph' | 'config' | 'audit';
+type TabId =
+  | 'overview'
+  | 'requests'
+  | 'logs'
+  | 'storage'
+  | 'queues'
+  | 'scheduler'
+  | 'routes'
+  | 'graph'
+  | 'config'
+  | 'health'
+  | 'audit';
 
 interface Tab {
   id: TabId;
@@ -58,6 +70,7 @@ const groups: { label: string; tabs: Tab[] }[] = [
     label: 'Diagnostics',
     tabs: [
       { id: 'audit', label: 'Audit', icon: 'M12 3.5 19 6.4v5.1c0 4.2-2.9 7-7 8.1-4.1-1.1-7-3.9-7-8.1V6.4Zm0 4.9v4m0 2.6v.1' },
+      { id: 'health', label: 'Health', icon: 'M3 12h4l2-5 4 10 2-5h6' },
     ],
   },
 ];
@@ -161,8 +174,11 @@ function onKeydown(event: KeyboardEvent): void {
   }
 }
 
-function shortcut(id: TabId): number {
-  return (flat.value.findIndex((tab) => tab.id === id) + 1) % 10;
+/** The digit that opens a tab: 1 to 9, 0 for the tenth, none past the number row. */
+function shortcut(id: TabId): number | null {
+  const index = flat.value.findIndex((tab) => tab.id === id);
+
+  return index < 10 ? (index + 1) % 10 : null;
 }
 
 const snapshotUrl = computed(() => apiUrl('/api/snapshot'));
@@ -222,7 +238,7 @@ onUnmounted(() => {
               />
             </svg>
             <span class="label">{{ tab.label }}</span>
-            <kbd class="key">{{ shortcut(tab.id) }}</kbd>
+            <kbd v-if="shortcut(tab.id) !== null" class="key">{{ shortcut(tab.id) }}</kbd>
           </button>
         </section>
       </nav>
@@ -309,6 +325,7 @@ onUnmounted(() => {
       <ConfigView v-else-if="active === 'config'" :invalidated="invalidated" />
       <RoutesView v-else-if="active === 'routes'" :invalidated="invalidated" />
       <GraphView v-else-if="active === 'graph'" :invalidated="invalidated" />
+      <HealthView v-else-if="active === 'health'" :invalidated="invalidated" />
       <AuditView v-else />
     </main>
   </div>

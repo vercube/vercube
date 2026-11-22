@@ -83,7 +83,14 @@ describe('core introspection providers', () => {
   });
 
   it('registers the built-in sections', () => {
-    expect(registry.list().map((section) => section.id)).toEqual(['config', 'container', 'discovery', 'plugins', 'routes']);
+    expect(registry.list().map((section) => section.id)).toEqual([
+      'config',
+      'container',
+      'discovery',
+      'health',
+      'plugins',
+      'routes',
+    ]);
   });
 
   it('describes discovery as null without a build manifest', async () => {
