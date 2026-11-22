@@ -2,7 +2,11 @@ import { describe, test } from 'vitest';
 import { createTestApp } from '../Utils/App.mock';
 import type { App } from '@vercube/core';
 
-const app: App = await createTestApp();
+// Without request logging, like the other benches: with it every request
+// writes a wide event to the console, and that I/O makes the result move by 10
+// to 20% between runs of the same code. The default configuration is measured
+// on real sockets by `pnpm bench:ladder`.
+const app: App = await createTestApp({ cfg: { requestLogging: false, requestContext: false }, configFile: false });
 
 // This bench should simulate a 404 request when no route is found
 describe('[Bench] Application', () => {
