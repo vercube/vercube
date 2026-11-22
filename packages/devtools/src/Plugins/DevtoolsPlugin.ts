@@ -224,7 +224,10 @@ export class DevtoolsPlugin extends BasePlugin<DevtoolsTypes.Options> {
    * @returns Fully resolved options
    */
   private resolveOptions(config: ConfigTypes.Config, options?: DevtoolsTypes.Options): DevtoolsTypes.ResolvedOptions {
-    const merged = defu(options ?? {}, DEFAULT_DEVTOOLS_OPTIONS) as DevtoolsTypes.ResolvedOptions;
+    // `playground` is a boolean or an object, which `defu` cannot merge into
+    // the object default, so it is resolved by hand.
+    const { playground, ...rest } = options ?? {};
+    const merged = defu(rest, DEFAULT_DEVTOOLS_OPTIONS) as DevtoolsTypes.ResolvedOptions;
 
     // An empty or slash-only mount would claim every route, so fall back to the default.
     const trimmed = merged.path.replace(/^\/+|\/+$/g, '');
@@ -233,6 +236,26 @@ export class DevtoolsPlugin extends BasePlugin<DevtoolsTypes.Options> {
       ...merged,
       enabled: this.isEnabled(config, options),
       path: trimmed ? `/${trimmed}` : DEFAULT_DEVTOOLS_OPTIONS.path,
+      playground: this.resolvePlayground(playground),
+    };
+  }
+
+  /**
+   * Applies the defaults to the playground option.
+   *
+   * @param playground - The option as written: a switch, an object, or nothing
+   * @returns Whether the playground is on and the patterns it leaves out
+   */
+  private resolvePlayground(playground: DevtoolsTypes.Options['playground']): DevtoolsTypes.ResolvedPlaygroundOptions {
+    if (typeof playground === 'boolean' || playground === undefined || playground === null) {
+      return { enabled: playground !== false, exclude: [] };
+    }
+
+    return {
+      enabled: playground.enabled !== false,
+      exclude: (Array.isArray(playground.exclude) ? playground.exclude : []).filter(
+        (pattern): pattern is string => typeof pattern === 'string' && pattern.trim() !== '',
+      ),
     };
   }
 }

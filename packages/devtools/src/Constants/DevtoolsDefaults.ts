@@ -14,6 +14,7 @@ export const DEFAULT_DEVTOOLS_OPTIONS: Omit<DevtoolsTypes.ResolvedOptions, 'enab
   maxBodyBytes: 64 * 1024,
   captureLogs: true,
   maxLogs: 500,
+  playground: { enabled: true, exclude: [] },
 };
 
 /** Cookie the UI uses to carry the access token after the first page load. */
@@ -24,6 +25,23 @@ export const DEVTOOLS_TOKEN_COOKIE = 'vercube_devtools_token';
  * add it to a cross-site request without a CORS preflight.
  */
 export const DEVTOOLS_REQUEST_HEADER = 'x-devtools-request';
+
+/**
+ * Header carried by every request the route playground sends. Its value is the
+ * trace id the playground chose for the request, which is what lets the UI
+ * find the request, its logs and its trace afterwards.
+ */
+export const DEVTOOLS_PLAYGROUND_HEADER = 'x-devtools-playground';
+
+/**
+ * Header naming the request headers of a playground request that hold
+ * credentials, comma separated. Devtools withholds their values from
+ * everything it serves, whatever their names look like.
+ */
+export const DEVTOOLS_PLAYGROUND_SECRETS_HEADER = 'x-devtools-playground-redact';
+
+/** Span attribute devtools adds to the server span of a playground request. */
+export const DEVTOOLS_PLAYGROUND_ATTRIBUTE = 'vercube.devtools.playground';
 
 /**
  * Content types previewed as text. Everything else is recorded as binary.
