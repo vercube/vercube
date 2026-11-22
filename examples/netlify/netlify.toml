@@ -1,0 +1,8 @@
+[build]
+command = "vercube build"
+# served by Netlify's CDN before the function is asked
+publish = "public"
+
+[functions]
+directory = "netlify/functions"
+node_bundler = "esbuild"

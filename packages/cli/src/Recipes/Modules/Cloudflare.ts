@@ -1,4 +1,5 @@
 import { defineRecipe } from '../Apply';
+import { bundleConfig } from './BundledConfig';
 import { VERSIONS } from './Versions';
 
 const WRANGLER = `{
@@ -26,12 +27,8 @@ export const cloudflareRecipe = defineRecipe({
     project.addDependencies({ '@vercube/serverless': 'latest' });
     project.addDependencies({ wrangler: VERSIONS.wrangler }, { dev: true });
     project.allowBuilds(['workerd', 'esbuild', 'sharp']);
-    // A Worker has no file system to read vercube.config.ts from, so the
-    // configuration is imported and travels in the bundle.
-    project.addToEntry('provideConfig(config);', {
-      position: 'before-create-app',
-      imports: { provideConfig: '@vercube/core', config: { from: '../vercube.config', default: true } },
-    });
+    // a Worker has no file system to read vercube.config.ts from
+    bundleConfig(project);
     // app.listen() stays: \`vercube dev\` needs it, and it binds nothing on Workers.
     // Cloudflare runs the default export of the module.
     project.setDefaultExport('const worker: CloudflareHandler = toServerlessHandler(app);\n\nexport default worker;', {
@@ -43,33 +40,10 @@ export const cloudflareRecipe = defineRecipe({
     });
     project.createFile('wrangler.jsonc', WRANGLER);
     project.createFile('public/.gitkeep', '');
-    // a Worker bundle is deployed, not imported: it needs no declarations
-    const hadBuild = /\bbuild\s*:/.test(project.read('vercube.config.ts') ?? '');
-
-    project.setConfig('build', '{ dts: false }');
-    // Importing the configuration puts it under the type check, and its default
-    // export has no declared type. With no declarations to emit, the compiler
-    // need not be able to write them file by file.
-    project.updateJson('tsconfig.json', (tsconfig) => {
-      const options = (tsconfig.compilerOptions ??= {});
-
-      if (options.isolatedDeclarations === false && options.declaration === false) {
-        return false;
-      }
-
-      options.isolatedDeclarations = false;
-      options.declaration = false;
-
-      return true;
-    });
     project.bind({ name: 'CloudflareBindings', from: '@vercube/serverless/cloudflare' });
     project.addScript('preview', 'vercube build && wrangler dev');
     project.addScript('deploy', 'vercube build && wrangler deploy');
     project.addLines('.gitignore', ['.wrangler', '.dev.vars']);
     project.note('Run the Worker locally with `preview`, deploy it with `run deploy` (needs `wrangler login` once)');
-
-    if (hadBuild) {
-      project.note('Add `dts: false` to the `build` option of vercube.config.ts: a Worker bundle needs no declarations');
-    }
   },
 });

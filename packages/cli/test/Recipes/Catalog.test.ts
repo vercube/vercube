@@ -114,6 +114,36 @@ describe('module recipes', () => {
     expect(pkg.dependencies['@vercube/serverless']).toBe('1.5.0');
   });
 
+  it('turns the application into a Netlify Function', async () => {
+    const dir = apiTemplate();
+
+    dirs.push(dir);
+
+    const summary = await applyRecipes(new Project(dir, { version: '1.5.0' }), ['netlify'], RECIPES);
+    const files = snapshot(dir);
+    const entry = files['src/index.ts'];
+
+    expect(summary.applied).toEqual(['netlify']);
+    expect(entry.indexOf('provideConfig(config)')).toBeGreaterThan(-1);
+    expect(entry.indexOf('provideConfig(config)')).toBeLessThan(entry.indexOf('createApp('));
+    expect(entry).toContain('export const netlify: NetlifyHandler = toServerlessHandler(app);');
+    // the default export of the template stays: the function imports the named one
+    expect(entry).toContain('export default');
+    expect(files['netlify/functions/api.mts']).toContain("import { netlify } from '../../dist/index.mjs';");
+    expect(files['netlify/functions/api.mts']).toContain("path: '/*', preferStatic: true");
+    expect(files['netlify.toml']).toContain('publish = "public"');
+    expect(files['netlify.toml']).toContain('directory = "netlify/functions"');
+    expect(files['src/boot/Container.ts']).toContain('container.bind(NetlifyContext)');
+    expect(files['vercube.config.ts']).toContain('dts: false');
+    expect(files['.gitignore']).toContain('.netlify');
+
+    const pkg = JSON.parse(files['package.json']);
+
+    expect(pkg.scripts).toMatchObject({ preview: 'vercube build && netlify dev', deploy: 'netlify deploy --prod' });
+    expect(pkg.devDependencies['netlify-cli']).toBeDefined();
+    expect(pkg.devDependencies['@netlify/functions']).toBeDefined();
+  });
+
   it('guards the storage and queue example endpoints with API_KEY', async () => {
     const dir = apiTemplate();
 

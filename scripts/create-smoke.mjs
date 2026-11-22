@@ -191,7 +191,7 @@ if (needsServices && !options.services) {
 }
 
 let server;
-let workerGroup;
+let emulatorGroup;
 
 try {
   // inside the try: services that fail their health check are torn down too
@@ -253,54 +253,68 @@ try {
 
   console.log('✔ Exited on SIGTERM');
 
-  // 6. a Cloudflare project also has to answer from workerd, the runtime it is deployed to
-  if (existsSync(join(app, 'wrangler.jsonc'))) {
-    const workerPort = Number(options.port) + 1;
+  // 6. a project for a platform with a local emulator also has to answer from it
+  const emulators = [
+    // workerd, the runtime a Cloudflare Worker is deployed to
+    { file: 'wrangler.jsonc', name: 'the Worker', command: (port) => ['wrangler', 'dev', '--port', port, '--ip', '127.0.0.1'] },
+    // the Netlify Functions runtime, behind the static server Netlify's CDN stands in for
+    {
+      file: 'netlify.toml',
+      name: 'the Netlify Function',
+      command: (port) => ['netlify', 'dev', '--offline', '--no-open', '--port', port],
+    },
+  ];
 
-    step(`Booting the Worker on port ${workerPort}`);
-    server = spawn('pnpm', ['exec', 'wrangler', 'dev', '--port', String(workerPort), '--ip', '127.0.0.1'], {
+  for (const emulator of emulators) {
+    if (!existsSync(join(app, emulator.file))) {
+      continue;
+    }
+
+    const emulatorPort = Number(options.port) + 1;
+
+    step(`Booting ${emulator.name} on port ${emulatorPort}`);
+    server = spawn('pnpm', ['exec', ...emulator.command(String(emulatorPort))], {
       cwd: app,
       stdio: 'inherit',
-      // its own process group, so the workerd process it starts is stopped with it
+      // its own process group, so the processes it starts are stopped with it
       detached: true,
       env: { ...process.env, CI: '1', WRANGLER_SEND_METRICS: 'false' },
     });
+    emulatorGroup = server.pid;
 
-    workerGroup = server.pid;
-
-    let workerGone = false;
+    let emulatorGone = false;
 
     server.once('exit', () => {
-      workerGone = true;
+      emulatorGone = true;
     });
 
-    const workerUrl = `http://127.0.0.1:${workerPort}/api/foo`;
-    const workerDeadline = Date.now() + 60_000;
-    let workerBody = null;
+    const emulatorUrl = `http://127.0.0.1:${emulatorPort}/api/foo`;
+    const emulatorDeadline = Date.now() + 90_000;
+    let emulatorBody = null;
 
-    while (Date.now() < workerDeadline && workerBody === null && !workerGone) {
+    while (Date.now() < emulatorDeadline && emulatorBody === null && !emulatorGone) {
       try {
-        const response = await fetch(workerUrl);
+        const response = await fetch(emulatorUrl);
 
         if (response.ok) {
-          workerBody = await response.json();
+          emulatorBody = await response.json();
         }
       } catch {
         // not listening yet
       }
 
-      if (workerBody === null) {
+      if (emulatorBody === null) {
         await new Promise((done) => setTimeout(done, 500));
       }
     }
 
-    if (workerBody?.message !== 'Hello, world!') {
+    if (emulatorBody?.message !== 'Hello, world!') {
       throw new Error(
-        workerGone ? 'wrangler dev exited before the Worker answered' : `GET ${workerUrl} did not answer within 60s`,
+        emulatorGone ? `${emulator.name} exited before it answered` : `GET ${emulatorUrl} did not answer within 90s`,
       );
     }
 
-    console.log(`\n✔ The Worker answered ${JSON.stringify(workerBody)}`);
+    console.log(`\n✔ ${emulator.name} answered ${JSON.stringify(emulatorBody)}`);
   }
 } finally {
   // whatever happened above, nothing outlives the run
@@ -308,11 +322,11 @@ try {
     server.kill('SIGKILL');
   }
 
-  // wrangler leads a process group of its own: workerd must not outlive the run,
-  // even when wrangler itself is gone already
-  if (workerGroup !== undefined) {
+  // an emulator leads a process group of its own: what it started must not
+  // outlive the run, even when the emulator itself is gone already
+  if (emulatorGroup !== undefined) {
     try {
-      process.kill(-workerGroup, 'SIGKILL');
+      process.kill(-emulatorGroup, 'SIGKILL');
     } catch {
       // the group is gone
     }
