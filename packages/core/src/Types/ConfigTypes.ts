@@ -215,6 +215,55 @@ export namespace ConfigTypes {
     drainDelay?: number;
   }
 
+  /** A content coding a response can be compressed with. */
+  export type CompressionEncoding = 'br' | 'gzip' | 'deflate' | 'zstd';
+
+  /**
+   * Response compression settings.
+   */
+  export interface CompressionOptions {
+    /**
+     * The encodings to offer, most preferred first. The client's
+     * `Accept-Encoding` decides among them, and the order here settles a tie.
+     * One the runtime cannot produce is left out.
+     *
+     * @default ['br', 'gzip', 'deflate']
+     */
+    encodings?: CompressionEncoding[];
+
+    /**
+     * Smallest body, in bytes, that is compressed.
+     *
+     * @default 1024
+     */
+    threshold?: number;
+
+    /**
+     * Compression level, one for every encoding or one per encoding. Brotli
+     * takes 0 to 11, gzip and deflate 0 to 9, Zstandard 1 to 22.
+     *
+     * @default { br: 4, gzip: 6, deflate: 6, zstd: 3 }
+     */
+    level?: number | Partial<Record<CompressionEncoding, number>>;
+
+    /**
+     * Compresses streamed responses too: `@Stream()`, `@Sse()` and a returned
+     * `ReadableStream`. Every chunk is flushed as it is written, so nothing
+     * is held back. A route decides for itself with `@Compression({ streams })`.
+     *
+     * @default false
+     */
+    streams?: boolean;
+
+    /**
+     * Serves `file.br` or `file.gz` next to a static file when the client
+     * accepts it, instead of compressing the file on every request.
+     *
+     * @default true
+     */
+    precompressed?: boolean;
+  }
+
   /**
    * Main configuration interface for the Vercube application.
    */
@@ -253,6 +302,15 @@ export namespace ConfigTypes {
      * @default true
      */
     requestContext?: boolean;
+
+    /**
+     * Compresses responses for clients that ask for it with `Accept-Encoding`.
+     * `true` uses the defaults: Brotli, gzip and deflate for bodies of 1 KB
+     * and more.
+     *
+     * @default false
+     */
+    compression?: boolean | CompressionOptions;
 
     /**
      * OpenTelemetry instrumentation, provided by `@vercube/telemetry`.

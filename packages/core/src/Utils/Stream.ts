@@ -293,6 +293,39 @@ function typeOfChunk(chunk: unknown): string {
   return chunk instanceof ArrayBuffer || ArrayBuffer.isView(chunk) ? 'application/octet-stream' : 'application/x-ndjson';
 }
 
+/** Bodies that are sent as they are produced, see {@link markLiveStream}. */
+const LIVE_STREAMS: WeakSet<ReadableStream> = new WeakSet();
+
+/**
+ * Remembers that a stream is sent as it is produced: one a handler returned,
+ * or an event feed. Whoever transforms the response later (compression) must
+ * not hold its chunks back.
+ *
+ * The stream is remembered and not the response, as a response is rebuilt on
+ * its way out while its body stays the same object.
+ *
+ * @param {ReadableStream} stream - The body of a streaming response
+ * @returns {void}
+ */
+export function markLiveStream(stream: ReadableStream): void {
+  LIVE_STREAMS.add(stream);
+}
+
+/**
+ * Whether a response is sent as it is produced: its body was marked with
+ * {@link markLiveStream}, or it is an event stream built by hand.
+ *
+ * @param {Response} response - The response
+ * @returns {boolean} True for a streaming response
+ */
+export function isStreamResponse(response: Response): boolean {
+  const body = response.body;
+
+  return (
+    (body !== null && LIVE_STREAMS.has(body)) || (response.headers.get('content-type') ?? '').startsWith('text/event-stream')
+  );
+}
+
 /**
  * The content type a stream was given explicitly, if any.
  *

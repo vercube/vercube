@@ -1,9 +1,11 @@
 import { createReadStream } from 'node:fs';
 import { realpath, stat as statAsync } from 'node:fs/promises';
 import { extname, join, normalize, relative, sep } from 'node:path';
+import { isCompressible, mergeVary } from '../../Utils/Headers';
 import { mime } from '../../Utils/Mine';
 import { getRequestPathname } from '../../Utils/Url';
 import type { ConfigTypes } from '../../Types/ConfigTypes';
+import type { Stats } from 'node:fs';
 
 /**
  * Handles serving static files over HTTP
@@ -28,6 +30,16 @@ interface StaticRoot {
   expires: number;
 }
 
+/** The file extension a precompressed sibling of each encoding carries. */
+const SIBLING_EXTENSIONS: Readonly<Record<string, string | undefined>> = { br: '.br', gzip: '.gz', zstd: '.zst' };
+
+/** A precompressed copy of a static file. */
+interface Sibling {
+  path: string;
+  stats: Stats;
+  encoding: string;
+}
+
 export class StaticRequestHandler {
   /**
    * The options for the static server
@@ -43,6 +55,23 @@ export class StaticRequestHandler {
    * Real paths of the served directories, see {@link StaticRequestHandler.realRoot}
    */
   private fRoots: Map<string, StaticRoot> = new Map();
+
+  /**
+   * Lists the encodings a client accepts for an `Accept-Encoding` header,
+   * null while precompressed files are not served
+   */
+  private fAccepted: ((header: string | null) => readonly string[]) | null = null;
+
+  /**
+   * Serves `file.br`, `file.gz` or `file.zst` in place of `file` to clients
+   * that accept the encoding. Set by the HTTP server when compression is on.
+   *
+   * @param {((header: string | null) => readonly string[]) | null} accepted - Lists the encodings a client accepts, most preferred first, or null to turn it off
+   * @returns {void}
+   */
+  public setPrecompressed(accepted: ((header: string | null) => readonly string[]) | null): void {
+    this.fAccepted = accepted;
+  }
 
   /**
    * Initializes the static server with the given options
@@ -220,7 +249,7 @@ export class StaticRequestHandler {
         }
 
         if (stats.isFile()) {
-          return this.serveFile(request, realFile, stats);
+          return this.serveFile(request, realFile, stats, await this.findSibling(request, realRoot, realFile));
         }
       } catch {
         // silent catch
@@ -230,21 +259,83 @@ export class StaticRequestHandler {
   }
 
   /**
+   * Looks for a precompressed copy of a file in an encoding the client
+   * accepts: `app.js.br` next to `app.js`. The copy is held to the rules of
+   * the file itself, so a link that leaves the directory is not followed.
+   *
+   * @param {Request} request - The incoming HTTP request
+   * @param {string} realRoot - The real path of the static directory
+   * @param {string} realFile - The real path of the requested file
+   * @returns {Promise<Sibling | undefined>} The copy to serve, if there is one
+   * @private
+   */
+  private async findSibling(request: Request, realRoot: string, realFile: string): Promise<Sibling | undefined> {
+    // A copy is only looked for where one can exist: nobody ships `photo.png.br`,
+    // and looking costs a failed file system call per encoding.
+    if (this.fAccepted === null || !isCompressible(mime.getType(extname(realFile).toLowerCase()))) {
+      return undefined;
+    }
+
+    for (const encoding of this.fAccepted(request.headers.get('accept-encoding'))) {
+      const extension = SIBLING_EXTENSIONS[encoding];
+
+      if (extension === undefined) {
+        continue;
+      }
+
+      try {
+        const path = await realpath(realFile + extension);
+
+        if (!isInside(realRoot, path)) {
+          continue;
+        }
+
+        // a copy that is a link to a dotfile is still a dotfile
+        if ((this.fOptions?.dotfiles ?? 'ignore') !== 'allow' && hasDotSegment(relative(realRoot, path))) {
+          continue;
+        }
+
+        const stats = await statAsync(path);
+
+        if (stats.isFile()) {
+          return { path, stats, encoding };
+        }
+      } catch {
+        // no such copy
+      }
+    }
+
+    return undefined;
+  }
+
+  /**
    * Serves a static file and returns a Response object. A HEAD request gets the
    * headers only, a matching `If-None-Match` a 304.
    *
    * @param {Request} request - The incoming HTTP request
    * @param {string} path - The path to the file to serve
-   * @param {any} stats - The stats object for the file
+   * @param {Stats} stats - The stats object for the file
+   * @param {Sibling} [sibling] - A precompressed copy to send in its place
    * @returns {Promise<Response>} A promise that resolves to a Response object
    */
-  private async serveFile(request: Request, path: string, stats: any): Promise<Response> {
+  private async serveFile(request: Request, path: string, stats: Stats, sibling?: Sibling): Promise<Response> {
     const headers = new Headers();
     const ext = extname(path).toLowerCase();
     const contentType = mime.getType(ext) || 'application/octet-stream';
+    // the copy is what is sent: its size, its age, and the type of the original
+    const sent = sibling?.stats ?? stats;
 
     headers.set('Content-Type', contentType);
-    headers.set('Content-Length', stats.size.toString());
+    headers.set('Content-Length', sent.size.toString());
+
+    if (sibling) {
+      headers.set('Content-Encoding', sibling.encoding);
+    }
+
+    if (this.fAccepted !== null && isCompressible(contentType)) {
+      // which copy is sent depends on the request, whether or not one exists today
+      headers.set('Vary', mergeVary(headers.get('Vary') ?? '', 'Accept-Encoding'));
+    }
 
     if (this.fOptions?.maxAge && this.fOptions.maxAge > 0) {
       const directives = ['public', `max-age=${this.fOptions.maxAge}`];
@@ -257,13 +348,15 @@ export class StaticRequestHandler {
     }
 
     if (this.fOptions?.etag) {
-      const etag = `W/"${stats.size}-${stats.mtime.getTime()}"`;
+      // one tag per encoding: the copies are different representations
+      const etag = `W/"${sent.size}-${sent.mtime.getTime()}${sibling ? `-${sibling.encoding}` : ''}"`;
 
       headers.set('ETag', etag);
 
       if (matchesEtag(request.headers.get('if-none-match'), etag)) {
         headers.delete('Content-Type');
         headers.delete('Content-Length');
+        headers.delete('Content-Encoding');
 
         return new Response(null, { status: 304, headers });
       }
@@ -273,7 +366,7 @@ export class StaticRequestHandler {
       return new Response(null, { headers });
     }
 
-    const stream = createReadStream(path);
+    const stream = createReadStream(sibling?.path ?? path);
     return new Response(stream as any, {
       headers,
     });

@@ -60,6 +60,7 @@ describe('HttpServer', () => {
     mockStaticRequestHandler = {
       handleRequest: vi.fn(),
       handles: vi.fn(() => true),
+      setPrecompressed: vi.fn(),
     };
     mockRouter = {
       match: vi.fn(),

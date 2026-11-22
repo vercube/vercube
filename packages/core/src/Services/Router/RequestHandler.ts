@@ -5,8 +5,9 @@ import { NotFoundError } from '../../Errors/Http/NotFoundError';
 import { FastResponse } from '../../Types/CommonTypes';
 import { getSetCookieName } from '../../Utils/Cookies';
 import { withoutStack } from '../../Utils/Errors';
+import { mergeVary } from '../../Utils/Headers';
 import { isSameMiddleware, resolveSlots } from '../../Utils/MiddlewareUtils';
-import { getStreamGuessedType, getStreamType } from '../../Utils/Stream';
+import { getStreamGuessedType, getStreamType, markLiveStream } from '../../Utils/Stream';
 import { skipsGlobalMiddlewares } from '../../Utils/Utils';
 import { DefaultErrorHandlerProvider } from '../ErrorHandler/DefaultErrorHandlerProvider';
 import { ErrorHandlerProvider } from '../ErrorHandler/ErrorHandlerProvider';
@@ -259,6 +260,7 @@ export class RequestHandler {
       // - it is read once and shared, see `Utils/SharedBody`. Everywhere else
       // it is read straight off the request, which is cheaper still. Before
       // middlewares do not count: they are done by the time arguments resolve.
+      compression: resolveRouteCompression(method.meta?.compression),
       cloneBody:
         !staticActions ||
         afterMiddlewares.some((definition) => readsBody(definition.middleware)) ||
@@ -1731,6 +1733,8 @@ function isStream(value: unknown): value is ReadableStream<Uint8Array> {
  * @returns {Response} The streaming response
  */
 function createStreamResponse(stream: ReadableStream<Uint8Array>, status: number, source?: Response): Response {
+  markLiveStream(stream);
+
   const type = getStreamType(stream);
   const created = new FastResponse(stream, { status, headers: type ? { 'content-type': type } : undefined });
   const response = source ? mergeResponseHeaders(created, source) : created;
@@ -1967,27 +1971,15 @@ function mergeResponseHeaders(target: Response, source: Response, ownsBody: bool
 }
 
 /**
- * Merges two `Vary` header values, keeping each token once.
+ * Reads what `@Compression()` left on a route.
  *
- * @param {string} target - The value of the response being sent
- * @param {string} source - The value set on the intermediate response
- * @returns {string} The merged value, `*` when either side varies on everything
+ * @param {unknown} value - The `compression` entry of the route's metadata
+ * @returns {RouterTypes.RouteCompression | false | undefined} False when the route opted out, its options when it has any
  */
-function mergeVary(target: string, source: string): string {
-  const tokens = target
-    .split(',')
-    .map((token) => token.trim())
-    .filter(Boolean);
-  const seen = new Set(tokens.map((token) => token.toLowerCase()));
-
-  for (const raw of source.split(',')) {
-    const token = raw.trim();
-
-    if (token && !seen.has(token.toLowerCase())) {
-      seen.add(token.toLowerCase());
-      tokens.push(token);
-    }
+function resolveRouteCompression(value: unknown): RouterTypes.RouteCompression | false | undefined {
+  if (value === false) {
+    return false;
   }
 
-  return seen.has('*') ? '*' : tokens.join(', ');
+  return typeof value === 'object' && value !== null ? (value as RouterTypes.RouteCompression) : undefined;
 }

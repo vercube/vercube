@@ -35,6 +35,7 @@ export * from './Decorators/Http/Middleware';
 export * from './Decorators/Http/MultipartFormData';
 export * from './Decorators/Http/Sse';
 export * from './Decorators/Http/Stream';
+export * from './Decorators/Http/Compression';
 export * from './Decorators/Http/Throws';
 
 // Hooks
