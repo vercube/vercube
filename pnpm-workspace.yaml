@@ -29,6 +29,8 @@ ignoredBuiltDependencies:
   - protobufjs
   - re2
   - serverless
+  - sharp
+  - workerd
 
 onlyBuiltDependencies:
   - nx
