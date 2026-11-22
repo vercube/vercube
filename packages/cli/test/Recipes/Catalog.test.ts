@@ -116,7 +116,6 @@ describe('module recipes', () => {
   });
 
   it('turns the application into a Netlify Function', async () => {
-  it('sets up a static export for GitHub Pages', async () => {
     const dir = apiTemplate();
 
     dirs.push(dir);
@@ -144,6 +143,13 @@ describe('module recipes', () => {
     expect(pkg.scripts).toMatchObject({ preview: 'vercube build && netlify dev', deploy: 'netlify deploy --prod' });
     expect(pkg.devDependencies['netlify-cli']).toBeDefined();
     expect(pkg.devDependencies['@netlify/functions']).toBeDefined();
+  });
+
+  it('sets up a static export for GitHub Pages', async () => {
+    const dir = apiTemplate();
+
+    dirs.push(dir);
+
     const entry = snapshot(dir)['src/index.ts'];
     const summary = await applyRecipes(new Project(dir, { version: '1.5.0' }), ['github-pages'], RECIPES);
     const files = snapshot(dir);
