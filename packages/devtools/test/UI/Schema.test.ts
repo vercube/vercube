@@ -142,9 +142,7 @@ describe('checkSchema', () => {
   it('reports string problems', () => {
     expect(problems(order, { sku: 'ab', quantity: 1, note: 'too long', email: 'nope' })).toEqual([
       'sku must have at least 3 characters',
-      'sku must match ^[A-Z]',
       'note must have at most 5 characters',
-      'email must be a valid email',
     ]);
     expect(problems({ type: 'string', minLength: 1 }, '')).toEqual(['must not be empty']);
   });
@@ -299,8 +297,6 @@ describe('checkSchema', () => {
     expect(problems(json, { name: '', age: -1, email: 'a@b', role: 'root', address: null })).toEqual([
       'name must not be empty',
       'age must be at least 0',
-      String.raw`email must match ^(?:[A-Za-z0-9_'+\-]+\.)*[A-Za-z0-9_'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$`,
-      'email must be a valid email',
       'role must be one of "admin", "user"',
     ]);
     expect(problems(json, { name: 'a', age: 1, role: 'user', address: { city: 1 } })).toEqual([

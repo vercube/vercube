@@ -63,16 +63,6 @@ const FORMAT_EXAMPLES: Record<string, string> = {
   ipv6: '::1',
 };
 
-/** Loose shape checks by `format`. A format not listed here is not checked. */
-const FORMAT_CHECKS: Record<string, RegExp> = {
-  email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-  uuid: /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i,
-  'date-time': /^\d{4}-\d{2}-\d{2}[Tt ]\d{2}:\d{2}(:\d{2}(\.\d+)?)?([Zz]|[+-]\d{2}:?\d{2})?$/,
-  date: /^\d{4}-\d{2}-\d{2}$/,
-  uri: /^[A-Za-z][\d+.A-Za-z-]*:\S+$/,
-  url: /^[A-Za-z][\d+.A-Za-z-]*:\S+$/,
-};
-
 /**
  * Whether a value is a plain object.
  *
@@ -592,25 +582,9 @@ function checkString(schema: Record<string, unknown>, value: string, path: strin
     issues.push({ path, message: `must have at most ${schema.maxLength} characters` });
   }
 
-  if (typeof schema.pattern === 'string') {
-    let pattern: RegExp | null = null;
-
-    try {
-      pattern = new RegExp(schema.pattern, 'u');
-    } catch {
-      // A pattern this engine cannot compile is left to the server.
-    }
-
-    if (pattern && !pattern.test(value)) {
-      issues.push({ path, message: `must match ${schema.pattern}` });
-    }
-  }
-
-  const format = typeof schema.format === 'string' ? FORMAT_CHECKS[schema.format] : undefined;
-
-  if (format && !format.test(value)) {
-    issues.push({ path, message: `must be a valid ${String(schema.format)}` });
-  }
+  // `pattern` and `format` are not checked: a JSON Schema pattern loses the
+  // flags of the expression it came from, and every library reads a format a
+  // little differently, so a check here would refuse what the server accepts.
 }
 
 /**

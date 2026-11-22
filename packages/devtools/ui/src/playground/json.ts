@@ -51,6 +51,9 @@ function skipBlanks(text: string, start: number): number {
   return index;
 }
 
+/** The deepest nesting that is still indented. */
+const MAX_DEPTH = 64;
+
 /**
  * Re-indents a JSON document without changing any of its values.
  *
@@ -94,6 +97,13 @@ export function formatJson(text: string, indent: number = 2): string {
         index = next + 1;
       } else {
         depth++;
+
+        // Indentation grows with the depth on every line. Text nested this
+        // deep is not something to read indented, so it is shown as it came.
+        if (depth > MAX_DEPTH) {
+          return text;
+        }
+
         out.push(char);
         line();
         index++;

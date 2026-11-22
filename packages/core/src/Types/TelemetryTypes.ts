@@ -152,8 +152,9 @@ export namespace TelemetryTypes {
      * it whatever the application wrote for `headers`. It does nothing while
      * headers are not captured.
      *
-     * A client that sends such a header keeps the headers it names out of the
-     * trace, so leave this unset where traces serve as an audit record.
+     * A client that sends such a header keeps the headers it names (eight at
+     * most) out of the trace, so do not set this where traces serve as an
+     * audit record. Devtools sets it outside production only.
      *
      * @default []
      */

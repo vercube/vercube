@@ -40,7 +40,7 @@ export function parseRoutePattern(pattern: string): RoutePattern {
   const [first, second] = words;
 
   if (words.length === 1 && first.startsWith('/')) {
-    return { segments: trim(first).split('/') };
+    return { segments: toSegments(first) };
   }
 
   if (words.length === 1 && METHODS.has(first.toUpperCase())) {
@@ -48,7 +48,7 @@ export function parseRoutePattern(pattern: string): RoutePattern {
   }
 
   if (words.length === 2 && METHODS.has(first.toUpperCase()) && second.startsWith('/')) {
-    return { method: first.toUpperCase(), segments: trim(second).split('/') };
+    return { method: first.toUpperCase(), segments: toSegments(second) };
   }
 
   if (words.length === 2 && second.startsWith('/')) {
@@ -59,6 +59,19 @@ export function parseRoutePattern(pattern: string): RoutePattern {
     `Invalid route pattern "${pattern}": write a route template that starts with "/" (such as "/admin/**"), ` +
       'a method and a template ("DELETE /users/:id"), or a method alone ("DELETE").',
   );
+}
+
+/**
+ * Splits the template of a pattern into segments. A run of `**` is one `**`:
+ * it matches the same routes, and every extra one doubles the work of matching.
+ *
+ * @param template - The path part of a pattern
+ * @returns Its segments
+ */
+function toSegments(template: string): string[] {
+  return trim(template)
+    .split('/')
+    .filter((segment, index, all) => !(segment === '**' && all[index - 1] === '**'));
 }
 
 /**

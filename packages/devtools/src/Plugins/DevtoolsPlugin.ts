@@ -202,7 +202,9 @@ export class DevtoolsPlugin extends BasePlugin<DevtoolsTypes.Options> {
         // so no other span processor or exporter sees the key either. Beside
         // `headers` and not inside it: the application may have turned capture
         // on itself, and its value for `headers` wins over this one.
-        ...(resolved.playground.enabled ? { redactHeadersNamedBy: [DEVTOOLS_PLAYGROUND_SECRETS_HEADER] } : {}),
+        // Development only, like capture itself: a production trace must not be
+        // something a client can ask to have its own headers left out of.
+        ...(development && resolved.playground.enabled ? { redactHeadersNamedBy: [DEVTOOLS_PLAYGROUND_SECRETS_HEADER] } : {}),
       },
     });
   }
