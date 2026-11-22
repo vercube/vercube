@@ -78,6 +78,13 @@ export namespace IntrospectionTypes {
     name?: string;
     /** True when a validation schema is attached and enabled. */
     validated: boolean;
+    /**
+     * JSON Schema of the value the argument accepts, for a validated argument
+     * whose schema can describe itself (Standard JSON Schema, see
+     * `schema['~standard'].jsonSchema`). Absent when the schema has no
+     * converter or the conversion failed.
+     */
+    schema?: Record<string, unknown>;
   }
 
   /** One middleware attached to a route. */
