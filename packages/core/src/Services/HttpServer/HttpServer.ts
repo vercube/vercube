@@ -283,7 +283,7 @@ export class HttpServer {
           return response;
         }
 
-        return compressor.apply(request, response, route.data.compression);
+        return this.compressed(compressor.apply(request, response, route.data.compression));
       }
 
       // handle preflight request
@@ -298,10 +298,23 @@ export class HttpServer {
           ? this.handleUnmatchedRequest(request)
           : telemetry.server({ request, name: request.method }, () => this.handleUnmatchedRequest(request));
 
-      return compressor === null ? response : compressor.apply(request, response);
+      return compressor === null ? response : this.compressed(compressor.apply(request, response));
     } catch (error) {
       return this.handleError(error);
     }
+  }
+
+  /**
+   * Hands a failure of the compressor to the error handler. Deciding about a
+   * body of unknown size means reading it, and a body that fails while it is
+   * read has to end as an error response like any other failure.
+   *
+   * @param {Response | Promise<Response>} response - What the compressor returned
+   * @returns {Response | Promise<Response>} The same, with a rejection turned into an error response
+   * @private
+   */
+  private compressed(response: Response | Promise<Response>): Response | Promise<Response> {
+    return response instanceof Response ? response : response.catch((error) => this.handleError(error));
   }
 
   /**

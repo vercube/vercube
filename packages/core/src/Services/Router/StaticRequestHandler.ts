@@ -1,7 +1,7 @@
 import { createReadStream } from 'node:fs';
 import { realpath, stat as statAsync } from 'node:fs/promises';
 import { extname, join, normalize, relative, sep } from 'node:path';
-import { mergeVary } from '../../Utils/Headers';
+import { isCompressible, mergeVary } from '../../Utils/Headers';
 import { mime } from '../../Utils/Mine';
 import { getRequestPathname } from '../../Utils/Url';
 import type { ConfigTypes } from '../../Types/ConfigTypes';
@@ -270,7 +270,9 @@ export class StaticRequestHandler {
    * @private
    */
   private async findSibling(request: Request, realRoot: string, realFile: string): Promise<Sibling | undefined> {
-    if (this.fAccepted === null) {
+    // A copy is only looked for where one can exist: nobody ships `photo.png.br`,
+    // and looking costs a failed file system call per encoding.
+    if (this.fAccepted === null || !isCompressible(mime.getType(extname(realFile).toLowerCase()))) {
       return undefined;
     }
 
@@ -330,7 +332,7 @@ export class StaticRequestHandler {
       headers.set('Content-Encoding', sibling.encoding);
     }
 
-    if (this.fAccepted !== null) {
+    if (this.fAccepted !== null && isCompressible(contentType)) {
       // which copy is sent depends on the request, whether or not one exists today
       headers.set('Vary', mergeVary(headers.get('Vary') ?? '', 'Accept-Encoding'));
     }

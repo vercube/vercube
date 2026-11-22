@@ -1,7 +1,15 @@
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { brotliCompressSync, brotliDecompressSync, gunzipSync, gzipSync, inflateSync, zstdDecompressSync } from 'node:zlib';
+import {
+  brotliCompressSync,
+  brotliDecompressSync,
+  constants,
+  gunzipSync,
+  gzipSync,
+  inflateSync,
+  zstdDecompressSync,
+} from 'node:zlib';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import {
   Compression,
@@ -23,7 +31,31 @@ import { ResponseCompressor } from '../../src/Services/Compression/ResponseCompr
 const LARGE = 'vercube compresses this line. '.repeat(200);
 const SMALL = 'tiny';
 
-const state = { closed: 0 };
+const state = { closed: 0, release: (): void => {} };
+
+/** Decodes what has arrived of a compressed stream that has not ended yet. */
+function decodePartial(encoding: string, body: Uint8Array): string {
+  const buffer = Buffer.from(body);
+
+  try {
+    switch (encoding) {
+      case 'br': {
+        return brotliDecompressSync(buffer, { finishFlush: constants.BROTLI_OPERATION_FLUSH }).toString();
+      }
+      case 'gzip': {
+        return gunzipSync(buffer, { finishFlush: constants.Z_SYNC_FLUSH }).toString();
+      }
+      case 'deflate': {
+        return inflateSync(buffer, { finishFlush: constants.Z_SYNC_FLUSH }).toString();
+      }
+      default: {
+        return zstdDecompressSync(buffer, { finishFlush: constants.ZSTD_e_flush }).toString();
+      }
+    }
+  } catch {
+    return '';
+  }
+}
 
 function decode(encoding: string | null, body: Uint8Array): string {
   const buffer = Buffer.from(body);
@@ -239,6 +271,63 @@ class CompressionController {
     }
   }
 
+  @Get('/held')
+  @Stream({ type: 'text/plain' })
+  @Compression({ streams: true })
+  public async *held(): AsyncGenerator<string> {
+    try {
+      yield 'first event\n';
+      // nothing more until the test lets go: what arrives before that was flushed
+      await new Promise<void>((resolve) => {
+        state.release = resolve;
+      });
+      yield 'second event\n';
+    } finally {
+      state.closed++;
+    }
+  }
+
+  @Get('/many')
+  @Stream({ type: 'text/plain' })
+  @Compression({ streams: true })
+  public async *many(): AsyncGenerator<string> {
+    for (let index = 0; index < 40; index++) {
+      yield `line ${index}\n`;
+    }
+  }
+
+  @Get('/cookies')
+  public cookies(): Response {
+    const headers = new Headers({ 'content-type': 'text/plain' });
+
+    headers.append('set-cookie', 'a=1; Path=/');
+    headers.append('set-cookie', 'b=2; Path=/');
+
+    return new Response(LARGE, { headers });
+  }
+
+  @Get('/bad-length')
+  public badLength(): Response {
+    return new Response(SMALL, { headers: { 'content-type': 'text/plain', 'content-length': 'unknown' } });
+  }
+
+  @Get('/blank')
+  public blank(): Response {
+    return new Response('', { headers: { 'content-type': 'text/plain' } });
+  }
+
+  @Get('/body-fails')
+  public bodyFails(): Response {
+    return new Response(
+      new ReadableStream<Uint8Array>({
+        pull(controller): void {
+          controller.error(new Error('source broke'));
+        },
+      }),
+      { headers: { 'content-type': 'text/plain' } },
+    );
+  }
+
   @Get('/breaks')
   @Stream({ type: 'text/plain', onError: () => {} })
   @Compression({ streams: true })
@@ -382,6 +471,8 @@ describe('response compression', () => {
       ['*;q=0.5, gzip;q=0.9', 'gzip'],
       ['br;q=0, *', 'gzip'],
       ['identity', null],
+      ['identity;q=0', null],
+      ['identity;q=0, gzip', 'gzip'],
       ['gzip;q=0', null],
       ['*;q=0', null],
       ['zstd', null],
@@ -478,6 +569,47 @@ describe('response compression', () => {
       expect((await response.json()).status).toBe(404);
     });
 
+    it('does not ask a response for its body when the client accepts no encoding', async () => {
+      const compressor = (await ResponseCompressor.create(true))!;
+      const response = new Response(LARGE, { headers: { 'content-type': 'text/plain' } });
+      let asked = false;
+
+      Object.defineProperty(response, 'body', {
+        get: (): null => {
+          asked = true;
+
+          return null;
+        },
+      });
+
+      expect(compressor.compress(request('/', null), response)).toBe(response);
+      expect(compressor.compress(request('/', 'identity'), response)).toBe(response);
+      expect(asked).toBe(false);
+      expect(response.headers.get('vary')).toBe('Accept-Encoding');
+    });
+
+    it('an empty body, even at a threshold of zero', async () => {
+      const target = await createCompressionApp({ threshold: 0 });
+      const response = await target.fetch(request('/c/blank'));
+
+      expect(response.headers.get('content-encoding')).toBeNull();
+      expect(await response.text()).toBe('');
+    });
+
+    it('measures a body whose declared length is not a number', async () => {
+      const response = await app.fetch(request('/c/bad-length'));
+
+      expect(response.headers.get('content-encoding')).toBeNull();
+      expect(await response.text()).toBe(SMALL);
+    });
+
+    it('answers with an error response when the body fails while it is measured', async () => {
+      const response = await app.fetch(request('/c/body-fails'));
+
+      expect(response.status).toBe(500);
+      expect(response.headers.get('content-encoding')).toBeNull();
+    });
+
     it('rebuilds a response whose headers cannot be changed', async () => {
       const compressor = (await ResponseCompressor.create(true))!;
       const frozen = new Response(LARGE, { headers: { 'content-type': 'text/plain' } });
@@ -524,6 +656,14 @@ describe('response compression', () => {
       expect(response.headers.get('content-encoding')).toBe('gzip');
       expect(length === null || Number(length) === body.byteLength).toBe(true);
       expect(decode('gzip', body)).toBe(LARGE);
+    });
+
+    it('keeps every Set-Cookie', async () => {
+      const response = await app.fetch(request('/c/cookies'));
+
+      expect(response.headers.get('content-encoding')).toBe('gzip');
+      expect(response.headers.getSetCookie()).toEqual(['a=1; Path=/', 'b=2; Path=/']);
+      expect(await read(response)).toBe(LARGE);
     });
 
     it('keeps the status and the content type', async () => {
@@ -615,16 +755,45 @@ describe('response compression', () => {
     it.each(['br', 'gzip', 'deflate', 'zstd'] as const)('sends each chunk as it is produced with %s', async (encoding) => {
       const target = await createCompressionApp({ encodings: [encoding] });
       const before = state.closed;
-      const response = await target.fetch(request('/c/endless', encoding));
+      const response = await target.fetch(request('/c/held', encoding));
       const reader = response.body!.getReader();
-      const first = await reader.read();
+      const received: Uint8Array[] = [];
+      let text = '';
 
-      // the generator never ends: bytes can only be here because the chunk was flushed
-      expect(first.done).toBe(false);
-      expect(first.value!.byteLength).toBeGreaterThan(0);
+      // The source yields one event and then waits for the test, so the event
+      // can only be decoded here if the encoder was flushed after it.
+      while (!text.includes('first event')) {
+        const result = await reader.read();
 
+        expect(result.done).toBe(false);
+        received.push(result.value!);
+        text = decodePartial(encoding, Buffer.concat(received));
+      }
+
+      expect(text).toBe('first event\n');
+
+      state.release();
       await reader.cancel();
       await vi.waitFor(() => expect(state.closed).toBe(before + 1));
+    });
+
+    it('does not pile up listeners on the encoder of a long stream', async () => {
+      const warnings: Error[] = [];
+      const listener = (warning: Error): void => void warnings.push(warning);
+
+      process.on('warning', listener);
+
+      try {
+        const response = await app.fetch(request('/c/many', 'br'));
+
+        expect(await read(response)).toBe(Array.from({ length: 40 }, (_, index) => `line ${index}\n`).join(''));
+        // warnings are emitted on the next tick
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      } finally {
+        process.off('warning', listener);
+      }
+
+      expect(warnings.filter((warning) => warning.name === 'MaxListenersExceededWarning')).toEqual([]);
     });
 
     it('closes the source when the client goes away', async () => {
@@ -746,6 +915,8 @@ describe('precompressed static files', () => {
     expect(tiny.headers.get('content-encoding')).toBeNull();
     expect(await tiny.text()).toBe('1;');
     expect(image.headers.get('content-encoding')).toBeNull();
+    // an image has no copy to choose between, so it does not vary
+    expect(image.headers.get('vary')).toBeNull();
     expect((await image.arrayBuffer()).byteLength).toBe(4096);
   });
 

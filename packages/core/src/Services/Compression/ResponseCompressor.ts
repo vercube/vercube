@@ -1,5 +1,5 @@
 import { FastResponse } from '../../Types/CommonTypes';
-import { mergeVary } from '../../Utils/Headers';
+import { isCompressible, mergeVary } from '../../Utils/Headers';
 import { isStreamResponse } from '../../Utils/Stream';
 import type { ConfigTypes } from '../../Types/ConfigTypes';
 import type { RouterTypes } from '../../Types/RouterTypes';
@@ -43,14 +43,6 @@ const LEVEL_RANGE: Readonly<Record<Encoding, readonly [number, number]>> = {
 
 /** How many distinct `Accept-Encoding` values are remembered. Browsers send a handful. */
 const NEGOTIATION_CACHE_SIZE = 128;
-
-/**
- * Content types worth compressing: text, and the structured formats that are
- * text underneath. Images, video, audio, archives and fonts in `woff` are
- * compressed already.
- */
-const COMPRESSIBLE =
-  /^(?:text\/|application\/(?:json|javascript|xml|x-ndjson|ndjson|graphql|wasm|x-www-form-urlencoded|x-javascript|ecmascript|rtf|x-font-ttf|vnd\.ms-fontobject|x-yaml|yaml|toml)\b|image\/(?:svg\+xml|bmp|x-icon|vnd\.microsoft\.icon)|font\/(?:ttf|otf)|[a-z]+\/[\w.-]+\+(?:json|xml|text|yaml)\b)/i;
 
 /** What a client that sent no usable `Accept-Encoding` accepts. */
 const NONE: readonly Encoding[] = Object.freeze([]);
@@ -178,15 +170,9 @@ export class ResponseCompressor {
     if (
       headers.has('content-encoding') ||
       headers.has('content-range') ||
-      !COMPRESSIBLE.test(headers.get('content-type') ?? '') ||
+      !isCompressible(headers.get('content-type')) ||
       /\bno-transform\b/i.test(headers.get('cache-control') ?? '')
     ) {
-      return response;
-    }
-
-    const body = response.body;
-
-    if (body === null) {
       return response;
     }
 
@@ -194,7 +180,16 @@ export class ResponseCompressor {
     // and a cache has to know.
     const encoding = this.negotiate(request.headers.get('accept-encoding'));
 
+    // Decided before the body is looked at: asking a response for its body
+    // makes the runtime build a stream for it, and a client that accepts no
+    // encoding should not pay for that.
     if (encoding === null) {
+      return withVary(response);
+    }
+
+    const body = response.body;
+
+    if (body === null) {
       return withVary(response);
     }
 
@@ -210,9 +205,11 @@ export class ResponseCompressor {
     }
 
     const length = headers.get('content-length');
+    const declared = length === null ? Number.NaN : Number(length);
 
-    if (length !== null) {
-      if (Number(length) < this.fThreshold) {
+    // a length that is not a number says nothing, so the body is measured
+    if (Number.isFinite(declared)) {
+      if (declared < this.fThreshold) {
         return withVary(response);
       }
 
@@ -312,7 +309,8 @@ export class ResponseCompressor {
     const chunks: Uint8Array[] = [];
     let size = 0;
 
-    while (size < this.fThreshold) {
+    // at least once, so an empty body is never handed to an encoder
+    do {
       const result = await reader.read();
 
       if (result.done) {
@@ -325,9 +323,9 @@ export class ResponseCompressor {
 
       chunks.push(result.value);
       size += result.value.byteLength;
-    }
+    } while (size < this.fThreshold);
 
-    return this.respond(response, encoding, this.encode(encoding, reader, size > 0 ? concat(chunks, size) : undefined));
+    return this.respond(response, encoding, this.encode(encoding, reader, concat(chunks, size)));
   }
 
   /**
@@ -346,6 +344,8 @@ export class ResponseCompressor {
     headers.set('content-encoding', encoding);
     // the compressed size is not known until the last byte is written
     headers.delete('content-length');
+    // a range would be counted in bytes the client never sees
+    headers.delete('accept-ranges');
 
     const etag = headers.get('etag');
 
@@ -379,6 +379,8 @@ export class ResponseCompressor {
     let pending = head;
     let produced = false;
     let closed = false;
+    // releases the pull that waits for the encoder
+    let settle: (() => void) | undefined;
 
     return new ReadableStream<Uint8Array>({
       start(controller): void {
@@ -403,6 +405,10 @@ export class ResponseCompressor {
             reader.cancel(error).catch(() => {});
           }
         });
+
+        // One listener for the life of the stream: a destroyed encoder never
+        // calls a flush back, so whoever waits for one is released here.
+        encoder.once('close', () => settle?.());
       },
 
       async pull(controller): Promise<void> {
@@ -433,7 +439,7 @@ export class ResponseCompressor {
 
             if (result.done) {
               await new Promise<void>((resolve) => {
-                encoder.once('close', resolve);
+                settle = resolve;
                 encoder.end();
               });
 
@@ -447,8 +453,7 @@ export class ResponseCompressor {
           }
 
           await new Promise<void>((resolve) => {
-            // a destroyed encoder never calls back
-            encoder.once('close', resolve);
+            settle = resolve;
             encoder.write(chunk);
             encoder.flush(flushKind, resolve);
           });
