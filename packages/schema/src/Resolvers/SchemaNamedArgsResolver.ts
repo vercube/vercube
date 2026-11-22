@@ -4,7 +4,7 @@ import type { SchemaWarn } from '../Utils/StandardSchema';
 import type { RouteConfig } from '@asteasolutions/zod-to-openapi';
 import type { DeepPartial, MetadataTypes } from '@vercube/core';
 
-type RequestKey = 'query' | 'headers';
+type RequestKey = 'query' | 'headers' | 'cookies';
 
 /**
  * Header parameters OpenAPI 3 says are ignored: `Authorization` belongs to
@@ -14,7 +14,7 @@ const IGNORED_HEADERS: ReadonlySet<string> = new Set(['authorization', 'content-
 
 /**
  * Builds a zod object shape out of method arguments that read a single named
- * value, such as `@QueryParam({ name })` or `@Header(name)`.
+ * value, such as `@QueryParam({ name })`, `@Header(name)` or `@Cookie(name)`.
  *
  * An argument with a `validationSchema` is documented with that schema, so its
  * required/optional state follows the validation. A Standard Schema that is
@@ -125,5 +125,20 @@ export function SchemaHeaderResolver(metadata: MetadataTypes.Method, schema: Dee
 
   if (shape) {
     mergeShape(schema, 'headers', shape);
+  }
+}
+
+/**
+ * Resolves `@Cookie(name)` arguments into the cookies schema.
+ * @param metadata - The metadata of the method.
+ * @param schema - The schema to resolve the cookies for.
+ * @param warn - Reports a schema that cannot be documented.
+ * @returns void
+ */
+export function SchemaCookieResolver(metadata: MetadataTypes.Method, schema: DeepPartial<RouteConfig>, warn?: SchemaWarn): void {
+  const shape = collectShape(metadata, 'cookie', warn);
+
+  if (shape) {
+    mergeShape(schema, 'cookies', shape);
   }
 }
