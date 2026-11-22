@@ -2,6 +2,7 @@ import { authRecipe } from './Modules/Auth';
 import { awsLambdaRecipe } from './Modules/AwsLambda';
 import { azureFunctionsRecipe } from './Modules/AzureFunctions';
 import { cacheRecipe } from './Modules/Cache';
+import { cloudflareRecipe } from './Modules/Cloudflare';
 import { devtoolsRecipe } from './Modules/Devtools';
 import { queueRecipe } from './Modules/Queue';
 import { rateLimitRecipe } from './Modules/RateLimit';
@@ -32,4 +33,5 @@ export const RECIPES: RecipeTypes.Recipe<any>[] = [
   testingRecipe,
   awsLambdaRecipe,
   azureFunctionsRecipe,
+  cloudflareRecipe,
 ];

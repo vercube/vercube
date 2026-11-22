@@ -37,6 +37,8 @@ onlyBuiltDependencies:
 minimumReleaseAge: 0
 
 allowBuilds:
+  sharp: false
+  workerd: false
   msgpackr-extract: false
   esbuild: false
   serverless: true

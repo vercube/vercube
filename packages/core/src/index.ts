@@ -6,7 +6,7 @@ export * from './Common/ServeStatic';
 // Config
 export * from './Config/Config';
 export type { LoadVercubeConfigOptions } from './Config/Loader';
-export { loadVercubeConfig } from './Config/Loader';
+export { loadVercubeConfig, provideConfig } from './Config/Loader';
 
 // Http decorators
 export * from './Decorators/Http/Body';

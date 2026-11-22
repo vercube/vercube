@@ -1,0 +1,6 @@
+{
+  // Wrangler bundles `dist/index.mjs` and reads this file while it does. It is
+  // empty on purpose: the `paths` of the monorepo would point `@vercube/*` at
+  // sources, and the Worker would end up with two copies of the framework.
+  "compilerOptions": {}
+}

@@ -481,6 +481,51 @@ export class Project {
   }
 
   /**
+   * Sets the default export of the entry, `src/index.ts`: replaces the
+   * `{ fetch }` object the templates export, or adds one at the end. For a
+   * platform that runs the module's default export, such as Cloudflare Workers.
+   *
+   * @param {string} code - The statements, the last of which is the `export default`
+   * @param {object} [options] - What they need and what they make redundant
+   * @param {Record<string, ImportSpec>} [options.imports] - Names the code uses, name to module
+   * @param {string[]} [options.unused] - Imported names to drop when nothing uses them any more
+   * @returns {void}
+   * @throws {RecipeError} When the entry cannot be found, or already exports something else by default
+   */
+  public setDefaultExport(code: string, options: { imports?: Record<string, ImportSpec>; unused?: string[] } = {}): void {
+    this.editModule(ENTRY_FILE, (mod) => {
+      const body = (mod.$ast as any).body as any[];
+      const statements = parseStatements(code);
+
+      if (hasStatements(body, statements)) {
+        return false;
+      }
+
+      const index = body.findIndex((statement) => statement.type === 'ExportDefaultDeclaration');
+
+      if (index === -1) {
+        body.push(...statements);
+      } else if (isFetchExport(body[index])) {
+        body.splice(index, 1, ...statements);
+      } else {
+        // whatever else it exports is the user's, and replacing it would lose it
+        throw new RecipeError(`${ENTRY_FILE} already has a default export. Replace it with this yourself: ${code}`);
+      }
+
+      addImports(mod, options.imports);
+
+      for (const name of options.unused ?? []) {
+        // once in the import itself: nothing else names it
+        if (mod.imports[name] && (mod.generate().code.match(new RegExp(String.raw`\b${name}\b`, 'g')) ?? []).length === 1) {
+          delete mod.imports[name];
+        }
+      }
+
+      return true;
+    });
+  }
+
+  /**
    * Edits a JSON file of the application, such as tsconfig.json. Written back
    * only when `edit` reports a change. Comments are not kept.
    *
@@ -885,6 +930,23 @@ function callsFunction(node: any, name: string): boolean {
   }
 
   return Object.entries(node).some(([key, child]) => !POSITION_KEYS.has(key) && callsFunction(child, name));
+}
+
+/**
+ * Whether a statement is the default export of the templates: an object with
+ * nothing but a `fetch` handler.
+ *
+ * @param {any} statement - An `export default` statement
+ * @returns {boolean} True when replacing it loses nothing but the handler
+ */
+function isFetchExport(statement: any): boolean {
+  const declaration = statement?.declaration;
+
+  return (
+    declaration?.type === 'ObjectExpression' &&
+    declaration.properties.length === 1 &&
+    (declaration.properties[0].key?.name ?? declaration.properties[0].key?.value) === 'fetch'
+  );
 }
 
 /**

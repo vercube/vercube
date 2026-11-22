@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "vercube-api",
+  "main": "dist/index.mjs",
+  "tsconfig": "tsconfig.worker.json",
+  "compatibility_date": "2026-11-01",
+  // node:async_hooks, node:fs and process.env, which the framework imports
+  "compatibility_flags": ["nodejs_compat"],
+  // served by Cloudflare before the Worker runs
+  "assets": { "directory": "./public" },
+  "vars": {
+    "NODE_ENV": "production",
+    "GREETING": "Hello from a binding",
+  },
+}

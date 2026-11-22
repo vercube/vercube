@@ -331,6 +331,50 @@ describe('Project', () => {
     });
   });
 
+  describe('setDefaultExport', () => {
+    it('should replace the default export of the entry and drop an import it leaves unused', () => {
+      const api = project();
+      const code = 'const worker: CloudflareHandler = toServerlessHandler(app);\n\nexport default worker;';
+      const options = {
+        imports: {
+          toServerlessHandler: '@vercube/serverless/cloudflare',
+          CloudflareHandler: { from: '@vercube/serverless/cloudflare', type: true },
+        },
+        unused: ['RequestHandler', 'createApp'],
+      };
+
+      api.setDefaultExport(code, options);
+      api.setDefaultExport(code, options);
+
+      const entry = read(api, 'src/index.ts');
+
+      expect(entry.match(/export default/g)).toHaveLength(1);
+      expect(entry.trimEnd().endsWith('export default worker;')).toBe(true);
+      expect(entry).not.toContain('app.fetch.bind(app)');
+      expect(entry).not.toContain('RequestHandler');
+      // still called, so its import stays
+      expect(entry).toContain('createApp');
+      expect(entry).toContain("import { toServerlessHandler } from '@vercube/serverless/cloudflare'");
+    });
+
+    it('should refuse to replace a default export that is more than the template handler', () => {
+      const api = project({
+        'src/index.ts': 'const app = await createApp();\nexport default { fetch: app.fetch.bind(app), websocket: {} };\n',
+      });
+
+      expect(() => api.setDefaultExport('export default worker;')).toThrow('already has a default export');
+      expect(read(api, 'src/index.ts')).toContain('websocket');
+    });
+
+    it('should add a default export to an entry that has none', () => {
+      const api = project({ 'src/index.ts': 'const app = await createApp();\n' });
+
+      api.setDefaultExport('export default app;');
+
+      expect(read(api, 'src/index.ts').trimEnd().endsWith('export default app;')).toBe(true);
+    });
+  });
+
   it('should edit a JSON file and refuse one with comments', () => {
     const api = project({ 'with-comments.json': '{ // no\n}' });
 
