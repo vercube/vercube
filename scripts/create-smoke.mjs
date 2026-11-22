@@ -177,6 +177,25 @@ writeFileSync(config, readFileSync(config, 'utf8').replace(/port: \d+/, `port: $
 step('Building');
 run('pnpm', ['run', 'build'], root);
 
+if (appScripts['build:pages']) {
+  step('Exporting the static site');
+  run('pnpm', ['run', 'build:pages'], app);
+
+  const exported = join(app, 'dist-static/api/foo');
+
+  if (!existsSync(exported) || JSON.parse(readFileSync(exported, 'utf8')).message !== 'Hello, world!') {
+    throw new Error('dist-static/api/foo does not hold the answer of GET /api/foo');
+  }
+
+  for (const file of ['.nojekyll', '404.html']) {
+    if (!existsSync(join(app, 'dist-static', file))) {
+      throw new Error(`dist-static/${file} was not written`);
+    }
+  }
+
+  console.log('✔ dist-static holds GET /api/foo, .nojekyll and 404.html');
+}
+
 if (appScripts.test) {
   step('Testing');
   run('pnpm', ['run', 'test'], app);
