@@ -2,6 +2,9 @@ import { BadRequestError } from '@vercube/core';
 import type { RouteConfig } from '@asteasolutions/zod-to-openapi';
 import type { DeepPartial, MetadataTypes, RouteError } from '@vercube/core';
 
+/** A streamed body: OpenAPI has no notion of chunks, so it is documented as binary content. */
+const STREAM_SCHEMA = { type: 'string', format: 'binary' } as const;
+
 /** A security requirement: scheme names and their scopes. */
 export type SecurityRequirement = Record<string, string[]>;
 
@@ -118,6 +121,8 @@ function defaultResponses(metadata: MetadataTypes.Method): RouteConfig['response
   const meta = metadata.meta ?? {};
   const redirect = meta.redirect as { location: string; code: number } | undefined;
   const status = redirect?.code ?? (meta.status as number | undefined) ?? 200;
+  // `@Stream()`: the body is sent in chunks, of the type the decorator names
+  const stream = meta.stream as { type?: string } | undefined;
   const headers: Record<string, { schema: { type: 'string'; example: string } }> = {};
 
   for (const [name, value] of Object.entries((meta.headers as Record<string, string> | undefined) ?? {})) {
@@ -133,6 +138,7 @@ function defaultResponses(metadata: MetadataTypes.Method): RouteConfig['response
       description: STATUS_DESCRIPTIONS[status] ?? 'Response',
       ...(Object.keys(headers).length > 0 ? { headers } : {}),
       ...(meta.sse ? { content: { 'text/event-stream': { schema: { type: 'string' } } } } : {}),
+      ...(stream ? { content: { [stream.type ?? 'application/octet-stream']: { schema: STREAM_SCHEMA } } } : {}),
     },
   } as RouteConfig['responses'];
 }

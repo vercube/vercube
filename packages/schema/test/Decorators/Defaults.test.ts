@@ -14,6 +14,7 @@ import {
   SetHeader,
   Sse,
   Status,
+  Stream,
   Throws,
 } from '@vercube/core';
 import { describe, expect, it } from 'vitest';
@@ -67,6 +68,20 @@ class ItemsController {
   @Redirect('/items', 301)
   @Schema({})
   public old() {}
+
+  @Get('/export')
+  @Stream({ type: 'application/x-ndjson' })
+  @Schema({})
+  public async *export() {
+    yield {};
+  }
+
+  @Get('/download')
+  @Stream()
+  @Schema({})
+  public download() {
+    return [];
+  }
 
   @Sse('/events')
   @Schema({})
@@ -133,6 +148,17 @@ describe('defaults derived from the route', () => {
 
     expect(schema.paths['/items/events']?.get?.responses).toEqual({
       200: { description: 'OK', content: { 'text/event-stream': { schema: { type: 'string' } } } },
+    });
+  });
+
+  it('should document a streamed route with the type it declares', async () => {
+    const schema = await generate();
+
+    expect(schema.paths['/items/export']?.get?.responses).toEqual({
+      200: { description: 'OK', content: { 'application/x-ndjson': { schema: { type: 'string', format: 'binary' } } } },
+    });
+    expect(schema.paths['/items/download']?.get?.responses).toEqual({
+      200: { description: 'OK', content: { 'application/octet-stream': { schema: { type: 'string', format: 'binary' } } } },
     });
   });
 

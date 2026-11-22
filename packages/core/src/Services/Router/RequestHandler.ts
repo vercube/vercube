@@ -6,6 +6,7 @@ import { FastResponse } from '../../Types/CommonTypes';
 import { getSetCookieName } from '../../Utils/Cookies';
 import { withoutStack } from '../../Utils/Errors';
 import { isSameMiddleware, resolveSlots } from '../../Utils/MiddlewareUtils';
+import { getStreamType } from '../../Utils/Stream';
 import { skipsGlobalMiddlewares } from '../../Utils/Utils';
 import { DefaultErrorHandlerProvider } from '../ErrorHandler/DefaultErrorHandlerProvider';
 import { ErrorHandlerProvider } from '../ErrorHandler/ErrorHandlerProvider';
@@ -1131,6 +1132,12 @@ export class RequestHandler {
       return mergeResponseHeaders(result, response);
     }
 
+    // A stream is answered like a response of the handler's own, except that it
+    // takes the status the actions and middlewares chose.
+    if (isStream(result)) {
+      return createStreamResponse(result, response.status, response);
+    }
+
     // No middleware set a header or a status, so the response is the one a
     // route without middlewares answers with, built from a shared init.
     if (isUntouched(response)) {
@@ -1215,6 +1222,10 @@ export class RequestHandler {
         return mergeResponseHeaders(handlerResponse, fixed.source);
       }
 
+      if (isStream(handlerResponse)) {
+        return createStreamResponse(handlerResponse, fixed.source.status, fixed.source);
+      }
+
       return handlerResponse === undefined
         ? new FastResponse(null, fixed.empty)
         : new FastResponse(JSON.stringify(handlerResponse), fixed.json);
@@ -1227,6 +1238,10 @@ export class RequestHandler {
     // `JSON.stringify(undefined)` is not JSON, so a void handler answers 204
     if (handlerResponse === undefined) {
       return new FastResponse(null, NO_CONTENT_RESPONSE_INIT);
+    }
+
+    if (isStream(handlerResponse)) {
+      return createStreamResponse(handlerResponse, 200);
     }
 
     return new FastResponse(JSON.stringify(handlerResponse), JSON_RESPONSE_INIT);
@@ -1668,6 +1683,44 @@ function createPendingResponse(fixed?: RouterTypes.StaticResponse): Response {
  */
 function isUntouched(response: Response): response is Response & PendingResponse {
   return response instanceof PendingResponse && !response.touched;
+}
+
+/**
+ * Tells whether a handler returned a stream to send as the response body.
+ *
+ * The `typeof` check comes first, so a handler that returned a string, a
+ * number or nothing does not pay for the `instanceof`.
+ *
+ * @param {unknown} value - What the handler returned
+ * @returns {boolean} True for a `ReadableStream`
+ */
+function isStream(value: unknown): value is ReadableStream<Uint8Array> {
+  return typeof value === 'object' && value !== null && value instanceof ReadableStream;
+}
+
+/**
+ * Wraps a stream a handler returned into the response that sends it, with the
+ * headers middlewares and actions set on the intermediate response.
+ *
+ * The content type is the one `@Stream()` gave the stream, else one set on the
+ * intermediate response (`@SetHeader('Content-Type', ...)`), else
+ * `application/octet-stream`: a stream of unknown content is bytes.
+ *
+ * @param {ReadableStream<Uint8Array>} stream - The stream
+ * @param {number} status - The status to answer with
+ * @param {Response} [source] - The intermediate response, when the route has one
+ * @returns {Response} The streaming response
+ */
+function createStreamResponse(stream: ReadableStream<Uint8Array>, status: number, source?: Response): Response {
+  const type = getStreamType(stream);
+  const created = new FastResponse(stream, { status, headers: type ? { 'content-type': type } : undefined });
+  const response = source ? mergeResponseHeaders(created, source) : created;
+
+  if (!response.headers.has('content-type')) {
+    response.headers.set('content-type', 'application/octet-stream');
+  }
+
+  return response;
 }
 
 /**

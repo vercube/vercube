@@ -34,6 +34,7 @@ export * from './Decorators/Http/Redirect';
 export * from './Decorators/Http/Middleware';
 export * from './Decorators/Http/MultipartFormData';
 export * from './Decorators/Http/Sse';
+export * from './Decorators/Http/Stream';
 export * from './Decorators/Http/Throws';
 
 // Hooks
@@ -125,4 +126,6 @@ export * from './Utils/Security';
 export * from './Utils/Flatten';
 export * from './Utils/Url';
 export * from './Utils/Sse';
+export { createStream, streamFile } from './Utils/Stream';
+export type { StreamFileOptions, StreamOptions, StreamSource } from './Utils/Stream';
 export * from './Utils/Cookies';
