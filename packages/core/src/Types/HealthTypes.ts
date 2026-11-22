@@ -65,6 +65,65 @@ export namespace HealthTypes {
   }
 
   /**
+   * A registered check as `app.health.checks` lists it, without its function.
+   */
+  export interface CheckDescription {
+    /** The check name. */
+    name: string;
+
+    /** Whether a failure makes the application not ready. */
+    critical: boolean;
+
+    /** Milliseconds the check may take. */
+    timeout: number;
+  }
+
+  /**
+   * The `health` introspection section: the lifecycle state, the registered
+   * checks, the last report and the effective settings.
+   */
+  export interface Description {
+    /** Where the application is in its lifecycle. */
+    state: AppState;
+
+    /** The registered checks, in registration order. */
+    checks: CheckDescription[];
+
+    /** The last report of those checks, `null` until they ran. */
+    report: Report | null;
+
+    /** The settings in effect. */
+    config: {
+      /** Whether the probe routes are registered (`health` is on). */
+      routes: boolean;
+
+      /** The path of each probe, `null` when it is not registered. */
+      endpoints: Record<Endpoint, string | null>;
+
+      /** What anonymous probe requests see. */
+      details: DetailsLevel;
+
+      /** Whether a token unlocks the full report. The token itself is never shown. */
+      token: boolean;
+
+      /** Default per-check timeout in milliseconds. */
+      timeout: number;
+
+      /** Milliseconds a report is reused. */
+      cacheTtl: number;
+
+      /** Whether probe requests are traced. */
+      telemetry: boolean;
+
+      /** Milliseconds the application keeps serving after `close()` begins. */
+      drainDelay: number;
+
+      /** Signals that start a graceful shutdown, `true` for the default ones. */
+      handleSignals: boolean | string[];
+    };
+  }
+
+  /**
    * Result of a single check.
    */
   export interface CheckResult {

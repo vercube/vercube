@@ -49,6 +49,12 @@ export class HealthRegistry {
   /** The run in progress, shared by concurrent callers. */
   private fRunning: Promise<HealthTypes.Report> | null = null;
 
+  /** The last report of the current set of checks, kept after the cache let go of it. */
+  private fLast: HealthTypes.Report | null = null;
+
+  /** Counts every change to the checks, the settings and the last report. */
+  private fRevision: number = 0;
+
   /**
    * Applies the registry settings. Drops the cached report.
    *
@@ -144,6 +150,49 @@ export class HealthRegistry {
   }
 
   /**
+   * What is registered, without running anything: the name of every check,
+   * whether it is critical and the timeout it runs with.
+   */
+  public get checks(): HealthTypes.CheckDescription[] {
+    return [...this.fChecks.values()].map((entry) => ({
+      name: entry.name,
+      critical: entry.critical,
+      timeout: entry.timeout ?? this.fTimeout,
+    }));
+  }
+
+  /**
+   * The default per-check timeout in milliseconds.
+   */
+  public get timeout(): number {
+    return this.fTimeout;
+  }
+
+  /**
+   * Milliseconds a report is reused.
+   */
+  public get cacheTtl(): number {
+    return this.fCacheTtl;
+  }
+
+  /**
+   * The most recent report of the checks as they are registered now, however
+   * old it is. `null` until the checks ran once, and again after they changed.
+   * For showing what was last seen; `cached` is the one a probe may answer with.
+   */
+  public get last(): HealthTypes.Report | null {
+    return this.fLast;
+  }
+
+  /**
+   * A number that changes whenever the checks, the settings or the last
+   * report change.
+   */
+  public get revision(): number {
+    return this.fRevision;
+  }
+
+  /**
    * The last report, while it is still fresh.
    */
   public get cached(): HealthTypes.Report | null {
@@ -182,6 +231,8 @@ export class HealthRegistry {
       }
 
       this.fRunning = null;
+      this.fLast = report;
+      this.fRevision++;
 
       // from when the run finished, or a check slower than the TTL (a hung
       // backend timing out) would store a report that is already stale
@@ -205,6 +256,8 @@ export class HealthRegistry {
   public invalidate(): void {
     this.fCached = null;
     this.fRunning = null;
+    this.fLast = null;
+    this.fRevision++;
   }
 
   /**

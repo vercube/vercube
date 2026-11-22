@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Header,
+  HealthRegistry,
   IntrospectionRegistry,
   Middleware,
   NotFoundError,
@@ -26,6 +27,7 @@ import { DevtoolsTelemetry } from '../Telemetry/DevtoolsTelemetry';
 import type { QueueMessages } from '../Services/QueueIntrospection';
 import type { SchedulerRunResult } from '../Services/SchedulerIntrospection';
 import type { DevtoolsTypes } from '../Types/DevtoolsTypes';
+import type { HealthTypes } from '@vercube/core';
 
 /** Interval between keep-alive frames, in milliseconds. */
 const PING_INTERVAL_MS = 20_000;
@@ -74,6 +76,9 @@ export class DevtoolsController {
 
   @Inject(DevtoolsFrameBus)
   private readonly gBus!: DevtoolsFrameBus;
+
+  @Inject(HealthRegistry)
+  private readonly gHealth!: HealthRegistry;
 
   /** Streams currently open. */
   private fStreams: number = 0;
@@ -238,6 +243,25 @@ export class DevtoolsController {
   @SetHeader('Cache-Control', 'no-store')
   public runScheduledJob(@Param('name') name: string): Promise<SchedulerRunResult> {
     return this.gScheduler.run(name);
+  }
+
+  /**
+   * Runs every health check now, past the cached report, and answers with the
+   * `health` section as it stands afterwards. It reads the registry itself, so
+   * it works with the probe routes off. POST, because it calls the backends
+   * the checks watch.
+   *
+   * @returns The health section with the fresh report
+   */
+  @Post('/api/health/check')
+  @SetHeader('Cache-Control', 'no-store')
+  public async runHealthChecks(): Promise<HealthTypes.Description> {
+    await this.gHealth.check({ fresh: true });
+
+    // other open inspectors learn that there is a newer report
+    this.gIntrospection.touch('health');
+
+    return (await this.gIntrospection.describe<HealthTypes.Description>('health'))!.data;
   }
 
   /**

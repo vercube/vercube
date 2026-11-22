@@ -237,6 +237,8 @@ export namespace DevtoolsTypes {
     };
     /** Audit score out of 100. */
     score: number;
+    /** Lifecycle state and the status of the last health report, `null` until the checks ran. */
+    health: { state: string; status: string | null; checks: number };
     plugins: { name: string }[];
     globalMiddlewares: string[];
     bootstrapMs: number;

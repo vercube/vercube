@@ -81,6 +81,27 @@ async function reloadAll(): Promise<void> {
   await Promise.all([reload(), recorded.reload(), recordedLogs.reload(), history.reload()]);
 }
 
+/** The application state while it is not serving normally, the last readiness report otherwise. */
+function readiness(health: Overview['health']): string {
+  if (health.state !== 'ready') {
+    return health.state;
+  }
+
+  return health.status ?? (health.checks > 0 ? 'not run' : 'ready');
+}
+
+function readinessTone(health: Overview['health']): string {
+  if (health.state === 'draining' || health.state === 'closed' || health.status === 'down') {
+    return 'bad';
+  }
+
+  if (health.state === 'starting' || health.status === 'degraded') {
+    return 'warn';
+  }
+
+  return health.status === 'ok' || health.checks === 0 ? 'good' : '';
+}
+
 function scoreTone(score: number): string {
   if (score >= 90) {
     return 'good';
@@ -134,7 +155,7 @@ const groups = computed(() => {
       tone: scoreTone(overview.score),
       rows: [
         { label: 'Findings', value: String(counts.issues), tone: counts.issues > 0 ? 'warn' : 'good' },
-        { label: 'Failed', value: String(requests.errors), tone: requests.errors > 0 ? 'bad' : 'good' },
+        { label: 'Readiness', value: readiness(overview.health), tone: readinessTone(overview.health) },
       ],
     },
   ];

@@ -12,6 +12,7 @@ import { IntrospectionRegistry } from '../Services/Introspection/IntrospectionRe
 import { ConfigProvider } from '../Services/Introspection/Providers/ConfigProvider';
 import { ContainerProvider } from '../Services/Introspection/Providers/ContainerProvider';
 import { DiscoveryProvider } from '../Services/Introspection/Providers/DiscoveryProvider';
+import { HealthProvider } from '../Services/Introspection/Providers/HealthProvider';
 import { PluginsProvider } from '../Services/Introspection/Providers/PluginsProvider';
 import { RoutesProvider } from '../Services/Introspection/Providers/RoutesProvider';
 import { AppLifecycle } from '../Services/Lifecycle/AppLifecycle';
@@ -89,6 +90,15 @@ export function createContainer(config: ConfigTypes.Config): Container {
   const configProvider = container.get(ConfigProvider);
   configProvider.setConfig(config);
   introspection.register(configProvider);
+
+  // The lifecycle state, the registered checks and the last report. Describing
+  // never runs a check, and a state change is pushed to whoever listens.
+  container.bind(HealthProvider);
+
+  const healthProvider = container.get(HealthProvider);
+  healthProvider.setConfig(config);
+  introspection.register(healthProvider);
+  container.get(AppLifecycle).onChange(() => introspection.touch(healthProvider.id));
 
   // Only present when the project was built by @vercube/vite or scanned by
   // @vercube/scan; describes to null otherwise.

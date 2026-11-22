@@ -16,7 +16,7 @@ import { DevtoolsFrameBus } from '../src/Services/DevtoolsFrameBus';
 import { resetDevtoolsTelemetry } from '../src/Telemetry/DevtoolsTelemetry';
 import { createDevtoolsApp, devtoolsFetch, devtoolsJson } from './Utils/App';
 import type { DevtoolsTypes } from '../src/Types/DevtoolsTypes';
-import type { App, IntrospectionTypes } from '@vercube/core';
+import type { App, HealthTypes, IntrospectionTypes } from '@vercube/core';
 
 class TouchMiddleware extends BaseMiddleware {
   public onResponse(): void {
@@ -443,6 +443,52 @@ describe('devtools API', () => {
     expect(trace).toMatchObject({ v: 1, ch: 'trace' });
     expect(typeof trace!.seq).toBe('number');
     expect(spansOf(trace!.data).some((span) => span.name === 'GET /demo/ok')).toBe(true);
+  });
+
+  it('describes health and runs the checks on demand, on POST only', async () => {
+    let runs = 0;
+    const app = await createDevtoolsApp({}, (setup) => {
+      setup.health.register({ name: 'queue:orders', check: () => void runs++ });
+      setup.health.register({
+        name: 'cache',
+        critical: false,
+        check: () => {
+          throw new Error('unreachable');
+        },
+      });
+    });
+
+    const before = await devtoolsJson<{ data: HealthTypes.Description }>(app, '/_devtools/api/introspect/health');
+
+    expect(before.data.checks.map((check) => check.name)).toEqual(['queue:orders', 'cache']);
+    expect(before.data.report).toBeNull();
+    expect(runs).toBe(0);
+
+    const refused = await devtoolsFetch(app, '/_devtools/api/health/check');
+
+    expect(refused.status).not.toBe(200);
+    expect(runs).toBe(0);
+
+    const response = await devtoolsFetch(app, '/_devtools/api/health/check', {
+      method: 'POST',
+      headers: { 'x-devtools-request': '1' },
+    });
+    const health = (await response.json()) as HealthTypes.Description;
+
+    expect(response.status).toBe(200);
+    expect(runs).toBe(1);
+    expect(health.report?.status).toBe('degraded');
+    expect(health.report?.checks['queue:orders'].status).toBe('ok');
+    expect(health.report?.checks.cache).toMatchObject({ status: 'down', critical: false, error: 'unreachable' });
+
+    // past the cached report, every time
+    await devtoolsFetch(app, '/_devtools/api/health/check', { method: 'POST', headers: { 'x-devtools-request': '1' } });
+
+    expect(runs).toBe(2);
+
+    const overview = await devtoolsJson<DevtoolsTypes.Overview>(app, '/_devtools/api/overview');
+
+    expect(overview.health).toMatchObject({ status: 'degraded', checks: 2 });
   });
 
   it('runs a scheduled job through the scheduler, on POST only', async () => {

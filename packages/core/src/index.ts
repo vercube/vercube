@@ -76,6 +76,7 @@ export * from './Services/Introspection/IntrospectionRegistry';
 export * from './Services/Introspection/Providers/ConfigProvider';
 export * from './Services/Introspection/Providers/ContainerProvider';
 export * from './Services/Introspection/Providers/DiscoveryProvider';
+export * from './Services/Introspection/Providers/HealthProvider';
 export * from './Services/Introspection/Providers/PluginsProvider';
 export * from './Services/Introspection/Providers/RoutesProvider';
 export * from './Services/Telemetry/TelemetryRegistry';

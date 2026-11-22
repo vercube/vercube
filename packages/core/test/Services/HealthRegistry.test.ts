@@ -279,4 +279,72 @@ describe('HealthRegistry', () => {
     expect(() => registry.configure({ timeout: Number.NaN })).toThrow('health.timeout');
     expect(() => registry.configure({ cacheTtl: -5 })).toThrow('health.cacheTtl');
   });
+
+  describe('what it tells an inspector', () => {
+    it('should list the checks without running them', () => {
+      const check = vi.fn();
+
+      registry.configure({ timeout: 250 });
+      registry.register({ name: 'db', check });
+      registry.register({ name: 'cache', critical: false, timeout: 50, check });
+
+      expect(registry.checks).toEqual([
+        { name: 'db', critical: true, timeout: 250 },
+        { name: 'cache', critical: false, timeout: 50 },
+      ]);
+      expect(registry.timeout).toBe(250);
+      expect(registry.cacheTtl).toBe(0);
+      expect(check).not.toHaveBeenCalled();
+    });
+
+    it('should keep the last report after the cache let go of it', async () => {
+      registry.register({ name: 'db', check: () => {} });
+
+      expect(registry.last).toBeNull();
+
+      const report = await registry.check();
+
+      // `cacheTtl: 0` caches nothing
+      expect(registry.cached).toBeNull();
+      expect(registry.last).toBe(report);
+    });
+
+    it('should forget the last report when the checks change', async () => {
+      registry.register({ name: 'db', check: () => {} });
+      await registry.check();
+
+      registry.register({ name: 'cache', check: () => {} });
+
+      expect(registry.last).toBeNull();
+    });
+
+    it('should not keep the report of a run the checks changed under', async () => {
+      let release!: () => void;
+      registry.register({ name: 'slow', check: () => new Promise<void>((resolve) => (release = resolve)) });
+
+      const pending = registry.check();
+      registry.register({ name: 'other', check: () => {} });
+      release();
+      await pending;
+
+      expect(registry.last).toBeNull();
+    });
+
+    it('should change its revision with the checks, the settings and each report', async () => {
+      const seen = new Set<number>([registry.revision]);
+
+      registry.register({ name: 'db', check: () => {} });
+      seen.add(registry.revision);
+      await registry.check();
+      seen.add(registry.revision);
+      await registry.check({ fresh: true });
+      seen.add(registry.revision);
+      registry.configure({ timeout: 10 });
+      seen.add(registry.revision);
+      registry.unregister('db');
+      seen.add(registry.revision);
+
+      expect(seen.size).toBe(6);
+    });
+  });
 });
