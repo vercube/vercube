@@ -63,6 +63,7 @@ export function runInSpan<T>(
     try {
       result = fn(span);
     } catch (error) {
+      // bare-error: stands in for a thrown `null` or `undefined` on the span, the value itself is rethrown
       settle(undefined, error ?? new Error('Unknown error'));
       throw error;
     }
@@ -74,6 +75,7 @@ export function runInSpan<T>(
           return value;
         },
         (error: unknown) => {
+          // bare-error: stands in for a rejection with `null` or `undefined` on the span, the value itself is rethrown
           settle(undefined, error ?? new Error('Unknown error'));
           throw error;
         },

@@ -1,4 +1,4 @@
-import { TestingError } from '../Errors/TestingError';
+import { TestingErrors } from '../Errors/Catalog';
 import { truncate } from '../Utils/Format';
 import { getSetCookies, parseSetCookie } from './CookieJar';
 import { readSse } from './Sse';
@@ -59,7 +59,7 @@ export class TestResponse {
    */
   public bytes(): Promise<Uint8Array> {
     if (this.fStreamed) {
-      throw new TestingError('The body was read as an event stream by events(), it cannot be read again.');
+      throw TestingErrors.BODY_STREAMED();
     }
 
     this.fBody ??= this.raw.arrayBuffer().then((buffer) => new Uint8Array(buffer));
@@ -89,10 +89,15 @@ export class TestResponse {
     try {
       return JSON.parse(text) as T;
     } catch (error) {
-      throw new TestingError(
-        `Expected a JSON body from ${this.request.method} ${this.request.url}, got ${this.headers.get('content-type') ?? 'no content type'}:\n${truncate(text) || '(empty body)'}`,
-        { cause: error, request: this.request, response: { status: this.status, headers: this.headers, body: text } },
-      );
+      throw TestingErrors.BODY_NOT_JSON({
+        method: this.request.method,
+        url: this.request.url,
+        contentType: this.headers.get('content-type') ?? 'no content type',
+        excerpt: truncate(text) || '(empty body)',
+        cause: error,
+        request: this.request,
+        response: { status: this.status, headers: this.headers, body: text },
+      });
     }
   }
 
@@ -135,15 +140,15 @@ export class TestResponse {
    */
   public events(): AsyncIterable<TestingTypes.SseEvent> {
     if (this.fBody) {
-      throw new TestingError('The body was already read by json(), text() or bytes(), events() needs the unread stream.');
+      throw TestingErrors.BODY_ALREADY_READ();
     }
 
     if (this.fStreamed) {
-      throw new TestingError('events() can only be called once per response.');
+      throw TestingErrors.EVENTS_ALREADY_READ();
     }
 
     if (!this.raw.body) {
-      throw new TestingError(`${this.request.method} ${this.request.url} returned no body to read events from.`);
+      throw TestingErrors.NO_EVENT_STREAM({ method: this.request.method, url: this.request.url });
     }
 
     this.fStreamed = true;

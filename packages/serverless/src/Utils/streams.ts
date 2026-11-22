@@ -1,3 +1,5 @@
+import { ServerlessErrors } from '../Errors/Catalog';
+
 /**
  * Converts a ReadableStream to a Buffer using Web Streams API.
  *
@@ -27,7 +29,7 @@ export function toBuffer(data: ReadableStream): Promise<Buffer> {
         resolve(Buffer.concat(chunks));
       },
       abort(reason: any) {
-        reject(new Error('Stream aborted: ' + String(reason)));
+        reject(ServerlessErrors.STREAM_ABORTED({ reason }));
       },
     });
 

@@ -1,5 +1,5 @@
 import { createClient } from '@vercube/client';
-import { TestingError } from '../Errors/TestingError';
+import { TestingErrors } from '../Errors/Catalog';
 import { CookieJar } from '../Request/CookieJar';
 import { TestClient } from './TestClient';
 import type { TestLogger } from '../Services/TestLogger';
@@ -107,7 +107,7 @@ export class TestApp<R = Record<string, AnyRoute>> extends TestClient {
    */
   public get logs(): TestLogger {
     if (!this.fLogs) {
-      throw new TestingError('app.logs is not available: the app was created with `logger: false`.');
+      throw TestingErrors.LOGS_DISABLED();
     }
 
     return this.fLogs;
@@ -147,7 +147,7 @@ export class TestApp<R = Record<string, AnyRoute>> extends TestClient {
   /** @inheritdoc */
   public dispatch(request: Request): Promise<Response> {
     if (this.fClosing) {
-      return Promise.reject(new TestingError(`${request.method} ${request.url} was sent after app.close().`));
+      return Promise.reject(TestingErrors.APP_CLOSED({ method: request.method, url: request.url }));
     }
 
     return this.app.fetch(request);
@@ -183,9 +183,7 @@ export class TestApp<R = Record<string, AnyRoute>> extends TestClient {
   /** @inheritdoc */
   public impersonate(request: Request, user: unknown): Request {
     if (!this.fImpersonator) {
-      throw new TestingError(
-        '.as(user) needs an extension that authenticates users, such as testAuth() from @vercube/testing/auth.',
-      );
+      throw TestingErrors.IMPERSONATOR_MISSING();
     }
 
     return this.fImpersonator(request, user) ?? request;
@@ -198,9 +196,7 @@ export class TestApp<R = Record<string, AnyRoute>> extends TestClient {
    * @throws {TestingError} Always
    */
   public override(): never {
-    throw new TestingError(
-      'Dependencies cannot be replaced once the app has booted: services already hold the original. Pass them in the `overrides` option of createTestApp() instead.',
-    );
+    throw TestingErrors.OVERRIDE_AFTER_BOOT();
   }
 
   /**
@@ -249,7 +245,7 @@ export class TestApp<R = Record<string, AnyRoute>> extends TestClient {
     }
 
     if (errors.length > 0) {
-      throw new AggregateError(errors, 'Failed to close the test app');
+      throw TestingErrors.CLOSE_FAILED({ errors });
     }
   }
 }

@@ -13,4 +13,5 @@
  * - `@vercube/telemetry/testing` - in-memory providers for tests
  */
 export { Telemetry } from './Common/Telemetry';
+export { TelemetryErrors } from './Errors/Catalog';
 export { TelemetryPlugin } from './Plugins/TelemetryPlugin';

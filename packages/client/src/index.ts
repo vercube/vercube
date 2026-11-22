@@ -1,4 +1,5 @@
 export * from './Client';
+export * from './Errors/Catalog';
 export * from './Errors/VercubeClientError';
 export * from './Sse';
 export type * from './Types/ClientTypes';

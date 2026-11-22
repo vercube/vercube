@@ -1,3 +1,4 @@
+import { ClientErrors } from './Errors/Catalog';
 import { VercubeClientError } from './Errors/VercubeClientError';
 import { parseSse } from './Sse';
 import type { AnyRoute, Client, ClientOptions, Method } from './Types/ClientTypes';
@@ -211,14 +212,14 @@ function fillPath(path: string, params: Record<string, unknown> = {}): string {
       const value = params[name];
 
       if (value === undefined || value === null) {
-        throw new TypeError(`Missing path parameter "${name}" for ${path}`);
+        throw ClientErrors.MISSING_PATH_PARAMETER({ name, path });
       }
 
       const segments = wildcard ? String(value).split('/') : [String(value)];
 
       // the URL parser resolves these, so `../admin` would reach another route
       if (segments.some((segment) => segment === '.' || segment === '..')) {
-        throw new TypeError(`Path parameter "${name}" cannot be "." or ".." in ${path}`);
+        throw ClientErrors.INVALID_PATH_PARAMETER({ name, path });
       }
 
       return segments.map(encodeURIComponent).join('/');

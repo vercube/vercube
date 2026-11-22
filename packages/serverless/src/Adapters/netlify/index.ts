@@ -1,5 +1,6 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { HttpServer } from '@vercube/core';
+import { ServerlessErrors } from '../../Errors/Catalog';
 import { flushTelemetry } from '../../Utils/flush';
 import type { App, MaybePromise } from '@vercube/core';
 
@@ -57,10 +58,7 @@ export class NetlifyContext<T extends object = NetlifyRequestContext> {
     const context = storage.getStore();
 
     if (!context) {
-      // bare-error: migrated with the serverless catalog
-      throw new Error(
-        'NetlifyContext was read outside a request. The context exists only while the Netlify adapter handles a request.',
-      );
+      throw ServerlessErrors.NETLIFY_CONTEXT_OUTSIDE_REQUEST();
     }
 
     return context as T;

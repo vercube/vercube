@@ -1,9 +1,10 @@
-import { BadRequestError, HttpError, HttpServer, ValidationProvider, safeJsonParse, sanitizeObject } from '@vercube/core';
+import { HttpError, HttpServer, ValidationProvider, safeJsonParse, sanitizeObject } from '@vercube/core';
 import { Inject, InjectOptional } from '@vercube/di';
 import { Logger } from '@vercube/logger';
 import { createInstrument, SpanKind, ValueType } from '@vercube/telemetry/instrument';
 import { defineHooks } from 'crossws';
 import { plugin } from 'crossws/server';
+import { WsErrors } from '../Errors/Catalog';
 import { WebsocketTypes } from '../Types/WebsocketTypes';
 import type { WSError, WSMessage, WSPeer } from '../Types/WebsocketTypes';
 import type { Span } from '@vercube/telemetry/instrument';
@@ -140,9 +141,7 @@ export class WebsocketService {
 
       // without a provider every message would be dropped, so fail at boot instead
       if (handler.schema && !this.gValidationProvider) {
-        throw new Error(
-          `Message handler for event "${event}" in namespace "${normalizedNamespace}" has a validationSchema, but no ValidationProvider is registered.`,
-        );
+        throw WsErrors.SCHEMA_WITHOUT_VALIDATION_PROVIDER({ event, namespace: normalizedNamespace });
       }
 
       if (!this.fHandlers[action][normalizedNamespace]) {
@@ -403,13 +402,13 @@ export class WebsocketService {
 
       if (handler.schema) {
         if (!this.gValidationProvider) {
-          throw new Error('ValidationProvider is not registered');
+          throw WsErrors.VALIDATION_PROVIDER_MISSING();
         }
 
         const result = await this.gValidationProvider.validate(handler.schema, data);
 
         if (result?.issues?.length) {
-          throw new BadRequestError('Websocket message validation error', result.issues);
+          throw WsErrors.MESSAGE_INVALID({ issues: result.issues });
         }
 
         // hand the parsed value to the handler, so coercions, defaults, transforms

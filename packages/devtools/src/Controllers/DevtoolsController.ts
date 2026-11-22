@@ -6,7 +6,6 @@ import {
   HealthRegistry,
   IntrospectionRegistry,
   Middleware,
-  NotFoundError,
   Param,
   Post,
   QueryParam,
@@ -15,6 +14,7 @@ import {
 import { Inject } from '@vercube/di';
 import { createInstrument, SpanKind, SpanStatusCode } from '@vercube/telemetry/instrument';
 import { DEFAULT_DEVTOOLS_OPTIONS } from '../Constants/DevtoolsDefaults';
+import { DevtoolsErrors } from '../Errors/Catalog';
 import { DEVTOOLS_UI_HTML } from '../Generated/UI';
 import { DevtoolsAuthMiddleware } from '../Middleware/DevtoolsAuthMiddleware';
 import { DevtoolsProtocol } from '../Protocol/Frames';
@@ -145,7 +145,7 @@ export class DevtoolsController {
     const section = await this.gIntrospection.describe(id);
 
     if (!section) {
-      throw new NotFoundError(`Unknown introspection section: ${id}`);
+      throw DevtoolsErrors.UNKNOWN_SECTION({ id });
     }
 
     const etag = `"${BOOT_ID}-${section.revision}"`;
@@ -491,7 +491,7 @@ export class DevtoolsController {
    */
   private assertSignal(kind: string): void {
     if (!SIGNALS.has(kind)) {
-      throw new NotFoundError(`Unknown signal: ${kind}`);
+      throw DevtoolsErrors.UNKNOWN_SIGNAL({ kind });
     }
   }
 }
