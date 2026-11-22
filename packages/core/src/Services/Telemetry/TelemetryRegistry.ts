@@ -1,3 +1,4 @@
+import { CoreErrors } from '../../Errors/Catalog';
 import type { TelemetryTypes } from '../../Types/TelemetryTypes';
 
 /**
@@ -47,7 +48,7 @@ export class TelemetryRegistry {
    */
   public install(hooks: TelemetryTypes.Hooks, options: TelemetryTypes.Options = {}): void {
     if (this.fHooks !== null) {
-      throw new Error('Telemetry is already installed. Only one telemetry implementation can be active at a time.');
+      throw CoreErrors.TELEMETRY_ALREADY_INSTALLED();
     }
 
     this.fHooks = hooks;

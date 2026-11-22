@@ -1,3 +1,4 @@
+import { CoreErrors } from '../../Errors/Catalog';
 import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
 import type { HttpError } from '../../Errors/HttpError';
 import type { MetadataTypes } from '../../Types/MetadataTypes';
@@ -91,7 +92,7 @@ function resolveEntries(input: (number | HttpErrorClass)[]): ThrownError[] {
   for (const item of input) {
     if (typeof item === 'number') {
       if (!Number.isInteger(item) || item < 400 || item > 599) {
-        throw new TypeError(`@Throws(): ${item} is not an error status (400-599).`);
+        throw CoreErrors.THROWS_STATUS_INVALID({ status: item });
       }
 
       explicit = item;
@@ -99,24 +100,21 @@ function resolveEntries(input: (number | HttpErrorClass)[]): ThrownError[] {
     }
 
     if (typeof item !== 'function') {
-      throw new TypeError(`@Throws(): expected an HttpError class, got ${typeof item}.`);
+      throw CoreErrors.THROWS_NOT_A_CLASS({ type: typeof item });
     }
 
     const status = explicit ?? item.status;
     explicit = undefined;
 
     if (typeof status !== 'number') {
-      throw new TypeError(
-        `@Throws(${item.name}): the class has no static \`status\`. ` +
-          `Add \`static readonly status = <code>\` to it, or write @Throws(<code>, ${item.name}).`,
-      );
+      throw CoreErrors.THROWS_STATUS_MISSING({ name: item.name });
     }
 
     entries.push({ name: item.name, status, error: item });
   }
 
   if (explicit !== undefined) {
-    throw new TypeError(`@Throws(${explicit}): a status must be followed by the error class it applies to.`);
+    throw CoreErrors.THROWS_STATUS_UNUSED({ status: explicit });
   }
 
   return entries;

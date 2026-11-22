@@ -1,5 +1,6 @@
 import { BaseDecorator, createDecorator, InjectOptional } from '@vercube/di';
 import { Logger } from '@vercube/logger';
+import { CoreErrors } from '../../Errors/Catalog';
 import { createStream } from '../../Utils/Stream';
 import { initializeMetadata, initializeMetadataMethod } from '../../Utils/Utils';
 import type { MetadataTypes } from '../../Types/MetadataTypes';
@@ -27,7 +28,7 @@ class StreamDecorator extends BaseDecorator<StreamOptions, MetadataTypes.Metadat
     const name = `${this.instance?.constructor?.name}::${this.propertyName}`;
 
     if (method.meta.sse) {
-      throw new Error(`${name}: @Stream() cannot be combined with @Sse(), which already streams its own format.`);
+      throw CoreErrors.STREAM_SSE_COMBINED({ handler: name, decorator: 'Stream' });
     }
 
     // declarative marker, for tools such as the OpenAPI generator

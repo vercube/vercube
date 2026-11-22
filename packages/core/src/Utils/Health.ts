@@ -1,3 +1,4 @@
+import { CoreErrors } from '../Errors/Catalog';
 import type { ConfigTypes } from '../Types/ConfigTypes';
 import type { HealthTypes } from '../Types/HealthTypes';
 
@@ -62,7 +63,7 @@ export function resolveHealthOptions(config: ConfigTypes.Config | undefined): He
     const taken = seen.get(path);
 
     if (taken) {
-      throw new Error(`health: the ${taken} and ${endpoint} endpoints are both set to ${path}, give each its own path`);
+      throw CoreErrors.HEALTH_ENDPOINTS_COLLIDE({ first: taken, second: endpoint, path });
     }
 
     seen.set(path, endpoint);
@@ -72,17 +73,15 @@ export function resolveHealthOptions(config: ConfigTypes.Config | undefined): He
   const details = options.details ?? 'summary';
 
   if (!DETAILS_LEVELS.includes(details)) {
-    throw new Error(`health.details must be one of ${DETAILS_LEVELS.join(', ')}, got ${String(details)}`);
+    throw CoreErrors.HEALTH_DETAILS_INVALID({ levels: DETAILS_LEVELS.join(', '), details: String(details) });
   }
 
   if (options.token !== undefined && (typeof options.token !== 'string' || options.token === '')) {
-    throw new Error('health.token must be a non-empty string');
+    throw CoreErrors.HEALTH_TOKEN_INVALID();
   }
 
   if (details === 'full' && !options.token) {
-    throw new Error(
-      "health.details 'full' exposes check errors to anyone who can reach the endpoint. Set health.token, requests carrying it get the full report.",
-    );
+    throw CoreErrors.HEALTH_FULL_DETAILS_WITHOUT_TOKEN();
   }
 
   return {
@@ -190,15 +189,15 @@ export function timingSafeEqualString(a: string, b: string): boolean {
  */
 function normalizeHealthPath(label: string, path: unknown): string {
   if (typeof path !== 'string' || path.trim() === '') {
-    throw new Error(`${label} must be a non-empty path such as /_health, got ${JSON.stringify(path)}`);
+    throw CoreErrors.HEALTH_PATH_EMPTY({ option: label, path: JSON.stringify(path) });
   }
 
   if (!path.startsWith('/')) {
-    throw new Error(`${label} must start with a slash, got ${path}`);
+    throw CoreErrors.HEALTH_PATH_NOT_ABSOLUTE({ option: label, path });
   }
 
   if (/[\s#*:?]/.test(path)) {
-    throw new Error(`${label} must be a plain path without parameters, wildcards, a query or whitespace, got ${path}`);
+    throw CoreErrors.HEALTH_PATH_NOT_PLAIN({ option: label, path });
   }
 
   return path.length > 1 ? path.replace(/\/+$/, '') || '/' : path;

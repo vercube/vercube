@@ -1,4 +1,4 @@
-import { PayloadTooLargeError } from '../Errors/Http/PayloadTooLargeError';
+import { CoreErrors } from '../Errors/Catalog';
 
 /**
  * A request body that is read from the socket once and handed to everyone who
@@ -92,7 +92,7 @@ export function readText(request: Request, limit: number | undefined): Promise<s
 
   if (length !== null) {
     if (Number(length) > limit) {
-      return Promise.reject(new PayloadTooLargeError('Request body is too large'));
+      return Promise.reject(CoreErrors.BODY_TOO_LARGE());
     }
 
     return request.text();
@@ -118,7 +118,7 @@ export function readBytes(request: Request, limit: number | undefined): Promise<
 
   if (length !== null) {
     if (Number(length) > limit) {
-      return Promise.reject(new PayloadTooLargeError('Request body is too large'));
+      return Promise.reject(CoreErrors.BODY_TOO_LARGE());
     }
 
     return request.arrayBuffer().then(toBytes);
@@ -157,7 +157,7 @@ async function readLimited(request: Request, limit: number): Promise<Uint8Array[
     if (size > limit) {
       // not awaited: nothing here depends on the stream having let go
       reader.cancel().catch(() => undefined);
-      throw new PayloadTooLargeError('Request body is too large');
+      throw CoreErrors.BODY_TOO_LARGE();
     }
 
     chunks.push(value);

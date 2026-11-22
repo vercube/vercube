@@ -37,6 +37,11 @@ export class ConfigProvider implements IntrospectionTypes.Provider<Introspection
     return this.fConfig.dev === true;
   }
 
+  /** The log level the application was configured with, undefined when it names none. */
+  public get logLevel(): ConfigTypes.Config['logLevel'] {
+    return this.fConfig.logLevel;
+  }
+
   /** @inheritdoc */
   public revision(): number {
     return this.gRuntimeConfig?.revision ?? 1;

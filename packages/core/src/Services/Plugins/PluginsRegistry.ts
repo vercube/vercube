@@ -1,4 +1,5 @@
 import { Container, Inject } from '@vercube/di';
+import { CoreErrors } from '../../Errors/Catalog';
 import { BasePlugin } from './BasePlugin';
 import type { App } from '../../Common/App';
 
@@ -19,7 +20,7 @@ export class PluginsRegistry {
     const instance = this.gContainer.resolve(plugin);
 
     if (!instance.name) {
-      throw new Error('Plugin must have a name');
+      throw CoreErrors.PLUGIN_NAME_MISSING();
     }
 
     this.fPlugins.set(instance.name, { instance, options });

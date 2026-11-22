@@ -1,3 +1,4 @@
+import { CoreErrors } from '../../Errors/Catalog';
 import type { MaybePromise } from '../../Types/CommonTypes';
 
 /**
@@ -66,7 +67,7 @@ export class ShutdownRegistry {
     }
 
     if (errors.length > 0) {
-      throw new AggregateError(errors, `${errors.length} shutdown hook(s) failed`);
+      throw CoreErrors.SHUTDOWN_HOOKS_FAILED({ errors });
     }
   }
 }

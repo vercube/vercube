@@ -5,7 +5,8 @@ import consola from 'consola';
 import { BaseCommand } from '../BaseCommand';
 import { Command } from '../Decorators/Command';
 import { Flag } from '../Decorators/Flag';
-import { exportStatic, formatStaticReport, StaticExportError } from '../Static/Export';
+import { CliErrors } from '../Errors/Catalog';
+import { exportStatic, formatStaticReport } from '../Static/Export';
 import type { StaticRoute } from '../Static/Export';
 
 /**
@@ -61,7 +62,7 @@ export class BuildCommand extends BaseCommand {
 
     if (this.target !== undefined) {
       if (this.target !== 'github-pages') {
-        throw new StaticExportError(`Unknown build target "${this.target}". Available: github-pages.`);
+        throw CliErrors.BUILD_TARGET_UNKNOWN({ target: this.target });
       }
 
       await this.exportStatic(app);
@@ -95,9 +96,7 @@ export class BuildCommand extends BaseCommand {
     const handler = module.default?.fetch;
 
     if (typeof handler !== 'function') {
-      throw new StaticExportError(
-        `${entry} has no default export with a fetch handler. Add \`export default { fetch: app.fetch.bind(app) };\` to the entry.`,
-      );
+      throw CliErrors.STATIC_ENTRY_WITHOUT_FETCH({ entry });
     }
 
     const requested = this.routes

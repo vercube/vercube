@@ -1,6 +1,5 @@
-import { BadRequestError } from '../Errors/Http/BadRequestError';
+import { CoreErrors } from '../Errors/Catalog';
 import { PayloadTooLargeError } from '../Errors/Http/PayloadTooLargeError';
-import { UnsupportedMediaTypeError } from '../Errors/Http/UnsupportedMediaTypeError';
 import { isSafeProperty } from '../Utils/Security';
 import { readBytes, readSharedBytes } from '../Utils/SharedBody';
 import type { RouterTypes } from '../Types/RouterTypes';
@@ -28,7 +27,7 @@ export async function resolveMultipartFormData(event: RouterTypes.RouterEvent): 
   const contentType = event.request.headers.get('content-type') ?? '';
 
   if (!contentType.toLowerCase().startsWith('multipart/form-data')) {
-    throw new UnsupportedMediaTypeError('Expected a multipart/form-data request body');
+    throw CoreErrors.MULTIPART_EXPECTED();
   }
 
   let form: FormData;
@@ -40,7 +39,7 @@ export async function resolveMultipartFormData(event: RouterTypes.RouterEvent): 
       throw error;
     }
 
-    throw new BadRequestError('Invalid multipart/form-data body');
+    throw CoreErrors.MULTIPART_INVALID();
   }
 
   const fields: MultipartFields = {};
@@ -81,7 +80,7 @@ async function readForm(event: RouterTypes.RouterEvent, contentType: string): Pr
 
   if (event.cloneBody === false && (bodyLimit === undefined || request.headers.has('content-length'))) {
     if (bodyLimit !== undefined && Number(request.headers.get('content-length')) > bodyLimit) {
-      throw new PayloadTooLargeError('Request body is too large');
+      throw CoreErrors.BODY_TOO_LARGE();
     }
 
     return request.formData();

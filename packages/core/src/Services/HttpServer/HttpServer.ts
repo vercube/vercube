@@ -2,9 +2,7 @@ import { Container, Inject } from '@vercube/di';
 import { Logger } from '@vercube/logger';
 import { serve } from 'srvx';
 import { tryServeSpaIndex } from '../../Common/ServeStatic';
-import { MethodNotAllowedError } from '../../Errors/Http/MethodNotAllowedError';
-import { NotFoundError } from '../../Errors/Http/NotFoundError';
-import { withoutStack } from '../../Utils/Errors';
+import { CoreErrors } from '../../Errors/Catalog';
 import { getRequestPathname } from '../../Utils/Url';
 import { ResponseCompressor } from '../Compression/ResponseCompressor';
 import { ErrorHandlerProvider } from '../ErrorHandler/ErrorHandlerProvider';
@@ -177,6 +175,7 @@ export class HttpServer {
       },
       deno: {
         onError: (error: unknown) => {
+          // bare-error: wraps a value that is not an error, thrown by the application
           const _error = error instanceof Error ? error : new Error(String(error));
           return this.gContainer.get(ErrorHandlerProvider).handleError(_error);
         },
@@ -345,7 +344,7 @@ export class HttpServer {
 
       if (allowed.length > 0) {
         response.headers.set('allow', allowed.join(', '));
-        throw withoutStack(() => new MethodNotAllowedError('Method not allowed'));
+        throw CoreErrors.METHOD_NOT_ALLOWED();
       }
 
       const spaResponse = await tryServeSpaIndex(request, this.fSpaPublicDir);
@@ -354,7 +353,7 @@ export class HttpServer {
         return spaResponse;
       }
 
-      throw withoutStack(() => new NotFoundError('Route not found'));
+      throw CoreErrors.ROUTE_NOT_FOUND();
     });
   }
 
@@ -368,6 +367,7 @@ export class HttpServer {
   private handleError(error: unknown): Response | Promise<Response> {
     this.telemetry?.recordError(error);
 
+    // bare-error: wraps a value that is not an error, thrown by the application
     return this.gContainer.get(ErrorHandlerProvider).handleError(error instanceof Error ? error : new Error(String(error)));
   }
 

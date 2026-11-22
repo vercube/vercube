@@ -1,4 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
+import { CoreErrors } from '../../Errors/Catalog';
 
 /**
  * Store held by {@link AsyncLocalStorage} for the duration of one request.
@@ -148,9 +149,7 @@ export class RequestContext {
     const store = this.fStorage.getStore();
 
     if (!store) {
-      throw new Error(
-        'RequestContext.set() called outside of request context. The context is automatically initialized by RequestHandler.',
-      );
+      throw CoreErrors.REQUEST_CONTEXT_MISSING({ method: 'set' });
     }
 
     const root = store.root;
@@ -168,9 +167,7 @@ export class RequestContext {
     const store = this.fStorage.getStore();
 
     if (!store) {
-      throw new Error(
-        'RequestContext.get() called outside of request context. The context is automatically initialized by RequestHandler.',
-      );
+      throw CoreErrors.REQUEST_CONTEXT_MISSING({ method: 'get' });
     }
 
     return store.root.map?.get(key) as T | undefined;

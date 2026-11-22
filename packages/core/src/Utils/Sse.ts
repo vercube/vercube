@@ -1,3 +1,4 @@
+import { CoreErrors } from '../Errors/Catalog';
 import { FastResponse } from '../Types/CommonTypes';
 import { getStreamIterator, iterableToStream, markLiveStream } from './Stream';
 
@@ -74,12 +75,12 @@ export function formatSseMessage(message: SseMessage | string | number | boolean
   // Yielding a payload instead of a message (`yield user`) would otherwise drop
   // its fields without a trace, or send a field like `id` as the event id.
   if (Array.isArray(event)) {
-    throw new TypeError('SSE message must be an object, got an array. Wrap the payload in { data: ... }.');
+    throw CoreErrors.SSE_MESSAGE_IS_ARRAY();
   }
 
   for (const key of Object.keys(event)) {
     if (!SSE_FIELDS.has(key)) {
-      throw new TypeError(`SSE message has unknown field "${key}". Wrap the payload in { data: ... }.`);
+      throw CoreErrors.SSE_MESSAGE_UNKNOWN_FIELD({ field: key });
     }
   }
 
@@ -93,7 +94,7 @@ export function formatSseMessage(message: SseMessage | string | number | boolean
 
   if (event.retry != null) {
     if (!Number.isFinite(event.retry)) {
-      throw new TypeError(`SSE message retry must be a finite number, got ${event.retry}.`);
+      throw CoreErrors.SSE_RETRY_INVALID({ retry: event.retry });
     }
 
     out += `retry: ${Math.max(0, Math.trunc(event.retry))}\n`;
@@ -104,7 +105,7 @@ export function formatSseMessage(message: SseMessage | string | number | boolean
 
     // Functions, symbols and objects whose toJSON() returns undefined have no JSON form.
     if (data === undefined) {
-      throw new TypeError(`SSE message data of type ${typeof event.data} cannot be serialized to JSON.`);
+      throw CoreErrors.SSE_DATA_NOT_SERIALIZABLE({ type: typeof event.data });
     }
     for (const line of data.split(LINE_BREAK)) {
       out += `data: ${line}\n`;
@@ -131,16 +132,13 @@ export function formatSseMessage(message: SseMessage | string | number | boolean
  * @returns {Promise<Response>} The streaming response
  */
 export async function createSseResponse(source: SseSource, options: SseOptions = {}): Promise<Response> {
-  const stream = await iterableToStream(
-    getStreamIterator(source, 'SSE handler must return an AsyncIterable or Iterable of messages'),
-    {
-      encode: encodeSseMessage,
-      onError: options.onError,
-      // an event feed has no end to cut short: a source that aborts simply stops
-      onAbort: 'close',
-      heartbeat: options.heartbeat && options.heartbeat > 0 ? { interval: options.heartbeat, chunk: SSE_PING } : undefined,
-    },
-  );
+  const stream = await iterableToStream(getStreamIterator(source, CoreErrors.SSE_SOURCE_INVALID), {
+    encode: encodeSseMessage,
+    onError: options.onError,
+    // an event feed has no end to cut short: a source that aborts simply stops
+    onAbort: 'close',
+    heartbeat: options.heartbeat && options.heartbeat > 0 ? { interval: options.heartbeat, chunk: SSE_PING } : undefined,
+  });
 
   markLiveStream(stream);
 

@@ -1,3 +1,4 @@
+import { CoreErrors } from '../../Errors/Catalog';
 import type { HealthTypes } from '../../Types/HealthTypes';
 
 /**
@@ -83,11 +84,11 @@ export class HealthRegistry {
    */
   public register(check: HealthTypes.Check): () => void {
     if (typeof check?.name !== 'string' || check.name.trim() === '') {
-      throw new TypeError('A health check needs a name');
+      throw CoreErrors.HEALTH_CHECK_NAME_MISSING();
     }
 
     if (typeof check.check !== 'function') {
-      throw new TypeError(`The health check "${check.name}" needs a check function`);
+      throw CoreErrors.HEALTH_CHECK_FUNCTION_MISSING({ name: check.name });
     }
 
     const entry: Entry = {
@@ -359,7 +360,7 @@ function describeError(error: unknown): string {
  */
 function assertMilliseconds(label: string, value: number): number {
   if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
-    throw new TypeError(`${label} must be a number of milliseconds of at least 0, got ${String(value)}`);
+    throw CoreErrors.HEALTH_DURATION_INVALID({ option: label, value: String(value) });
   }
 
   return value;

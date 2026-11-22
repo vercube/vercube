@@ -1,6 +1,7 @@
 import { Inject } from '@vercube/di';
 import { addRoute, createRouter, findRoute } from 'rou3';
 import { compileRouter } from 'rou3/compiler';
+import { CoreErrors } from '../../Errors/Catalog';
 import { RouterAfterInitHook } from '../../Hooks/Router/RouterAfterInitHook';
 import { RouterBeforeInitHook } from '../../Hooks/Router/RouterBeforeInitHook';
 import { HooksService } from '../Hooks/HooksService';
@@ -139,7 +140,7 @@ export class Router {
    */
   public addRoute(route: RouterTypes.Route): void {
     if (!this.fRouterContext) {
-      throw new Error('Router not initialized. Please call init() before adding routes.');
+      throw CoreErrors.ROUTER_NOT_INITIALIZED();
     }
 
     const method = route.method.toUpperCase();
@@ -152,7 +153,7 @@ export class Router {
       if (reserved && !reserved.owns(route.handler)) {
         const handler = `${route.handler.controller ?? 'Controller'}.${route.handler.propertyName}`;
 
-        throw new Error(`${method} ${route.path} (${handler}) collides with ${reserved.owner}. ${reserved.hint}`);
+        throw CoreErrors.ROUTE_COLLISION({ method, path: route.path, handler, owner: reserved.owner, hint: reserved.hint });
       }
     }
 
@@ -210,7 +211,7 @@ export class Router {
     );
 
     if (taken) {
-      throw new Error(`${taken.method} ${taken.path} collides with ${owner}. ${hint}`);
+      throw CoreErrors.ROUTE_COLLISION({ method: taken.method, path: taken.path, owner, hint });
     }
 
     this.fReserved.set(key, { owner, hint, owns });
@@ -410,7 +411,7 @@ function assertParamsInPath(route: RouterTypes.Route): void {
 
     const handler = `${route.handler.controller ?? 'Controller'}.${route.handler.propertyName}`;
 
-    throw new Error(`@Param('${name}') on ${handler} is not a parameter of the route path ${route.path}`);
+    throw CoreErrors.PARAM_NOT_IN_PATH({ name, handler, path: route.path });
   }
 }
 

@@ -1,10 +1,9 @@
 import { Container, Inject } from '@vercube/di';
 import { Logger } from '@vercube/logger';
-import { MethodNotAllowedError } from '../../Errors/Http/MethodNotAllowedError';
-import { NotFoundError } from '../../Errors/Http/NotFoundError';
+import { CoreErrors } from '../../Errors/Catalog';
 import { FastResponse } from '../../Types/CommonTypes';
 import { getSetCookieName } from '../../Utils/Cookies';
-import { withoutStack } from '../../Utils/Errors';
+import { shareError } from '../../Utils/Errors';
 import { mergeVary } from '../../Utils/Headers';
 import { isSameMiddleware, resolveSlots } from '../../Utils/MiddlewareUtils';
 import { getStreamGuessedType, getStreamType, markLiveStream } from '../../Utils/Stream';
@@ -439,7 +438,7 @@ export class RequestHandler {
       return routed ? METHOD_NOT_ALLOWED : NOT_FOUND;
     }
 
-    return withoutStack(() => (routed ? new MethodNotAllowedError('Method not allowed') : new NotFoundError('Route not found')));
+    return routed ? CoreErrors.METHOD_NOT_ALLOWED() : CoreErrors.ROUTE_NOT_FOUND();
   }
 
   /**
@@ -1554,8 +1553,8 @@ export class RequestHandler {
 }
 
 /** The errors of a miss, shared by every request the default error handler answers. */
-const NOT_FOUND = withoutStack(() => new NotFoundError('Route not found'));
-const METHOD_NOT_ALLOWED = withoutStack(() => new MethodNotAllowedError('Method not allowed'));
+const NOT_FOUND = shareError(CoreErrors.ROUTE_NOT_FOUND());
+const METHOD_NOT_ALLOWED = shareError(CoreErrors.METHOD_NOT_ALLOWED());
 
 /**
  * Sets the `Allow` header of a 405 response.
@@ -1781,10 +1780,7 @@ function discardResult(result: unknown): void {
  */
 function assertSerializable(value: unknown): void {
   if (typeof value === 'object' && value !== null && (value as AsyncIterable<unknown>)[Symbol.asyncIterator] !== undefined) {
-    throw new TypeError(
-      'A handler returned an async iterable (an async generator or a Node Readable) without @Stream(). ' +
-        'Add @Stream() to the handler, or return createStream(iterable).',
-    );
+    throw CoreErrors.STREAM_WITHOUT_DECORATOR();
   }
 }
 

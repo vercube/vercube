@@ -1,9 +1,10 @@
 import { getErrorGuidance, Inject, InjectOptional } from '@vercube/di';
-import { Logger } from '@vercube/logger';
+import { BaseLogger, Logger } from '@vercube/logger';
 import { InternalServerError } from '../../Errors/Http/InternalServerError';
 import { HttpError } from '../../Errors/HttpError';
 import { EVLOG_REQUEST_LOGGER_KEY } from '../../Middleware/EvlogMiddleware';
 import { FastResponse } from '../../Types/CommonTypes';
+import { isSharedError } from '../../Utils/Errors';
 import { ConfigProvider } from '../Introspection/Providers/ConfigProvider';
 import { RequestContext } from '../Router/RequestContext';
 import { ErrorHandlerProvider } from './ErrorHandlerProvider';
@@ -25,6 +26,12 @@ export class DefaultErrorHandlerProvider extends ErrorHandlerProvider {
   @InjectOptional(RequestContext)
   private gRequestContext!: RequestContext | null;
 
+  /** The bodies of the errors that answer many requests, see `shareError()`. */
+  private fSharedBodies: WeakMap<Error, string> = new WeakMap();
+
+  /** The mode {@link fSharedBodies} was written in. */
+  private fSharedDev: boolean | undefined;
+
   /**
    * Handles an error that occurred during request processing
    *
@@ -40,19 +47,40 @@ export class DefaultErrorHandlerProvider extends ErrorHandlerProvider {
 
     // check if the error is known error type and return it.
     if (error instanceof HttpError) {
-      const body: Record<string, unknown> = { ...error };
-
       if (guidance !== undefined) {
         // An HttpError is an answer, not a failure, so it is not logged as
         // one. What it says about its cause still belongs in the log.
         this.record(error, guidance, status);
-
-        // the code is what a client branches on, so it is always sent
-        body.code = guidance.code;
-        addGuidance(body, guidance, dev);
       }
 
-      return new FastResponse(JSON.stringify(body, undefined, indent), {
+      // One instance answers every miss, so its body is written once. It is
+      // written again when the mode changes, as the body depends on it.
+      const shared = isSharedError(error);
+
+      if (shared && this.fSharedDev !== dev) {
+        this.fSharedDev = dev;
+        this.fSharedBodies = new WeakMap();
+      }
+
+      let text = shared ? this.fSharedBodies.get(error) : undefined;
+
+      if (text === undefined) {
+        const body = copyFields(error);
+
+        if (guidance !== undefined) {
+          // the code is what a client branches on, so it is always sent
+          body.code = guidance.code;
+          addGuidance(body, guidance, dev);
+        }
+
+        text = JSON.stringify(body, undefined, indent);
+
+        if (shared) {
+          this.fSharedBodies.set(error, text);
+        }
+      }
+
+      return new FastResponse(text, {
         status,
         headers: JSON_HEADERS,
       });
@@ -103,7 +131,8 @@ export class DefaultErrorHandlerProvider extends ErrorHandlerProvider {
     const context = this.gRequestContext;
     const requestLogger = context?.active ? context.get<EvlogRequestLogger>(EVLOG_REQUEST_LOGGER_KEY) : undefined;
 
-    if (requestLogger) {
+    // a request logger that cannot take the fields must not turn the answer into a failure
+    if (typeof requestLogger?.set === 'function') {
       requestLogger.set({
         error: {
           code: guidance.code,
@@ -119,9 +148,24 @@ export class DefaultErrorHandlerProvider extends ErrorHandlerProvider {
 
     if (status >= 500) {
       this.gLogger.error(error);
-    } else {
+    } else if (this.logsDebug()) {
       this.gLogger.debug(error);
     }
+  }
+
+  /**
+   * Whether a debug line can be written at all. Building one serializes the
+   * error, which is most of what answering a 404 costs, so it is skipped when
+   * the built-in logger is certain to drop it: the configuration names a
+   * level above debug. Anything else is logged as before.
+   *
+   * @returns {boolean} False when the line would be dropped
+   * @private
+   */
+  private logsDebug(): boolean {
+    const level = this.gConfigProvider?.logLevel;
+
+    return level === undefined || !ABOVE_DEBUG.has(level) || this.gLogger.constructor !== BaseLogger;
   }
 }
 
@@ -146,6 +190,28 @@ function addGuidance(body: Record<string, unknown>, guidance: ErrorGuidance, dev
     }
   }
 }
+
+/**
+ * The enumerable fields of an error, which are its body. Written as a loop
+ * and not as `{ ...error }`: the guidance of a described error is a set of
+ * hidden fields, and V8 spreads an object that has those several times slower.
+ *
+ * @param {Error} error - The error being answered
+ * @returns {Record<string, unknown>} Its fields, in the order they were set
+ */
+function copyFields(error: Error): Record<string, unknown> {
+  const body: Record<string, unknown> = {};
+  const keys = Object.keys(error);
+
+  for (let index = 0; index < keys.length; index++) {
+    body[keys[index]] = (error as unknown as Record<string, unknown>)[keys[index]];
+  }
+
+  return body;
+}
+
+/** The log levels at which a debug line is dropped. */
+const ABOVE_DEBUG: ReadonlySet<string> = new Set(['info', 'warn', 'error', 'fatal']);
 
 /** Error bodies are JSON, and say so. */
 const JSON_HEADERS: Readonly<Record<string, string>> = Object.freeze({ 'content-type': 'application/json' });

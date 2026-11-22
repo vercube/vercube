@@ -5,11 +5,13 @@ import { describe, expect, it } from 'vitest';
 import type { ErrorCatalogDescription } from '../../src';
 
 /**
- * Checks that hold for every package of the workspace that has an error
- * catalog (`src/Errors/Catalog.ts`): its codes are unique and documented, its
- * guidance is filled in, and nothing in it throws a bare `new Error(...)`.
+ * Checks that hold for every package of the workspace. A package that has an
+ * error catalog (`src/Errors/Catalog.ts`) gets its codes checked: they are
+ * unique and documented, and their guidance is filled in. And no package
+ * throws a bare `new Error(...)`, whether it has a catalog or not: one that
+ * raises no error of its own needs no catalog.
  *
- * A package joins by adding the catalog file, so there is no list to keep.
+ * A package joins by having a `src` directory, so there is no list to keep.
  */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../../../..');
@@ -27,7 +29,16 @@ interface Catalog {
 
 const catalogs: Array<{ package: string; catalog: Catalog }> = [];
 
-for (const name of readdirSync(join(ROOT, 'packages'))) {
+/** Every package that has sources, with or without a catalog. */
+const packages: string[] = [];
+
+for (const name of readdirSync(join(ROOT, 'packages')).sort()) {
+  if (!existsSync(join(ROOT, 'packages', name, 'src'))) {
+    continue;
+  }
+
+  packages.push(name);
+
   const file = join(ROOT, 'packages', name, 'src/Errors/Catalog.ts');
 
   if (!existsSync(file)) {
@@ -140,11 +151,11 @@ describe('error catalogs of the workspace', () => {
     expect(find(" * throw new Error('in a doc comment');\n// new Error('in a comment')")).toEqual([]);
   });
 
-  it('throws no bare Error in a package that has a catalog', () => {
+  it('throws no bare Error in any package', () => {
     const offenders: string[] = [];
     let scanned = 0;
 
-    for (const name of new Set(catalogs.map((entry) => entry.package))) {
+    for (const name of packages) {
       for (const file of sourceFiles(join(ROOT, 'packages', name, 'src'))) {
         scanned++;
 
@@ -155,8 +166,8 @@ describe('error catalogs of the workspace', () => {
     }
 
     expect(scanned).toBeGreaterThan(0);
-    // Use the package's catalog (`src/Errors/Catalog.ts`), or say why a plain
-    // error is right with a `// bare-error: <reason>` comment.
+    // Use the package's catalog (`src/Errors/Catalog.ts`, added when the
+    // package has none yet), or say why a plain error is right with a `// bare-error: <reason>` comment.
     expect(offenders).toEqual([]);
   });
 

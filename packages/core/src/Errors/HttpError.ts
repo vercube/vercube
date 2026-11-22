@@ -27,6 +27,6 @@ export class HttpError extends Error {
     }
 
     // eslint-disable-next-line unicorn/error-message
-    this.stack = new Error().stack;
+    this.stack = new Error().stack; // bare-error: only read for its stack
   }
 }
