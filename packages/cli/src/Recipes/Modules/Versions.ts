@@ -13,6 +13,7 @@ export const VERSIONS = {
   kafkajs: '^2.2.4',
   pg: '^8.23.1',
   serverless: '^4.46.0',
+  wrangler: '^4.166.0',
   serverlessOffline: '^14.8.4',
   vitest: '^5.1.0',
 } as const;

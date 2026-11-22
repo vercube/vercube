@@ -10,6 +10,9 @@ export const LISTEN_ENV = 'VERCUBE_LISTEN';
  */
 const PLATFORM_ENV: readonly string[] = ['VERCEL', 'AWS_LAMBDA_FUNCTION_NAME', 'FUNCTIONS_WORKER_RUNTIME'];
 
+/** How the Cloudflare Workers runtime identifies itself in `navigator.userAgent`. */
+const WORKERS_USER_AGENT = 'Cloudflare-Workers';
+
 /**
  * Whether `app.listen()` should bind a port.
  *
@@ -33,5 +36,10 @@ export function shouldListen(env: Record<string, string | undefined> = globalThi
     return true;
   }
 
-  return !PLATFORM_ENV.some((name) => !!env[name]);
+  if (PLATFORM_ENV.some((name) => !!env[name])) {
+    return false;
+  }
+
+  // Cloudflare Workers set no variable of their own, they name themselves here
+  return (globalThis as { navigator?: { userAgent?: string } }).navigator?.userAgent !== WORKERS_USER_AGENT;
 }

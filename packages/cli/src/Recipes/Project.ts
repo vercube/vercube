@@ -481,6 +481,48 @@ export class Project {
   }
 
   /**
+   * Sets the default export of the entry, `src/index.ts`: replaces the one
+   * that is there, or adds one at the end. For a platform that runs the
+   * module's default export, such as Cloudflare Workers.
+   *
+   * @param {string} code - The statements, the last of which is the `export default`
+   * @param {object} [options] - What they need and what they make redundant
+   * @param {Record<string, ImportSpec>} [options.imports] - Names the code uses, name to module
+   * @param {string[]} [options.unused] - Imported names to drop when nothing uses them any more
+   * @returns {void}
+   * @throws {RecipeError} When the entry cannot be found
+   */
+  public setDefaultExport(code: string, options: { imports?: Record<string, ImportSpec>; unused?: string[] } = {}): void {
+    this.editModule(ENTRY_FILE, (mod) => {
+      const body = (mod.$ast as any).body as any[];
+      const statements = parseStatements(code);
+
+      if (hasStatements(body, statements)) {
+        return false;
+      }
+
+      const index = body.findIndex((statement) => statement.type === 'ExportDefaultDeclaration');
+
+      if (index === -1) {
+        body.push(...statements);
+      } else {
+        body.splice(index, 1, ...statements);
+      }
+
+      addImports(mod, options.imports);
+
+      for (const name of options.unused ?? []) {
+        // once in the import itself: nothing else names it
+        if (mod.imports[name] && (mod.generate().code.match(new RegExp(String.raw`\b${name}\b`, 'g')) ?? []).length === 1) {
+          delete mod.imports[name];
+        }
+      }
+
+      return true;
+    });
+  }
+
+  /**
    * Edits a JSON file of the application, such as tsconfig.json. Written back
    * only when `edit` reports a change. Comments are not kept.
    *

@@ -81,6 +81,39 @@ describe('module recipes', () => {
     );
   });
 
+  it('turns the application into a Cloudflare Worker', async () => {
+    const dir = apiTemplate();
+
+    dirs.push(dir);
+
+    const summary = await applyRecipes(new Project(dir, { version: '1.5.0' }), ['cloudflare'], RECIPES);
+    const files = snapshot(dir);
+    const entry = files['src/index.ts'];
+
+    expect(summary.applied).toEqual(['cloudflare']);
+    // the configuration is bundled: a Worker has no file to read it from
+    expect(entry).toContain("import config from '../vercube.config'");
+    expect(entry.indexOf('provideConfig(config)')).toBeGreaterThan(-1);
+    expect(entry.indexOf('provideConfig(config)')).toBeLessThan(entry.indexOf('createApp('));
+    // Cloudflare runs the default export, which replaces the one of the template
+    expect(entry).toContain('const worker: CloudflareHandler = toServerlessHandler(app);');
+    expect(entry.match(/export default/g)).toHaveLength(1);
+    expect(entry.trimEnd().endsWith('export default worker;')).toBe(true);
+    expect(entry).not.toContain('RequestHandler');
+    expect(files['src/boot/Container.ts']).toContain('container.bind(CloudflareBindings)');
+    expect(files['vercube.config.ts']).toContain('dts: false');
+    expect(files['wrangler.jsonc']).toContain('"main": "dist/index.mjs"');
+    expect(files['wrangler.jsonc']).toContain('"nodejs_compat"');
+    expect(files['.gitignore']).toContain('.wrangler');
+    expect(JSON.parse(files['tsconfig.json']).compilerOptions).toMatchObject({ isolatedDeclarations: false, declaration: false });
+
+    const pkg = JSON.parse(files['package.json']);
+
+    expect(pkg.scripts).toMatchObject({ preview: 'vercube build && wrangler dev', deploy: 'vercube build && wrangler deploy' });
+    expect(pkg.devDependencies.wrangler).toBeDefined();
+    expect(pkg.dependencies['@vercube/serverless']).toBe('1.5.0');
+  });
+
   it('guards the storage and queue example endpoints with API_KEY', async () => {
     const dir = apiTemplate();
 

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { shouldListen } from '../../src/Utils/Listen';
 
 describe('shouldListen', () => {
@@ -23,6 +23,19 @@ describe('shouldListen', () => {
   it('should listen anywhere when VERCUBE_LISTEN forces it', () => {
     expect(shouldListen({ VERCUBE_LISTEN: '1', VERCEL: '1' })).toBe(true);
     expect(shouldListen({ VERCUBE_LISTEN: 'true', AWS_LAMBDA_FUNCTION_NAME: 'api' })).toBe(true);
+  });
+
+  it('should not listen on Cloudflare Workers, which name themselves in navigator.userAgent', () => {
+    vi.stubGlobal('navigator', { userAgent: 'Cloudflare-Workers' });
+
+    try {
+      expect(shouldListen({})).toBe(false);
+      expect(shouldListen({ VERCUBE_LISTEN: '1' })).toBe(true);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+
+    expect(shouldListen({})).toBe(true);
   });
 
   it('should read process.env without arguments', () => {

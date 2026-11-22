@@ -169,6 +169,11 @@ if (scripts['test:lint']) {
 step('Typechecking');
 run('pnpm', ['run', 'test:tscheck'], root);
 
+// before the build: a target that bundles its configuration reads it then
+const config = join(app, 'vercube.config.ts');
+
+writeFileSync(config, readFileSync(config, 'utf8').replace(/port: \d+/, `port: ${options.port}`));
+
 step('Building');
 run('pnpm', ['run', 'build'], root);
 
@@ -184,10 +189,6 @@ if (needsServices && !options.services) {
   console.log('\n✔ Built. Not booted: the project needs the services in docker-compose.yml, pass --services to start them.');
   process.exit(0);
 }
-
-const config = join(app, 'vercube.config.ts');
-
-writeFileSync(config, readFileSync(config, 'utf8').replace(/port: \d+/, `port: ${options.port}`));
 
 let server;
 
@@ -250,10 +251,63 @@ try {
   }
 
   console.log('✔ Exited on SIGTERM');
+
+  // 6. a Cloudflare project also has to answer from workerd, the runtime it is deployed to
+  if (existsSync(join(app, 'wrangler.jsonc'))) {
+    const workerPort = Number(options.port) + 1;
+
+    step(`Booting the Worker on port ${workerPort}`);
+    server = spawn('pnpm', ['exec', 'wrangler', 'dev', '--port', String(workerPort), '--ip', '127.0.0.1'], {
+      cwd: app,
+      stdio: 'inherit',
+      // its own process group, so the workerd process it starts is stopped with it
+      detached: true,
+      env: { ...process.env, CI: '1', WRANGLER_SEND_METRICS: 'false' },
+    });
+
+    let workerGone = false;
+
+    server.once('exit', () => {
+      workerGone = true;
+    });
+
+    const workerUrl = `http://127.0.0.1:${workerPort}/api/foo`;
+    const workerDeadline = Date.now() + 60_000;
+    let workerBody = null;
+
+    while (Date.now() < workerDeadline && workerBody === null && !workerGone) {
+      try {
+        const response = await fetch(workerUrl);
+
+        if (response.ok) {
+          workerBody = await response.json();
+        }
+      } catch {
+        // not listening yet
+      }
+
+      if (workerBody === null) {
+        await new Promise((done) => setTimeout(done, 500));
+      }
+    }
+
+    if (workerBody?.message !== 'Hello, world!') {
+      throw new Error(
+        workerGone ? 'wrangler dev exited before the Worker answered' : `GET ${workerUrl} did not answer within 60s`,
+      );
+    }
+
+    console.log(`\n✔ The Worker answered ${JSON.stringify(workerBody)}`);
+  }
 } finally {
   // whatever happened above, nothing outlives the run
   if (server && server.exitCode === null && server.signalCode === null) {
-    server.kill('SIGKILL');
+    try {
+      // a detached child leads a process group: stop the whole group
+      process.kill(server.spawnargs.includes('wrangler') ? -server.pid : server.pid, 'SIGKILL');
+    } catch {
+      server.kill('SIGKILL');
+    }
   }
 
   if (needsServices) {
