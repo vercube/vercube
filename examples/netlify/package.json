@@ -1,0 +1,27 @@
+{
+  "name": "@examples/netlify",
+  "version": "1.0.0",
+  "description": "Netlify Functions example for Vercube",
+  "packageManager": "pnpm@11.13.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vercube build",
+    "dev": "vercube dev",
+    "preview": "vercube build && netlify dev",
+    "deploy": "netlify deploy --build --prod"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@oxc-project/runtime": "catalog:",
+    "@vercube/cli": "workspace:*",
+    "@vercube/core": "workspace:*",
+    "@vercube/di": "workspace:*",
+    "@vercube/logger": "workspace:*",
+    "@vercube/serverless": "workspace:*"
+  },
+  "devDependencies": {
+    "@netlify/functions": "6.1.1",
+    "netlify-cli": "27.20.1"
+  }
+}
