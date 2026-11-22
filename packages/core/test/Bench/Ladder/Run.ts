@@ -5,7 +5,7 @@
  *   pnpm bench:ladder --runtime bun --rungs plain,body,404
  *   pnpm bench:ladder --target before=packages/core/tmp/before/index.mjs --target after=packages/core/dist/index.mjs
  *   pnpm bench:ladder compare before.json after.json
- *   pnpm bench:ladder --target base=../base/packages/core/dist/index.mjs --target pr=packages/core/dist/index.mjs --threshold 5
+ *   pnpm bench:ladder --target before=packages/core/tmp/before/index.mjs --target after=packages/core/dist/index.mjs --threshold 5
  *
  * With several targets every rung is measured on each of them in turn, run
  * after run, so a drift of the machine hits all targets alike. The first
