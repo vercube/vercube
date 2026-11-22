@@ -36,6 +36,59 @@ export const REQUEST_HEADERS_EVENT = 'http.request.headers';
 /** Span event name carrying the response headers. */
 export const RESPONSE_HEADERS_EVENT = 'http.response.headers';
 
+/** How many headers one request may ask to have withheld. */
+const MAX_NAMED_REDACTIONS = 8;
+
+/** The longest header name a request may ask to have withheld. */
+const MAX_HEADER_NAME_LENGTH = 64;
+
+/** A header name, as RFC 9110 spells a token, in lower case. */
+const HEADER_NAME = /^[a-z0-9!#$%&'*+.^_`|~-]+$/;
+
+/**
+ * Adds the header names a request asks to have withheld.
+ *
+ * Runs before the headers event is written, so the values never reach the
+ * span: every processor and exporter sees the same redacted event.
+ *
+ * @param headers - The request headers
+ * @param sources - Names of the headers that list more names, lowercase
+ * @param redacted - Names withheld by configuration, lowercase
+ * @returns The names to withhold for this request; `redacted` itself when the request names none
+ */
+export function withNamedRedactions(
+  headers: Headers,
+  sources: readonly string[],
+  redacted: ReadonlySet<string>,
+): ReadonlySet<string> {
+  let merged: Set<string> | undefined;
+
+  for (const source of sources) {
+    const value = headers.get(source);
+
+    if (!value) {
+      continue;
+    }
+
+    merged ??= new Set(redacted);
+
+    // A request names a handful of headers at most. Anything beyond that, and
+    // anything that is not a header name, is ignored rather than trusted.
+    let named = 0;
+
+    for (const name of value.split(',', MAX_NAMED_REDACTIONS + 1)) {
+      const lower = name.trim().toLowerCase();
+
+      if (named < MAX_NAMED_REDACTIONS && lower.length <= MAX_HEADER_NAME_LENGTH && HEADER_NAME.test(lower)) {
+        merged.add(lower);
+        named++;
+      }
+    }
+  }
+
+  return merged ?? redacted;
+}
+
 /**
  * Records a message's headers as a span event.
  *

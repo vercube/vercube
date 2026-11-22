@@ -2,17 +2,21 @@
 
 import type { RouteDef } from '@vercube/client';
 import type { EventsController } from '../src/Controllers/EventsController.js';
+import type { OrdersController } from '../src/Controllers/OrdersController.js';
 import type PlaygroundController from '../src/Controllers/PlaygroundController.js';
 import type { QueueController } from '../src/Controllers/QueueController.js';
 import type { RequestContextController } from '../src/Controllers/RequestContextController.js';
+import type { BadRequestError, ForbiddenError, UnauthorizedError } from '@vercube/core';
 
 export interface VercubeRoutes {
+  'DELETE /api/orders/:id': RouteDef<OrdersController, 'remove', { param: { id: 0 } }>;
   'GET /api/events': RouteDef<EventsController, 'stream', { sse: true }>;
+  'GET /api/orders/:id': RouteDef<OrdersController, 'read', { param: { id: 0 } }>;
   'GET /api/playground': RouteDef<PlaygroundController, 'index'>;
   'GET /api/playground/:id': RouteDef<PlaygroundController, 'get', { param: { id: 0 } }>;
-  'GET /api/playground/authenticate': RouteDef<PlaygroundController, 'authenticate'>;
-  'GET /api/playground/authorize': RouteDef<PlaygroundController, 'authorize'>;
-  'GET /api/playground/basic-authentication': RouteDef<PlaygroundController, 'basicAuthentication'>;
+  'GET /api/playground/authenticate': RouteDef<PlaygroundController, 'authenticate', { throws: { 401: UnauthorizedError; 403: ForbiddenError } }>;
+  'GET /api/playground/authorize': RouteDef<PlaygroundController, 'authorize', { throws: { 401: UnauthorizedError; 403: ForbiddenError } }>;
+  'GET /api/playground/basic-authentication': RouteDef<PlaygroundController, 'basicAuthentication', { throws: { 401: UnauthorizedError; 403: ForbiddenError } }>;
   'GET /api/playground/error': RouteDef<PlaygroundController, 'error'>;
   'GET /api/playground/error-throw': RouteDef<PlaygroundController, 'errorThrow'>;
   'GET /api/playground/redirect': RouteDef<PlaygroundController, 'redirect'>;
@@ -27,11 +31,12 @@ export interface VercubeRoutes {
   'GET /api/request-context/user': RouteDef<RequestContextController, 'getUser'>;
   'GET /api/request-context/user-with-default': RouteDef<RequestContextController, 'getUserWithDefault'>;
   'HEAD /api/events': RouteDef<EventsController, 'stream', { sse: true }>;
+  'HEAD /api/orders/:id': RouteDef<OrdersController, 'read', { param: { id: 0 } }>;
   'HEAD /api/playground': RouteDef<PlaygroundController, 'index'>;
   'HEAD /api/playground/:id': RouteDef<PlaygroundController, 'get', { param: { id: 0 } }>;
-  'HEAD /api/playground/authenticate': RouteDef<PlaygroundController, 'authenticate'>;
-  'HEAD /api/playground/authorize': RouteDef<PlaygroundController, 'authorize'>;
-  'HEAD /api/playground/basic-authentication': RouteDef<PlaygroundController, 'basicAuthentication'>;
+  'HEAD /api/playground/authenticate': RouteDef<PlaygroundController, 'authenticate', { throws: { 401: UnauthorizedError; 403: ForbiddenError } }>;
+  'HEAD /api/playground/authorize': RouteDef<PlaygroundController, 'authorize', { throws: { 401: UnauthorizedError; 403: ForbiddenError } }>;
+  'HEAD /api/playground/basic-authentication': RouteDef<PlaygroundController, 'basicAuthentication', { throws: { 401: UnauthorizedError; 403: ForbiddenError } }>;
   'HEAD /api/playground/error': RouteDef<PlaygroundController, 'error'>;
   'HEAD /api/playground/error-throw': RouteDef<PlaygroundController, 'errorThrow'>;
   'HEAD /api/playground/redirect': RouteDef<PlaygroundController, 'redirect'>;
@@ -45,11 +50,12 @@ export interface VercubeRoutes {
   'HEAD /api/request-context/token': RouteDef<RequestContextController, 'getToken'>;
   'HEAD /api/request-context/user': RouteDef<RequestContextController, 'getUser'>;
   'HEAD /api/request-context/user-with-default': RouteDef<RequestContextController, 'getUserWithDefault'>;
-  'POST /api/events': RouteDef<EventsController, 'publish', { body: 0 }>;
-  'POST /api/playground': RouteDef<PlaygroundController, 'post', { queries: 1; body: 0 }>;
-  'POST /api/playground/body-error': RouteDef<PlaygroundController, 'bodyError', { body: 0 }>;
+  'POST /api/events': RouteDef<EventsController, 'publish', { body: 0; throws: { 400: BadRequestError } }>;
+  'POST /api/playground': RouteDef<PlaygroundController, 'post', { queries: 1; body: 0; throws: { 400: BadRequestError } }>;
+  'POST /api/playground/body-error': RouteDef<PlaygroundController, 'bodyError', { body: 0; throws: { 400: BadRequestError } }>;
   'POST /api/playground/storage': RouteDef<PlaygroundController, 'storageSet'>;
   'POST /api/queue/bounce': RouteDef<QueueController, 'bounce'>;
-  'POST /api/queue/welcome': RouteDef<QueueController, 'welcome', { body: 0 }>;
+  'POST /api/queue/welcome': RouteDef<QueueController, 'welcome', { body: 0; throws: { 400: BadRequestError } }>;
   'POST /api/request-context/set-custom-value': RouteDef<RequestContextController, 'setCustomValue'>;
+  'PUT /api/orders/:id': RouteDef<OrdersController, 'update', { param: { id: 0 }; queries: 2; header: { 'x-tenant': 3 }; body: 1; throws: { 400: BadRequestError } }>;
 }

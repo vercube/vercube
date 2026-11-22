@@ -62,6 +62,9 @@ const SPAN_KIND_SERVER = 2;
 /** OTLP status code for a failed span. */
 const STATUS_ERROR = 2;
 
+/** Span attribute devtools adds to the server span of a playground request. */
+const PLAYGROUND_ATTRIBUTE = 'vercube.devtools.playground';
+
 /** Nanoseconds per millisecond. */
 const NS_PER_MS = 1e6;
 
@@ -180,6 +183,7 @@ function toRequestRecord(traceId: string, root: OtlpSpan, group: OtlpSpan[]): De
     controller: String(attributes['vercube.controller'] ?? ''),
     handler: String(attributes['vercube.handler'] ?? ''),
     matched: attributes['http.route'] !== undefined,
+    playground: attributes[PLAYGROUND_ATTRIBUTE] === undefined ? undefined : String(attributes[PLAYGROUND_ATTRIBUTE]),
     error: toError(root),
     spans: group
       .filter((span) => span !== root)

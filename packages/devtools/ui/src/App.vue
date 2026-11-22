@@ -88,6 +88,9 @@ const liveMetrics = ref<MetricsSample[]>([]);
 // Last structural section the server reported as changed. Panels watch it and
 // re-fetch only the section they are showing.
 const invalidated = ref<{ id: string; at: number } | null>(null);
+// The request a panel asked the Requests view to open. Held here, in memory:
+// it must never come from the URL, or a link could point devtools at a request.
+const focused = ref<{ id: string; at: number } | null>(null);
 const connected = ref(false);
 const streaming = ref(true);
 const theme = ref<'dark' | 'light'>(readTheme());
@@ -122,6 +125,14 @@ watch(active, (value) => {
   globalThis.history.replaceState(null, '', `#${value}`);
 });
 
+// The request to open is for one visit. Kept longer, every later visit to
+// Requests would select it again and reset the filters.
+watch(active, (value) => {
+  if (value !== 'requests') {
+    focused.value = null;
+  }
+});
+
 watch(streaming, (value) => (value ? connect() : disconnect()));
 
 function connect(): void {
@@ -152,6 +163,12 @@ function connect(): void {
   });
 }
 
+/** Opens one recorded request in the Requests view. */
+function openRequest(id: string): void {
+  focused.value = { id, at: Date.now() };
+  active.value = 'requests';
+}
+
 function disconnect(): void {
   closeStream?.();
   closeStream = null;
@@ -161,7 +178,14 @@ function disconnect(): void {
 function onKeydown(event: KeyboardEvent): void {
   const target = event.target as HTMLElement | null;
 
-  if (event.metaKey || event.ctrlKey || target?.tagName === 'INPUT' || target?.tagName === 'SELECT') {
+  if (
+    event.metaKey ||
+    event.ctrlKey ||
+    target?.tagName === 'INPUT' ||
+    target?.tagName === 'SELECT' ||
+    // The playground's body editor: a digit typed there is text, not a tab shortcut.
+    target?.tagName === 'TEXTAREA'
+  ) {
     return;
   }
 
@@ -317,13 +341,13 @@ onUnmounted(() => {
         :live-metrics="liveMetrics"
         @navigate="active = $event as TabId"
       />
-      <RequestsView v-else-if="active === 'requests'" :live="live" :live-logs="liveLogs" />
+      <RequestsView v-else-if="active === 'requests'" :live="live" :live-logs="liveLogs" :focus="focused" />
       <LogsView v-else-if="active === 'logs'" :live="liveLogs" />
       <StorageView v-else-if="active === 'storage'" />
       <QueuesView v-else-if="active === 'queues'" />
       <SchedulerView v-else-if="active === 'scheduler'" />
       <ConfigView v-else-if="active === 'config'" :invalidated="invalidated" />
-      <RoutesView v-else-if="active === 'routes'" :invalidated="invalidated" />
+      <RoutesView v-else-if="active === 'routes'" :invalidated="invalidated" :live="live" @open-request="openRequest" />
       <GraphView v-else-if="active === 'graph'" :invalidated="invalidated" />
       <HealthView v-else-if="active === 'health'" :invalidated="invalidated" />
       <AuditView v-else />

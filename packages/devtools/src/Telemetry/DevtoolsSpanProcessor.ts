@@ -1,4 +1,5 @@
 import { JsonTraceSerializer } from '@vercube/telemetry/otlp';
+import { markPlaygroundSpans } from './PlaygroundMarker';
 import type { DevtoolsFrameBus } from '../Services/DevtoolsFrameBus';
 import type { Context } from '@vercube/telemetry/api';
 import type { ReadableSpan, SdkSpan, SpanProcessor } from '@vercube/telemetry/sdk';
@@ -139,7 +140,7 @@ export class DevtoolsSpanProcessor implements SpanProcessor {
  * frames a UI receives are byte-for-byte what a collector would.
  *
  * @param spans - The spans to serialise
- * @returns The parsed OTLP payload, or an empty request
+ * @returns The parsed OTLP payload with playground requests marked, or an empty request
  */
 function toOtlpJson(spans: ReadableSpan[]): unknown {
   if (spans.length === 0) {
@@ -148,5 +149,8 @@ function toOtlpJson(spans: ReadableSpan[]): unknown {
 
   const bytes = JsonTraceSerializer.serializeRequest(spans);
 
-  return bytes ? JSON.parse(new TextDecoder().decode(bytes)) : { resourceSpans: [] };
+  // Every span devtools serves goes through here, the snapshot and the stream
+  // alike, so this is the one place a playground request gets its marker and
+  // loses its credentials.
+  return bytes ? markPlaygroundSpans(JSON.parse(new TextDecoder().decode(bytes))) : { resourceSpans: [] };
 }

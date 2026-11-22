@@ -9,8 +9,9 @@ import {
 import { Logger } from '@vercube/logger';
 import { TelemetryPlugin } from '@vercube/telemetry';
 import { defu } from 'defu';
-import { DEFAULT_DEVTOOLS_OPTIONS } from '../Constants/DevtoolsDefaults';
+import { DEFAULT_DEVTOOLS_OPTIONS, DEVTOOLS_PLAYGROUND_SECRETS_HEADER } from '../Constants/DevtoolsDefaults';
 import { DevtoolsController } from '../Controllers/DevtoolsController';
+import { DevtoolsErrors } from '../Errors/Catalog';
 import { AuditService } from '../Services/AuditService';
 import { DevtoolsFrameBus } from '../Services/DevtoolsFrameBus';
 import { OverviewCollector } from '../Services/OverviewCollector';
@@ -19,6 +20,7 @@ import { SchedulerIntrospection } from '../Services/SchedulerIntrospection';
 import { StorageIntrospection } from '../Services/StorageIntrospection';
 import { $DevtoolsAppConfig, $DevtoolsOptions } from '../Symbols/DevtoolsSymbols';
 import { DevtoolsTelemetry, ensureDevtoolsTelemetry } from '../Telemetry/DevtoolsTelemetry';
+import { parseRoutePattern } from '../Utils/RoutePattern';
 import type { DevtoolsTypes } from '../Types/DevtoolsTypes';
 import type { App, ConfigTypes } from '@vercube/core';
 
@@ -195,6 +197,15 @@ export class DevtoolsPlugin extends BasePlugin<DevtoolsTypes.Options> {
       spans: {
         bodies: development && resolved.captureBodies ? { maxBytes: resolved.maxBodyBytes } : false,
         headers: development && resolved.captureHeaders ? { redact: resolved.redactHeaders } : false,
+        // The playground sends an API key under a header the user names, which
+        // no list of credential names can know. It names that header in the
+        // request, and telemetry withholds it before the headers are recorded,
+        // so no other span processor or exporter sees the key either. Beside
+        // `headers` and not inside it: the application may have turned capture
+        // on itself, and its value for `headers` wins over this one.
+        // Development only, like capture itself: a production trace must not be
+        // something a client can ask to have its own headers left out of.
+        ...(development && resolved.playground.enabled ? { redactHeadersNamedBy: [DEVTOOLS_PLAYGROUND_SECRETS_HEADER] } : {}),
       },
     });
   }
@@ -224,7 +235,10 @@ export class DevtoolsPlugin extends BasePlugin<DevtoolsTypes.Options> {
    * @returns Fully resolved options
    */
   private resolveOptions(config: ConfigTypes.Config, options?: DevtoolsTypes.Options): DevtoolsTypes.ResolvedOptions {
-    const merged = defu(options ?? {}, DEFAULT_DEVTOOLS_OPTIONS) as DevtoolsTypes.ResolvedOptions;
+    // `playground` is a boolean or an object, which `defu` cannot merge into
+    // the object default, so it is resolved by hand.
+    const { playground, ...rest } = options ?? {};
+    const merged = defu(rest, DEFAULT_DEVTOOLS_OPTIONS) as DevtoolsTypes.ResolvedOptions;
 
     // An empty or slash-only mount would claim every route, so fall back to the default.
     const trimmed = merged.path.replace(/^\/+|\/+$/g, '');
@@ -233,6 +247,38 @@ export class DevtoolsPlugin extends BasePlugin<DevtoolsTypes.Options> {
       ...merged,
       enabled: this.isEnabled(config, options),
       path: trimmed ? `/${trimmed}` : DEFAULT_DEVTOOLS_OPTIONS.path,
+      playground: this.resolvePlayground(playground),
     };
+  }
+
+  /**
+   * Applies the defaults to the playground option.
+   *
+   * @param playground - The option as written: a switch, an object, or nothing
+   * @returns Whether the playground is on and the patterns it leaves out
+   * @throws Error when an exclusion pattern cannot be read
+   */
+  private resolvePlayground(playground: DevtoolsTypes.Options['playground']): DevtoolsTypes.ResolvedPlaygroundOptions {
+    if (typeof playground === 'boolean' || playground === undefined || playground === null) {
+      return { enabled: playground !== false, exclude: [] };
+    }
+
+    const exclude = (Array.isArray(playground.exclude) ? playground.exclude : []).filter(
+      (pattern): pattern is string => typeof pattern === 'string' && pattern.trim() !== '',
+    );
+
+    // A pattern that cannot be read would cover nothing and leave the routes it
+    // was written for on offer. That is refused here, when the plugin starts,
+    // and not found out later in the browser. With the playground off no
+    // pattern is ever used, so none is read.
+    for (const pattern of playground.enabled === false ? [] : exclude) {
+      try {
+        parseRoutePattern(pattern);
+      } catch (error) {
+        throw DevtoolsErrors.PLAYGROUND_EXCLUDE_INVALID({ reason: (error as Error).message }, { cause: error });
+      }
+    }
+
+    return { enabled: playground.enabled !== false, exclude };
   }
 }

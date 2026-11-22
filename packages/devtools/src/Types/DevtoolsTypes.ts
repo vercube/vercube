@@ -79,10 +79,54 @@ export namespace DevtoolsTypes {
      * @default 500
      */
     maxLogs?: number;
+
+    /**
+     * The route playground of the Routes view, which sends requests to the
+     * application from the browser. `false` removes it; an object keeps it and
+     * narrows which routes it offers.
+     * @default true
+     */
+    playground?: boolean | PlaygroundOptions;
+  }
+
+  /** Options of the route playground. */
+  export interface PlaygroundOptions {
+    /**
+     * Whether the playground is offered at all.
+     * @default true
+     */
+    enabled?: boolean;
+
+    /**
+     * Routes the playground must not offer, as patterns matched against the
+     * route template: `/admin/**`, `/users/:id`, with a method in front
+     * (`DELETE /users/:id`), or a method alone (`DELETE`). `*` stands for one
+     * path segment and `**` for any number of them, none included, wherever it
+     * is written. A template starts with `/`; a pattern that cannot be read
+     * stops the plugin with an error. Devtools' own routes are always excluded.
+     * @default []
+     */
+    exclude?: string[];
+  }
+
+  /** Playground options with every default applied. */
+  export interface ResolvedPlaygroundOptions {
+    enabled: boolean;
+    exclude: string[];
+  }
+
+  /** What the UI is told about the playground. */
+  export interface PlaygroundDescription {
+    enabled: boolean;
+    /** Ids (`${method} ${path}`) of the routes the playground must not offer. */
+    excluded: string[];
   }
 
   /** Fully resolved options, with every default applied. */
-  export type ResolvedOptions = Required<Omit<Options, 'token'>> & { token: string | null };
+  export type ResolvedOptions = Required<Omit<Options, 'token' | 'playground'>> & {
+    token: string | null;
+    playground: ResolvedPlaygroundOptions;
+  };
 
   /** A timed segment of the request lifecycle. */
   export interface Span {
@@ -128,6 +172,8 @@ export namespace DevtoolsTypes {
     spans: Span[];
     requestHeaders: Record<string, string>;
     responseHeaders: Record<string, string>;
+    /** Marker of the playground request that produced the record, when one did. */
+    playground?: string;
     /** Present only while `captureBodies` is on. */
     requestBody?: Payload;
     responseBody?: Payload;

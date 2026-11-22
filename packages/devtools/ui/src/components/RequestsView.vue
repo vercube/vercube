@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { clearSignals, formatBytes, formatMs, loadLogs, loadRequests, statusClass, statusTone, useLoader } from '../api';
 import { useInspectorWidth } from '../inspector';
 import PageHeader from './PageHeader.vue';
@@ -9,6 +9,8 @@ import type { LogEntry, Payload, RequestRecord } from '../api';
 const props = defineProps<{
   live: RequestRecord[];
   liveLogs: LogEntry[];
+  /** A request another panel asked to open, such as one the route playground sent. */
+  focus?: { id: string; at: number } | null;
 }>();
 
 const { data, error, loading, reload } = useLoader<RequestRecord[]>(loadRequests);
@@ -39,7 +41,9 @@ const filtered = computed(() => {
         record.path.toLowerCase().includes(needle) ||
         record.method.toLowerCase().includes(needle) ||
         String(record.status).includes(needle) ||
-        (record.controller ?? '').toLowerCase().includes(needle),
+        (record.controller ?? '').toLowerCase().includes(needle) ||
+        // No mark per row for where a request came from: the word in the filter finds them.
+        (record.playground !== undefined && 'playground'.startsWith(needle)),
     );
 });
 
@@ -173,6 +177,41 @@ watch(records, (value) => {
   }
 });
 
+// The request to open may not be in the list yet: its spans are flushed in
+// batches and the buffer is fetched on mount. It is kept until it shows up.
+const awaited = ref<string | null>(null);
+
+/** Selects the awaited request once it is listed, and brings its row into view. */
+function openAwaited(): void {
+  const id = awaited.value;
+  const record = id ? records.value.find((entry) => entry.id === id || entry.playground === id) : undefined;
+
+  if (!record) {
+    return;
+  }
+
+  awaited.value = null;
+  // A filter that hides the row would make the selection look like a mistake.
+  query.value = '';
+  onlyErrors.value = false;
+  selectedId.value = record.id;
+
+  void nextTick(() => document.querySelector('.item.selected')?.scrollIntoView({ block: 'nearest' }));
+}
+
+watch(
+  () => props.focus,
+  (focus) => {
+    if (focus) {
+      awaited.value = focus.id;
+      openAwaited();
+    }
+  },
+  { immediate: true },
+);
+
+watch(records, openAwaited);
+
 onMounted(reloadAll);
 </script>
 
@@ -266,6 +305,10 @@ onMounted(reloadAll);
           <span>{{ formatMs(selected.durationMs) }}</span>
           <span class="dot">·</span>
           <span>{{ formatTime(selected.startedAt) }}</span>
+          <template v-if="selected.playground">
+            <span class="dot">·</span>
+            <span>sent from the playground</span>
+          </template>
         </p>
       </header>
 

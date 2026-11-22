@@ -26,10 +26,11 @@ import { SchedulerIntrospection } from '../Services/SchedulerIntrospection';
 import { StorageIntrospection } from '../Services/StorageIntrospection';
 import { $DevtoolsOptions } from '../Symbols/DevtoolsSymbols';
 import { DevtoolsTelemetry } from '../Telemetry/DevtoolsTelemetry';
+import { excludedRoutes } from '../Utils/RoutePattern';
 import type { QueueMessages } from '../Services/QueueIntrospection';
 import type { SchedulerRunResult } from '../Services/SchedulerIntrospection';
 import type { DevtoolsTypes } from '../Types/DevtoolsTypes';
-import type { HealthTypes } from '@vercube/core';
+import type { HealthTypes, IntrospectionTypes } from '@vercube/core';
 
 const instrument = createInstrument('@vercube/devtools');
 
@@ -328,6 +329,31 @@ export class DevtoolsController {
 
       return report;
     });
+  }
+
+  /**
+   * Tells the UI whether it may offer the route playground, and for which
+   * routes.
+   *
+   * The patterns are matched here so the rule lives in one place. The
+   * playground sends its requests from the browser straight to the
+   * application, so this decides what the UI offers and is not an access
+   * control: whoever can open devtools can reach the application anyway.
+   *
+   * @returns Whether the playground is on, and the ids of the routes left out
+   */
+  @Get('/api/playground')
+  @SetHeader('Cache-Control', 'no-store')
+  public async playground(): Promise<DevtoolsTypes.PlaygroundDescription> {
+    const { enabled, exclude } = this.gOptions.playground;
+
+    if (!enabled) {
+      return { enabled: false, excluded: [] };
+    }
+
+    const routes = (await this.gIntrospection.describe<IntrospectionTypes.RouteDescription[]>('routes'))?.data ?? [];
+
+    return { enabled: true, excluded: excludedRoutes(routes, exclude, this.gOptions.path) };
   }
 
   /**

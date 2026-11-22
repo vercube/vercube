@@ -1,12 +1,50 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
-import { base, useIntrospection } from '../api';
+import { base, playgroundInfo, useIntrospection, useLoader } from '../api';
 import { useInspectorWidth } from '../inspector';
 import PageHeader from './PageHeader.vue';
+import RoutePlayground from './RoutePlayground.vue';
 import SplitHandle from './SplitHandle.vue';
-import type { RouteInfo } from '../api';
+import type { PlaygroundInfo, RequestRecord, RouteInfo } from '../api';
+
+defineProps<{
+  invalidated?: { id: string; at: number } | null;
+  /** Requests the stream has delivered, which the playground searches for the one it sent. */
+  live: RequestRecord[];
+}>();
+
+defineEmits<{ 'open-request': [id: string] }>();
 
 const { data, error, loading, reload } = useIntrospection<RouteInfo[]>('routes');
+const playground = useLoader<PlaygroundInfo>(playgroundInfo);
+
+type Mode = 'details' | 'playground';
+
+/** Which side of the route panel is showing. Remembered, because it is a habit and not a state. */
+const mode = ref<Mode>(
+  globalThis.localStorage?.getItem('vercube-devtools-routes-mode') === 'playground' ? 'playground' : 'details',
+);
+
+watch(mode, (value) => globalThis.localStorage?.setItem('vercube-devtools-routes-mode', value));
+
+/**
+ * Whether the playground may call a route.
+ *
+ * A `GET` row also stands for its `HEAD` twin, so both registrations have to
+ * be allowed.
+ *
+ * @param route - A row of the table
+ * @returns False for a route the devtools options leave out
+ */
+function isOffered(route: RouteInfo): boolean {
+  const excluded = playground.data.value?.excluded ?? [];
+
+  return route.method.split(' / ').every((method) => !excluded.includes(`${method} ${route.path}`));
+}
+
+async function reloadAll(): Promise<void> {
+  await Promise.all([reload(), playground.reload()]);
+}
 
 /**
  * Folds the HEAD twin `@Get` registers onto its GET row.
@@ -67,7 +105,7 @@ const query = ref('');
 const showInternal = ref(false);
 const selectedId = ref<string | null>(null);
 
-const DEFAULT_INSPECTOR_WIDTH = 380;
+const DEFAULT_INSPECTOR_WIDTH = 440;
 
 const inspectorWidth = useInspectorWidth('routes-inspector', DEFAULT_INSPECTOR_WIDTH);
 
@@ -148,11 +186,11 @@ const meta = computed(
     `${groups.value.length} controller${groups.value.length === 1 ? '' : 's'}`,
 );
 
-onMounted(reload);
+onMounted(reloadAll);
 </script>
 
 <template>
-  <PageHeader title="Routes" :meta="meta" :loading="loading" @reload="reload">
+  <PageHeader title="Routes" :meta="meta" :loading="loading" @reload="reloadAll">
     <template #tools>
       <input v-model="query" class="field search" type="search" placeholder="Filter routes…" />
       <button class="btn" :class="{ active: showInternal }" type="button" @click="showInternal = !showInternal">
@@ -243,35 +281,74 @@ onMounted(reload);
           </button>
         </div>
         <p class="meta mono">{{ selected.controller }}.{{ selected.handler }}()</p>
+
+        <div v-if="playground.data.value?.enabled" class="modes" role="tablist">
+          <button
+            class="mode"
+            :class="{ on: mode === 'details' }"
+            type="button"
+            role="tab"
+            :aria-selected="mode === 'details'"
+            @click="mode = 'details'"
+          >
+            Details
+          </button>
+          <button
+            class="mode"
+            :class="{ on: mode === 'playground' }"
+            type="button"
+            role="tab"
+            :aria-selected="mode === 'playground'"
+            @click="mode = 'playground'"
+          >
+            Playground
+          </button>
+        </div>
       </header>
 
-      <section class="block">
-        <h3 class="label">Arguments</h3>
-        <ul v-if="selected.args.length" class="stack">
-          <li v-for="arg in selected.args" :key="arg.idx">
-            <span class="mono faint index">{{ arg.idx }}</span>
-            <span class="mono">{{ arg.type }}</span>
-            <code v-if="arg.name">{{ arg.name }}</code>
-            <span class="tag" :class="arg.validated ? 'green' : 'amber'">
-              {{ arg.validated ? 'validated' : 'unvalidated' }}
-            </span>
-          </li>
-        </ul>
-        <p v-else class="none">Handler takes no decorated arguments.</p>
-      </section>
+      <template v-if="playground.data.value?.enabled && mode === 'playground'">
+        <RoutePlayground
+          v-if="isOffered(selected)"
+          :key="selected.id"
+          :route="selected"
+          :live="live"
+          @open-request="$emit('open-request', $event)"
+        />
+        <p v-else class="none">
+          The playground does not call this route. It is a devtools route, or it matches
+          <code>playground.exclude</code> in the devtools options.
+        </p>
+      </template>
 
-      <section class="block">
-        <h3 class="label">Middleware chain</h3>
-        <ol v-if="selected.middlewares.length" class="stack">
-          <li v-for="(middleware, position) in selected.middlewares" :key="`${middleware.name}-${position}`">
-            <span class="phase" :class="middleware.phase">{{ middleware.phase }}</span>
-            <span class="mono">{{ middleware.name }}</span>
-            <span class="mono faint">p{{ middleware.priority }}</span>
-            <span v-if="middleware.global" class="tag teal">global</span>
-          </li>
-        </ol>
-        <p v-else class="none">No middlewares run for this route.</p>
-      </section>
+      <template v-else>
+        <section class="block">
+          <h3 class="label">Arguments</h3>
+          <ul v-if="selected.args.length" class="stack">
+            <li v-for="arg in selected.args" :key="arg.idx">
+              <span class="mono faint index">{{ arg.idx }}</span>
+              <span class="mono">{{ arg.type }}</span>
+              <code v-if="arg.name">{{ arg.name }}</code>
+              <span class="tag" :class="arg.validated ? 'green' : 'amber'">
+                {{ arg.validated ? 'validated' : 'unvalidated' }}
+              </span>
+            </li>
+          </ul>
+          <p v-else class="none">Handler takes no decorated arguments.</p>
+        </section>
+
+        <section class="block">
+          <h3 class="label">Middleware chain</h3>
+          <ol v-if="selected.middlewares.length" class="stack">
+            <li v-for="(middleware, position) in selected.middlewares" :key="`${middleware.name}-${position}`">
+              <span class="phase" :class="middleware.phase">{{ middleware.phase }}</span>
+              <span class="mono">{{ middleware.name }}</span>
+              <span class="mono faint">p{{ middleware.priority }}</span>
+              <span v-if="middleware.global" class="tag teal">global</span>
+            </li>
+          </ol>
+          <p v-else class="none">No middlewares run for this route.</p>
+        </section>
+      </template>
     </aside>
   </div>
 </template>
@@ -432,10 +509,51 @@ onMounted(reload);
   word-break: break-all;
 }
 
+/* In the table the path gives way to the fixed columns; in the panel title it wraps. */
+.title .path {
+  max-width: none;
+  overflow: visible;
+  white-space: normal;
+}
+
 .meta {
   margin: 7px 0 0;
   font-size: 11.5px;
   color: var(--text-3);
+}
+
+.modes {
+  display: flex;
+  margin: 14px -16px 0;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--edge);
+}
+
+.mode {
+  height: 30px;
+  margin-bottom: -1px;
+  padding: 0 12px;
+  border-bottom: 1px solid transparent;
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+
+.mode:first-child {
+  padding-left: 0;
+}
+
+.mode:hover {
+  color: var(--text-2);
+}
+
+.mode.on {
+  color: var(--text);
+  border-bottom-color: var(--text);
+}
+
+.none code {
+  font-size: 11.5px;
+  color: var(--text-2);
 }
 
 .block {

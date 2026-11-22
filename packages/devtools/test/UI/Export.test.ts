@@ -1,0 +1,146 @@
+import { describe, expect, it } from 'vitest';
+import { toCurl, toFetch } from '../../ui/src/playground/export';
+import type { BuiltRequest } from '../../ui/src/playground/request';
+
+const origin = 'http://localhost:3001';
+
+const request: BuiltRequest = {
+  method: 'PUT',
+  target: '/orders/7?notify=true',
+  headers: [
+    { name: 'x-tenant', value: "o'brien", secret: false, internal: false },
+    { name: 'Authorization', value: 'Bearer s3cret', secret: true, internal: false },
+    { name: 'Content-Type', value: 'application/json', secret: false, internal: false },
+    { name: 'x-devtools-playground', value: 'a'.repeat(32), secret: false, internal: true },
+    { name: 'traceparent', value: '00-aa-bb-01', secret: false, internal: true },
+  ],
+  body: { kind: 'text', text: '{"sku":"A-1"}' },
+};
+
+describe('toCurl', () => {
+  it('leaves out credentials and the playground headers by default', () => {
+    expect(toCurl(request, { origin })).toBe(
+      [
+        "curl -X PUT 'http://localhost:3001/orders/7?notify=true'",
+        String.raw`-H 'x-tenant: o'\''brien'`,
+        "-H 'Content-Type: application/json'",
+        `--data-raw '{"sku":"A-1"}'`,
+      ].join(' \\\n  '),
+    );
+  });
+
+  it('writes credentials out when asked to', () => {
+    const command = toCurl(request, { origin, includeCredentials: true });
+
+    expect(command).toContain("-H 'Authorization: Bearer s3cret'");
+    expect(command).not.toContain('Cookie');
+    expect(command).not.toContain('x-devtools');
+    expect(command).not.toContain('traceparent');
+  });
+
+  it('writes form fields and a bare request', () => {
+    expect(
+      toCurl(
+        {
+          method: 'POST',
+          target: '/upload',
+          headers: [],
+          body: { kind: 'form', fields: [{ name: 'title', value: 'A b' }] },
+        },
+        { origin },
+      ),
+    ).toBe("curl -X POST 'http://localhost:3001/upload' \\\n  --form-string 'title=A b'");
+    expect(toCurl({ method: 'GET', target: '/', headers: [], body: { kind: 'none' } }, { origin })).toBe(
+      "curl -X GET 'http://localhost:3001/'",
+    );
+  });
+
+  it('never lets a form value name a file for curl to read', () => {
+    const command = toCurl(
+      {
+        method: 'POST',
+        target: '/upload',
+        headers: [],
+        body: {
+          kind: 'form',
+          fields: [
+            { name: 'f', value: '@/etc/passwd' },
+            { name: 'g', value: '</etc/hosts' },
+          ],
+        },
+      },
+      { origin },
+    );
+
+    // `-F 'f=@/etc/passwd'` would upload the file. `--form-string` sends the text.
+    expect(command).toContain("--form-string 'f=@/etc/passwd'");
+    expect(command).toContain("--form-string 'g=</etc/hosts'");
+    expect(command).not.toMatch(/(?:^|\s)(?:-F|--form)\s/);
+  });
+
+  it('asks for the headers of a HEAD request instead of naming the method', () => {
+    const command = toCurl({ method: 'HEAD', target: '/orders', headers: [], body: { kind: 'none' } }, { origin });
+
+    expect(command).toBe("curl -I 'http://localhost:3001/orders'");
+    expect(command).not.toContain('-X');
+  });
+
+  it('names the URL the browser resolves, not the text that was built', () => {
+    const spaced: BuiltRequest = { method: 'GET', target: '/files/a b', headers: [], body: { kind: 'none' } };
+
+    expect(toCurl(spaced, { origin })).toBe("curl -X GET 'http://localhost:3001/files/a%20b'");
+    expect(toFetch(spaced, { origin })).toContain('fetch("http://localhost:3001/files/a%20b"');
+  });
+});
+
+describe('toFetch', () => {
+  it('leaves out credentials and the playground headers by default', () => {
+    expect(toFetch(request, { origin })).toBe(
+      [
+        'const response = await fetch("http://localhost:3001/orders/7?notify=true", {',
+        '  method: "PUT",',
+        '  headers: {',
+        '    "x-tenant": "o\'brien",',
+        '    "Content-Type": "application/json",',
+        '  },',
+        String.raw`  body: "{\"sku\":\"A-1\"}",`,
+        '});',
+      ].join('\n'),
+    );
+  });
+
+  it('writes credentials out when asked to', () => {
+    const source = toFetch(request, { origin, includeCredentials: true });
+
+    expect(source).toContain('"Authorization": "Bearer s3cret",');
+    expect(source).not.toContain('Cookie');
+    expect(source).not.toContain('x-devtools');
+  });
+
+  it('writes a form body and a bare request', () => {
+    expect(
+      toFetch(
+        {
+          method: 'POST',
+          target: '/upload',
+          headers: [],
+          body: { kind: 'form', fields: [{ name: 'title', value: 'A b' }] },
+        },
+        { origin },
+      ),
+    ).toBe(
+      [
+        'const form = new FormData();',
+        'form.append("title", "A b");',
+        '',
+        'const response = await fetch("http://localhost:3001/upload", {',
+        '  method: "POST",',
+        '  body: form,',
+        '});',
+      ].join('\n'),
+    );
+    expect(toFetch({ method: 'GET', target: '/', headers: [], body: { kind: 'none' } }, { origin })).toBe(
+      'const response = await fetch("http://localhost:3001/", {\n  method: "GET",\n});',
+    );
+  });
+});

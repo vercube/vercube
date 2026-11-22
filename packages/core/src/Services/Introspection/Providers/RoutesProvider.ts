@@ -6,6 +6,7 @@ import { Router } from '../../Router/Router';
 import type { IntrospectionTypes } from '../../../Types/IntrospectionTypes';
 import type { MetadataTypes } from '../../../Types/MetadataTypes';
 import type { RouterTypes } from '../../../Types/RouterTypes';
+import type { StandardJSONSchemaV1 } from '@standard-schema/spec';
 
 /**
  * Describes the application's route table.
@@ -90,12 +91,67 @@ export function describeRoute(route: RouterTypes.Route, basePath?: string): Intr
  * @returns A serialisable description
  */
 function describeArg(arg: MetadataTypes.Arg): IntrospectionTypes.RouteArg {
+  const validated = Boolean(arg.validate && arg.validationSchema);
+  const schema = validated ? describeSchema(arg.validationSchema) : undefined;
+
   return {
     idx: arg.idx,
     type: arg.type,
     name: typeof arg.data?.name === 'string' ? arg.data.name : undefined,
-    validated: Boolean(arg.validate && arg.validationSchema),
+    validated,
+    ...(schema ? { schema } : {}),
   };
+}
+
+/** JSON Schema dialects asked for, newest first. */
+const SCHEMA_TARGETS = ['draft-2020-12', 'draft-07'] as const;
+
+/**
+ * Converts a validation schema to the JSON Schema of its input.
+ *
+ * Only the Standard JSON Schema interface is used, so core stays free of any
+ * validation library: a schema either brings its own converter or is left
+ * undescribed. This runs when the routes section is described, which the
+ * registry memoizes per router revision, and never while a request is handled.
+ *
+ * @param schema - Validation schema attached to an argument
+ * @returns The JSON Schema, or undefined when the schema cannot produce one
+ */
+export function describeSchema(schema: unknown): Record<string, unknown> | undefined {
+  let converter: StandardJSONSchemaV1.Converter | undefined;
+
+  try {
+    converter = (schema as Partial<StandardJSONSchemaV1> | null | undefined)?.['~standard']?.jsonSchema;
+  } catch {
+    return undefined;
+  }
+
+  if (typeof converter?.input !== 'function') {
+    return undefined;
+  }
+
+  // A converter throws for a dialect it does not support and for a schema it
+  // cannot represent (a transform, a custom check), so each target is tried.
+  for (const target of SCHEMA_TARGETS) {
+    try {
+      const json = converter.input({ target });
+
+      if (json && typeof json === 'object') {
+        // The dialect marker says nothing a consumer of the description needs.
+        const { $schema: _dialect, ...rest } = json;
+
+        // The description is served as JSON, so a schema that cannot make the
+        // round trip (a cycle, a BigInt bound) is dropped here, not there.
+        // `structuredClone` would let through exactly what must be caught.
+        /* oxlint-disable-next-line unicorn/prefer-structured-clone */
+        return JSON.parse(JSON.stringify(rest)) as Record<string, unknown>;
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  return undefined;
 }
 
 /**

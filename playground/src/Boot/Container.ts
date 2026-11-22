@@ -5,6 +5,7 @@ import { StorageManager } from '@vercube/storage';
 import { MemoryStorage } from '@vercube/storage/drivers/MemoryStorage';
 import { EmailConsumer } from '../Consumers/EmailConsumer';
 import { EventsController } from '../Controllers/EventsController';
+import { OrdersController } from '../Controllers/OrdersController';
 import PlaygroundController from '../Controllers/PlaygroundController';
 import { QueueController } from '../Controllers/QueueController';
 import { RequestContextController } from '../Controllers/RequestContextController';
@@ -20,6 +21,7 @@ export function useContainer(container: Container): void {
   container.bind(RequestContextController);
   container.bind(QueueController);
   container.bind(EventsController);
+  container.bind(OrdersController);
   container.bind(EventsService);
   container.bind(EmailConsumer);
   container.bind(MaintenanceJobs);
