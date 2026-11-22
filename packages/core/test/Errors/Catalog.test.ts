@@ -296,24 +296,17 @@ describe('core error catalog', () => {
   });
 
   describe('the log of an answered miss', () => {
-    it('builds no debug line the configured level would drop', async () => {
-      const app = await create({ logLevel: 'error' });
-      const debug = vi.spyOn(app.container.get(Logger), 'debug').mockImplementation(() => {});
+    it('writes no line of its own, at any level', async () => {
+      const app = await create({ logLevel: 'debug' });
+      const logger = app.container.get(Logger);
+      const debug = vi.spyOn(logger, 'debug').mockImplementation(() => {});
+      const error = vi.spyOn(logger, 'error').mockImplementation(() => {});
 
       const response = await app.fetch(new Request('http://localhost/nope'));
 
       expect(response.status).toBe(404);
       expect(debug).not.toHaveBeenCalled();
-    });
-
-    it('still writes it at debug level', async () => {
-      const app = await create({ logLevel: 'debug' });
-      const debug = vi.spyOn(app.container.get(Logger), 'debug').mockImplementation(() => {});
-
-      await app.fetch(new Request('http://localhost/nope'));
-
-      expect(debug).toHaveBeenCalledTimes(1);
-      expect(debug.mock.calls[0]?.[0]).toBeInstanceOf(NotFoundError);
+      expect(error).not.toHaveBeenCalled();
     });
   });
 });

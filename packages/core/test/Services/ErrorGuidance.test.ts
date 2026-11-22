@@ -278,18 +278,18 @@ describe('error guidance in responses', () => {
       expect(output).toContain('postgres://secret');
     });
 
-    it('logs the guidance and internal context of an HttpError with the request', async () => {
+    it('logs the code and internal context of an HttpError with the request, on one line', async () => {
       const app = await create(false, true);
       const output = await captureOutput(async () => {
         await get(app, '/limit');
       });
       const line = output.split('\n').find((entry) => entry.includes('SHOP_PLAN_LIMIT'))!;
 
-      // one line: the wide event of the request carries the explanation
       expect(line).toContain('"status":403');
-      expect(line).toContain('The workspace is on a plan with a fixed number of projects.');
-      expect(line).toContain('Upgrade the workspace, or delete a project.');
       expect(line).toContain('ws_1');
+      // the same for every error of the code: the reference has them, the log line does not repeat them
+      expect(line).not.toContain('The workspace is on a plan with a fixed number of projects.');
+      expect(line).not.toContain('Upgrade the workspace, or delete a project.');
     });
 
     it('logs a server HttpError by itself when request logging is off', async () => {
@@ -303,25 +303,17 @@ describe('error guidance in responses', () => {
       expect(output).toContain('ledger');
     });
 
-    it('keeps a client HttpError at debug level when request logging is off', async () => {
-      // the log level is one per process, so each application is used before the next is created
-      const quiet = await create(false);
-      const silent = await captureOutput(async () => {
-        await get(quiet, '/limit');
-      });
-
-      const verbose = await createApp({
+    it('writes no line of its own for a client HttpError when request logging is off', async () => {
+      const app = await createApp({
         cfg: { dev: false, production: true, requestLogging: false, logLevel: 'debug' },
         configFile: false,
-        setup: (app) => app.container.bind(ErrorsController),
+        setup: (instance) => instance.container.bind(ErrorsController),
       });
-      const logged = await captureOutput(async () => {
-        await get(verbose, '/limit');
+      const output = await captureOutput(async () => {
+        await get(app, '/limit');
       });
 
-      expect(silent).not.toContain('SHOP_PLAN_LIMIT');
-      expect(logged).toContain('SHOP_PLAN_LIMIT');
-      expect(logged).toContain('ws_1');
+      expect(output).not.toContain('SHOP_PLAN_LIMIT');
     });
   });
 });

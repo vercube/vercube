@@ -181,7 +181,7 @@ export const CoreErrors = defineErrorCatalog('VERCUBE_CORE', {
   THROWS_STATUS_INVALID: {
     message: ({ status }: { status: number }) => `@Throws(): ${status} is not an error status (400-599).`,
     why: '`@Throws()` lists the errors a route answers with, so a status passed to it has to be a whole number from 400 to 599.',
-    fix: 'Pass an error status, as in `@Throws(409, ConflictError)`, or pass the class alone when it has a static `status`.',
+    fix: 'Pass an error status, as in `@Throws(409, ConflictError)` with an error class of your own, or pass the class alone when it has a static `status`.',
     create: typeError,
   },
   THROWS_NOT_A_CLASS: {

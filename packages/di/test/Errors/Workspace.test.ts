@@ -71,15 +71,19 @@ function sourceFiles(directory: string): string[] {
 }
 
 /**
- * The numbers of the lines that create a plain `Error`, with or without `new`,
- * and say nothing about why. Comment lines are skipped: documentation shows
+ * The numbers of the lines that create an error of a built-in class (`Error`,
+ * `TypeError`, `RangeError`, `AggregateError`), with or without `new`, and say
+ * nothing about why. Comment lines are skipped: documentation shows
  * errors in its examples.
  */
-function findBareErrors(lines: string[]): number[] {
+function findBareErrors(lines: string[], catalog: boolean = false): number[] {
   const found: number[] = [];
+  // A catalog is where a `TypeError` or an `AggregateError` gets its code, so
+  // only a plain `Error` needs a reason there.
+  const pattern = catalog ? /(?<![\w$])(?:globalThis\.)?Error\(/ : /(?<![\w$])(?:globalThis\.)?(?:Type|Range|Aggregate)?Error\(/;
 
   for (const [index, line] of lines.entries()) {
-    if (!/(?<![\w$])(?:globalThis\.)?Error\(/.test(line.replaceAll(/\bnew\s+/g, '')) || /^\s*(\*|\/\/|\/\*)/.test(line)) {
+    if (!pattern.test(line.replaceAll(/\bnew\s+/g, '')) || /^\s*(\*|\/\/|\/\*)/.test(line)) {
       continue;
     }
 
@@ -147,7 +151,12 @@ describe('error catalogs of the workspace', () => {
     expect(find('reject(new Error(`a ${b}`));')).toEqual([1]);
     expect(find("// bare-error: rethrown as it is\nthrow new Error('x');")).toEqual([]);
     expect(find("throw new Error('x'); // bare-error: the default class")).toEqual([]);
-    expect(find("throw new TypeError('x');\nthrow new HttpError(500);\nError.captureStackTrace(e);")).toEqual([]);
+    expect(find("throw new TypeError('x');\nthrow new RangeError('x');\nthrow new AggregateError([], 'x');")).toEqual([1, 2, 3]);
+    expect(find("throw new HttpError(500);\nError.captureStackTrace(e);\nthrow new QueueError('x');")).toEqual([]);
+    // in a catalog a typed error is being given its code
+    expect(
+      findBareErrors(['create: (message) => new TypeError(message),', 'create: (message) => new Error(message),'], true),
+    ).toEqual([2]);
     expect(find(" * throw new Error('in a doc comment');\n// new Error('in a comment')")).toEqual([]);
   });
 
@@ -159,7 +168,7 @@ describe('error catalogs of the workspace', () => {
       for (const file of sourceFiles(join(ROOT, 'packages', name, 'src'))) {
         scanned++;
 
-        for (const line of findBareErrors(readFileSync(file, 'utf8').split('\n'))) {
+        for (const line of findBareErrors(readFileSync(file, 'utf8').split('\n'), file.endsWith(join('Errors', 'Catalog.ts')))) {
           offenders.push(`${relative(ROOT, file)}:${line}`);
         }
       }

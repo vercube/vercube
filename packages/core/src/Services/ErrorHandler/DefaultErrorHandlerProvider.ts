@@ -1,5 +1,5 @@
 import { getErrorGuidance, Inject, InjectOptional } from '@vercube/di';
-import { BaseLogger, Logger } from '@vercube/logger';
+import { Logger } from '@vercube/logger';
 import { InternalServerError } from '../../Errors/Http/InternalServerError';
 import { HttpError } from '../../Errors/HttpError';
 import { EVLOG_REQUEST_LOGGER_KEY } from '../../Middleware/EvlogMiddleware';
@@ -47,15 +47,17 @@ export class DefaultErrorHandlerProvider extends ErrorHandlerProvider {
 
     // check if the error is known error type and return it.
     if (error instanceof HttpError) {
-      if (guidance !== undefined) {
-        // An HttpError is an answer, not a failure, so it is not logged as
-        // one. What it says about its cause still belongs in the log.
-        this.record(error, guidance, status);
-      }
-
       // One instance answers every miss, so its body is written once. It is
       // written again when the mode changes, as the body depends on it.
       const shared = isSharedError(error);
+
+      // An HttpError is an answer, not a failure, so it is not logged as one,
+      // but its code belongs with the request in the log. A miss is left out:
+      // the request line already says 404 or 405 and which path, the code
+      // would add nothing to it, and a scanner asks for thousands of them.
+      if (guidance !== undefined && !shared) {
+        this.record(error, guidance, status);
+      }
 
       if (shared && this.fSharedDev !== dev) {
         this.fSharedDev = dev;
@@ -114,12 +116,15 @@ export class DefaultErrorHandlerProvider extends ErrorHandlerProvider {
   }
 
   /**
-   * Logs what an `HttpError` says about its cause. With request logging on it
-   * goes into the wide event of the request being answered, so the request
-   * and its explanation are one line. Without it the error is logged by
-   * itself: a server error as an error, anything else at debug level, as an
-   * application that turned request logging off did not ask for a line per
-   * rejected request.
+   * Logs an `HttpError` that carries a code. With request logging on, the code
+   * and the `internal` context go into the wide event of the request being
+   * answered, so the request and what went wrong are one line. `why` and `fix` are not repeated there:
+   * they are the same for every error of a code, a rejected request is
+   * routine, and the code finds them in the error reference.
+   *
+   * Without a request logger a server error is logged by itself, in full. A
+   * client error is not: an application that turned request logging off did
+   * not ask for a line per rejected request.
    *
    * @param {Error} error - The error being answered
    * @param {ErrorGuidance} guidance - Its guidance
@@ -134,13 +139,7 @@ export class DefaultErrorHandlerProvider extends ErrorHandlerProvider {
     // a request logger that cannot take the fields must not turn the answer into a failure
     if (typeof requestLogger?.set === 'function') {
       requestLogger.set({
-        error: {
-          code: guidance.code,
-          why: guidance.why,
-          fix: guidance.fix,
-          link: guidance.link,
-          internal: guidance.internal,
-        },
+        error: guidance.internal === undefined ? { code: guidance.code } : { code: guidance.code, internal: guidance.internal },
       } as never);
 
       return;
@@ -148,24 +147,7 @@ export class DefaultErrorHandlerProvider extends ErrorHandlerProvider {
 
     if (status >= 500) {
       this.gLogger.error(error);
-    } else if (this.logsDebug()) {
-      this.gLogger.debug(error);
     }
-  }
-
-  /**
-   * Whether a debug line can be written at all. Building one serializes the
-   * error, which is most of what answering a 404 costs, so it is skipped when
-   * the built-in logger is certain to drop it: the configuration names a
-   * level above debug. Anything else is logged as before.
-   *
-   * @returns {boolean} False when the line would be dropped
-   * @private
-   */
-  private logsDebug(): boolean {
-    const level = this.gConfigProvider?.logLevel;
-
-    return level === undefined || !ABOVE_DEBUG.has(level) || this.gLogger.constructor !== BaseLogger;
   }
 }
 
@@ -209,9 +191,6 @@ function copyFields(error: Error): Record<string, unknown> {
 
   return body;
 }
-
-/** The log levels at which a debug line is dropped. */
-const ABOVE_DEBUG: ReadonlySet<string> = new Set(['info', 'warn', 'error', 'fatal']);
 
 /** Error bodies are JSON, and say so. */
 const JSON_HEADERS: Readonly<Record<string, string>> = Object.freeze({ 'content-type': 'application/json' });
