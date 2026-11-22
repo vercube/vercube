@@ -1,3 +1,4 @@
+import { DiErrors } from '../Errors/Catalog';
 /**
  * This module is responsible for internal work of IOC engine inject mechanics. Its written in
  * "raw" (non-OOP) style to maximize simplicity and execution speed.
@@ -171,7 +172,7 @@ function injectDeps(container: Container, instance: IOC.Instance, method: IOC.In
           }
 
           default: {
-            throw new Error(`IOCEngine.injectDeps() - invalid inject method ${method}`);
+            throw DiErrors.INVALID_INJECT_METHOD({ method });
           }
         }
       }

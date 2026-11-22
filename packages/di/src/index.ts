@@ -16,6 +16,11 @@ export * from './Domain/DevtoolsHook';
 export { IOCEngine } from './Domain/Engine';
 export type { IClassDep, IClassMapEntry } from './Domain/Engine';
 
+// Errors
+export * from './Errors/Catalog';
+export * from './Errors/ErrorCatalog';
+export * from './Errors/ErrorGuidance';
+
 // Types
 export * from './Types/DescribeTypes';
 export * from './Types/IOCTypes';
