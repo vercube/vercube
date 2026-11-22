@@ -23,7 +23,8 @@ concurrency:
 
 # The in-process benches (`*.bench.ts`) under CodSpeed's CPU simulation: it
 # counts instructions instead of timing them. The numbers that count come from
-# real sockets, `pnpm bench:ladder`, run by hand: read a red check against it.
+# real sockets: a red check is a reason to run `pnpm bench:ladder` on the base
+# and on the branch before believing it.
 jobs:
   benchmarks:
     name: codspeed
