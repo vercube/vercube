@@ -125,6 +125,14 @@ watch(active, (value) => {
   globalThis.history.replaceState(null, '', `#${value}`);
 });
 
+// The request to open is for one visit. Kept longer, every later visit to
+// Requests would select it again and reset the filters.
+watch(active, (value) => {
+  if (value !== 'requests') {
+    focused.value = null;
+  }
+});
+
 watch(streaming, (value) => (value ? connect() : disconnect()));
 
 function connect(): void {

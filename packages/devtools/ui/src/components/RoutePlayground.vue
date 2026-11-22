@@ -1172,6 +1172,12 @@ select.field {
   color: var(--warn);
 }
 
+/* The heading is set in tracked capitals; a chip inside it is not part of the heading. */
+.part > .label .tag {
+  letter-spacing: normal;
+  text-transform: none;
+}
+
 .hint {
   margin: 0;
   font-size: 11.5px;
