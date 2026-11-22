@@ -50,7 +50,8 @@ describe('module recipes', () => {
       ([name]) => name.startsWith('@vercube/') && !['@vercube/core', '@vercube/di', '@vercube/cli'].includes(name),
     );
 
-    expect(added.length).toBeGreaterThan(0);
+    // github-pages only adds a script and a workflow, every other recipe adds a package
+    expect(added.length > 0).toBe(id !== 'github-pages');
     expect(added.every(([, version]) => version === '1.5.0')).toBe(true);
   });
 
@@ -142,6 +143,26 @@ describe('module recipes', () => {
     expect(pkg.scripts).toMatchObject({ preview: 'vercube build && netlify dev', deploy: 'netlify deploy --prod' });
     expect(pkg.devDependencies['netlify-cli']).toBeDefined();
     expect(pkg.devDependencies['@netlify/functions']).toBeDefined();
+  });
+
+  it('sets up a static export for GitHub Pages', async () => {
+    const dir = apiTemplate();
+
+    dirs.push(dir);
+
+    const entry = snapshot(dir)['src/index.ts'];
+    const summary = await applyRecipes(new Project(dir, { version: '1.5.0' }), ['github-pages'], RECIPES);
+    const files = snapshot(dir);
+
+    expect(summary.applied).toEqual(['github-pages']);
+    expect(files['.github/workflows/pages.yml']).toContain('pnpm run build:pages');
+    expect(files['.github/workflows/pages.yml']).toContain('actions/upload-pages-artifact');
+    expect(files['.github/workflows/pages.yml']).toContain('actions/deploy-pages');
+    expect(files['.github/workflows/pages.yml']).toContain('path: dist-static');
+    expect(JSON.parse(files['package.json']).scripts['build:pages']).toBe('vercube build --target github-pages');
+    expect(files['.gitignore']).toContain('dist-static');
+    // the application itself is not changed: it still runs as a server
+    expect(files['src/index.ts']).toBe(entry);
   });
 
   it('guards the storage and queue example endpoints with API_KEY', async () => {

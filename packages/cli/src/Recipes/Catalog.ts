@@ -4,6 +4,7 @@ import { azureFunctionsRecipe } from './Modules/AzureFunctions';
 import { cacheRecipe } from './Modules/Cache';
 import { cloudflareRecipe } from './Modules/Cloudflare';
 import { devtoolsRecipe } from './Modules/Devtools';
+import { githubPagesRecipe } from './Modules/GithubPages';
 import { netlifyRecipe } from './Modules/Netlify';
 import { queueRecipe } from './Modules/Queue';
 import { rateLimitRecipe } from './Modules/RateLimit';
@@ -36,4 +37,5 @@ export const RECIPES: RecipeTypes.Recipe<any>[] = [
   azureFunctionsRecipe,
   cloudflareRecipe,
   netlifyRecipe,
+  githubPagesRecipe,
 ];
