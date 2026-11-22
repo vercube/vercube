@@ -5,7 +5,15 @@
  * handler argument. Two things are done with it: an example value is generated
  * to start the editor from, and a value is checked before it is sent. Both
  * cover what zod, valibot and arktype emit and ignore every keyword they do not
- * know, so an unusual schema costs precision and never produces a false error.
+ * know.
+ *
+ * The checker is there to save a round trip, not to replace the server, so it
+ * never reports a problem the server might not have: an unusual schema costs
+ * precision instead. That matters most for path, query and header values.
+ * They reach the server as text, and the schema describes them after the
+ * validation library coerced them, so a text value is read the way a coercion
+ * would read it (see {@link CheckOptions.wire}) and whatever cannot be decided
+ * here is left to the server.
  */
 
 /** A JSON Schema object, or the boolean shorthand. */
@@ -16,6 +24,19 @@ export interface SchemaIssue {
   /** Where the problem is, such as `items[0].price`. Empty for the root. */
   path: string;
   message: string;
+}
+
+/** How a value is checked. */
+export interface CheckOptions {
+  /**
+   * True for a path, query or header value, which is text on the wire. A
+   * string is then accepted wherever a coercion could turn it into what the
+   * schema asks for: a number written out, any text for a boolean, one value
+   * for a list of them. A repeated query name arrives as a list, and stands
+   * for its first value where the schema does not take a list, as core
+   * resolves it.
+   */
+  wire?: boolean;
 }
 
 /** How deep examples and `$ref` chains are followed, which also ends recursive schemas. */
@@ -121,6 +142,101 @@ function typeOf(value: unknown): string {
   }
 
   return typeof value;
+}
+
+/**
+ * Whether two JSON values are the same value. Objects are compared by their
+ * members, whatever order they were written in.
+ *
+ * @param left - A JSON value
+ * @param right - A JSON value
+ * @returns True when they are equal
+ */
+function sameValue(left: unknown, right: unknown): boolean {
+  if (left === right) {
+    return true;
+  }
+
+  if (Array.isArray(left) || Array.isArray(right)) {
+    return (
+      Array.isArray(left) &&
+      Array.isArray(right) &&
+      left.length === right.length &&
+      left.every((item, index) => sameValue(item, right[index]))
+    );
+  }
+
+  if (!isObject(left) || !isObject(right)) {
+    return false;
+  }
+
+  const keys = Object.keys(left);
+
+  return (
+    keys.length === Object.keys(right).length &&
+    keys.every((key) => Object.hasOwn(right, key) && sameValue(left[key], right[key]))
+  );
+}
+
+/**
+ * Whether a value equals a `const` or one option of an `enum`.
+ *
+ * @param expected - The value the schema names
+ * @param value - The value being checked
+ * @param wire - Whether the value is text on the wire
+ * @returns True when they are equal, or when the text spells the expected number or boolean
+ */
+function matchesValue(expected: unknown, value: unknown, wire: boolean): boolean {
+  return (
+    sameValue(expected, value) ||
+    (wire &&
+      typeof value === 'string' &&
+      (typeof expected === 'number' || typeof expected === 'boolean') &&
+      String(expected) === value)
+  );
+}
+
+/** Returned by {@link fromWire} for a value only the server can judge. */
+const UNDECIDED = Symbol('undecided');
+
+/**
+ * Reads a value that is text on the wire the way the schema's coercion would.
+ *
+ * @param schema - A resolved schema object
+ * @param value - A string, or the strings of a repeated query name
+ * @returns The value to check, or {@link UNDECIDED} when no check here could be trusted
+ */
+function fromWire(schema: Record<string, unknown>, value: unknown): unknown {
+  const types = typesOf(schema);
+
+  if (types.length === 0) {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    // Only a parameter declared as a list keeps every value; any other reads the first.
+    return types.includes('array') ? value : fromWire(schema, value[0]);
+  }
+
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  const coerced = coerceText(schema, value);
+
+  if (typeof coerced !== 'string' || types.includes('string')) {
+    return coerced;
+  }
+
+  if (types.includes('array')) {
+    // One entry of a repeated name is a list of one.
+    return [value];
+  }
+
+  // A boolean coercion takes any text, and how text becomes an object or a
+  // null is the application's business. Text that is not a number is the one
+  // case no coercion saves, so it goes on to be reported.
+  return types.some((type) => type === 'boolean' || type === 'object' || type === 'null') ? UNDECIDED : value;
 }
 
 /**
@@ -278,12 +394,13 @@ function exampleNumber(schema: Record<string, unknown>, integer: boolean): numbe
  *
  * @param schema - The schema
  * @param value - The value to check
+ * @param options - Whether the value is text on the wire
  * @returns Every problem found, in document order; empty when the value fits
  */
-export function checkSchema(schema: JsonSchema, value: unknown): SchemaIssue[] {
+export function checkSchema(schema: JsonSchema, value: unknown, options: CheckOptions = {}): SchemaIssue[] {
   const issues: SchemaIssue[] = [];
 
-  check(schema, value, '', schema, issues, 0);
+  check(schema, value, '', schema, issues, 0, options.wire === true);
 
   return issues;
 }
@@ -303,13 +420,22 @@ function child(path: string, key: string): string {
  * Checks one value, appending what is wrong with it.
  *
  * @param schema - Schema for this value
- * @param value - The value
+ * @param input - The value
  * @param path - Where the value sits
  * @param root - Document `$ref`s point into
  * @param issues - Collected problems
  * @param depth - Nesting so far
+ * @param wire - Whether the value is text on the wire
  */
-function check(schema: JsonSchema, value: unknown, path: string, root: JsonSchema, issues: SchemaIssue[], depth: number): void {
+function check(
+  schema: JsonSchema,
+  input: unknown,
+  path: string,
+  root: JsonSchema,
+  issues: SchemaIssue[],
+  depth: number,
+  wire: boolean,
+): void {
   if (issues.length >= MAX_ISSUES || depth > MAX_DEPTH * 4) {
     return;
   }
@@ -326,6 +452,12 @@ function check(schema: JsonSchema, value: unknown, path: string, root: JsonSchem
     return;
   }
 
+  const value = wire ? fromWire(resolved, input) : input;
+
+  if (value === UNDECIDED) {
+    return;
+  }
+
   const actual = typeOf(value);
   const types = typesOf(resolved);
 
@@ -335,11 +467,11 @@ function check(schema: JsonSchema, value: unknown, path: string, root: JsonSchem
     return;
   }
 
-  if (resolved.const !== undefined && JSON.stringify(resolved.const) !== JSON.stringify(value)) {
+  if (resolved.const !== undefined && !matchesValue(resolved.const, value, wire)) {
     issues.push({ path, message: `must be ${JSON.stringify(resolved.const)}` });
   }
 
-  if (Array.isArray(resolved.enum) && !resolved.enum.some((option) => JSON.stringify(option) === JSON.stringify(value))) {
+  if (Array.isArray(resolved.enum) && !resolved.enum.some((option) => matchesValue(option, value, wire))) {
     issues.push({ path, message: `must be one of ${resolved.enum.map((option) => JSON.stringify(option)).join(', ')}` });
   }
 
@@ -348,14 +480,14 @@ function check(schema: JsonSchema, value: unknown, path: string, root: JsonSchem
   } else if (typeof value === 'number') {
     checkNumber(resolved, value, path, issues);
   } else if (Array.isArray(value)) {
-    checkArray(resolved, value, path, root, issues, depth);
+    checkArray(resolved, value, path, root, issues, depth, wire);
   } else if (isObject(value)) {
-    checkObject(resolved, value, path, root, issues, depth);
+    checkObject(resolved, value, path, root, issues, depth, wire);
   }
 
   if (Array.isArray(resolved.allOf)) {
     for (const part of resolved.allOf) {
-      check(part as JsonSchema, value, path, root, issues, depth + 1);
+      check(part as JsonSchema, input, path, root, issues, depth + 1, wire);
     }
   }
 
@@ -369,7 +501,7 @@ function check(schema: JsonSchema, value: unknown, path: string, root: JsonSchem
     const attempts = options.map((option) => {
       const found: SchemaIssue[] = [];
 
-      check(option as JsonSchema, value, path, root, found, depth + 1);
+      check(option as JsonSchema, input, path, root, found, depth + 1, wire);
 
       return found;
     });
@@ -505,6 +637,7 @@ function checkNumber(schema: Record<string, unknown>, value: number, path: strin
  * @param root - Document `$ref`s point into
  * @param issues - Collected problems
  * @param depth - Nesting so far
+ * @param wire - Whether the members are text on the wire
  */
 function checkArray(
   schema: Record<string, unknown>,
@@ -513,6 +646,7 @@ function checkArray(
   root: JsonSchema,
   issues: SchemaIssue[],
   depth: number,
+  wire: boolean,
 ): void {
   if (typeof schema.minItems === 'number' && value.length < schema.minItems) {
     issues.push({ path, message: `must have at least ${schema.minItems} item${schema.minItems === 1 ? '' : 's'}` });
@@ -528,7 +662,7 @@ function checkArray(
     const itemSchema = index < prefix.length ? prefix[index] : schema.items;
 
     if (itemSchema !== undefined) {
-      check(itemSchema as JsonSchema, item, `${path}[${index}]`, root, issues, depth + 1);
+      check(itemSchema as JsonSchema, item, `${path}[${index}]`, root, issues, depth + 1, wire);
     }
   }
 }
@@ -542,6 +676,7 @@ function checkArray(
  * @param root - Document `$ref`s point into
  * @param issues - Collected problems
  * @param depth - Nesting so far
+ * @param wire - Whether the members are text on the wire
  */
 function checkObject(
   schema: Record<string, unknown>,
@@ -550,6 +685,7 @@ function checkObject(
   root: JsonSchema,
   issues: SchemaIssue[],
   depth: number,
+  wire: boolean,
 ): void {
   const properties = isObject(schema.properties) ? schema.properties : {};
 
@@ -561,11 +697,11 @@ function checkObject(
 
   for (const [key, entry] of Object.entries(value)) {
     if (key in properties) {
-      check(properties[key] as JsonSchema, entry, child(path, key), root, issues, depth + 1);
+      check(properties[key] as JsonSchema, entry, child(path, key), root, issues, depth + 1, wire);
     } else if (schema.additionalProperties === false) {
       issues.push({ path: child(path, key), message: 'is not a known property' });
     } else if (isObject(schema.additionalProperties)) {
-      check(schema.additionalProperties, entry, child(path, key), root, issues, depth + 1);
+      check(schema.additionalProperties, entry, child(path, key), root, issues, depth + 1, wire);
     }
   }
 }

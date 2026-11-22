@@ -4,8 +4,8 @@ import { MemoryStorage } from './Storage';
 
 describe('toCredentials', () => {
   it('adds nothing until a value is entered', () => {
-    for (const kind of ['none', 'bearer', 'basic', 'apikey', 'cookie'] as const) {
-      expect(toCredentials({ ...emptyAuth(), kind })).toEqual({ headers: [], cookies: [] });
+    for (const kind of ['none', 'bearer', 'basic', 'apikey'] as const) {
+      expect(toCredentials({ ...emptyAuth(), kind })).toEqual({ headers: [] });
       expect(hasCredentials({ ...emptyAuth(), kind })).toBe(false);
     }
   });
@@ -33,15 +33,13 @@ describe('toCredentials', () => {
     expect(hasCredentials(auth)).toBe(true);
   });
 
-  it('writes a cookie', () => {
-    expect(toCredentials({ ...emptyAuth(), kind: 'cookie', cookieName: 'sid', cookieValue: 's1' })).toEqual({
-      headers: [],
-      cookies: [{ name: 'sid', value: 's1' }],
-    });
+  it('offers no cookie: every credential is a request header', () => {
+    expect(Object.keys(emptyAuth())).not.toContain('cookieName');
+    expect(Object.keys(toCredentials({ ...emptyAuth(), kind: 'bearer', token: 'abc' }))).toEqual(['headers']);
   });
 
   it('applies only the selected kind', () => {
-    expect(toCredentials({ ...emptyAuth(), kind: 'none', token: 'abc', keyValue: 'k1' })).toEqual({ headers: [], cookies: [] });
+    expect(toCredentials({ ...emptyAuth(), kind: 'none', token: 'abc', keyValue: 'k1' })).toEqual({ headers: [] });
   });
 });
 
@@ -84,6 +82,20 @@ describe('persistAuth and loadAuth', () => {
 
     storage.setItem(AUTH_STORAGE_KEY, JSON.stringify({ kind: 'oauth', token: 12, keyValue: 'k1' }));
     expect(loadAuth(storage)).toEqual({ ...emptyAuth(), keyValue: 'k1', remember: true });
+  });
+
+  it('drops a cookie credential an earlier version stored', () => {
+    const storage = new MemoryStorage();
+
+    storage.setItem(AUTH_STORAGE_KEY, JSON.stringify({ kind: 'cookie', cookieName: 'sid', cookieValue: 's1', remember: true }));
+
+    const loaded = loadAuth(storage);
+
+    expect(loaded).toEqual({ ...emptyAuth(), remember: true });
+
+    persistAuth(storage, loaded);
+
+    expect(storage.getItem(AUTH_STORAGE_KEY)).not.toContain('s1');
   });
 
   it('works without storage and with storage that throws', () => {

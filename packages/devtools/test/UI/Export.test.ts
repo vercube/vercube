@@ -14,10 +14,6 @@ const request: BuiltRequest = {
     { name: 'x-devtools-playground', value: 'a'.repeat(32), secret: false, internal: true },
     { name: 'traceparent', value: '00-aa-bb-01', secret: false, internal: true },
   ],
-  cookies: [
-    { name: 'theme', value: 'dark mode', secret: false },
-    { name: 'sid', value: 's1', secret: true },
-  ],
   body: { kind: 'text', text: '{"sku":"A-1"}' },
 };
 
@@ -28,7 +24,6 @@ describe('toCurl', () => {
         "curl -X PUT 'http://localhost:3001/orders/7?notify=true'",
         String.raw`-H 'x-tenant: o'\''brien'`,
         "-H 'Content-Type: application/json'",
-        "-H 'Cookie: theme=dark%20mode'",
         `--data-raw '{"sku":"A-1"}'`,
       ].join(' \\\n  '),
     );
@@ -38,7 +33,7 @@ describe('toCurl', () => {
     const command = toCurl(request, { origin, includeCredentials: true });
 
     expect(command).toContain("-H 'Authorization: Bearer s3cret'");
-    expect(command).toContain("-H 'Cookie: theme=dark%20mode; sid=s1'");
+    expect(command).not.toContain('Cookie');
     expect(command).not.toContain('x-devtools');
     expect(command).not.toContain('traceparent');
   });
@@ -50,15 +45,51 @@ describe('toCurl', () => {
           method: 'POST',
           target: '/upload',
           headers: [],
-          cookies: [],
           body: { kind: 'form', fields: [{ name: 'title', value: 'A b' }] },
         },
         { origin },
       ),
-    ).toBe("curl -X POST 'http://localhost:3001/upload' \\\n  -F 'title=A b'");
-    expect(toCurl({ method: 'GET', target: '/', headers: [], cookies: [], body: { kind: 'none' } }, { origin })).toBe(
+    ).toBe("curl -X POST 'http://localhost:3001/upload' \\\n  --form-string 'title=A b'");
+    expect(toCurl({ method: 'GET', target: '/', headers: [], body: { kind: 'none' } }, { origin })).toBe(
       "curl -X GET 'http://localhost:3001/'",
     );
+  });
+
+  it('never lets a form value name a file for curl to read', () => {
+    const command = toCurl(
+      {
+        method: 'POST',
+        target: '/upload',
+        headers: [],
+        body: {
+          kind: 'form',
+          fields: [
+            { name: 'f', value: '@/etc/passwd' },
+            { name: 'g', value: '</etc/hosts' },
+          ],
+        },
+      },
+      { origin },
+    );
+
+    // `-F 'f=@/etc/passwd'` would upload the file. `--form-string` sends the text.
+    expect(command).toContain("--form-string 'f=@/etc/passwd'");
+    expect(command).toContain("--form-string 'g=</etc/hosts'");
+    expect(command).not.toMatch(/(?:^|\s)(?:-F|--form)\s/);
+  });
+
+  it('asks for the headers of a HEAD request instead of naming the method', () => {
+    const command = toCurl({ method: 'HEAD', target: '/orders', headers: [], body: { kind: 'none' } }, { origin });
+
+    expect(command).toBe("curl -I 'http://localhost:3001/orders'");
+    expect(command).not.toContain('-X');
+  });
+
+  it('names the URL the browser resolves, not the text that was built', () => {
+    const spaced: BuiltRequest = { method: 'GET', target: '/files/a b', headers: [], body: { kind: 'none' } };
+
+    expect(toCurl(spaced, { origin })).toBe("curl -X GET 'http://localhost:3001/files/a%20b'");
+    expect(toFetch(spaced, { origin })).toContain('fetch("http://localhost:3001/files/a%20b"');
   });
 });
 
@@ -71,7 +102,6 @@ describe('toFetch', () => {
         '  headers: {',
         '    "x-tenant": "o\'brien",',
         '    "Content-Type": "application/json",',
-        '    "Cookie": "theme=dark%20mode",',
         '  },',
         String.raw`  body: "{\"sku\":\"A-1\"}",`,
         '});',
@@ -83,7 +113,7 @@ describe('toFetch', () => {
     const source = toFetch(request, { origin, includeCredentials: true });
 
     expect(source).toContain('"Authorization": "Bearer s3cret",');
-    expect(source).toContain('"Cookie": "theme=dark%20mode; sid=s1",');
+    expect(source).not.toContain('Cookie');
     expect(source).not.toContain('x-devtools');
   });
 
@@ -94,7 +124,6 @@ describe('toFetch', () => {
           method: 'POST',
           target: '/upload',
           headers: [],
-          cookies: [],
           body: { kind: 'form', fields: [{ name: 'title', value: 'A b' }] },
         },
         { origin },
@@ -110,7 +139,7 @@ describe('toFetch', () => {
         '});',
       ].join('\n'),
     );
-    expect(toFetch({ method: 'GET', target: '/', headers: [], cookies: [], body: { kind: 'none' } }, { origin })).toBe(
+    expect(toFetch({ method: 'GET', target: '/', headers: [], body: { kind: 'none' } }, { origin })).toBe(
       'const response = await fetch("http://localhost:3001/", {\n  method: "GET",\n});',
     );
   });

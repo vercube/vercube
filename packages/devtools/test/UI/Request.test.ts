@@ -113,7 +113,6 @@ describe('createDraft', () => {
         { name: 'tag', value: '' },
       ],
       headers: [{ name: 'x-tenant', value: '' }],
-      cookies: [{ name: 'session', value: '' }],
       bodyMode: 'json',
       body: '{\n  "sku": "string",\n  "quantity": 1\n}',
       form: [],
@@ -185,12 +184,12 @@ describe('validateDraft', () => {
         model,
       ).query,
     ).toEqual([
-      { path: 'notify', message: 'must be boolean, got string' },
+      // `notify=yes` is not reported: what text a boolean coercion takes is the server's business.
       { path: 'limit', message: 'must be at most 50' },
     ]);
   });
 
-  it('reads a repeated name as a list', () => {
+  it('reads a repeated name as a list where the schema takes a list', () => {
     expect(
       validateDraft(
         draft({
@@ -204,6 +203,59 @@ describe('validateDraft', () => {
         model,
       ).query,
     ).toEqual([]);
+  });
+
+  it('reads one entry as a list of one where the schema takes a list', () => {
+    expect(
+      validateDraft(
+        draft({
+          query: [
+            { name: 'notify', value: 'true' },
+            { name: 'tag', value: 'a' },
+          ],
+        }),
+        model,
+      ).query,
+    ).toEqual([]);
+  });
+
+  it('reads a repeated name as its first value where the schema takes no list, as core does', () => {
+    const repeated = (first: string, second: string): Draft =>
+      draft({
+        query: [
+          { name: 'notify', value: 'true' },
+          { name: 'limit', value: first },
+          { name: 'limit', value: second },
+        ],
+      });
+
+    expect(validateDraft(repeated('10', '80'), model).query).toEqual([]);
+    expect(validateDraft(repeated('80', '10'), model).query).toEqual([{ path: 'limit', message: 'must be at most 50' }]);
+  });
+
+  it('checks a list of numbers written as query entries', () => {
+    const listed = describeForm(
+      route('GET', '/orders', [
+        {
+          type: 'query-params',
+          schema: { type: 'object', properties: { ids: { type: 'array', items: { type: 'number', minimum: 1 } } } },
+        },
+      ]),
+    );
+
+    /**
+     * Checks the query for the given `ids` entries.
+     *
+     * @param values - One value per `ids` entry
+     * @returns The problems found
+     */
+    const check = (...values: string[]): unknown =>
+      validateDraft({ ...createDraft(listed), query: values.map((value) => ({ name: 'ids', value })) }, listed).query;
+
+    expect(check('1')).toEqual([]);
+    expect(check('1', '2')).toEqual([]);
+    expect(check('1', '0')).toEqual([{ path: 'ids[1]', message: 'must be at least 1' }]);
+    expect(check('1', 'abc')).toEqual([{ path: 'ids[1]', message: 'must be number, got string' }]);
   });
 
   it('checks named query entries on their own when there is no object schema', () => {
@@ -251,10 +303,6 @@ describe('buildRequest', () => {
       { name: 'x-empty', value: '' },
       { name: '', value: 'nameless' },
     ],
-    cookies: [
-      { name: 'session', value: 'abc' },
-      { name: 'unused', value: '' },
-    ],
     body: '{"sku":"A-1"}',
   };
 
@@ -278,7 +326,9 @@ describe('buildRequest', () => {
     expect(request.body).toEqual({ kind: 'text', text: '{"sku":"A-1"}' });
     expect(request.headers.map((entry) => entry.name)).toEqual(['x-tenant', 'Content-Type', 'Accept']);
     expect(header(request.headers, 'content-type')).toBe('application/json');
-    expect(request.cookies).toEqual([{ name: 'session', value: 'abc', secret: false }]);
+    // A cookie the handler reads is described by the form model and is no part of the request.
+    expect(request).not.toHaveProperty('cookies');
+    expect(header(request.headers, 'cookie')).toBeUndefined();
   });
 
   it('reports unfilled placeholders', () => {
@@ -288,7 +338,7 @@ describe('buildRequest', () => {
   it('adds the marker headers and names the credentials to withhold', () => {
     const { request } = buildRequest(update, filled, {
       marker,
-      credentials: { headers: [{ name: 'X-Client-Id', value: 'k1' }], cookies: [{ name: 'sid', value: 's1' }] },
+      credentials: { headers: [{ name: 'X-Client-Id', value: 'k1' }] },
     });
 
     expect(header(request.headers, 'x-devtools-request')).toBe('1');
@@ -302,10 +352,6 @@ describe('buildRequest', () => {
       'x-devtools-playground-redact',
     ]);
     expect(request.headers.find((entry) => entry.name === 'X-Client-Id')).toMatchObject({ secret: true, internal: false });
-    expect(request.cookies).toEqual([
-      { name: 'session', value: 'abc', secret: false },
-      { name: 'sid', value: 's1', secret: true },
-    ]);
   });
 
   it('names no header to withhold when there are no credentials', () => {
@@ -323,7 +369,7 @@ describe('buildRequest', () => {
           { name: 'accept', value: 'text/csv' },
         ],
       },
-      { credentials: { headers: [{ name: 'authorization', value: 'Bearer stored' }], cookies: [] } },
+      { credentials: { headers: [{ name: 'authorization', value: 'Bearer stored' }] } },
     );
 
     expect(request.headers).toEqual([

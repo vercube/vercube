@@ -165,3 +165,75 @@ export function buildTarget(template: string, values: Record<string, string>, qu
 
   return { path: search ? `${path}?${search}` : path, missing };
 }
+
+/** The URL a target resolves to, or why it must not be sent. */
+export type ResolvedTarget = { ok: true; href: string } | { ok: false; reason: string };
+
+/**
+ * Percent-decodes a path for comparison, leaving it as written when it holds
+ * a sequence that is not valid.
+ *
+ * @param path - A URL path
+ * @returns The decoded path
+ */
+function decodePath(path: string): string {
+  try {
+    return decodeURIComponent(path);
+  } catch {
+    return path;
+  }
+}
+
+/**
+ * Resolves a built target the way the browser will, and refuses it when the
+ * request would not go where the form says.
+ *
+ * `fetch` treats its argument as a URL reference, not as a path. A target that
+ * starts with two slashes names another host, and `.` and `..` segments are
+ * removed before the request leaves, so the text that was built and the
+ * request that is sent can differ. This resolves the target once, checks that
+ * the result is still this origin and still the path that was built, and
+ * returns the one URL that is shown, confirmed, exported and sent.
+ *
+ * @param target - Path and query, as {@link buildTarget} returns them
+ * @param origin - Origin of the page, such as `http://localhost:3000`
+ * @returns The resolved URL, or the reason nothing may be sent
+ */
+export function resolveTarget(target: string, origin: string): ResolvedTarget {
+  const mark = target.indexOf('?');
+  const path = mark === -1 ? target : target.slice(0, mark);
+  const search = mark === -1 ? '' : target.slice(mark);
+
+  let base: URL;
+  let resolved: URL;
+
+  try {
+    base = new URL(origin);
+    resolved = new URL(target, base);
+  } catch {
+    return { ok: false, reason: 'This does not form a URL.' };
+  }
+
+  if (resolved.origin !== base.origin) {
+    return {
+      ok: false,
+      reason: `This would be sent to ${resolved.origin}, not to this application. A path cannot start with two slashes.`,
+    };
+  }
+
+  // The parser may percent-encode a character the template wrote plainly,
+  // which changes the spelling and not the path, so the two are compared
+  // decoded. A removed dot segment survives no decoding.
+  if (resolved.pathname !== path && decodePath(resolved.pathname) !== decodePath(path)) {
+    return {
+      ok: false,
+      reason: `The browser would send ${resolved.pathname} instead of ${path}: "." and ".." segments are resolved before a request leaves.`,
+    };
+  }
+
+  if (resolved.search !== search || resolved.hash !== '') {
+    return { ok: false, reason: 'The query of this URL would change on the way out.' };
+  }
+
+  return { ok: true, href: resolved.href };
+}

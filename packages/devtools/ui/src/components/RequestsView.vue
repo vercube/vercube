@@ -41,7 +41,9 @@ const filtered = computed(() => {
         record.path.toLowerCase().includes(needle) ||
         record.method.toLowerCase().includes(needle) ||
         String(record.status).includes(needle) ||
-        (record.controller ?? '').toLowerCase().includes(needle),
+        (record.controller ?? '').toLowerCase().includes(needle) ||
+        // No mark per row for where a request came from: the word in the filter finds them.
+        (record.playground !== undefined && 'playground'.startsWith(needle)),
     );
 });
 
@@ -257,10 +259,7 @@ onMounted(reloadAll);
                 <span class="status" :class="statusClass(record.status)">{{ record.status || '---' }}</span>
               </td>
               <td class="mono faint">{{ record.method }}</td>
-              <td class="mono path">
-                {{ record.path }}
-                <span v-if="record.playground" class="tag origin" title="Sent from the route playground">playground</span>
-              </td>
+              <td class="mono path">{{ record.path }}</td>
               <td class="mono faint col-time">{{ formatTime(record.startedAt) }}</td>
               <td class="mono col-took">{{ formatMs(record.durationMs) }}</td>
               <td class="col-bar">
@@ -306,6 +305,10 @@ onMounted(reloadAll);
           <span>{{ formatMs(selected.durationMs) }}</span>
           <span class="dot">·</span>
           <span>{{ formatTime(selected.startedAt) }}</span>
+          <template v-if="selected.playground">
+            <span class="dot">·</span>
+            <span>sent from the playground</span>
+          </template>
         </p>
       </header>
 
@@ -462,13 +465,6 @@ onMounted(reloadAll);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.origin {
-  margin-left: 8px;
-  padding: 0 6px;
-  font-size: 10px;
-  vertical-align: middle;
 }
 
 .spark {

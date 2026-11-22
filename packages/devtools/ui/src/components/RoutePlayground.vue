@@ -1,6 +1,6 @@
 <script lang="ts">
 import { reactive } from 'vue';
-import { loadAuth } from '../playground/auth';
+import { loadAuth, persistAuth } from '../playground/auth';
 import { PlaygroundHistory } from '../playground/history';
 import type { StorageLike } from '../playground/auth';
 import type { Draft } from '../playground/request';
@@ -23,21 +23,28 @@ function storage(): StorageLike | null {
 const drafts = new Map<string, Draft>();
 const auth = reactive(loadAuth(storage()));
 const history = new PlaygroundHistory(storage());
+
+// Written back at once, so a field an earlier version kept (it stored a cookie
+// value) does not stay behind in storage.
+persistAuth(storage(), auth);
 </script>
 
 <script setup lang="ts">
 import { computed, nextTick, onUnmounted, ref, toRaw, watch } from 'vue';
 import { formatBytes, formatMs, loadRequests, statusClass } from '../api';
-import { hasCredentials, persistAuth, toCredentials } from '../playground/auth';
+import { hasCredentials, toCredentials } from '../playground/auth';
 import { toCurl, toFetch } from '../playground/export';
+import { parseDraft } from '../playground/history';
+import { formatJson } from '../playground/json';
 import { createMarker } from '../playground/marker';
 import { buildRequest, createDraft, describeForm, needsConfirmation, validateDraft } from '../playground/request';
 import { exampleOf, hintOf } from '../playground/schema';
 import { createSseParser } from '../playground/sse';
+import { resolveTarget } from '../playground/url';
 import type { RequestRecord, RouteInfo } from '../api';
 import type { AuthKind } from '../playground/auth';
 import type { HistoryEntry } from '../playground/history';
-import type { BodyMode, BuiltRequest, Field } from '../playground/request';
+import type { BodyMode, Field } from '../playground/request';
 import type { SchemaIssue } from '../playground/schema';
 import type { SseEvent } from '../playground/sse';
 import type { Pair } from '../playground/url';
@@ -50,8 +57,14 @@ const props = defineProps<{
 
 const emit = defineEmits<{ 'open-request': [id: string] }>();
 
-/** Largest response text shown. The rest is counted, not rendered. */
+/** Largest part of a text body that is shown, in bytes. */
 const MAX_TEXT = 256 * 1024;
+
+/**
+ * Largest part of a body held in memory, in bytes. Reading stops there, so a
+ * route that answers with gigabytes cannot take the tab down with it.
+ */
+const MAX_KEEP = 8 * 1024 * 1024;
 
 /** Stream events kept on screen. */
 const MAX_EVENTS = 200;
@@ -65,7 +78,6 @@ const AUTH_KINDS: { id: AuthKind; label: string }[] = [
   { id: 'bearer', label: 'Bearer token' },
   { id: 'basic', label: 'Basic' },
   { id: 'apikey', label: 'API key header' },
-  { id: 'cookie', label: 'Cookie' },
 ];
 
 const BODY_MODES: { id: BodyMode; label: string }[] = [
@@ -79,6 +91,7 @@ const BODY_MODES: { id: BodyMode; label: string }[] = [
 interface Result {
   marker: string;
   method: string;
+  /** Path and query of the URL the request was sent to. */
   target: string;
   phase: 'sending' | 'streaming' | 'done' | 'stopped' | 'failed';
   status?: number;
@@ -88,8 +101,10 @@ interface Result {
   headersMs?: number;
   /** Milliseconds until the body ended. */
   totalMs?: number;
-  /** Body bytes read so far. */
+  /** Body bytes read so far, after the browser decoded any content encoding. */
   size: number;
+  /** True when reading stopped at {@link MAX_KEEP} with more of the body to come. */
+  cut: boolean;
   kind: 'empty' | 'text' | 'events' | 'binary';
   text: string;
   truncated: boolean;
@@ -130,6 +145,9 @@ const copied = ref<'curl' | 'fetch' | null>(null);
 const saving = ref(false);
 const saveName = ref('');
 
+/** Set when the last request the user tried to save was too large to keep. */
+const saveRefused = ref(false);
+
 /** Bumped on every history change: the store itself is not reactive. */
 const historyRevision = ref(0);
 
@@ -142,6 +160,16 @@ const credentials = computed(() => (useAuth.value ? toCredentials(auth) : undefi
 
 /** The request as it would be sent now, without a marker: the preview and the exports. */
 const preview = computed(() => buildRequest(props.route, draft, { credentials: credentials.value }));
+
+/**
+ * Where the request would go as the browser resolves it, or why it may not be
+ * sent. The preview, the confirmation, the copies and the request itself all
+ * use this one URL.
+ */
+const resolved = computed(() => resolveTarget(preview.value.request.target, origin));
+
+/** The URL on screen. The text that was built stands in for a target that is refused. */
+const shownUrl = computed(() => (resolved.value.ok ? resolved.value.href : `${origin}${preview.value.request.target}`));
 
 const issues = computed(() => validateDraft(draft, model));
 
@@ -176,10 +204,6 @@ function resetBody(): void {
   }
 }
 
-function formatIssue(issue: SchemaIssue): string {
-  return issue.path ? `${issue.path} ${issue.message}` : `Body ${issue.message}`;
-}
-
 // Anything typed after the first click changes what would be sent, so the
 // confirmation is asked for again.
 watch(
@@ -202,7 +226,7 @@ watch(
 function requestSend(): void {
   touched.value = true;
 
-  if (preview.value.missing.length > 0 || busy.value) {
+  if (preview.value.missing.length > 0 || !resolved.value.ok || busy.value) {
     return;
   }
 
@@ -218,44 +242,16 @@ function requestSend(): void {
 }
 
 /**
- * Sets cookies for the duration of one request.
+ * Keeps a held key from pressing the confirmation.
  *
- * `fetch` refuses to send a `Cookie` header, so the only way to send one from
- * a page is to put it in the jar. It is taken out again as soon as the request
- * is on its way, and a cookie that was already there is put back.
- *
- * @param cookies - Cookies of the built request
- * @returns A function that undoes the change
+ * Enter on Send moves the focus here, and a key that is still down then
+ * repeats on this button. Without this, holding Enter a moment too long would
+ * send a `DELETE` nobody confirmed.
  */
-function setCookies(cookies: BuiltRequest['cookies']): () => void {
-  if (cookies.length === 0) {
-    return () => {};
+function ignoreRepeat(event: KeyboardEvent): void {
+  if (event.repeat) {
+    event.preventDefault();
   }
-
-  const before = new Map(
-    document.cookie
-      .split(';')
-      .map((pair) => pair.trim().split('='))
-      .filter(([name]) => name)
-      .map(([name, ...rest]) => [name, rest.join('=')]),
-  );
-
-  for (const cookie of cookies) {
-    /* oxlint-disable-next-line unicorn/no-document-cookie */
-    document.cookie = `${cookie.name}=${encodeURIComponent(cookie.value)}; path=/; SameSite=Strict`;
-  }
-
-  return () => {
-    for (const cookie of cookies) {
-      const previous = before.get(cookie.name);
-
-      /* oxlint-disable-next-line unicorn/no-document-cookie */
-      document.cookie =
-        previous === undefined
-          ? `${cookie.name}=; path=/; max-age=0; SameSite=Strict`
-          : `${cookie.name}=${previous}; path=/; SameSite=Strict`;
-    }
-  };
 }
 
 /** Whether a content type is shown as text. */
@@ -268,24 +264,38 @@ function pretty(text: string, type: string): string {
     return text;
   }
 
-  try {
-    return JSON.stringify(JSON.parse(text), null, 2);
-  } catch {
-    return text;
-  }
+  // Re-indented as text: parsing and printing would round large integers and
+  // drop repeated keys, and show a body the server never sent.
+  return formatJson(text);
+}
+
+/**
+ * The path and query of a resolved URL, as the response heading and the history show it.
+ */
+function relative(href: string): string {
+  return href.startsWith(origin) ? href.slice(origin.length) || '/' : href;
 }
 
 /** Sends the request. Only ever called from a click on Send or on its confirmation. */
 async function send(): Promise<void> {
   armed.value = false;
+
+  const marker = createMarker();
+  const { request } = buildRequest(props.route, draft, { marker, credentials: credentials.value });
+  const destination = resolveTarget(request.target, origin);
+
+  // The buttons are off for a refused target. This is the check that counts:
+  // the URL handed to `fetch` below is the one resolved here and no other.
+  if (!destination.ok) {
+    return;
+  }
+
   controller?.abort();
 
   if (result.value?.download) {
     URL.revokeObjectURL(result.value.download.url);
   }
 
-  const marker = createMarker();
-  const { request } = buildRequest(props.route, draft, { marker, credentials: credentials.value });
   const abort = new AbortController();
 
   controller = abort;
@@ -293,10 +303,11 @@ async function send(): Promise<void> {
   result.value = {
     marker: marker.id,
     method: request.method,
-    target: request.target,
+    target: relative(destination.href),
     phase: 'sending',
     headers: [],
     size: 0,
+    cut: false,
     kind: 'empty',
     text: '',
     truncated: false,
@@ -309,7 +320,6 @@ async function send(): Promise<void> {
   const current = result.value;
   const sent = { at: Date.now(), draft: structuredClone(toRaw(draft)) };
   const started = performance.now();
-  const clearCookies = setCookies(request.cookies);
 
   let body: BodyInit | undefined;
 
@@ -326,16 +336,15 @@ async function send(): Promise<void> {
   }
 
   try {
-    const response = await fetch(request.target, {
+    const response = await fetch(destination.href, {
       method: request.method,
       headers: request.headers.map((header) => [header.name, header.value] as [string, string]),
       body,
       signal: abort.signal,
+      // The browser adds the cookies it holds for this origin. The playground sets none.
       credentials: 'same-origin',
       cache: 'no-store',
     });
-
-    clearCookies();
 
     const type = (response.headers.get('content-type') ?? '').toLowerCase();
 
@@ -351,23 +360,12 @@ async function send(): Promise<void> {
       await readEvents(response, current);
     } else if (!response.body || request.method === 'HEAD') {
       current.kind = 'empty';
-    } else if (isText(type) || type === '') {
-      await readText(response, current, type);
     } else {
-      const blob = await response.blob();
-
-      current.kind = 'binary';
-      current.size = blob.size;
-      current.download = {
-        url: URL.createObjectURL(blob),
-        name: request.target.split('?')[0].split('/').findLast(Boolean) || 'response',
-      };
+      await readBody(response, current, type);
     }
 
     current.phase = 'done';
   } catch (error) {
-    clearCookies();
-
     if (abort.signal.aborted) {
       current.phase = 'stopped';
     } else {
@@ -382,25 +380,33 @@ async function send(): Promise<void> {
     }
   }
 
-  history.record({
-    at: sent.at,
-    route: routeKey,
-    method: request.method,
-    target: request.target,
-    draft: sent.draft,
-    status: current.status,
-    durationMs: current.totalMs,
-  });
+  history.record(
+    {
+      at: sent.at,
+      route: routeKey,
+      method: request.method,
+      target: current.target,
+      draft: sent.draft,
+      status: current.status,
+      durationMs: current.totalMs,
+    },
+    { keepCredentials: auth.remember },
+  );
   historyRevision.value++;
 
   void findRecord(current);
 }
 
-/** Reads a text body, keeping at most {@link MAX_TEXT} of it. */
-async function readText(response: Response, current: Result, type: string): Promise<void> {
+/**
+ * Reads a body, holding at most {@link MAX_KEEP} of it.
+ *
+ * A text body is shown up to {@link MAX_TEXT}. Whatever is held and not shown
+ * (the rest of a long text, a binary body) is offered as a download. Past the
+ * limit the stream is cancelled instead of being read into memory.
+ */
+async function readBody(response: Response, current: Result, type: string): Promise<void> {
   const reader = response.body!.getReader();
-  const decoder = new TextDecoder();
-  let text = '';
+  const chunks: Uint8Array[] = [];
 
   for (;;) {
     const { done, value } = await reader.read();
@@ -409,16 +415,46 @@ async function readText(response: Response, current: Result, type: string): Prom
       break;
     }
 
-    current.size += value.byteLength;
+    const room = MAX_KEEP - current.size;
 
-    if (text.length < MAX_TEXT) {
-      text += decoder.decode(value, { stream: true });
+    if (value.byteLength > room) {
+      chunks.push(value.subarray(0, room));
+      current.size += room;
+      current.cut = true;
+      await reader.cancel();
+
+      break;
     }
+
+    chunks.push(value);
+    current.size += value.byteLength;
   }
 
-  current.truncated = text.length > MAX_TEXT;
-  current.text = current.truncated ? text.slice(0, MAX_TEXT) : pretty(text, type);
-  current.kind = current.size === 0 ? 'empty' : 'text';
+  if (current.size === 0) {
+    current.kind = 'empty';
+
+    return;
+  }
+
+  const textual = isText(type) || type === '';
+  const blob = new Blob(chunks as BlobPart[], { type: type || 'application/octet-stream' });
+
+  if (textual) {
+    const shown = await blob.slice(0, MAX_TEXT).text();
+
+    current.truncated = current.size > MAX_TEXT;
+    current.text = current.truncated ? shown : pretty(shown, type);
+    current.kind = 'text';
+  } else {
+    current.kind = 'binary';
+  }
+
+  if (!textual || current.truncated) {
+    current.download = {
+      url: URL.createObjectURL(blob),
+      name: current.target.split('?')[0].split('/').findLast(Boolean) || 'response',
+    };
+  }
 }
 
 /** Reads an event stream until it ends or is stopped. */
@@ -500,8 +536,18 @@ watch(
   },
 );
 
+/**
+ * Loads a stored request into the form. Nothing is sent.
+ *
+ * The draft comes from browser storage, so it is checked once more here, and
+ * a method this route does not answer is not taken over.
+ */
 function restore(entry: HistoryEntry): void {
-  Object.assign(draft, structuredClone(entry.draft));
+  const stored = parseDraft(entry.draft);
+
+  if (stored) {
+    Object.assign(draft, stored, { method: model.methods.includes(stored.method) ? stored.method : draft.method });
+  }
 }
 
 function removeEntry(entry: HistoryEntry): void {
@@ -515,13 +561,19 @@ function clearHistory(): void {
 }
 
 function save(): void {
-  history.save(routeKey, saveName.value, draft, preview.value.request.target);
+  const kept = history.save(routeKey, saveName.value, draft, relative(shownUrl.value), { keepCredentials: auth.remember });
+
+  saveRefused.value = !history.has(kept.id);
   historyRevision.value++;
   saving.value = false;
   saveName.value = '';
 }
 
 async function copy(kind: 'curl' | 'fetch'): Promise<void> {
+  if (!resolved.value.ok) {
+    return;
+  }
+
   const options = { origin, includeCredentials: includeCredentials.value };
   const text = kind === 'curl' ? toCurl(preview.value.request, options) : toFetch(preview.value.request, options);
 
@@ -585,8 +637,11 @@ onUnmounted(() => {
           <option v-for="method in model.methods" :key="method" :value="method">{{ method }}</option>
         </select>
         <span v-else class="mono verb">{{ draft.method }}</span>
-        <code class="url">{{ origin }}{{ preview.request.target }}</code>
+        <code class="url" :class="{ refused: !resolved.ok }">{{ shownUrl }}</code>
       </div>
+      <ul v-if="!resolved.ok" class="issues" role="alert">
+        <li>{{ resolved.reason }} Nothing is sent.</li>
+      </ul>
     </section>
 
     <section v-if="model.params.length" class="part">
@@ -605,7 +660,9 @@ onUnmounted(() => {
         </label>
       </div>
       <ul v-if="visible(issues.params).length" class="issues">
-        <li v-for="issue in visible(issues.params)" :key="issue.path + issue.message">{{ issue.path }} {{ issue.message }}</li>
+        <li v-for="issue in visible(issues.params)" :key="issue.path + issue.message">
+          <span class="mono">{{ issue.path }}</span> {{ issue.message }}
+        </li>
       </ul>
     </section>
 
@@ -643,7 +700,9 @@ onUnmounted(() => {
         </div>
       </div>
       <ul v-if="visible(issues.query).length" class="issues">
-        <li v-for="issue in visible(issues.query)" :key="issue.path + issue.message">{{ issue.path }} {{ issue.message }}</li>
+        <li v-for="issue in visible(issues.query)" :key="issue.path + issue.message">
+          <span class="mono">{{ issue.path }}</span> {{ issue.message }}
+        </li>
       </ul>
     </section>
 
@@ -682,16 +741,6 @@ onUnmounted(() => {
             </svg>
           </button>
         </div>
-      </div>
-    </section>
-
-    <section v-if="draft.cookies.length" class="part">
-      <h3 class="label">Cookies</h3>
-      <div class="rows">
-        <label v-for="pair in draft.cookies" :key="pair.name" class="row fixed">
-          <span class="mono key">{{ pair.name }}</span>
-          <input v-model="pair.value" class="field" type="text" spellcheck="false" autocomplete="off" placeholder="value" />
-        </label>
       </div>
     </section>
 
@@ -743,7 +792,11 @@ onUnmounted(() => {
       </template>
 
       <ul v-if="visible(issues.body).length" class="issues">
-        <li v-for="issue in visible(issues.body)" :key="issue.path + issue.message">{{ formatIssue(issue) }}</li>
+        <li v-for="issue in visible(issues.body)" :key="issue.path + issue.message">
+          <span v-if="issue.path" class="mono">{{ issue.path }}</span>
+          <template v-else>Body</template>
+          {{ issue.message }}
+        </li>
       </ul>
       <p v-else-if="model.bodySchema !== undefined && draft.bodyMode === 'json'" class="hint">
         Matches the schema of this route.
@@ -779,18 +832,6 @@ onUnmounted(() => {
         <input v-model="auth.keyName" class="field" type="text" spellcheck="false" placeholder="header" aria-label="Header" />
         <input v-model="auth.keyValue" class="field" type="password" autocomplete="off" placeholder="key" aria-label="Key" />
       </div>
-      <div v-else-if="auth.kind === 'cookie'" class="row pair">
-        <input v-model="auth.cookieName" class="field" type="text" spellcheck="false" placeholder="name" aria-label="Cookie" />
-        <input
-          v-model="auth.cookieValue"
-          class="field"
-          type="password"
-          autocomplete="off"
-          placeholder="value"
-          aria-label="Cookie value"
-        />
-      </div>
-
       <template v-if="auth.kind !== 'none'">
         <label class="check">
           <input v-model="useAuth" type="checkbox" />
@@ -808,20 +849,35 @@ onUnmounted(() => {
           }}
         </p>
       </template>
+
+      <p class="hint">
+        Cookies are not set here. A request is sent with the cookies the browser already has for this origin, so sign in through
+        the application itself.
+        <template v-if="model.cookies.length">
+          This route reads <code>{{ model.cookies.map((cookie) => cookie.name).join(', ') }}</code>.
+        </template>
+      </p>
     </section>
 
     <section class="part send">
       <div v-if="armed" class="confirm" @keydown.esc="armed = false">
         <p class="what">
           <span class="mono verb" :class="{ destroy: draft.method === 'DELETE' }">{{ draft.method }}</span>
-          <code class="url">{{ origin }}{{ preview.request.target }}</code>
+          <code class="url">{{ shownUrl }}</code>
         </p>
         <p v-if="needsConfirmation(draft.method)" class="hint">This request can change data. Check the URL, then send it.</p>
         <p v-if="problemCount" class="hint warn">
           {{ problemCount }} {{ problemCount === 1 ? 'problem' : 'problems' }} above. The server will probably refuse it.
         </p>
         <div class="buttons">
-          <button ref="confirmButton" class="btn" :class="{ danger: draft.method === 'DELETE' }" type="button" @click="send">
+          <button
+            ref="confirmButton"
+            class="btn"
+            :class="{ danger: draft.method === 'DELETE' }"
+            type="button"
+            @keydown="ignoreRepeat"
+            @click="send"
+          >
             Send {{ draft.method }}
           </button>
           <button class="btn ghost" type="button" @click="armed = false">Cancel</button>
@@ -830,11 +886,19 @@ onUnmounted(() => {
 
       <div v-else class="buttons">
         <button v-if="busy" class="btn" type="button" @click="stop">Stop</button>
-        <button v-else class="btn primary" type="button" :disabled="touched && preview.missing.length > 0" @click="requestSend">
+        <button
+          v-else
+          class="btn primary"
+          type="button"
+          :disabled="!resolved.ok || (touched && preview.missing.length > 0)"
+          @click="requestSend"
+        >
           Send
         </button>
-        <button class="btn ghost" type="button" @click="copy('curl')">{{ copied === 'curl' ? 'Copied' : 'Copy as curl' }}</button>
-        <button class="btn ghost" type="button" @click="copy('fetch')">
+        <button class="btn ghost" type="button" :disabled="!resolved.ok" @click="copy('curl')">
+          {{ copied === 'curl' ? 'Copied' : 'Copy as curl' }}
+        </button>
+        <button class="btn ghost" type="button" :disabled="!resolved.ok" @click="copy('fetch')">
           {{ copied === 'fetch' ? 'Copied' : 'Copy as fetch' }}
         </button>
       </div>
@@ -862,7 +926,12 @@ onUnmounted(() => {
           <span v-if="result.totalMs !== undefined && result.kind !== 'empty'" title="Time until the body ended">
             {{ formatMs(result.totalMs) }} total
           </span>
-          <span v-if="result.size > 0">{{ formatBytes(result.size) }}</span>
+          <span
+            v-if="result.size > 0"
+            title="Size of the body as the browser decoded it. A compressed response is smaller on the wire."
+          >
+            {{ result.cut ? 'over ' : '' }}{{ formatBytes(result.size) }} decoded
+          </span>
         </span>
       </div>
 
@@ -929,8 +998,13 @@ onUnmounted(() => {
       <p v-else-if="result.kind === 'binary'" class="hint">Binary body, not decoded.</p>
       <p v-else-if="result.phase === 'done'" class="hint">Empty body.</p>
 
-      <p v-if="result.truncated" class="hint">
-        Showing the first {{ formatBytes(result.text.length) }} of {{ formatBytes(result.size) }}.
+      <p v-if="result.cut" class="hint">
+        Reading stopped after {{ formatBytes(MAX_KEEP) }} and the rest of the body was left unread.
+        <template v-if="result.truncated">The first {{ formatBytes(MAX_TEXT) }} are shown. </template>
+        The download holds what was read.
+      </p>
+      <p v-else-if="result.truncated" class="hint">
+        Showing the first {{ formatBytes(MAX_TEXT) }} of {{ formatBytes(result.size) }}. The download holds all of it.
       </p>
     </section>
 
@@ -959,7 +1033,8 @@ onUnmounted(() => {
           </button>
         </li>
       </ul>
-      <p v-else-if="!saving" class="hint">Nothing saved for this route.</p>
+      <p v-else-if="!saving && !saveRefused" class="hint">Nothing saved for this route.</p>
+      <p v-if="saveRefused" class="hint warn">This request is too large to keep in the browser. It was not saved.</p>
     </section>
 
     <section v-if="recent.length" class="part">
@@ -1167,9 +1242,19 @@ select.field {
   padding: 0;
   display: grid;
   gap: 2px;
-  font-family: var(--mono);
-  font-size: 11px;
+  /* Sentences, so the body face. Only the name a message is about is set in mono. */
+  font-family: var(--sans);
+  font-size: 11.5px;
   color: var(--warn);
+}
+
+.issues .mono {
+  font-size: 11px;
+}
+
+.url.refused {
+  color: var(--text-3);
+  text-decoration: line-through;
 }
 
 /* The heading is set in tracked capitals; a chip inside it is not part of the heading. */

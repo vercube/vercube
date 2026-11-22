@@ -1,3 +1,4 @@
+import { resolveTarget } from './url';
 import type { BuiltRequest, RequestHeader } from './request';
 
 /**
@@ -12,7 +13,7 @@ import type { BuiltRequest, RequestHeader } from './request';
 export interface ExportOptions {
   /** Origin the target is resolved against, such as `http://localhost:3000`. */
   origin: string;
-  /** Whether credential headers and cookies are written out. */
+  /** Whether credential headers are written out. */
   includeCredentials?: boolean;
 }
 
@@ -31,22 +32,26 @@ function quote(value: string): string {
  *
  * @param request - The built request
  * @param includeCredentials - Whether credentials are written out
- * @returns The headers, with cookies folded into one `Cookie` header
+ * @returns The headers, without the playground's own
  */
 function exportedHeaders(request: BuiltRequest, includeCredentials: boolean): RequestHeader[] {
-  const headers = request.headers.filter((header) => !header.internal && (includeCredentials || !header.secret));
-  const cookies = request.cookies.filter((cookie) => includeCredentials || !cookie.secret);
+  return request.headers.filter((header) => !header.internal && (includeCredentials || !header.secret));
+}
 
-  if (cookies.length > 0) {
-    headers.push({
-      name: 'Cookie',
-      value: cookies.map((cookie) => `${cookie.name}=${encodeURIComponent(cookie.value)}`).join('; '),
-      secret: false,
-      internal: false,
-    });
-  }
+/**
+ * The URL an export names: the one the browser would send the request to.
+ *
+ * A target the playground refuses to send is written as it was built. The
+ * view offers no copy for it, and a quoted URL does nothing by being printed.
+ *
+ * @param request - The built request
+ * @param origin - Origin the target is resolved against
+ * @returns The absolute URL
+ */
+function exportedUrl(request: BuiltRequest, origin: string): string {
+  const resolved = resolveTarget(request.target, origin);
 
-  return headers;
+  return resolved.ok ? resolved.href : `${origin}${request.target}`;
 }
 
 /**
@@ -57,7 +62,9 @@ function exportedHeaders(request: BuiltRequest, includeCredentials: boolean): Re
  * @returns The command, one option per line
  */
 export function toCurl(request: BuiltRequest, options: ExportOptions): string {
-  const lines = [`curl -X ${request.method} ${quote(`${options.origin}${request.target}`)}`];
+  // `-X HEAD` makes curl wait for a body that never comes; `-I` is the HEAD request.
+  const verb = request.method === 'HEAD' ? '-I' : `-X ${request.method}`;
+  const lines = [`curl ${verb} ${quote(exportedUrl(request, options.origin))}`];
 
   for (const header of exportedHeaders(request, options.includeCredentials === true)) {
     lines.push(`-H ${quote(`${header.name}: ${header.value}`)}`);
@@ -67,7 +74,9 @@ export function toCurl(request: BuiltRequest, options: ExportOptions): string {
     lines.push(`--data-raw ${quote(request.body.text)}`);
   } else if (request.body.kind === 'form') {
     for (const field of request.body.fields) {
-      lines.push(`-F ${quote(`${field.name}=${field.value}`)}`);
+      // `-F` reads a value that starts with `@` or `<` as a file to upload or
+      // to read. `--form-string` sends the text and nothing else.
+      lines.push(`--form-string ${quote(`${field.name}=${field.value}`)}`);
     }
   }
 
@@ -95,7 +104,7 @@ export function toFetch(request: BuiltRequest, options: ExportOptions): string {
     lines.push('');
   }
 
-  lines.push(`const response = await fetch(${JSON.stringify(`${options.origin}${request.target}`)}, {`);
+  lines.push(`const response = await fetch(${JSON.stringify(exportedUrl(request, options.origin))}, {`);
   lines.push(`  method: ${JSON.stringify(request.method)},`);
 
   if (headers.length > 0) {

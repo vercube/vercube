@@ -187,6 +187,17 @@ describe('checkSchema', () => {
     ]);
   });
 
+  it('compares enum and const by value, whatever order the members were written in', () => {
+    expect(problems({ const: { a: 1, b: 2 } }, { b: 2, a: 1 })).toEqual([]);
+    expect(problems({ const: { a: 1, b: { c: [1, { d: 2, e: 3 }] } } }, { b: { c: [1, { e: 3, d: 2 }] }, a: 1 })).toEqual([]);
+    expect(problems({ enum: [{ a: 1, b: 2 }, 'x'] }, { b: 2, a: 1 })).toEqual([]);
+    expect(problems({ const: { a: 1, b: 2 } }, { a: 1, b: 3 })).toEqual(['must be {"a":1,"b":2}']);
+    expect(problems({ const: { a: 1 } }, { a: 1, b: 2 })).toEqual(['must be {"a":1}']);
+    expect(problems({ const: [1, 2] }, [2, 1])).toEqual(['must be [1,2]']);
+    expect(problems({ const: [1, 2] }, { 0: 1, 1: 2 })).toEqual(['must be [1,2]']);
+    expect(problems({ const: null }, null)).toEqual([]);
+  });
+
   it('checks additional properties against their schema', () => {
     expect(problems({ type: 'object', additionalProperties: { type: 'integer' } }, { a: 1, b: 'x' })).toEqual([
       'b must be integer, got string',
@@ -319,6 +330,86 @@ describe('propertiesOf and propertyOf', () => {
     expect(propertyOf(schema, 'owner')).toEqual({ type: 'object' });
     expect(propertyOf(schema, 'missing')).toBeUndefined();
     expect(propertyOf(undefined, 'owner')).toBeUndefined();
+  });
+});
+
+describe('checkSchema of values that are text on the wire', () => {
+  /**
+   * Checks a path, query or header value.
+   *
+   * @param schema - The schema
+   * @param value - The text, or the texts of a repeated name
+   * @returns One line per problem
+   */
+  function wire(schema: JsonSchema, value: unknown): string[] {
+    return checkSchema(schema, value, { wire: true }).map((issue) => `${issue.path} ${issue.message}`.trim());
+  }
+
+  it('reads text as the number the schema asks for', () => {
+    expect(wire({ type: 'integer', minimum: 1 }, '7')).toEqual([]);
+    expect(wire({ type: 'number' }, '1.5')).toEqual([]);
+    expect(wire({ type: 'integer', minimum: 1 }, '0')).toEqual(['must be at least 1']);
+    expect(wire({ type: 'integer' }, 'abc')).toEqual(['must be integer, got string']);
+  });
+
+  it('reports nothing for a boolean: what text a coercion takes is not known here', () => {
+    for (const text of ['true', 'false', 'yes', '1', 'on', '']) {
+      expect(wire({ type: 'boolean' }, text)).toEqual([]);
+    }
+  });
+
+  it('reads one value as a list of one', () => {
+    const ids = { type: 'array', items: { type: 'number' } };
+
+    expect(wire(ids, '1')).toEqual([]);
+    expect(wire(ids, ['1', '2'])).toEqual([]);
+    expect(wire(ids, ['1', 'x'])).toEqual(['[1] must be number, got string']);
+    expect(wire({ ...ids, minItems: 2 }, '1')).toEqual(['must have at least 2 items']);
+  });
+
+  it('reads a repeated name as its first value where the schema takes no list', () => {
+    expect(wire({ type: 'integer', maximum: 5 }, ['3', '9'])).toEqual([]);
+    expect(wire({ type: 'integer', maximum: 5 }, ['9', '3'])).toEqual(['must be at most 5']);
+    expect(wire({ type: 'string', minLength: 2 }, ['a', 'bcd'])).toEqual(['must have at least 2 characters']);
+  });
+
+  it('checks the members of an object the same way', () => {
+    const query = {
+      type: 'object',
+      required: ['page'],
+      properties: {
+        page: { type: 'integer', minimum: 1 },
+        ids: { type: 'array', items: { type: 'number' } },
+        deep: { type: 'boolean' },
+      },
+    };
+
+    expect(wire(query, { page: '2', ids: '1', deep: 'yes' })).toEqual([]);
+    expect(wire(query, { page: '0', ids: ['1', '2'] })).toEqual(['page must be at least 1']);
+    expect(wire(query, {})).toEqual(['page is required']);
+  });
+
+  it('matches enum and const against the text', () => {
+    expect(wire({ enum: [1, 2] }, '2')).toEqual([]);
+    expect(wire({ type: 'integer', enum: [1, 2] }, '2')).toEqual([]);
+    expect(wire({ const: true }, 'true')).toEqual([]);
+    expect(wire({ enum: ['asc', 'desc'] }, 'up')).toEqual(['must be one of "asc", "desc"']);
+  });
+
+  it('leaves an object or a null written as text to the server', () => {
+    expect(wire({ type: 'object' }, '{"a":1}')).toEqual([]);
+    expect(wire({ type: 'null' }, 'anything')).toEqual([]);
+  });
+
+  it('keeps checking strings as strings', () => {
+    expect(wire({ type: 'string', minLength: 3 }, '12')).toEqual(['must have at least 3 characters']);
+    expect(wire({ type: ['string', 'number'] }, '12')).toEqual([]);
+    expect(wire({}, '12')).toEqual([]);
+  });
+
+  it('still reports a body value of the wrong type', () => {
+    expect(checkSchema({ type: 'integer' }, '7')).toEqual([{ path: '', message: 'must be integer, got string' }]);
+    expect(checkSchema({ type: 'array', items: { type: 'number' } }, '1')).toHaveLength(1);
   });
 });
 

@@ -7,10 +7,16 @@ import type { Credentials } from './request';
  * with a checkbox, and unticking it removes them again. They are applied when
  * a request is built and are never part of a draft, so they reach neither the
  * history nor a URL.
+ *
+ * Every kind is a request header. A cookie is not offered: a page cannot set
+ * the `Cookie` header of a request, and writing the credential into the
+ * browser's cookie jar instead would overwrite, leak or silently lose it.
+ * Requests are sent with the cookies the browser already holds for the
+ * origin, so a cookie session is opened by signing in to the application.
  */
 
 /** The kinds of credential the playground can send. */
-export type AuthKind = 'none' | 'bearer' | 'basic' | 'apikey' | 'cookie';
+export type AuthKind = 'none' | 'bearer' | 'basic' | 'apikey';
 
 /** What the user entered. Every kind keeps its own fields, so switching kinds loses nothing. */
 export interface AuthState {
@@ -20,8 +26,6 @@ export interface AuthState {
   password: string;
   keyName: string;
   keyValue: string;
-  cookieName: string;
-  cookieValue: string;
   /** Whether the user asked for the values to be kept in `localStorage`. */
   remember: boolean;
 }
@@ -36,7 +40,7 @@ export interface StorageLike {
 /** Storage key of remembered credentials. */
 export const AUTH_STORAGE_KEY = 'vercube-devtools-playground-auth';
 
-const KINDS: ReadonlySet<string> = new Set(['none', 'bearer', 'basic', 'apikey', 'cookie']);
+const KINDS: ReadonlySet<string> = new Set(['none', 'bearer', 'basic', 'apikey']);
 
 /**
  * The state before anything is entered.
@@ -51,8 +55,6 @@ export function emptyAuth(): AuthState {
     password: '',
     keyName: 'x-api-key',
     keyValue: '',
-    cookieName: '',
-    cookieValue: '',
     remember: false,
   };
 }
@@ -64,7 +66,7 @@ export function emptyAuth(): AuthState {
  * @returns True when the selected kind has its value filled in
  */
 export function hasCredentials(auth: AuthState): boolean {
-  return toCredentials(auth).headers.length + toCredentials(auth).cookies.length > 0;
+  return toCredentials(auth).headers.length > 0;
 }
 
 /**
@@ -81,12 +83,12 @@ function base64(text: string): string {
  * Turns the entered credentials into what a request carries.
  *
  * @param auth - The entered credentials
- * @returns The headers and cookies to add; both empty when nothing usable is entered
+ * @returns The headers to add; none when nothing usable is entered
  */
 export function toCredentials(auth: AuthState): Credentials {
   switch (auth.kind) {
     case 'bearer': {
-      return { headers: auth.token ? [{ name: 'Authorization', value: `Bearer ${auth.token}` }] : [], cookies: [] };
+      return { headers: auth.token ? [{ name: 'Authorization', value: `Bearer ${auth.token}` }] : [] };
     }
     case 'basic': {
       return {
@@ -94,23 +96,15 @@ export function toCredentials(auth: AuthState): Credentials {
           auth.username || auth.password
             ? [{ name: 'Authorization', value: `Basic ${base64(`${auth.username}:${auth.password}`)}` }]
             : [],
-        cookies: [],
       };
     }
     case 'apikey': {
       return {
         headers: auth.keyName.trim() && auth.keyValue ? [{ name: auth.keyName.trim(), value: auth.keyValue }] : [],
-        cookies: [],
-      };
-    }
-    case 'cookie': {
-      return {
-        headers: [],
-        cookies: auth.cookieName.trim() && auth.cookieValue ? [{ name: auth.cookieName.trim(), value: auth.cookieValue }] : [],
       };
     }
     default: {
-      return { headers: [], cookies: [] };
+      return { headers: [] };
     }
   }
 }

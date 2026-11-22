@@ -1,5 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { HISTORY_STORAGE_KEY, PlaygroundHistory, sanitiseDraft } from '../../ui/src/playground/history';
+import {
+  HISTORY_STORAGE_KEY,
+  MAX_BODY,
+  MAX_ENTRY,
+  MAX_TOTAL,
+  parseDraft,
+  PlaygroundHistory,
+  redactTarget,
+  sanitiseDraft,
+} from '../../ui/src/playground/history';
 import { MemoryStorage } from './Storage';
 import type { Draft } from '../../ui/src/playground/request';
 
@@ -13,7 +22,6 @@ const draft: Draft = {
     { name: 'X-Api-Key', value: 'k1' },
     { name: 'x-session-id', value: 's1' },
   ],
-  cookies: [{ name: 'sid', value: 's1' }],
   bodyMode: 'json',
   body: '{"sku":"A-1"}',
   form: [{ name: 'title', value: 'Report' }],
@@ -32,7 +40,7 @@ function send(history: PlaygroundHistory, route: string, at: number): ReturnType
 }
 
 describe('sanitiseDraft', () => {
-  it('removes the values of headers that look like credentials, and of every cookie', () => {
+  it('removes the values of headers that look like credentials', () => {
     const stored = sanitiseDraft(draft);
 
     expect(stored.headers).toEqual([
@@ -41,7 +49,6 @@ describe('sanitiseDraft', () => {
       { name: 'X-Api-Key', value: '' },
       { name: 'x-session-id', value: '' },
     ]);
-    expect(stored.cookies).toEqual([{ name: 'sid', value: '' }]);
     expect(stored.body).toBe(draft.body);
   });
 
@@ -56,6 +63,74 @@ describe('sanitiseDraft', () => {
 
   it('drops a body too large to keep', () => {
     expect(sanitiseDraft({ ...draft, body: 'x'.repeat(40_000) }).body).toBe('');
+    expect(sanitiseDraft({ ...draft, body: 'x'.repeat(MAX_BODY + 1) }).body).toBe('');
+    expect(sanitiseDraft({ ...draft, body: 'x'.repeat(MAX_BODY) }).body).toHaveLength(MAX_BODY);
+  });
+
+  it('removes query and form values named like a credential', () => {
+    const names = ['token', 'api_key', 'client_secret', 'Password', 'AUTHORIZATION', 'access_token', 'page'];
+    const stored = sanitiseDraft({
+      ...draft,
+      query: names.map((name) => ({ name, value: 'v' })),
+      form: names.map((name) => ({ name, value: 'v' })),
+    });
+
+    expect(stored.query.map((pair) => pair.value)).toEqual(['', '', '', '', '', '', 'v']);
+    expect(stored.form.map((pair) => pair.value)).toEqual(['', '', '', '', '', '', 'v']);
+    expect(stored.query.map((pair) => pair.name)).toEqual(names);
+  });
+
+  it('keeps them when the user asked for credentials to be kept', () => {
+    const stored = sanitiseDraft(
+      { ...draft, query: [{ name: 'token', value: 't1' }], form: [{ name: 'password', value: 'p1' }] },
+      { keepCredentials: true },
+    );
+
+    expect(stored.query).toEqual([{ name: 'token', value: 't1' }]);
+    expect(stored.form).toEqual([{ name: 'password', value: 'p1' }]);
+    // A header is a different matter: it is never stored.
+    expect(stored.headers[1]).toEqual({ name: 'Authorization', value: '' });
+  });
+});
+
+describe('redactTarget', () => {
+  it('removes credentials from the query and leaves the rest as written', () => {
+    expect(redactTarget('/orders/7?page=2&access_token=abc&api%5Fkey=k1&q=a+b')).toBe(
+      '/orders/7?page=2&access_token=redacted&api%5Fkey=redacted&q=a+b',
+    );
+    expect(redactTarget('/orders/7')).toBe('/orders/7');
+    expect(redactTarget('/orders?token')).toBe('/orders?token');
+    expect(redactTarget('/orders?%E0%A4%A=1&token=x')).toBe('/orders?%E0%A4%A=1&token=redacted');
+  });
+});
+
+describe('parseDraft', () => {
+  it('rebuilds a stored draft and leaves out what the form does not hold', () => {
+    const stored = { ...sanitiseDraft(draft), cookies: [{ name: 'sid', value: 's1' }], extra: true };
+
+    expect(parseDraft(structuredClone(stored))).toEqual(sanitiseDraft(draft));
+  });
+
+  it('refuses anything that is not wholly a draft', () => {
+    const good = sanitiseDraft(draft);
+
+    for (const bad of [
+      null,
+      'text',
+      [],
+      { ...good, method: 7 },
+      { ...good, params: null },
+      { ...good, params: ['7'] },
+      { ...good, params: { id: 7 } },
+      { ...good, query: 'notify=true' },
+      { ...good, query: [{ name: 'notify' }] },
+      { ...good, headers: [null] },
+      { ...good, form: [{ name: 1, value: 'x' }] },
+      { ...good, bodyMode: 'xml' },
+      { ...good, body: { sku: 'A-1' } },
+    ]) {
+      expect(parseDraft(bad)).toBeNull();
+    }
   });
 });
 
@@ -149,6 +224,95 @@ describe('PlaygroundHistory', () => {
 
   it('names a saved request after its target when no name is given', () => {
     expect(new PlaygroundHistory(null).save('POST /orders', '  ', draft, '/orders/7').name).toBe('/orders/7');
+  });
+
+  it('stores no credential that was typed into the query or a form field', () => {
+    const storage = new MemoryStorage();
+    const history = new PlaygroundHistory(storage);
+    const typed: Draft = {
+      ...draft,
+      query: [{ name: 'access_token', value: 'q-secret' }],
+      form: [{ name: 'password', value: 'f-secret' }],
+    };
+
+    history.record({ at: 1, route: 'POST /orders', method: 'POST', target: '/orders/7?access_token=q-secret', draft: typed });
+
+    const saved = history.save('POST /orders', '', typed, '/orders/7?access_token=q-secret');
+
+    expect(saved.name).toBe('/orders/7?access_token=redacted');
+    expect(storage.getItem(HISTORY_STORAGE_KEY)).not.toContain('q-secret');
+    expect(storage.getItem(HISTORY_STORAGE_KEY)).not.toContain('f-secret');
+  });
+
+  it('stores them when the user asked for credentials to be kept', () => {
+    const storage = new MemoryStorage();
+    const typed: Draft = { ...draft, query: [{ name: 'access_token', value: 'q-secret' }] };
+
+    new PlaygroundHistory(storage).record(
+      { at: 1, route: 'POST /orders', method: 'POST', target: '/orders/7?access_token=q-secret', draft: typed },
+      { keepCredentials: true },
+    );
+
+    expect(storage.getItem(HISTORY_STORAGE_KEY)).toContain('/orders/7?access_token=q-secret');
+  });
+
+  it('does not keep an entry that is too large', () => {
+    const history = new PlaygroundHistory(new MemoryStorage());
+    const huge: Draft = { ...draft, query: [{ name: 'q', value: 'x'.repeat(MAX_ENTRY) }] };
+    const sent = history.record({ at: 1, route: 'POST /orders', method: 'POST', target: '/orders/7', draft: huge });
+    const saved = history.save('POST /orders', 'huge', huge, '/orders/7');
+
+    expect(history.has(sent.id)).toBe(false);
+    expect(history.has(saved.id)).toBe(false);
+    expect(history.recent('POST /orders')).toEqual([]);
+    expect(history.saved('POST /orders')).toEqual([]);
+  });
+
+  it('stays below its size limit, letting the oldest unsaved entries go first', () => {
+    const storage = new MemoryStorage();
+    const history = new PlaygroundHistory(storage);
+    const large: Draft = { ...draft, query: [{ name: 'q', value: 'x'.repeat(8000) }] };
+    const first = history.save('POST /orders', 'kept', large, '/orders/7');
+
+    for (let at = 1; at <= 100; at++) {
+      history.record({ at, route: `GET /route-${at}`, method: 'GET', target: '/orders', draft: large });
+    }
+
+    expect(storage.getItem(HISTORY_STORAGE_KEY)!.length).toBeLessThanOrEqual(MAX_TOTAL);
+    expect(history.has(first.id)).toBe(true);
+    expect(history.recent('GET /route-100')).toHaveLength(1);
+    expect(history.recent('GET /route-1')).toEqual([]);
+
+    // Saved requests are bounded as well: the oldest go once nothing unsaved is left.
+    for (let index = 0; index < 100; index++) {
+      history.save('POST /orders', `saved ${index}`, large, '/orders/7');
+    }
+
+    expect(storage.getItem(HISTORY_STORAGE_KEY)!.length).toBeLessThanOrEqual(MAX_TOTAL);
+    expect(history.has(first.id)).toBe(false);
+    expect(history.saved('POST /orders')[0].name).toBe('saved 99');
+  });
+
+  it('reads back only entries that are whole', () => {
+    const storage = new MemoryStorage();
+    const good = send(new PlaygroundHistory(storage), 'POST /orders', 1);
+
+    storage.setItem(
+      HISTORY_STORAGE_KEY,
+      JSON.stringify([
+        good,
+        { ...good, id: 'no-target', target: undefined },
+        { ...good, id: 'bad-status', status: '200' },
+        { ...good, id: 'bad-draft', draft: { ...good.draft, query: [{ name: 'a', value: 1 }] } },
+        { ...good, id: 'bad-mode', draft: { ...good.draft, bodyMode: 'xml' } },
+        { ...good, id: 'old', draft: { ...good.draft, cookies: [{ name: 'sid', value: '' }] } },
+      ]),
+    );
+
+    const read = new PlaygroundHistory(storage).recent('POST /orders');
+
+    expect(read.map((entry) => entry.id)).toEqual([good.id, 'old']);
+    expect(read[1].draft).toEqual(good.draft);
   });
 
   it('removes one entry and clears the unsaved ones of a route', () => {

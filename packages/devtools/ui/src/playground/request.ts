@@ -1,4 +1,4 @@
-import { checkSchema, coerceText, exampleOf, propertiesOf } from './schema';
+import { checkSchema, exampleOf, propertiesOf } from './schema';
 import { buildTarget, pathParams } from './url';
 import type { JsonSchema, SchemaIssue } from './schema';
 import type { Pair, PathParam } from './url';
@@ -48,7 +48,7 @@ export interface FormModel {
   query: Field[];
   /** Headers the handler reads by name. */
   headers: Field[];
-  /** Cookies the handler reads by name. */
+  /** Cookies the handler reads by name. Shown, never entered: the browser sends its own. */
   cookies: Field[];
   /** Schema of the whole query object, from `@QueryParams({ validationSchema })`. */
   querySchema?: JsonSchema;
@@ -64,7 +64,6 @@ export interface Draft {
   params: Record<string, string>;
   query: Pair[];
   headers: Pair[];
-  cookies: Pair[];
   bodyMode: BodyMode;
   /** Body text of the `json` and `text` modes. */
   body: string;
@@ -75,7 +74,6 @@ export interface Draft {
 /** Credentials applied to a request. Kept apart from the draft so they are never stored with it. */
 export interface Credentials {
   headers: Pair[];
-  cookies: Pair[];
 }
 
 /** One header of a built request. */
@@ -92,8 +90,6 @@ export interface BuiltRequest {
   /** Path and query, relative to the origin. */
   target: string;
   headers: RequestHeader[];
-  /** Cookies to set for the duration of the request; `fetch` cannot send a `Cookie` header. */
-  cookies: (Pair & { secret: boolean })[];
   body: { kind: 'none' } | { kind: 'text'; text: string } | { kind: 'form'; fields: Pair[] };
 }
 
@@ -166,7 +162,6 @@ export function createDraft(model: FormModel): Draft {
     params: Object.fromEntries(model.params.map((param) => [param.name, ''])),
     query: model.query.map((field) => ({ name: field.name, value: '' })),
     headers: model.headers.map((field) => ({ name: field.name, value: '' })),
-    cookies: model.cookies.map((field) => ({ name: field.name, value: '' })),
     bodyMode: model.bodyMode,
     body: model.bodySchema === undefined ? '' : JSON.stringify(exampleOf(model.bodySchema), null, 2),
     form: [],
@@ -202,7 +197,7 @@ export function validateDraft(
     if (value === '') {
       params.push({ path: param.name, message: 'is required' });
     } else if (param.schema !== undefined) {
-      params.push(...checkSchema(param.schema, coerceText(param.schema, value)).map((issue) => ({ ...issue, path: param.name })));
+      params.push(...checkSchema(param.schema, value, { wire: true }).map((issue) => ({ ...issue, path: param.name })));
     }
   }
 
@@ -212,32 +207,41 @@ export function validateDraft(
 /**
  * Checks the query entries.
  *
+ * The values are handed over as they are on the wire: text, and a list of
+ * texts for a name written more than once. What that means for a schema (a
+ * number, the first value, a list) is decided by the checker, which reports
+ * only what no coercion on the server could accept.
+ *
  * @param draft - The draft
  * @param model - The form model
  * @returns The problems found
  */
 function validateQuery(draft: Draft, model: FormModel): SchemaIssue[] {
-  const entered: Record<string, unknown> = {};
+  const entered: Record<string, string | string[]> = {};
 
   for (const { name, value } of draft.query) {
-    if (!name.trim() || value === '') {
+    const key = name.trim();
+
+    if (!key || value === '') {
       continue;
     }
 
-    const coerced = coerceText(model.query.find((field) => field.name === name.trim())?.schema, value);
-    const previous = entered[name.trim()];
+    const previous = Object.hasOwn(entered, key) ? entered[key] : undefined;
 
-    // A repeated name is how a list is written in a query string.
-    entered[name.trim()] = previous === undefined ? coerced : [...(Array.isArray(previous) ? previous : [previous]), coerced];
+    if (previous === undefined) {
+      entered[key] = value;
+    } else {
+      entered[key] = [...(Array.isArray(previous) ? previous : [previous]), value];
+    }
   }
 
   if (model.querySchema !== undefined) {
-    return checkSchema(model.querySchema, entered);
+    return checkSchema(model.querySchema, entered, { wire: true });
   }
 
   return model.query.flatMap((field) =>
-    field.schema !== undefined && entered[field.name] !== undefined
-      ? checkSchema(field.schema, entered[field.name]).map((issue) => ({ ...issue, path: field.name }))
+    field.schema !== undefined && Object.hasOwn(entered, field.name)
+      ? checkSchema(field.schema, entered[field.name], { wire: true }).map((issue) => ({ ...issue, path: field.name }))
       : [],
   );
 }
@@ -342,12 +346,6 @@ export function buildRequest(
       method: draft.method,
       target,
       headers,
-      cookies: [
-        ...draft.cookies
-          .filter((cookie) => cookie.name.trim() && cookie.value !== '')
-          .map((cookie) => ({ ...cookie, secret: false })),
-        ...(options.credentials?.cookies ?? []).map((cookie) => ({ ...cookie, secret: true })),
-      ],
       body,
     },
     missing,
