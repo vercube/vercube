@@ -90,6 +90,15 @@ export * from './Services/Health/HealthController';
 export * from './Services/Health/HealthRoutes';
 
 // Errors
+export { defineErrorCatalog, describeError, getErrorGuidance } from '@vercube/di';
+export type {
+  ErrorCatalog,
+  ErrorCatalogDescription,
+  ErrorCatalogEntry,
+  ErrorFactory,
+  ErrorFactoryOverrides,
+  ErrorGuidance,
+} from '@vercube/di';
 export * from './Errors/HttpError';
 export * from './Errors/RouteErrors';
 export * from './Errors/Http/BadRequestError';

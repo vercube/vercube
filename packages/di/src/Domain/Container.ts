@@ -1,3 +1,4 @@
+import { DiErrors } from '../Errors/Catalog';
 import { IOC } from '../Types/IOCTypes';
 import { destroyDecorators, initializeDecorators } from '../Utils/Utils';
 import { ContainerEvents } from './ContainerEvents';
@@ -141,7 +142,7 @@ export class Container {
     };
 
     if (typeof key === 'symbol' && !value) {
-      throw new Error('Container - provide implementation for binds with symbols.');
+      throw DiErrors.SYMBOL_WITHOUT_IMPLEMENTATION();
     }
 
     const existingServiceDef = this.fServices.get(key);
@@ -374,7 +375,7 @@ export class Container {
         this.fDisposals.delete(tracked);
         return null;
       },
-      (error: unknown) => error ?? new Error('Container - disposal rejected'),
+      (error: unknown) => error ?? DiErrors.DISPOSAL_REJECTED(),
     );
 
     this.fDisposals.add(tracked);
@@ -410,7 +411,7 @@ export class Container {
     const serviceDef = this.fServices.get(key);
     if (!serviceDef) {
       const owner = parent?.constructor?.name;
-      throw new Error(`Unresolved dependency for [${this.getKeyDescription(key)}]${owner ? ` required by [${owner}]` : ''}`);
+      throw DiErrors.UNRESOLVED({ key: this.getKeyDescription(key), owner });
     }
 
     return this.internalResolve(serviceDef) as T;
@@ -468,7 +469,7 @@ export class Container {
       }
 
       default: {
-        throw new Error(`Container - invalid factory type: ${serviceDef.type}`);
+        throw DiErrors.INVALID_FACTORY_TYPE({ type: serviceDef.type });
       }
     }
   }
@@ -481,7 +482,7 @@ export class Container {
    */
   protected internalConstruct(serviceDef: IOC.ServiceDef, singleton: boolean): IOC.Instance {
     if (this.fDisposed) {
-      throw new Error(`Container - disposed, cannot create [${this.getKeyDescription(serviceDef.serviceKey)}]`);
+      throw DiErrors.DISPOSED({ key: this.getKeyDescription(serviceDef.serviceKey) });
     }
 
     const onResolved = getIOCDevtoolsHook()?.onResolved;
@@ -618,7 +619,7 @@ export class Container {
       }
 
       default: {
-        throw new Error(`Container::internalDispose() - invalid def type: ${def.type}`);
+        throw DiErrors.INVALID_DEFINITION_TYPE({ type: def.type });
       }
     }
   }

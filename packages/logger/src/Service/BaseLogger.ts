@@ -362,8 +362,12 @@ function writesStructuredOutput(config: LoggerTypes.Options): boolean {
 
 const MAX_CAUSE_DEPTH = 5;
 
+/** The fields evlog reads off a structured error: its code, status, and why / fix / link guidance. */
+const GUIDANCE_FIELDS = ['code', 'status', 'why', 'fix', 'link', 'internal'] as const;
+
 /**
- * Serializes an error with its own enumerable fields and `cause` chain (depth capped, cycle safe).
+ * Serializes an error with its own enumerable fields, its guidance (`code`, `why`, `fix`, `link`,
+ * `internal`) and `cause` chain (depth capped, cycle safe).
  * @param err - The error to serialize
  * @param depth - Current cause depth
  * @param seen - Errors already visited
@@ -374,6 +378,17 @@ function serializeError(err: Error, depth = 0, seen: Set<unknown> = new Set()): 
   out.name = err.name;
   out.message = err.message;
   out.stack = err.stack;
+
+  // What an error says about itself beyond the message. Framework errors keep
+  // these off the enumerable surface so an HTTP error body does not carry
+  // them, which is why the spread above does not find them.
+  for (const field of GUIDANCE_FIELDS) {
+    const value = (err as unknown as Record<string, unknown>)[field];
+
+    if (value !== undefined && out[field] === undefined) {
+      out[field] = value;
+    }
+  }
 
   const cause = (err as { cause?: unknown }).cause;
   if (cause !== undefined) {

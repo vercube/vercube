@@ -71,6 +71,43 @@ describe('BaseLogger', () => {
       expect(arg.errors.map((e: { message: string }) => e.message)).toEqual(['publish failed', 'original']);
     });
 
+    it('logs the guidance an error carries off its enumerable surface', () => {
+      const error = new Error('Unresolved dependency for [Mailer]');
+
+      for (const [field, value] of Object.entries({
+        code: 'VERCUBE_DI_UNRESOLVED',
+        why: 'Nothing was bound to the key.',
+        fix: 'Bind it in setup.',
+        link: 'https://vercube.dev/docs/core-features/errors#vercube_di_unresolved',
+        internal: { key: 'Mailer' },
+        status: 503,
+      })) {
+        Object.defineProperty(error, field, { value, enumerable: false });
+      }
+
+      logger.error(error);
+
+      expect(log.error.mock.calls[0][0].error).toMatchObject({
+        message: 'Unresolved dependency for [Mailer]',
+        code: 'VERCUBE_DI_UNRESOLVED',
+        why: 'Nothing was bound to the key.',
+        fix: 'Bind it in setup.',
+        link: 'https://vercube.dev/docs/core-features/errors#vercube_di_unresolved',
+        internal: { key: 'Mailer' },
+        status: 503,
+      });
+    });
+
+    it('keeps an enumerable code as it is and adds no empty guidance', () => {
+      logger.error(Object.assign(new Error('no such file'), { code: 'ENOENT' }));
+
+      const logged = log.error.mock.calls[0][0].error;
+
+      expect(logged.code).toBe('ENOENT');
+      expect('why' in logged).toBe(false);
+      expect('fix' in logged).toBe(false);
+    });
+
     it('does not set errors for a single Error and survives cause cycles', () => {
       const a = new Error('a');
       const b = new Error('b', { cause: a });
