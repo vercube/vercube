@@ -132,12 +132,27 @@ describe('route description schemas', () => {
   it('converts once per described revision', async () => {
     convert.mockClear();
 
-    const registry = app.container.get(IntrospectionRegistry);
+    // A fresh application, so the first describe of its route table is seen here.
+    const fresh = await createApp({
+      cfg: { ...defaultConfig, requestLogging: false, logLevel: 'error' },
+      setup: (instance) => {
+        instance.container.bind(UsersController);
+      },
+    });
+    const registry = fresh.container.get(IntrospectionRegistry);
 
-    await registry.describe('routes');
-    await registry.describe('routes');
-
+    // Booting converts nothing: the schema is only described when somebody asks.
     expect(convert).not.toHaveBeenCalled();
+
+    await registry.describe('routes');
+
+    // One schema with a converter on the route table, converted exactly once.
+    expect(convert).toHaveBeenCalledTimes(1);
+
+    await registry.describe('routes');
+    await registry.describe('routes');
+
+    expect(convert).toHaveBeenCalledTimes(1);
   });
 });
 
