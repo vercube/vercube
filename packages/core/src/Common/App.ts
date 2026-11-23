@@ -1,5 +1,6 @@
 import { initializeContainer, Inject } from '@vercube/di';
 import { Logger } from '@vercube/logger';
+import { CoreErrors } from '../Errors/Catalog';
 import { RuntimeConfig } from '../Services/Config/RuntimeConfig';
 import { HealthRegistry } from '../Services/Health/HealthRegistry';
 import { HealthRoutes } from '../Services/Health/HealthRoutes';
@@ -189,7 +190,7 @@ export class App {
    */
   public async listen(): Promise<void> {
     if (this.fIsInitialized) {
-      throw new Error('App is already initialized');
+      throw CoreErrors.APP_ALREADY_INITIALIZED();
     }
 
     // initialize container with all decorators
@@ -453,7 +454,7 @@ export class App {
     this.gLifecycle.advance('closed');
 
     if (errors.length > 0) {
-      throw new AggregateError(errors, 'Failed to close the application');
+      throw CoreErrors.APP_CLOSE_FAILED({ errors });
     }
   }
 

@@ -1,3 +1,4 @@
+import { CoreErrors } from '../../Errors/Catalog';
 /**
  * This module is responsible for managing type-safe hooks observer pattern.
  *
@@ -97,7 +98,7 @@ export class HooksService {
         waitTimeout = setTimeout(() => {
           // clear the event listener and reject promise
           this.off(eventId);
-          reject(new Error(`Waiting for event timeout - ${type.name}`));
+          reject(CoreErrors.HOOK_WAIT_TIMEOUT({ hook: type.name }));
         }, timeout);
       }
     });
@@ -113,13 +114,13 @@ export class HooksService {
     const handlersOfType: HooksTypes.HookHandler<T>[] | undefined = this.fHandlers.get(type);
 
     if (!handlersOfType) {
-      throw new Error('Trying to unbind event that was not bound.');
+      throw CoreErrors.HOOK_NOT_BOUND();
     }
 
     const index = handlersOfType.findIndex((handler) => handler.id === eventId.__id);
 
     if (index === -1) {
-      throw new Error('Trying to unbind event that was not bound.');
+      throw CoreErrors.HOOK_NOT_BOUND();
     }
 
     handlersOfType.splice(index, 1);

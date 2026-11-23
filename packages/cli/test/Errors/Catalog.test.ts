@@ -1,4 +1,6 @@
-import { rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { getErrorGuidance } from '@vercube/di';
 import { afterEach, describe, expect, it } from 'vitest';
 import { CliErrors } from '../../src/Errors/Catalog';
@@ -7,6 +9,7 @@ import { Project } from '../../src/Recipes/Project';
 import { RecipeError } from '../../src/Recipes/RecipeError';
 import { resolveRecipes } from '../../src/Recipes/Resolve';
 import { resolveInitPlan } from '../../src/Scaffold/Plan';
+import { exportStatic, StaticExportError } from '../../src/Static/Export';
 import { getCommandMeta } from '../../src/Utils/CommandUtils';
 import { apiTemplate } from '../Fixtures';
 import type { RecipeTypes } from '../../src/Recipes/RecipeTypes';
@@ -137,5 +140,47 @@ describe('the errors of the CLI', () => {
     expect(error).toBeInstanceOf(RecipeError);
     expect(error.message).toBe('mailer: no SMTP host');
     expect(getErrorGuidance(error)?.code).toBe('VERCUBE_CLI_RECIPE_FAILED');
+  });
+
+  it('keeps the class and the message of the errors of a static export', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'vercube-cli-errors-'));
+    const options = { routes: [], fetch: async () => new Response('ok'), root };
+
+    try {
+      mkdirSync(join(root, 'notes'));
+      writeFileSync(join(root, 'notes/todo.md'), 'kept');
+
+      const outside = await rejected(() => exportStatic({ ...options, directory: root }));
+      const overlaps = await rejected(() => exportStatic({ ...options, directory: join(root, 'src') }));
+      const taken = await rejected(() => exportStatic({ ...options, directory: join(root, 'notes') }));
+
+      for (const error of [outside, overlaps, taken]) {
+        expect(error).toBeInstanceOf(StaticExportError);
+        expect(error.name).toBe('StaticExportError');
+      }
+
+      expect(outside.message).toBe(
+        `The static export cannot be written to ${root}: choose a directory of its own inside the project, such as dist-static.`,
+      );
+      expect(getErrorGuidance(outside)?.code).toBe('VERCUBE_CLI_STATIC_OUTPUT_OUTSIDE_PROJECT');
+      expect(overlaps.message).toBe(
+        `The static export cannot be written to ${join(root, 'src')}: it would replace ${join(root, 'src')}. Choose a directory of its own, such as dist-static.`,
+      );
+      expect(getErrorGuidance(overlaps)?.code).toBe('VERCUBE_CLI_STATIC_OUTPUT_OVERLAPS');
+      expect(taken.message).toBe(
+        `${join(root, 'notes')} is not empty and was not written by a static export. Remove it, or choose another directory with --out.`,
+      );
+      expect(getErrorGuidance(taken)?.code).toBe('VERCUBE_CLI_STATIC_OUTPUT_NOT_EMPTY');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+
+    const target = CliErrors.BUILD_TARGET_UNKNOWN({ target: 'netlify' });
+
+    expect(target).toBeInstanceOf(StaticExportError);
+    expect(target.message).toBe('Unknown build target "netlify". Available: github-pages.');
+    expect(CliErrors.STATIC_ENTRY_WITHOUT_FETCH({ entry: '/app/dist/index.mjs' }).message).toBe(
+      '/app/dist/index.mjs has no default export with a fetch handler. Add `export default { fetch: app.fetch.bind(app) };` to the entry.',
+    );
   });
 });

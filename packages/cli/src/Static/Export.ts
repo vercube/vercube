@@ -1,5 +1,6 @@
 import { cpSync, existsSync, mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve, sep } from 'node:path';
+import { CliErrors } from '../Errors/Catalog';
 
 /** What the static export needs to know about a route, a subset of the `routes` introspection section. */
 export interface StaticRoute {
@@ -65,10 +66,7 @@ export interface StaticExportOptions {
   githubPages?: boolean;
 }
 
-/** Thrown when an export cannot go where it was told to. */
-export class StaticExportError extends Error {
-  public override name: string = 'StaticExportError';
-}
+export { StaticExportError } from './StaticExportError';
 
 /**
  * Left in a directory the export wrote, so the next run knows the directory
@@ -395,9 +393,7 @@ function assertOutput(directory: string, root: string, reserved: string[]): void
   };
 
   if (directory === root || !inside(root, directory)) {
-    throw new StaticExportError(
-      `The static export cannot be written to ${directory}: choose a directory of its own inside the project, such as dist-static.`,
-    );
+    throw CliErrors.STATIC_OUTPUT_OUTSIDE_PROJECT({ directory });
   }
 
   for (const other of [
@@ -407,16 +403,12 @@ function assertOutput(directory: string, root: string, reserved: string[]): void
     ...reserved.map((path) => resolve(path)),
   ]) {
     if (inside(other, directory) || inside(directory, other)) {
-      throw new StaticExportError(
-        `The static export cannot be written to ${directory}: it would replace ${other}. Choose a directory of its own, such as dist-static.`,
-      );
+      throw CliErrors.STATIC_OUTPUT_OVERLAPS({ directory, other });
     }
   }
 
   if (existsSync(directory) && !existsSync(join(directory, MARKER)) && readdirSync(directory).length > 0) {
-    throw new StaticExportError(
-      `${directory} is not empty and was not written by a static export. Remove it, or choose another directory with --out.`,
-    );
+    throw CliErrors.STATIC_OUTPUT_NOT_EMPTY({ directory });
   }
 }
 

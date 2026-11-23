@@ -4,6 +4,7 @@ import { InternalServerError } from '../../Errors/Http/InternalServerError';
 import { HttpError } from '../../Errors/HttpError';
 import { EVLOG_REQUEST_LOGGER_KEY } from '../../Middleware/EvlogMiddleware';
 import { FastResponse } from '../../Types/CommonTypes';
+import { isSharedError } from '../../Utils/Errors';
 import { ConfigProvider } from '../Introspection/Providers/ConfigProvider';
 import { RequestContext } from '../Router/RequestContext';
 import { ErrorHandlerProvider } from './ErrorHandlerProvider';
@@ -25,6 +26,12 @@ export class DefaultErrorHandlerProvider extends ErrorHandlerProvider {
   @InjectOptional(RequestContext)
   private gRequestContext!: RequestContext | null;
 
+  /** The bodies of the errors that answer many requests, see `shareError()`. */
+  private fSharedBodies: WeakMap<Error, string> = new WeakMap();
+
+  /** The mode {@link fSharedBodies} was written in. */
+  private fSharedDev: boolean | undefined;
+
   /**
    * Handles an error that occurred during request processing
    *
@@ -40,19 +47,42 @@ export class DefaultErrorHandlerProvider extends ErrorHandlerProvider {
 
     // check if the error is known error type and return it.
     if (error instanceof HttpError) {
-      const body: Record<string, unknown> = { ...error };
+      // One instance answers every miss, so its body is written once. It is
+      // written again when the mode changes, as the body depends on it.
+      const shared = isSharedError(error);
 
-      if (guidance !== undefined) {
-        // An HttpError is an answer, not a failure, so it is not logged as
-        // one. What it says about its cause still belongs in the log.
+      // An HttpError is an answer, not a failure, so it is not logged as one,
+      // but its code belongs with the request in the log. A miss is left out:
+      // the request line already says 404 or 405 and which path, the code
+      // would add nothing to it, and a scanner asks for thousands of them.
+      if (guidance !== undefined && !shared) {
         this.record(error, guidance, status);
-
-        // the code is what a client branches on, so it is always sent
-        body.code = guidance.code;
-        addGuidance(body, guidance, dev);
       }
 
-      return new FastResponse(JSON.stringify(body, undefined, indent), {
+      if (shared && this.fSharedDev !== dev) {
+        this.fSharedDev = dev;
+        this.fSharedBodies = new WeakMap();
+      }
+
+      let text = shared ? this.fSharedBodies.get(error) : undefined;
+
+      if (text === undefined) {
+        const body = copyFields(error);
+
+        if (guidance !== undefined) {
+          // the code is what a client branches on, so it is always sent
+          body.code = guidance.code;
+          addGuidance(body, guidance, dev);
+        }
+
+        text = JSON.stringify(body, undefined, indent);
+
+        if (shared) {
+          this.fSharedBodies.set(error, text);
+        }
+      }
+
+      return new FastResponse(text, {
         status,
         headers: JSON_HEADERS,
       });
@@ -86,12 +116,15 @@ export class DefaultErrorHandlerProvider extends ErrorHandlerProvider {
   }
 
   /**
-   * Logs what an `HttpError` says about its cause. With request logging on it
-   * goes into the wide event of the request being answered, so the request
-   * and its explanation are one line. Without it the error is logged by
-   * itself: a server error as an error, anything else at debug level, as an
-   * application that turned request logging off did not ask for a line per
-   * rejected request.
+   * Logs an `HttpError` that carries a code. With request logging on, the code
+   * and the `internal` context go into the wide event of the request being
+   * answered, so the request and what went wrong are one line. `why` and `fix` are not repeated there:
+   * they are the same for every error of a code, a rejected request is
+   * routine, and the code finds them in the error reference.
+   *
+   * Without a request logger a server error is logged by itself, in full. A
+   * client error is not: an application that turned request logging off did
+   * not ask for a line per rejected request.
    *
    * @param {Error} error - The error being answered
    * @param {ErrorGuidance} guidance - Its guidance
@@ -103,15 +136,10 @@ export class DefaultErrorHandlerProvider extends ErrorHandlerProvider {
     const context = this.gRequestContext;
     const requestLogger = context?.active ? context.get<EvlogRequestLogger>(EVLOG_REQUEST_LOGGER_KEY) : undefined;
 
-    if (requestLogger) {
+    // a request logger that cannot take the fields must not turn the answer into a failure
+    if (typeof requestLogger?.set === 'function') {
       requestLogger.set({
-        error: {
-          code: guidance.code,
-          why: guidance.why,
-          fix: guidance.fix,
-          link: guidance.link,
-          internal: guidance.internal,
-        },
+        error: guidance.internal === undefined ? { code: guidance.code } : { code: guidance.code, internal: guidance.internal },
       } as never);
 
       return;
@@ -119,8 +147,6 @@ export class DefaultErrorHandlerProvider extends ErrorHandlerProvider {
 
     if (status >= 500) {
       this.gLogger.error(error);
-    } else {
-      this.gLogger.debug(error);
     }
   }
 }
@@ -145,6 +171,25 @@ function addGuidance(body: Record<string, unknown>, guidance: ErrorGuidance, dev
       body[field] = guidance[field];
     }
   }
+}
+
+/**
+ * The enumerable fields of an error, which are its body. Written as a loop
+ * and not as `{ ...error }`: the guidance of a described error is a set of
+ * hidden fields, and V8 spreads an object that has those several times slower.
+ *
+ * @param {Error} error - The error being answered
+ * @returns {Record<string, unknown>} Its fields, in the order they were set
+ */
+function copyFields(error: Error): Record<string, unknown> {
+  const body: Record<string, unknown> = {};
+  const keys = Object.keys(error);
+
+  for (let index = 0; index < keys.length; index++) {
+    body[keys[index]] = (error as unknown as Record<string, unknown>)[keys[index]];
+  }
+
+  return body;
 }
 
 /** Error bodies are JSON, and say so. */

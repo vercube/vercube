@@ -1,3 +1,4 @@
+import { CoreErrors } from '../Errors/Catalog';
 import { getFileContentType } from './Mine';
 
 /**
@@ -81,11 +82,11 @@ function isAbortError(error: unknown): boolean {
  * Returns an iterator over a sync or async iterable.
  *
  * @param {unknown} source - The source
- * @param {string} message - The error for a source that cannot be iterated
+ * @param {() => TypeError} refuse - Creates the error for a source that cannot be iterated
  * @returns {AsyncIterator<unknown> | Iterator<unknown>} The iterator
  * @throws {TypeError} When the source cannot be iterated
  */
-export function getStreamIterator(source: unknown, message: string): AsyncIterator<unknown> | Iterator<unknown> {
+export function getStreamIterator(source: unknown, refuse: () => TypeError): AsyncIterator<unknown> | Iterator<unknown> {
   // A string is iterable too, but streaming it char by char is never intended.
   if (typeof source !== 'string' && source != null) {
     if (typeof (source as AsyncIterable<unknown>)[Symbol.asyncIterator] === 'function') {
@@ -97,7 +98,7 @@ export function getStreamIterator(source: unknown, message: string): AsyncIterat
     }
   }
 
-  throw new TypeError(message);
+  throw refuse();
 }
 
 /**
@@ -273,7 +274,7 @@ function encodeChunk(chunk: unknown): Uint8Array {
 
   // `undefined`, functions and symbols have no JSON form
   if (json === undefined) {
-    throw new TypeError(`A stream chunk of type ${typeof chunk} cannot be serialized to JSON.`);
+    throw CoreErrors.STREAM_CHUNK_NOT_SERIALIZABLE({ type: typeof chunk });
   }
 
   return encoder.encode(`${json}\n`);
@@ -382,7 +383,7 @@ export async function createStream<T = unknown>(
     return source;
   }
 
-  const iterator = getStreamIterator(source, 'A streaming handler must return a ReadableStream, an AsyncIterable or an Iterable');
+  const iterator = getStreamIterator(source, CoreErrors.STREAM_SOURCE_INVALID);
   let guessed: string | undefined;
 
   const encode = (chunk: unknown): Uint8Array => {
@@ -505,7 +506,7 @@ function enforceLength(source: ReadableStream<Uint8Array>, size: number): Readab
           if (sent === size) {
             controller.close();
           } else {
-            controller.error(new RangeError(`streamFile: the source ended after ${sent} bytes, size says ${size}.`));
+            controller.error(CoreErrors.STREAM_FILE_TOO_SHORT({ sent, size }));
           }
 
           return;
@@ -515,7 +516,7 @@ function enforceLength(source: ReadableStream<Uint8Array>, size: number): Readab
 
         if (sent > size) {
           reader.cancel().catch(() => {});
-          controller.error(new RangeError(`streamFile: the source is longer than the ${size} bytes size says.`));
+          controller.error(CoreErrors.STREAM_FILE_TOO_LONG({ size }));
 
           return;
         }

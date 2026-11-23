@@ -677,7 +677,7 @@ export class Container {
     }
 
     if (errors.length > 0) {
-      throw new AggregateError(errors, 'Container - failed to dispose');
+      throw DiErrors.DISPOSE_FAILED({ errors });
     }
   }
 

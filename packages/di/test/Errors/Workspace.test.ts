@@ -5,11 +5,13 @@ import { describe, expect, it } from 'vitest';
 import type { ErrorCatalogDescription } from '../../src';
 
 /**
- * Checks that hold for every package of the workspace that has an error
- * catalog (`src/Errors/Catalog.ts`): its codes are unique and documented, its
- * guidance is filled in, and nothing in it throws a bare `new Error(...)`.
+ * Checks that hold for every package of the workspace. A package that has an
+ * error catalog (`src/Errors/Catalog.ts`) gets its codes checked: they are
+ * unique and documented, and their guidance is filled in. And no package
+ * throws a bare `new Error(...)`, whether it has a catalog or not: one that
+ * raises no error of its own needs no catalog.
  *
- * A package joins by adding the catalog file, so there is no list to keep.
+ * A package joins by having a `src` directory, so there is no list to keep.
  */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../../../..');
@@ -27,7 +29,16 @@ interface Catalog {
 
 const catalogs: Array<{ package: string; catalog: Catalog }> = [];
 
-for (const name of readdirSync(join(ROOT, 'packages'))) {
+/** Every package that has sources, with or without a catalog. */
+const packages: string[] = [];
+
+for (const name of readdirSync(join(ROOT, 'packages')).sort()) {
+  if (!existsSync(join(ROOT, 'packages', name, 'src'))) {
+    continue;
+  }
+
+  packages.push(name);
+
   const file = join(ROOT, 'packages', name, 'src/Errors/Catalog.ts');
 
   if (!existsSync(file)) {
@@ -60,15 +71,19 @@ function sourceFiles(directory: string): string[] {
 }
 
 /**
- * The numbers of the lines that create a plain `Error`, with or without `new`,
- * and say nothing about why. Comment lines are skipped: documentation shows
+ * The numbers of the lines that create an error of a built-in class (`Error`,
+ * `TypeError`, `RangeError`, `AggregateError`), with or without `new`, and say
+ * nothing about why. Comment lines are skipped: documentation shows
  * errors in its examples.
  */
-function findBareErrors(lines: string[]): number[] {
+function findBareErrors(lines: string[], catalog: boolean = false): number[] {
   const found: number[] = [];
+  // A catalog is where a `TypeError` or an `AggregateError` gets its code, so
+  // only a plain `Error` needs a reason there.
+  const pattern = catalog ? /(?<![\w$])(?:globalThis\.)?Error\(/ : /(?<![\w$])(?:globalThis\.)?(?:Type|Range|Aggregate)?Error\(/;
 
   for (const [index, line] of lines.entries()) {
-    if (!/(?<![\w$])(?:globalThis\.)?Error\(/.test(line.replaceAll(/\bnew\s+/g, '')) || /^\s*(\*|\/\/|\/\*)/.test(line)) {
+    if (!pattern.test(line.replaceAll(/\bnew\s+/g, '')) || /^\s*(\*|\/\/|\/\*)/.test(line)) {
       continue;
     }
 
@@ -136,27 +151,32 @@ describe('error catalogs of the workspace', () => {
     expect(find('reject(new Error(`a ${b}`));')).toEqual([1]);
     expect(find("// bare-error: rethrown as it is\nthrow new Error('x');")).toEqual([]);
     expect(find("throw new Error('x'); // bare-error: the default class")).toEqual([]);
-    expect(find("throw new TypeError('x');\nthrow new HttpError(500);\nError.captureStackTrace(e);")).toEqual([]);
+    expect(find("throw new TypeError('x');\nthrow new RangeError('x');\nthrow new AggregateError([], 'x');")).toEqual([1, 2, 3]);
+    expect(find("throw new HttpError(500);\nError.captureStackTrace(e);\nthrow new QueueError('x');")).toEqual([]);
+    // in a catalog a typed error is being given its code
+    expect(
+      findBareErrors(['create: (message) => new TypeError(message),', 'create: (message) => new Error(message),'], true),
+    ).toEqual([2]);
     expect(find(" * throw new Error('in a doc comment');\n// new Error('in a comment')")).toEqual([]);
   });
 
-  it('throws no bare Error in a package that has a catalog', () => {
+  it('throws no bare Error in any package', () => {
     const offenders: string[] = [];
     let scanned = 0;
 
-    for (const name of new Set(catalogs.map((entry) => entry.package))) {
+    for (const name of packages) {
       for (const file of sourceFiles(join(ROOT, 'packages', name, 'src'))) {
         scanned++;
 
-        for (const line of findBareErrors(readFileSync(file, 'utf8').split('\n'))) {
+        for (const line of findBareErrors(readFileSync(file, 'utf8').split('\n'), file.endsWith(join('Errors', 'Catalog.ts')))) {
           offenders.push(`${relative(ROOT, file)}:${line}`);
         }
       }
     }
 
     expect(scanned).toBeGreaterThan(0);
-    // Use the package's catalog (`src/Errors/Catalog.ts`), or say why a plain
-    // error is right with a `// bare-error: <reason>` comment.
+    // Use the package's catalog (`src/Errors/Catalog.ts`, added when the
+    // package has none yet), or say why a plain error is right with a `// bare-error: <reason>` comment.
     expect(offenders).toEqual([]);
   });
 

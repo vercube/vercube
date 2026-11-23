@@ -1,6 +1,6 @@
 import { InjectOptional } from '@vercube/di';
 import { Logger } from '@vercube/logger';
-import { BadRequestError } from '../Errors/Http/BadRequestError';
+import { CoreErrors } from '../Errors/Catalog';
 import { BaseMiddleware } from '../Services/Middleware/BaseMiddleware';
 import { ValidationProvider } from '../Services/Validation/ValidationProvider';
 import type { MiddlewareOptions } from '../Types/CommonTypes';
@@ -43,7 +43,7 @@ export class ValidationMiddleware implements BaseMiddleware {
       const result = await this.gValidationProvider.validate(validator.validationSchema!, validator.resolved);
 
       if (result.issues?.length) {
-        throw new BadRequestError(`Validation error - ${validator.type}`, result.issues);
+        throw CoreErrors.VALIDATION_FAILED({ type: validator.type, issues: result.issues });
       }
 
       // hand the parsed value to the handler, so coercions, defaults, transforms

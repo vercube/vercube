@@ -35,6 +35,12 @@ export const DiErrors = defineErrorCatalog('VERCUBE_DI', {
     why: 'A promise handed to `container.trackDisposal()` rejected without a reason, so there is no original error to report.',
     fix: 'Reject with an `Error` in the `@Destroy()` method or the cleanup that failed, so the cause is visible here.',
   },
+  DISPOSE_FAILED: {
+    message: (_: { errors: unknown[] }) => 'Container - failed to dispose',
+    why: 'One or more services failed while the container was disposed: a `@Destroy()` method threw, or a promise it returned rejected. Every other service was still disposed.',
+    fix: 'Read the `errors` of this `AggregateError`: each one is what a `@Destroy()` method threw. Fix the cleanup that failed, or catch inside it what may fail on shutdown.',
+    create: (message, { errors }) => new AggregateError(errors, message),
+  },
   INVALID_INJECT_METHOD: {
     message: ({ method }: { method: unknown }) => `IOCEngine.injectDeps() - invalid inject method ${String(method)}`,
     why: 'A dependency was registered with an injection method the engine does not know. `@Inject()` and `@InjectOptional()` always register a known one, so the metadata comes from another version of `@vercube/di`.',

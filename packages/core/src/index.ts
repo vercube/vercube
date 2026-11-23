@@ -100,6 +100,7 @@ export type {
   ErrorFactoryOverrides,
   ErrorGuidance,
 } from '@vercube/di';
+export * from './Errors/Catalog';
 export * from './Errors/HttpError';
 export * from './Errors/RouteErrors';
 export * from './Errors/Http/BadRequestError';

@@ -1,3 +1,4 @@
+import { CoreErrors } from '../Errors/Catalog';
 /**
  * Options of a cookie written with {@link setCookie}.
  */
@@ -198,13 +199,13 @@ export function parseCookie(header: string | null | undefined, name: string): st
  */
 export function serializeCookie(name: string, value: string, options: CookieOptions = {}): string {
   if (!COOKIE_NAME.test(name)) {
-    throw new TypeError(`Invalid cookie name: ${JSON.stringify(name)}`);
+    throw CoreErrors.COOKIE_NAME_INVALID({ name });
   }
 
   const path = options.path ?? '/';
 
   if (!ATTRIBUTE_VALUE.test(path)) {
-    throw new TypeError(`Invalid cookie path: ${JSON.stringify(path)}`);
+    throw CoreErrors.COOKIE_PATH_INVALID({ path });
   }
 
   let encoded: string;
@@ -213,14 +214,14 @@ export function serializeCookie(name: string, value: string, options: CookieOpti
     encoded = encodeURIComponent(value);
   } catch {
     // a lone surrogate cannot be encoded
-    throw new TypeError(`Invalid cookie value for ${JSON.stringify(name)}: not a well-formed string`);
+    throw CoreErrors.COOKIE_VALUE_INVALID({ name });
   }
 
   let cookie = `${name}=${encoded}; Path=${path}`;
 
   if (options.domain !== undefined) {
     if (!ATTRIBUTE_VALUE.test(options.domain)) {
-      throw new TypeError(`Invalid cookie domain: ${JSON.stringify(options.domain)}`);
+      throw CoreErrors.COOKIE_DOMAIN_INVALID({ domain: options.domain });
     }
 
     cookie += `; Domain=${options.domain}`;
@@ -228,7 +229,7 @@ export function serializeCookie(name: string, value: string, options: CookieOpti
 
   if (options.maxAge !== undefined) {
     if (!Number.isSafeInteger(Math.trunc(options.maxAge))) {
-      throw new TypeError(`Invalid cookie maxAge: ${options.maxAge}`);
+      throw CoreErrors.COOKIE_MAX_AGE_INVALID({ maxAge: options.maxAge });
     }
 
     cookie += `; Max-Age=${Math.trunc(options.maxAge)}`;
@@ -236,7 +237,7 @@ export function serializeCookie(name: string, value: string, options: CookieOpti
 
   if (options.expires !== undefined) {
     if (Number.isNaN(options.expires.getTime())) {
-      throw new TypeError('Invalid cookie expires: not a valid date');
+      throw CoreErrors.COOKIE_EXPIRES_INVALID();
     }
 
     cookie += `; Expires=${options.expires.toUTCString()}`;
@@ -255,7 +256,7 @@ export function serializeCookie(name: string, value: string, options: CookieOpti
     const sameSite = SAME_SITE[options.sameSite];
 
     if (!sameSite) {
-      throw new TypeError(`Invalid cookie sameSite: ${JSON.stringify(options.sameSite)}`);
+      throw CoreErrors.COOKIE_SAME_SITE_INVALID({ sameSite: options.sameSite });
     }
 
     cookie += `; SameSite=${sameSite}`;
@@ -269,7 +270,7 @@ export function serializeCookie(name: string, value: string, options: CookieOpti
     const priority = PRIORITY[options.priority];
 
     if (!priority) {
-      throw new TypeError(`Invalid cookie priority: ${JSON.stringify(options.priority)}`);
+      throw CoreErrors.COOKIE_PRIORITY_INVALID({ priority: options.priority });
     }
 
     cookie += `; Priority=${priority}`;
@@ -384,7 +385,7 @@ function splitOnce(part: string): [string, string | undefined] {
  */
 export function parseSetCookieHeader(header: string): SetCookieAttributes {
   if (!header || typeof header !== 'string') {
-    throw new Error('Invalid cookie string: must be a non-empty string');
+    throw CoreErrors.SET_COOKIE_EMPTY();
   }
 
   const [nameValue, ...attributeParts] = header.split(';');
@@ -393,7 +394,7 @@ export function parseSetCookieHeader(header: string): SetCookieAttributes {
   const name = nameRaw.trim();
 
   if (!name || value === undefined) {
-    throw new Error('Invalid cookie string: must contain a name and value separated by "="');
+    throw CoreErrors.SET_COOKIE_MALFORMED();
   }
 
   const attrs: Record<string, string> = {};

@@ -1,4 +1,4 @@
-import { BadRequestError } from '../../Errors/Http/BadRequestError';
+import { CoreErrors } from '../../Errors/Catalog';
 import { resolveRequestBody } from '../../Resolvers/Body';
 import { getRequestCookie, getRequestCookies } from '../../Resolvers/Cookies';
 import { getRequestHeader, getRequestHeaders } from '../../Resolvers/Headers';
@@ -115,7 +115,7 @@ export class MetadataResolver {
     validator: ArgValidator,
   ): RouterTypes.ArgResolver {
     const schema = arg.validationSchema as ValidationTypes.Schema;
-    const message = `Validation error - ${arg.type}`;
+    const type = arg.type;
     const secret = SECRET_ARG_TYPES.has(arg.type);
 
     const unwrap = (result: ValidationTypes.Result | undefined, value: unknown): unknown => {
@@ -124,7 +124,7 @@ export class MetadataResolver {
       }
 
       if (result.issues?.length) {
-        throw new BadRequestError(message, secret ? withoutInput(result.issues) : result.issues);
+        throw CoreErrors.VALIDATION_FAILED({ type, issues: secret ? withoutInput(result.issues) : result.issues });
       }
 
       return 'value' in result ? result.value : value;
@@ -205,7 +205,7 @@ export class MetadataResolver {
       default: {
         // Thrown when the route is registered rather than when it is called, so
         // an unknown argument type fails at boot instead of on a request.
-        throw new Error(`Unknown argument type: ${arg.type}`);
+        throw CoreErrors.ARGUMENT_TYPE_UNKNOWN({ type: arg.type });
       }
     }
   }

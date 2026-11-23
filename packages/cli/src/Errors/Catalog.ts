@@ -1,10 +1,15 @@
 import { defineErrorCatalog } from '@vercube/di';
 import { RecipeError } from '../Recipes/RecipeError';
+import { StaticExportError } from '../Static/StaticExportError';
+
+/** Builds the `StaticExportError` the static export threw before it had codes. */
+const staticExportError = (message: string): StaticExportError => new StaticExportError(message);
 
 /**
  * The errors of the CLI: `vercube init`, `vercube add`, the recipes behind
- * them and the command registry. All but the last are a `RecipeError`, which
- * the commands print without a stack trace.
+ * them, the command registry and the static export of `vercube build`. The
+ * recipe errors are a `RecipeError`, which the commands print without a stack
+ * trace, and the ones of the static export a `StaticExportError`.
  */
 export const CliErrors = defineErrorCatalog(
   'VERCUBE_CLI',
@@ -235,6 +240,40 @@ export const CliErrors = defineErrorCatalog(
       message: ({ deploys }: { deploys: string }) => `Pick one deploy target, got ${deploys}.`,
       why: 'More than one recipe of the kind `deploy` was selected, directly or through `requires`. A project is built for one target.',
       fix: 'Select a single deploy target, for example `vercube init my-app --deploy node`.',
+    },
+    BUILD_TARGET_UNKNOWN: {
+      message: ({ target }: { target: string }) => `Unknown build target "${target}". Available: github-pages.`,
+      why: 'The value of `--target` is not a target `vercube build` can export for. A build without `--target` only builds the application.',
+      fix: 'Run `vercube build --target github-pages`, or leave `--target` out to build without a static export.',
+      create: staticExportError,
+    },
+    STATIC_ENTRY_WITHOUT_FETCH: {
+      message: ({ entry }: { entry: string }) =>
+        `${entry} has no default export with a fetch handler. Add \`export default { fetch: app.fetch.bind(app) };\` to the entry.`,
+      why: 'The static export imports the built entry and asks it for every route through the `fetch` of its default export. The entry exports none, so there is nothing to ask.',
+      fix: 'Add `export default { fetch: app.fetch.bind(app) };` to the entry file of the application, then run `vercube build --target github-pages` again.',
+      create: staticExportError,
+    },
+    STATIC_OUTPUT_OUTSIDE_PROJECT: {
+      message: ({ directory }: { directory: string }) =>
+        `The static export cannot be written to ${directory}: choose a directory of its own inside the project, such as dist-static.`,
+      why: 'The export empties its output directory before it writes. The directory given with `--out` is the project itself or lies outside of it, so emptying it could delete files that are not the export.',
+      fix: 'Pass a directory inside the project that holds nothing else, for example `vercube build --target github-pages --out dist-static`.',
+      create: staticExportError,
+    },
+    STATIC_OUTPUT_OVERLAPS: {
+      message: ({ directory, other }: { directory: string; other: string }) =>
+        `The static export cannot be written to ${directory}: it would replace ${other}. Choose a directory of its own, such as dist-static.`,
+      why: 'The export empties its output directory before it writes. The directory given with `--out` contains, or lies inside, a directory the project needs: `src`, `node_modules`, `.git`, the build output or a public directory.',
+      fix: 'Pass a directory that holds nothing else, for example `vercube build --target github-pages --out dist-static`.',
+      create: staticExportError,
+    },
+    STATIC_OUTPUT_NOT_EMPTY: {
+      message: ({ directory }: { directory: string }) =>
+        `${directory} is not empty and was not written by a static export. Remove it, or choose another directory with --out.`,
+      why: 'The export empties its output directory before it writes, and only does so for a directory an earlier export marked as its own. This one has files and no such marker.',
+      fix: 'Remove the directory, or pass another one with `--out`, for example `vercube build --target github-pages --out dist-static`.',
+      create: staticExportError,
     },
   },
   { create: (message) => new RecipeError(message) },

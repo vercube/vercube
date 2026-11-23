@@ -1,5 +1,6 @@
 import { BaseDecorator, createDecorator, Inject, InjectOptional } from '@vercube/di';
 import { Logger } from '@vercube/logger';
+import { CoreErrors } from '../../Errors/Catalog';
 import { MetadataResolver } from '../../Services/Metadata/MetadataResolver';
 import { RequestHandler } from '../../Services/Router/RequestHandler';
 import { Router } from '../../Services/Router/Router';
@@ -42,9 +43,10 @@ class SseDecorator extends BaseDecorator<SseDecoratorOptions> {
     const method = initializeMetadataMethod(this.prototype, this.propertyName);
     method.method = 'GET';
     if (method.meta.stream) {
-      throw new Error(
-        `${this.instance?.constructor?.name}::${this.propertyName}: @Sse() cannot be combined with @Stream(), it already streams its own format.`,
-      );
+      throw CoreErrors.STREAM_SSE_COMBINED({
+        handler: `${this.instance?.constructor?.name}::${this.propertyName}`,
+        decorator: 'Sse',
+      });
     }
 
     // declarative marker, for tools such as the OpenAPI generator

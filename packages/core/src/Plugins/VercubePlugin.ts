@@ -1,4 +1,5 @@
 import { defu } from 'defu';
+import { CoreErrors } from '../Errors/Catalog';
 import { BasePlugin } from '../Services/Plugins/BasePlugin';
 import type { DeepPartial, MaybePromise } from '../Types/CommonTypes';
 import type { ConfigTypes } from '../Types/ConfigTypes';
@@ -121,7 +122,7 @@ export async function normalizeVercubePluginInputs(inputs: readonly VercubePlugi
         out.push(...(await normalizeVercubePluginInputs([entry[0] as VercubePluginInput])));
         continue;
       }
-      throw new Error('Invalid plugin entry: use a BasePlugin class, [Class, options?], a factory function, or a plugin object');
+      throw CoreErrors.PLUGIN_ENTRY_INVALID();
     }
     if (isBasePluginClass(entry)) {
       out.push(vercubePluginFromClass(entry));

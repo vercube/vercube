@@ -1,5 +1,4 @@
-import { BadRequestError } from '../Errors/Http/BadRequestError';
-import { UnsupportedMediaTypeError } from '../Errors/Http/UnsupportedMediaTypeError';
+import { CoreErrors } from '../Errors/Catalog';
 import { isSafeProperty, safeJsonParse } from '../Utils/Security';
 import { readSharedText, readText } from '../Utils/SharedBody';
 import type { RouterTypes } from '../Types/RouterTypes';
@@ -48,7 +47,7 @@ export function resolveRequestBody(event: RouterTypes.RouterEvent): Promise<unkn
         return Promise.resolve(undefined);
       }
 
-      throw new UnsupportedMediaTypeError('Unsupported request body content type');
+      throw CoreErrors.BODY_TYPE_UNSUPPORTED();
     }
   } catch (error) {
     return Promise.reject(error);
@@ -107,7 +106,7 @@ function parseJson(text: string): unknown {
   try {
     return safeJsonParse(text);
   } catch {
-    throw new BadRequestError('Invalid JSON body');
+    throw CoreErrors.JSON_BODY_INVALID();
   }
 }
 
